@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+:root {
+  --font-family-default: Inter, sans-serif;
+  --font-family-variable: InterVariable, sans-serif;
+  --font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+
+  font-family: var(--font-family-default);
+  font-feature-settings: var(--font-feature-settings);
+}
+
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: var(--font-family-variable);
+  }
+}
+*, *::before, *::after {
+  font-family: var(--font-family-default) !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+  line-height: 1.6;
+  font-family: var(--font-family-default);
+  font-feature-settings: var(--font-feature-settings);
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+}
+

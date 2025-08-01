@@ -1,0 +1,144 @@
+import jwt from 'jsonwebtoken';
+import bcrypt, { hash } from 'bcrypt';
+import dotenv from 'dotenv';
+import UserModel from '../model/UserModel.js'; // Import your user model
+
+dotenv.config();
+
+const SECRET_KEY = process.env.SECRET_KEY || ''; 
+
+// Function to generate JWT
+const generateToken = (user) => {
+    const payload = {
+        id: user.id,
+        email: user.email,
+    };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
+};
+
+// Function to verify JWT token
+const verifyToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        return decoded;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Function to register a user (hash password)
+const registerUser = async (email, password, nombre, rol = 'user', rut, estado = 1) => {
+    // Check if user already exists
+    const existingUser = await UserModel.findByEmail(email);
+    if (existingUser) {
+        throw new Error('User already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user data object
+    const userData = {
+        nombre,
+        email,
+        password: hashedPassword,
+        rol,
+        rut,
+        estado
+    };
+
+    // Save user to database using UserModel
+    const userId = await UserModel.create(userData);
+    
+    // Return user without password
+    return {
+        id: userId,
+        nombre,
+        email,
+        rol,
+        rut,
+        estado
+    };
+};
+
+// Function to login a user - now uses UserModel directly
+const loginUser = async (email, password) => {
+    // Use UserModel to find user
+    
+    const user = await UserModel.findByEmail(email);
+    
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+        throw new Error('Invalid password');
+    }
+    
+    // Generate token
+    const token = generateToken(user);
+    
+    // Return both token and user info (without password)
+    return {
+        token,
+        user: {
+            id: user.id,
+            nombre: user.nombre,
+            email: user.email,
+            rol: user.rol,
+            rut: user.rut,
+            estado: user.estado
+        }
+    };
+};
+
+// Function to get user by ID
+const getUserById = async (id) => {
+    const user = await UserModel.findById(id);
+    if (!user) {
+        throw new Error('User not found');
+    }
+    
+    // Return user without password
+    return {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        rol: user.rol,
+        rut: user.rut,
+        estado: user.estado
+    };
+};
+
+// Function to get user by email
+const getUserByEmail = async (email) => {
+    const user = await UserModel.findByEmail(email);
+    if (!user) {
+        throw new Error('User not found');
+    }
+    
+    // Return user without password
+    return {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        rol: user.rol,
+        rut: user.rut,
+        estado: user.estado
+    };
+};
+
+const AuthService = {
+    generateToken,
+    verifyToken,
+    registerUser,
+    loginUser,
+    getUserById,
+    getUserByEmail,
+};
+
+// Export an object containing the functions
+export default AuthService;
+
+
