@@ -264,6 +264,16 @@ class AsistenciaService {
         tipo: tipoColacion
       }
       
+      // Obtener IP del cliente
+      try {
+        const ip = await this.obtenerIPCliente()
+        if (ip) {
+          payload.ip_cliente = ip
+        }
+      } catch (error) {
+        console.warn('No se pudo obtener IP:', error)
+      }
+      
       // Agregar ubicación si está disponible
       if (ubicacion) {
         payload.geo_lat = ubicacion.latitud
@@ -271,7 +281,7 @@ class AsistenciaService {
         payload.precision = ubicacion.precision
       }
       
-      const response = await apiClient.post('/marcaciones/colacion', payload)
+      const response = await apiClient.post('/marcaciones/inicio-colacion', payload)
       
       return {
         success: true,
@@ -288,6 +298,65 @@ class AsistenciaService {
       }
     }
   }
+
+  async registrarTerminoColacion(ubicacion = null) {
+    try {
+        const payload = {
+            // Mantener el tipo como colacion
+            tipo: 'colacion'
+        }
+
+        // Obtener IP del cliente
+        try {
+            const ip = await this.obtenerIPCliente()
+            if (ip) {
+                payload.ip_cliente = ip
+            }
+        } catch (error) {
+            console.warn('No se pudo obtener IP:', error)
+        }
+
+        // Agregar ubicación si está disponible
+        if (ubicacion) {
+            payload.geo_lat = ubicacion.latitud
+            payload.geo_lon = ubicacion.longitud
+            payload.precision = ubicacion.precision
+
+            // Información adicional de calidad de ubicación
+            if (ubicacion.altitude !== null) {
+                payload.altitude = ubicacion.altitude
+            }
+            if (ubicacion.altitudeAccuracy !== null) {
+                payload.altitude_accuracy = ubicacion.altitudeAccuracy
+            }
+            if (ubicacion.heading !== null) {
+                payload.heading = ubicacion.heading
+            }
+            if (ubicacion.speed !== null) {
+                payload.speed = ubicacion.speed
+            }
+            payload.location_timestamp = ubicacion.timestamp
+            payload.location_quality = ubicacion.precision <= 50 ? 'high' : 'low'
+        }
+
+        const response = await apiClient.post('/marcaciones/termino-colacion', payload)
+
+        return {
+            success: true,
+            data: response.data,
+            message: 'Término de colación registrado correctamente'
+        }
+    } catch (error) {
+        console.error('Error registrando término de colación:', error)
+
+        return {
+            success: false,
+            error: error.response?.data?.message || 'Error al registrar término de colación',
+            status: error.response?.status
+        }
+    }
+  }
+
 
   /**
    * Registra un descanso
@@ -567,6 +636,8 @@ class AsistenciaService {
       }
     }
   }
+
+  
 }
 
 // Exportar una instancia del servicio

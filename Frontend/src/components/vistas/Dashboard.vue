@@ -46,7 +46,7 @@
                 <div class="space-y-3">
                   <button
                     @click="registrarEntrada"
-                    :disabled="isRegistering || currentStatus === 'dentro'"
+                    :disabled="botonesMarcacionDeshabilitados || currentStatus === 'dentro'"
                     class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg v-if="isRegistering && pendingAction === 'entrada'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -61,7 +61,7 @@
 
                   <button
                     @click="registrarSalida"
-                    :disabled="isRegistering || currentStatus === 'fuera'"
+                    :disabled="isRegistering || !puedeMarcarSalida"
                     class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg v-if="isRegistering && pendingAction === 'salida'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -74,11 +74,13 @@
                     {{ isRegistering && pendingAction === 'salida' ? 'Registrando...' : 'Registrar Salida' }}
                   </button>
 
-                  <!-- Botones adicionales para colación y descanso -->
+                  <!-- Botones de colación actualizados -->
                   <div class="grid grid-cols-2 gap-2 mt-4">
+                    <!-- Botón de Iniciar Colación -->
                     <button
+                      v-if="!tieneColacionActiva"
                       @click="registrarColacion"
-                      :disabled="isRegistering || currentStatus === 'fuera'"
+                      :disabled="isRegistering || !puedeMarcarColacion"
                       class="flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg v-if="isRegistering && pendingAction === 'colacion'" class="animate-spin -ml-1 mr-1 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
@@ -88,7 +90,24 @@
                       <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
-                      {{ isRegistering && pendingAction === 'colacion' ? '...' : 'Colación' }}
+                      {{ isRegistering && pendingAction === 'colacion' ? '...' : 'Iniciar Colación' }}
+                    </button>
+
+                    <!-- Botón de Terminar Colación -->
+                    <button
+                      v-if="tieneColacionActiva"
+                      @click="terminarColacion"
+                      :disabled="isRegistering || !puedeTerminarColacion"
+                      class="flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-400 hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg v-if="isRegistering && pendingAction === 'termino_colacion'" class="animate-spin -ml-1 mr-1 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                      {{ isRegistering && pendingAction === 'termino_colacion' ? '...' : 'Terminar Colación' }}
                     </button>
 
                     <button
@@ -111,6 +130,11 @@
                 <!-- Mensaje de resultado actualizado -->
                 <div v-if="message" class="mt-4 p-3 rounded-lg" :class="getMessageClasses(messageType)">
                   <p class="text-sm">{{ message }}</p>
+                </div>
+
+                <!-- Mensaje informativo cuando ya tiene entrada y salida -->
+                <div v-if="tieneEntradaYSalida" class="mt-4 p-3 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">
+                  <p class="text-sm">✅ Jornada laboral completada. Ya tienes registradas tu entrada y salida del día.</p>
                 </div>
               </div>
 
@@ -153,9 +177,9 @@
                       class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
                     >
                       <div class="flex items-center">
-                        <div class="w-3 h-3 rounded-full mr-3" :class="getColorByType(marcacion.tipo)"></div>
+                        <div class="w-3 h-3 rounded-full mr-3" :class="getColorByType(marcacion.tipo, marcacion)"></div>
                         <div>
-                          <p class="text-sm font-medium text-gray-900 capitalize">{{ getTipoLabel(marcacion.tipo) }}</p>
+                          <p class="text-sm font-medium text-gray-900 capitalize">{{ getTipoLabel(marcacion.tipo, marcacion) }}</p>
                           <p class="text-xs text-gray-500">{{ formatearFecha(marcacion.fecha) }}</p>
                         </div>
                       </div>
@@ -303,12 +327,7 @@ const tiempoTrabajado = computed(() => {
         // Calcular tiempo trabajado desde la última entrada hasta esta salida
         const tiempoSegmento = fechaHoraMarcacion.getTime() - ultimaEntrada.getTime()
         tiempoTotal += tiempoSegmento
-        
-        const minutosSegmento = Math.floor(tiempoSegmento / (1000 * 60))
-        const segundosSegmento = Math.floor((tiempoSegmento % (1000 * 60)) / 1000)
-        
-
-        
+                
         ultimaEntrada = null // Resetear entrada
       }
       // Nota: colación y descanso no afectan el cálculo del tiempo trabajado
@@ -334,6 +353,48 @@ const tiempoTrabajado = computed(() => {
 
   
   return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`
+})
+
+// Computed para verificar si ya tiene entrada y salida completas
+const tieneEntradaYSalida = computed(() => {
+  if (marcacionesHoy.value.length === 0) return false
+  
+  const tieneEntrada = marcacionesHoy.value.some(m => m.tipo === 'entrada')
+  const tieneSalida = marcacionesHoy.value.some(m => m.tipo === 'salida')
+  
+  return tieneEntrada && tieneSalida
+})
+
+// Computed para verificar si hay una colación activa
+const tieneColacionActiva = computed(() => {
+  if (marcacionesHoy.value.length === 0) return false
+  
+  // Filtrar solo las colaciones y contarlas
+  const colaciones = marcacionesHoy.value.filter(m => m.tipo === 'colacion')
+  
+  // Si hay un número impar de colaciones, hay una activa
+  // (1ª = inicio, 2ª = fin, 3ª = inicio, etc.)
+  return colaciones.length % 2 === 1
+})
+
+// Computed para verificar si puede marcar salida
+const puedeMarcarSalida = computed(() => {
+  return currentStatus.value === 'dentro' && !tieneColacionActiva.value
+})
+
+// Computed para verificar si puede marcar colación
+const puedeMarcarColacion = computed(() => {
+  return currentStatus.value === 'dentro' && !tieneColacionActiva.value
+})
+
+// Computed para verificar si puede terminar colación
+const puedeTerminarColacion = computed(() => {
+  return currentStatus.value === 'dentro' && tieneColacionActiva.value
+})
+
+// Computed para determinar si los botones deben estar deshabilitados
+const botonesMarcacionDeshabilitados = computed(() => {
+  return isRegistering.value || tieneEntradaYSalida.value
 })
 
 // Resto de métodos existentes
@@ -450,7 +511,13 @@ const registrarEntrada = async () => {
 }
 
 const registrarSalida = async () => {
-  if (isRegistering.value || currentStatus.value === 'fuera') return
+  if (isRegistering.value || !puedeMarcarSalida.value) return
+  
+  // Validar que no hay colación activa
+  if (tieneColacionActiva.value) {
+    showMessage('No puedes marcar salida mientras tienes una colación activa. Termina la colación primero.', 'warning')
+    return
+  }
   
   isRegistering.value = true
   pendingAction.value = 'salida'
@@ -479,7 +546,7 @@ const registrarSalida = async () => {
 }
 
 const registrarColacion = async () => {
-  if (isRegistering.value || currentStatus.value === 'fuera') return
+  if (isRegistering.value || !puedeMarcarColacion.value) return
   
   isRegistering.value = true
   pendingAction.value = 'colacion'
@@ -491,7 +558,7 @@ const registrarColacion = async () => {
     const result = await AsistenciaService.registrarColacion(ubicacion)
     
     if (result.success) {
-      showMessage('Colación registrada correctamente', 'success')
+      showMessage('Colación iniciada correctamente', 'success')
       await cargarMarcacionesHoy()
     } else {
       showMessage(result.error || 'Error al registrar colación', 'error')
@@ -499,6 +566,33 @@ const registrarColacion = async () => {
   } catch (error) {
     console.error('Error registrando colación:', error)
     showMessage('Error inesperado al registrar colación', 'error')
+  } finally {
+    isRegistering.value = false
+    pendingAction.value = null
+  }
+}
+
+const terminarColacion = async () => {
+  if (isRegistering.value || !puedeTerminarColacion.value) return
+  
+  isRegistering.value = true
+  pendingAction.value = 'termino_colacion'
+  
+  try {
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
+    
+    const result = await AsistenciaService.registrarTerminoColacion(ubicacion)
+    
+    if (result.success) {
+      showMessage('Colación terminada correctamente', 'success')
+      await cargarMarcacionesHoy()
+    } else {
+      showMessage(result.error || 'Error al terminar colación', 'error')
+    }
+  } catch (error) {
+    console.error('Error terminando colación:', error)
+    showMessage('Error inesperado al terminar colación', 'error')
   } finally {
     isRegistering.value = false
     pendingAction.value = null
@@ -577,26 +671,48 @@ const formatearHora = (hora) => {
   })
 }
 
-const getColorByType = (tipo) => {
-  const colors = {
-    'entrada': 'bg-green-500',
-    'salida': 'bg-red-500',
-    'colacion': 'bg-orange-500',
-    'descanso': 'bg-blue-500'
+const getTipoLabel = (tipo, marcacion) => {
+  if (tipo === 'colacion') {
+    // Obtener todas las colaciones ordenadas cronológicamente
+    const colacionesOrdenadas = marcacionesHoy.value
+      .filter(m => m.tipo === 'colacion')
+      .sort((a, b) => {
+        const fechaHoraA = new Date(`${a.fecha}T${a.hora}`)
+        const fechaHoraB = new Date(`${b.fecha}T${b.hora}`)
+        return fechaHoraA.getTime() - fechaHoraB.getTime()
+      })
+    
+    // Encontrar el índice de esta marcación específica en el array ordenado
+    const indice = colacionesOrdenadas.findIndex(c => {
+      // Usar una comparación más precisa
+      return c.fecha === marcacion.fecha && 
+             c.hora === marcacion.hora &&
+             JSON.stringify(c) === JSON.stringify(marcacion)
+    })
+    
+    console.log('Colación encontrada en índice:', indice, 'Total colaciones:', colacionesOrdenadas.length, 'Marcación:', marcacion)
+    
+    // La lógica correcta: el primer registro es inicio (índice 0), segundo es fin (índice 1), etc.
+    return indice % 2 === 0 ? 'Inicio Colación' : 'Fin Colación'
   }
-  return colors[tipo] || 'bg-gray-500'
-}
-
-const getTipoLabel = (tipo) => {
+  
   const labels = {
     'entrada': 'Entrada',
     'salida': 'Salida',
-    'colacion': 'Colación',
     'descanso': 'Descanso'
   }
   return labels[tipo] || tipo
 }
 
+const getColorByType = (tipo, marcacion) => {
+  const colors = {
+    'entrada': 'bg-green-500',
+    'salida': 'bg-red-500',
+    'colacion': 'bg-orange-500',  // Un solo color para todas las colaciones
+    'descanso': 'bg-blue-500'
+  }
+  return colors[tipo] || 'bg-gray-500'
+}
 // Lifecycle hooks
 onMounted(async () => {
   // Inicializar fecha/hora

@@ -54,6 +54,16 @@ class Marcaciones {
         const [result] = await pool.execute(query, [id]);
         return result;
     }
+    async obtenerEntradaPorUsuario(usuario_id, fecha) {
+        console.log(usuario_id);
+        console.log(fecha);
+        const query = `
+            SELECT * FROM marcaciones
+            WHERE usuario_id = ? AND tipo = 'entrada' AND DATE(fecha) = ?
+        `;
+        const [rows] = await pool.execute(query, [usuario_id, fecha]);
+        return rows.length > 0 ? rows[0] : null;
+    }
 }
 
 export default new Marcaciones();
