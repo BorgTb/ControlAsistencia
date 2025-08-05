@@ -129,6 +129,21 @@ const getUserByEmail = async (email) => {
     };
 };
 
+// Function to check if the passsword is correct
+const isPasswordCorrect = async (userId, password) => {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new Error('User not found');
+    }
+    return await bcrypt.compare(password, user.password);
+};
+
+// Function to update user password
+const updateUserPassword = async (userId, newPassword) => {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await UserModel.update(userId, { password: hashedPassword });
+}
+
 const AuthService = {
     generateToken,
     verifyToken,
@@ -136,6 +151,8 @@ const AuthService = {
     loginUser,
     getUserById,
     getUserByEmail,
+    isPasswordCorrect,
+    updateUserPassword
 };
 
 // Export an object containing the functions

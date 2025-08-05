@@ -1,8 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore.js'
 
-
-
 // Configuración de la URL base de la API
 const API_BASE_URL = (() => {
   // Verificar si estamos en un entorno Vite
@@ -249,6 +247,133 @@ class AuthService {
         success: false,
         error: error.response?.data?.message || 'Error al restablecer contraseña'
       }
+    }
+  }
+
+  /**
+   * Cambia el email del usuario
+   * @param {Object} emailData - Datos para cambiar email
+   * @param {string} emailData.newEmail - Nuevo email
+   * @param {string} emailData.password - Contraseña actual para confirmar
+   * @returns {Promise<Object>} Respuesta del cambio de email
+   */
+  async changeEmail(emailData) {
+    const authStore = useAuthStore()
+    
+    try {
+      const response = await apiClient.put('/user/email', emailData)
+      
+      // Actualizar el usuario en el store con el nuevo email
+      if (response.data.user) {
+        console.log('Usuario actualizado:', response.data.user)
+        authStore.setUser(response.data.user)
+      }
+      return {
+        success: true,
+        data: response.data,
+        message: 'Email actualizado correctamente'
+      }
+    } catch (error) {
+      console.error('Error cambiando email:', error)
+      
+      let errorMessage = 'Error al actualizar el email'
+      let errorField = null
+      
+      if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Datos inválidos'
+        errorField = 'password' // Assuming password is wrong in most 400 cases
+      } else if (error.response?.status === 409) {
+        errorMessage = 'Este email ya está en uso'
+        errorField = 'newEmail'
+      } else {
+        errorMessage = error.response?.data?.message || errorMessage
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+        errorField,
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Cambia la contraseña del usuario
+   * @param {Object} passwordData - Datos para cambiar contraseña
+   * @param {string} passwordData.currentPassword - Contraseña actual
+   * @param {string} passwordData.newPassword - Nueva contraseña
+   * @returns {Promise<Object>} Respuesta del cambio de contraseña
+   */
+  async changePassword(passwordData) {
+    try {
+      const response = await apiClient.put('/user/password', passwordData)
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'Contraseña actualizada correctamente'
+      }
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error)
+      
+      let errorMessage = 'Error al actualizar la contraseña'
+      let errorField = null
+      
+      if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Contraseña actual incorrecta'
+        errorField = 'currentPassword'
+      } else {
+        errorMessage = error.response?.data?.message || errorMessage
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+        errorField,
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Validaciones del lado cliente
+   */
+  
+  /**
+   * Valida formato de email
+   * @param {string} email - Email a validar
+   * @returns {boolean} True si es válido
+   */
+  validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  /**
+   * Valida fortaleza de contraseña
+   * @param {string} password - Contraseña a validar
+   * @returns {Object} Objeto con validación y detalles
+   */
+  validatePassword(password) {
+    const minLength = password.length >= 8
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumbers = /\d/.test(password)
+    
+    const isValid = minLength && hasUpperCase && hasLowerCase && hasNumbers
+    
+    return {
+      isValid,
+      details: {
+        minLength,
+        hasUpperCase,
+        hasLowerCase,
+        hasNumbers
+      },
+      message: isValid 
+        ? 'Contraseña válida' 
+        : 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números'
     }
   }
 }

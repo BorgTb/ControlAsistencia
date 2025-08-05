@@ -2,7 +2,7 @@
   <header class="bg-white shadow">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
-        <div class="flex items-center">
+        <div class="flex items-center cursor-pointer" @click="home">
           <h1 class="text-3xl font-bold text-gray-900">TeleMarcación</h1>
         </div>
         
@@ -175,6 +175,11 @@ const verHistorial = () => {
 
 const abrirAyuda = () => {
   router.push('/ayuda')
+  closeDropdown()
+}
+
+const home = () => {
+  router.push('/dashboard')
   closeDropdown()
 }
 
