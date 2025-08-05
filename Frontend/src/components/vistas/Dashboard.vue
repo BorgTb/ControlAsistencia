@@ -674,13 +674,11 @@ const formatearHora = (hora) => {
 const getTipoLabel = (tipo, marcacion) => {
   if (tipo === 'colacion') {
     // Obtener todas las colaciones ordenadas cronológicamente
+  
     const colacionesOrdenadas = marcacionesHoy.value
       .filter(m => m.tipo === 'colacion')
-      .sort((a, b) => {
-        const fechaHoraA = new Date(`${a.fecha}T${a.hora}`)
-        const fechaHoraB = new Date(`${b.fecha}T${b.hora}`)
-        return fechaHoraA.getTime() - fechaHoraB.getTime()
-      })
+      .sort((a, b) => a.id - b.id)
+    console.log('Colaciones ordenadas por ID:', colacionesOrdenadas)
     
     // Encontrar el índice de esta marcación específica en el array ordenado
     const indice = colacionesOrdenadas.findIndex(c => {
@@ -689,8 +687,6 @@ const getTipoLabel = (tipo, marcacion) => {
              c.hora === marcacion.hora &&
              JSON.stringify(c) === JSON.stringify(marcacion)
     })
-    
-    console.log('Colación encontrada en índice:', indice, 'Total colaciones:', colacionesOrdenadas.length, 'Marcación:', marcacion)
     
     // La lógica correcta: el primer registro es inicio (índice 0), segundo es fin (índice 1), etc.
     return indice % 2 === 0 ? 'Inicio Colación' : 'Fin Colación'
