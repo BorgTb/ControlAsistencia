@@ -19,15 +19,16 @@ const router = createRouter({
             meta: { requiresGuest: true } // Solo para usuarios no autenticados
         },
         {
-            path: '/login',
-            name: 'LoginAlias',
-            redirect: '/'
-        },
-        {
             path: '/dashboard',
             name: 'Dashboard',
             component: () => import('../components/vistas/Dashboard.vue'), // Necesitarás crear este componente
             meta: { requiresAuth: true }
+        },
+        {
+            path: '/configuracion',
+            name: 'ConfigUser',
+            component: () => import('../components/vistas/ConfigUser.vue'),
+            meta: { requiresAuth: true }    
         },
         // Agregar más rutas según necesites
         {
