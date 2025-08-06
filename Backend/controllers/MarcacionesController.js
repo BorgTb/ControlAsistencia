@@ -176,7 +176,9 @@ const registrarTerminoColacion = async (req, res) => {
 const obtenerMarcacionesPorUsuario = async (req, res) => {
     try {
         const usuario_id = req.user?.id;
-        const { fecha } = req.query; // Obtener fecha de query params (opcional)
+        const fechaActual = new Date();
+        const fecha = req.query.fecha || fechaActual.toISOString().split('T')[0];
+        console.log('Fecha consultada:', fecha);
 
         if (!usuario_id) {
             return res.status(400).json({

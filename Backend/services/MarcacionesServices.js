@@ -47,46 +47,32 @@ class MarcacionesService {
     async obtenerMarcacionesPorUsuario(usuario_id, fecha = null) {
         try {
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fecha);
-            
+            console.log('Marcaciones obtenidas:', marcaciones);
+
             // Si no hay marcaciones, devolver estructura vacía
             if (!marcaciones || marcaciones.length === 0) {
-                const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
                 return {
                     success: true,
-                    fecha: fechaConsulta,
+                    fecha: fecha || new Date().toISOString().split('T')[0],
                     marcaciones: []
                 };
             }
-            
-            // Agrupar marcaciones por fecha
-            const marcacionesAgrupadas = marcaciones.reduce((acc, marcacion) => {
-                const fechaMarcacion = marcacion.fecha;
-                if (!acc[fechaMarcacion]) {
-                    acc[fechaMarcacion] = [];
-                }
-                acc[fechaMarcacion].push(marcacion);
-                return acc;
-            }, {});
-            
-            // Si se especificó una fecha, devolver solo esa fecha
+
+            // Si se especificó una fecha, devolver las marcaciones directamente
             if (fecha) {
                 return {
                     success: true,
                     fecha: fecha,
-                    marcaciones: marcacionesAgrupadas[fecha] || []
+                    marcaciones: marcaciones
                 };
             }
-            
-            // Si no se especificó fecha, devolver la fecha más reciente
-            const fechas = Object.keys(marcacionesAgrupadas).sort().reverse();
-            const fechaMasReciente = fechas[0];
-            
+
+            // Si no se especificó fecha, devolver todas las marcaciones agrupadas por fecha
             return {
                 success: true,
-                fecha: fechaMasReciente,
-                marcaciones: marcacionesAgrupadas[fechaMasReciente]
+                marcaciones
             };
-            
+
         } catch (error) {
             console.error('Error al obtener marcaciones:', error);
             return {

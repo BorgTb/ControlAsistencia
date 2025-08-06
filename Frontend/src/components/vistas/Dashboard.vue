@@ -678,7 +678,6 @@ const getTipoLabel = (tipo, marcacion) => {
     const colacionesOrdenadas = marcacionesHoy.value
       .filter(m => m.tipo === 'colacion')
       .sort((a, b) => a.id - b.id)
-    console.log('Colaciones ordenadas por ID:', colacionesOrdenadas)
     
     // Encontrar el índice de esta marcación específica en el array ordenado
     const indice = colacionesOrdenadas.findIndex(c => {

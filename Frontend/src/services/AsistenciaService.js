@@ -402,7 +402,7 @@ class AsistenciaService {
     try {
       // El servidor determinará la fecha actual basada en su timezone
       const response = await apiClient.get('/marcaciones/hoy')
-      
+      console.log('Respuesta de obtenerMarcacionesHoy:', response.data)
       return {
         success: true,
         data: response.data.marcaciones || [],
