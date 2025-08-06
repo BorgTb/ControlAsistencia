@@ -1,23 +1,64 @@
-import {createRouter, createWebHistory} from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../store/authStore.js'
 
-
+// Configuración del base URL
+const getBaseUrl = () => {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env.BASE_URL
+  }
+  return '/'
+}
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: createWebHistory(getBaseUrl()),
     routes: [
         {
             path: '/',
             name: 'Login',
-            component: () => import('../components/vistas/Login.vue')
+            component: () => import('../components/vistas/Login.vue'),
+            meta: { requiresGuest: true } // Solo para usuarios no autenticados
         },
+        {
+            path: '/dashboard',
+            name: 'Dashboard',
+            component: () => import('../components/vistas/Dashboard.vue'),
+            meta: { requiresAuth: true }
+        },
+        // Agregar más rutas según necesites
+        {
+            path: '/:pathMatch(.*)*',
+            name: 'NotFound',
+            redirect: '/'
+        }
     ],
     scrollBehavior(to, from, savedPosition) {
         if (savedPosition) {
-            return savedPosition;
+            return savedPosition
         } else {
-            return { top: 0 };
+            return { top: 0 }
         }
     }
-});
+})
 
-export default router;
+// Guard de navegación global
+router.beforeEach((to, from, next) => {
+    const authStore = useAuthStore()
+    
+    // Verificar si la ruta requiere autenticación
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+        // Redirigir al login si no está autenticado
+        next({ name: 'Login' })
+        return
+    }
+    
+    // Verificar si la ruta es solo para invitados (usuarios no autenticados)
+    if (to.meta.requiresGuest && authStore.isAuthenticated) {
+        // Redirigir al dashboard si ya está autenticado
+        next({ name: 'Dashboard' })
+        return
+    }
+    
+    next()
+})
+
+export default router
