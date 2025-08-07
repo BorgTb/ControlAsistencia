@@ -36,6 +36,43 @@ const router = createRouter({
             component: () => import('../components/vistas/Administrador.vue'),
             meta: { requiresAuth: false }
         },
+        // Rutas del Administrador
+        {
+            path: '/admin/dashboard',
+            name: 'AdminDashboard',
+            component: () => import('../components/vistas/Administrador.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
+        {
+            path: '/admin/trabajadores',
+            name: 'AdminTrabajadores',
+            component: () => import('../components/vistas/admin/GestionTrabajadores.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
+        {
+            path: '/admin/turnos',
+            name: 'AdminTurnos',
+            component: () => import('../components/vistas/admin/ControlTurnos.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
+        {
+            path: '/admin/marcaciones',
+            name: 'AdminMarcaciones',
+            component: () => import('../components/vistas/admin/GestionMarcaciones.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
+        {
+            path: '/admin/reportes',
+            name: 'AdminReportes',
+            component: () => import('../components/vistas/admin/Reportes.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
+        {
+            path: '/admin/configuracion',
+            name: 'AdminConfiguracion',
+            component: () => import('../components/vistas/admin/Configuracion.vue'),
+            meta: { requiresAuth: false, requiresAdmin: false }
+        },
         // Agregar más rutas según necesites
         {
             path: '/:pathMatch(.*)*',
