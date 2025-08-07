@@ -54,3 +54,47 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+
+
+
+
+class AdminServices{
+  static async crearTrabajador(trabajadorData) {
+    try {
+      const response = await apiClient.post('/admin/trabajador', trabajadorData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async obtenerTrabajadores() {
+    try {
+      const response = await apiClient.get('/trabajadores')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async actualizarTrabajador(trabajadorId, trabajadorData) {
+    try {
+      const response = await apiClient.put(`/trabajadores/${trabajadorId}`, trabajadorData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async eliminarTrabajador(trabajadorId) {
+    try {
+      const response = await apiClient.delete(`/trabajadores/${trabajadorId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}
+
+export default AdminServices

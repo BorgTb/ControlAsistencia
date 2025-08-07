@@ -76,7 +76,6 @@
                     v-model="trabajador.rut"
                     type="text"
                     required
-                    @input="formatRut"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Ej: 12.345.678-9"
                   />
@@ -179,6 +178,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
+import AdminServices from '../../services/AdminServices.js'
 
 // Props
 const props = defineProps({
@@ -256,23 +256,7 @@ const resetForm = () => {
   errorGeneral.value = ''
 }
 
-const formatRut = (event) => {
-  let value = event.target.value.replace(/[^0-9kK]/g, '')
-  
-  if (value.length > 1) {
-    value = value.slice(0, -1) + '-' + value.slice(-1)
-  }
-  
-  if (value.length > 3) {
-    value = value.slice(0, -6) + '.' + value.slice(-6)
-  }
-  
-  if (value.length > 7) {
-    value = value.slice(0, -10) + '.' + value.slice(-10)
-  }
-  
-  trabajador.rut = value.toUpperCase()
-}
+
 
 const validateForm = () => {
   let isValid = true
@@ -307,9 +291,6 @@ const validateForm = () => {
   if (!trabajador.rut.trim()) {
     errors.rut = 'El RUT es requerido'
     isValid = false
-  } else if (!/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/.test(trabajador.rut)) {
-    errors.rut = 'Formato de RUT inválido'
-    isValid = false
   }
   
   if (!trabajador.rol) {
@@ -334,10 +315,17 @@ const submitForm = async () => {
     
     // Simular éxito (puedes cambiar esto por una llamada real al servidor)
     console.log('Datos del usuario a enviar:', trabajador)
-    
-    emit('success', { ...trabajador })
-    closeModal()
-    
+    const response = await AdminServices.crearTrabajador(trabajador)
+
+    console.log('Usuario registrado exitosamente:', response)
+
+    if (response.success) {
+      emit('success', { ...trabajador })
+      closeModal()
+    } else {
+      errorGeneral.value = response.message || 'Error al registrar el usuario. Por favor, intente nuevamente.'
+    }
+
   } catch (error) {
     console.error('Error registrando usuario:', error)
     errorGeneral.value = 'Error al registrar el usuario. Por favor, intente nuevamente.'

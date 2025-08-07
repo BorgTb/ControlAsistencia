@@ -35,7 +35,7 @@ const verifyToken = (token) => {
 };
 
 // Function to register a user (hash password)
-const registerUser = async (email, password, nombre, rol = 'user', rut, estado = 1) => {
+const registerUser = async (email, password, nombre, rol = 'trabajador', rut, estado = 1) => {
     // Check if user already exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
