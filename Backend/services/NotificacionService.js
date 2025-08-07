@@ -48,6 +48,31 @@ class NotificacionService {
             };
         }
     }
+
+    async enviarCodigoTemporal(email, codigo) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+            // Enviar código temporal
+            const estado = await MailService.enviarNotificacionCodigoAcceso(email, codigo);
+            return estado;
+        } catch (error) {
+            console.error('Error al enviar código temporal:', error);
+            return {
+                success: false,
+                message: 'Error al enviar código temporal',
+                error: error.message
+            };
+        }
+    }
+
 }
 
 export default new NotificacionService();

@@ -144,6 +144,29 @@ const updateUserPassword = async (userId, newPassword) => {
     await UserModel.update(userId, { password: hashedPassword });
 }
 
+// Function to generate a random access code
+const generateAccessCode = (length = 6) => {
+    const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+};
+
+// Function to generate temporary access code for user
+const generateTemporaryCode = async (email) => {
+    // Generate new code
+    const code = generateAccessCode();
+    const expirationTime = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 5 días en milisegundos
+
+    return {
+        code: code,
+        email: email,
+        expiresAt: expirationTime,
+    };
+};
+
 const AuthService = {
     generateToken,
     verifyToken,
@@ -152,7 +175,9 @@ const AuthService = {
     getUserById,
     getUserByEmail,
     isPasswordCorrect,
-    updateUserPassword
+    updateUserPassword,
+    generateAccessCode,
+    generateTemporaryCode,
 };
 
 // Export an object containing the functions

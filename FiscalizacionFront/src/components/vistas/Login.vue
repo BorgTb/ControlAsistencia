@@ -161,40 +161,21 @@ const handleSubmit = async () => {
 
   try {
     if (!codigoEnviado.value) {
-      // Solicitar código temporal - por ahora simulado
-      await new Promise(resolve => setTimeout(resolve, 1500)) // Simular delay
-      console.log('Solicitud de código temporal para:', form.email)
-      
-      // Simular respuesta exitosa
-      codigoEnviado.value = true
-      
       // En el futuro, usar el servicio real:
-      // const response = await AuthService.solicitarAcceso(form.email)
-      // if (response.success) {
-      //   codigoEnviado.value = true
-      // } else {
-      //   error.value = response.error || 'Error al solicitar el código'
-      // }
+      const response = await AuthService.solicitarAcceso(form.email)
+      if (response.success) {
+        codigoEnviado.value = true
+      } else {
+        error.value = response.error || 'Error al solicitar el código'
+      }
     } else {
-      // Validar código temporal - por ahora simulado
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simular delay
-      console.log('Validando código:', { email: form.email, codigo: form.codigo })
-      
-      // Simular validación (cualquier código de 6 dígitos es válido)
-      if (form.codigo.length === 6 && /^\d+$/.test(form.codigo)) {
-        // Redireccionar al dashboard
+      // En el futuro, usar el servicio real:
+      const response = await AuthService.validarCodigo(form.email, form.codigo)
+      if (response.success) {
         router.push('/dashboard')
       } else {
-        error.value = 'Código inválido. Debe ser un código de 6 dígitos.'
+        error.value = response.error || 'Código inválido'
       }
-      
-      // En el futuro, usar el servicio real:
-      // const response = await AuthService.validarCodigo(form.email, form.codigo)
-      // if (response.success) {
-      //   router.push('/dashboard')
-      // } else {
-      //   error.value = response.error || 'Código inválido'
-      // }
     }
   } catch (e) {
     error.value = 'Error de conexión. Por favor, intenta de nuevo.'

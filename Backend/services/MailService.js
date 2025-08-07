@@ -199,6 +199,45 @@ class MailService {
         return await this.enviarCorreo(email, asunto, contenidoHTML);
     }
 
+    async enviarNotificacionCodigoAcceso(email, codigo) {
+        const asunto = 'Código de Acceso Temporal - Control de Asistencia';
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Código de Acceso Temporal</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #673AB7; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 20px; background-color: #f9f9f9; }
+                    .code { background-color: #e1bee7; padding: 15px; border-radius: 4px; margin: 20px 0; font-size: 24px; text-align: center; letter-spacing: 4px; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Código de Acceso Temporal</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Hola,</h2>
+                        <p>Has solicitado un código de acceso temporal para ingresar al Sistema de Control de Asistencia.</p>
+                        <p>Tu código de acceso es:</p>
+                        <div class="code">${codigo}</div>
+                        <p>Este código es válido por 5 días. Si no solicitaste este código, por favor ignora este correo.</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        return await this.enviarCorreo(email, asunto, contenidoHTML);
+    }
+
     // Método auxiliar para convertir HTML a texto plano
     htmlToText(html) {
         return html
