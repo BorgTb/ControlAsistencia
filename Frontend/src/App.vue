@@ -9,6 +9,6 @@ import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const route = useRoute()
-const hiddenRoutes = ['/']
+const hiddenRoutes = ['/','/administracion']
 const showHeader = computed(() => !hiddenRoutes.includes(route.path))
 </script>

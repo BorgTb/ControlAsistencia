@@ -30,6 +30,12 @@ const router = createRouter({
             component: () => import('../components/vistas/ConfigUser.vue'),
             meta: { requiresAuth: true }    
         },
+        {
+            path: '/administracion',
+            name: 'Admin',
+            component: () => import('../components/vistas/Administrador.vue'),
+            meta: { requiresAuth: false }
+        },
         // Agregar más rutas según necesites
         {
             path: '/:pathMatch(.*)*',
