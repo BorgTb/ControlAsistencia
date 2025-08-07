@@ -164,16 +164,24 @@ const handleSubmit = async () => {
     
     // Realizar login
     const result = await AuthService.login(credentials)
-    
+    console.log('Resultado del login:', result)
     if (result.success) {
       successMessage.value = result.message
-      
-      // Opcional: mostrar mensaje por un momento antes de redirigir
+      // Verificar el rol y redirigir según corresponda
       setTimeout(() => {
-        // Redirigir al dashboard o página principal
-        router.push('/dashboard') // Ajusta la ruta según tu aplicación
+        if (result.data.user && result.data.user.rol) {
+          if (result.data.user.rol === 'trabajador') {
+            router.push('/dashboard')
+          } else if (result.data.user.rol === 'empleador') {
+            router.push('/administracion')
+          } else {
+        // Rol desconocido, redirigir a una página por defecto o mostrar error
+        errorMessage.value = 'Rol de usuario no reconocido'
+          }
+        } else {
+          errorMessage.value = 'No se pudo determinar el rol del usuario'
+        }
       }, 1000)
-      
     } else {
       errorMessage.value = result.error
     }
