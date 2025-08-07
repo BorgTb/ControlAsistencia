@@ -22,63 +22,63 @@ const router = createRouter({
             path: '/dashboard',
             name: 'Dashboard',
             component: () => import('../components/vistas/Dashboard.vue'),
-            meta: { requiresAuth: false } // Sin protección para desarrollo
+            meta: { requiresAuth: true } // Sin protección para desarrollo
         },
         // Rutas de reportes
         {
             path: '/reportes/asistencia',
             name: 'ReporteAsistencia',
             component: () => import('../components/vistas/reportes/ReporteAsistencia.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/reportes/jornada-diaria',
             name: 'ReporteJornadaDiaria',
             component: () => import('../components/vistas/reportes/ReporteJornadaDiaria.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/reportes/domingos-festivos',
             name: 'ReporteDomingosFestivos',
             component: () => import('../components/vistas/reportes/ReporteDomingosFestivos.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/reportes/modificaciones-turnos',
             name: 'ReporteModificacionesTurnos',
             component: () => import('../components/vistas/reportes/ReporteModificacionesTurnos.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/reportes/marcaciones-diarias',
             name: 'ReporteMarcacionesDiarias',
             component: () => import('../components/vistas/reportes/ReporteMarcacionesDiarias.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/reportes/incidentes-tecnicos',
             name: 'ReporteIncidentesTecnicos',
             component: () => import('../components/vistas/reportes/ReporteIncidentesTecnicos.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         // Rutas de configuración y utilidades
         {
             path: '/configuracion',
             name: 'Configuracion',
             component: () => import('../components/vistas/Configuracion.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/ayuda',
             name: 'Ayuda',
             component: () => import('../components/vistas/Ayuda.vue'),
-            meta: { requiresAuth: false }
+            meta: { requiresAuth: true }
         },
         {
             path: '/seleccionar-empresa',
             name: 'SeleccionarEmpresa',
             component: () => import('../components/vistas/SeleccionEmpresa.vue'),
-            meta: { requiresAuth: false }   
+            meta: { requiresAuth: true }   
         },
         // Ruta para página no encontrada
         {
@@ -98,11 +98,7 @@ const router = createRouter({
 
 // Guard de navegación global (deshabilitado para desarrollo)
 router.beforeEach((to, from, next) => {
-    // Modo desarrollo - sin protección de rutas
-    console.log('Navegando a:', to.name, '| Desde:', from.name)
-    next()
-    
-    /* Para producción, descomenta este código:
+
     const authStore = useAuthStore()
     
     // Verificar si la ruta requiere autenticación
@@ -120,7 +116,7 @@ router.beforeEach((to, from, next) => {
     }
     
     next()
-    */
+    
 })
 
 export default router

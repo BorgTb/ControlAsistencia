@@ -1,5 +1,11 @@
 import axios from 'axios'
 import { useDataStore } from '../store/dataStorage.js'
+import { useAuthStore } from '../store/authStore.js'
+import { useRouter } from 'vue-router'
+
+
+const router = useRouter()
+
 
 const API_BASE_URL = (() => {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
@@ -41,6 +47,28 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+// Interceptor para manejar respuestas y errores
+apiClient.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    const authStore = useAuthStore()
+    const dataStore = useDataStore()
+
+    // Si recibimos un 401, limpiamos la autenticación
+    if (error.response?.status === 401) {
+      authStore.clearAuth()
+      dataStore.clearData()
+      router.push('login')
+    }       
+
+    return Promise.reject(error)
+  }
+)
+
+
+
 class ReporteService {
   /**
    * Obtiene la lista de empresas disponibles
@@ -49,9 +77,10 @@ class ReporteService {
   async obtenerEmpresas() {
     try {
       const response = await apiClient.get('/empresas')
+      console.log("Empresas obtenidas:", response)
       return {
         success: true,
-        data: response.data,
+        data: response.data.data,
         message: 'Empresas obtenidas correctamente'
       }
     } catch (error) {

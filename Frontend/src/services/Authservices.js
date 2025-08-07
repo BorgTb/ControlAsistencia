@@ -1,5 +1,9 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore.js'
+import { useRouter } from 'vue-router'
+
+
+const router = useRouter()
 
 // Configuración de la URL base de la API
 const API_BASE_URL = (() => {
@@ -48,7 +52,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       authStore.clearAuth()
       // Opcional: redirigir al login
-      // router.push('/login')
+      router.push('/')
     }
     
     return Promise.reject(error)

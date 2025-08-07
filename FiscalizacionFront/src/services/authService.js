@@ -1,5 +1,8 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore.js'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const API_BASE_URL = (() => {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
@@ -15,6 +18,43 @@ const apiClient = axios.create({
   },
   timeout: 10000
 })
+
+// Interceptor para agregar el token a las peticiones
+apiClient.interceptors.request.use(
+  (config) => {
+    const authStore = useAuthStore()
+    const token = authStore.getToken
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Interceptor para manejar respuestas y errores
+apiClient.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    const authStore = useAuthStore()
+    
+    // Si recibimos un 401, limpiamos la autenticación
+    if (error.response?.status === 401) {
+      authStore.clearAuth()
+      
+      // Redirigir al login si estamos en el navegador
+      router.push('/')
+    }
+    
+    return Promise.reject(error)
+  }
+)
 
 class AuthService {
   /**

@@ -230,13 +230,14 @@ const empresaSeleccionada = computed(() => dataStore.getEmpresaSeleccionada)
 
 // Methods
 const cambiarEmpresa = () => {
-  router.push('/seleccion-empresa')
+  dataStore.clearEmpresaSeleccionada()
+  router.push('/seleccionar-empresa')
 }
 
 onMounted(() => {
   // Verificar si hay empresa seleccionada
   if (!empresaSeleccionada.value) {
-    router.push('/seleccion-empresa')
+    router.push('/seleccionar-empresa')
   } else {
     console.log('Dashboard de Fiscalizador cargado - Empresa:', empresaSeleccionada.value.nombre)
   }

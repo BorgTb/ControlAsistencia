@@ -24,6 +24,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', router.login);
 app.use('/api/marcaciones', router.marcaciones);
 app.use('/api/user', router.users);
+app.use('/api/empresas', router.empresas);
 
 
 // START SERVER
