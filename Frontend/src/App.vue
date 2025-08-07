@@ -14,3 +14,5 @@ const route = useRoute()
 const hiddenRoutes = ['/','/administracion','/admin/turnos','/admin/dashboard','/admin/trabajadores','/admin/turnos','/admin/marcaciones','/admin/reportes','/admin/configuracion']
 const showHeader = computed(() => !hiddenRoutes.includes(route.path))
 </script>
+
+

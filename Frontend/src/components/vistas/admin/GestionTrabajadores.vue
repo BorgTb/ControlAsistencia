@@ -10,7 +10,10 @@
             <h1 class="text-3xl font-bold text-gray-900">Gestión de Trabajadores</h1>
             <p class="text-gray-600 mt-2">Enrolamiento, registro y administración de trabajadores</p>
           </div>
-          <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
+          <button 
+            @click="abrirModalNuevo"
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
@@ -227,20 +230,48 @@
         </div>
       </div>
     </main>
+
+    <!-- Modal Nuevo Trabajador -->
+    <ModalNuevoTrabajador 
+      :is-open="modalNuevoAbierto"
+      @close="cerrarModalNuevo"
+      @success="onTrabajadorCreado"
+    />
   </div>
 </template>
 
 <script setup>
 import HeaderAdmin from '../../components/headerAdmin.vue';
+import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
 import { ref, onMounted } from 'vue';
 
 // Estados reactivos
 const trabajadores = ref([]);
+const modalNuevoAbierto = ref(false);
 const filtros = ref({
   busqueda: '',
   estado: '',
   departamento: ''
 });
+
+// Métodos para el modal
+const abrirModalNuevo = () => {
+  modalNuevoAbierto.value = true;
+};
+
+const cerrarModalNuevo = () => {
+  modalNuevoAbierto.value = false;
+};
+
+const onTrabajadorCreado = (nuevoTrabajador) => {
+  console.log('Nuevo trabajador creado:', nuevoTrabajador);
+  // Aquí puedes agregar la lógica para actualizar la lista de trabajadores
+  // Por ejemplo, agregar a la lista o recargar desde el servidor
+  trabajadores.value.push(nuevoTrabajador);
+  
+  // Mostrar mensaje de éxito (opcional)
+  // showSuccessMessage('Trabajador registrado exitosamente');
+};
 
 onMounted(() => {
   console.log('Vista Gestión de Trabajadores cargada');
