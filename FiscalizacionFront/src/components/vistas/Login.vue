@@ -123,8 +123,7 @@
         <div class="mt-4 p-4 bg-gray-50 rounded-md">
           <h4 class="text-sm font-medium text-gray-800 mb-2">Información para Fiscalizadores:</h4>
           <ul class="text-xs text-gray-600 space-y-1">
-            <li>• El código temporal será válido por 24 horas</li>
-            <li>• Solo puedes solicitar un nuevo código cada 15 minutos</li>
+            <li>• El código temporal será válido por 5 horas</li>
             <li>• Revisa tu bandeja de entrada y carpeta de spam</li>
           </ul>
         </div>
