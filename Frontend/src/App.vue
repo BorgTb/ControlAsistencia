@@ -1,6 +1,6 @@
 <template>
   <Header v-if="showHeader" />
-  <HeaderAdmin v-else-if="showHeader && route.path === '/'" />
+  <HeaderAdmin v-else v-if="route.path !== '/'"/>
   <RouterView />
 </template>
 
