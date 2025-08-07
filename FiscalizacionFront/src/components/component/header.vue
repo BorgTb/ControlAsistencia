@@ -109,8 +109,8 @@
 
     <!-- Navbar de navegación -->
     <nav class="bg-gray-50 border-t border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex space-x-8 overflow-x-auto">
+      <div class="mx-auto px-4 sm:px-6 lg:px-25">
+        <div class="flex space-x-50 overflow-x-auto">
           <!-- Reporte de asistencia -->
           <router-link
             to="/reportes/asistencia"
