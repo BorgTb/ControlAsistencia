@@ -74,6 +74,12 @@ const router = createRouter({
             component: () => import('../components/vistas/Ayuda.vue'),
             meta: { requiresAuth: false }
         },
+        {
+            path: '/seleccionar-empresa',
+            name: 'SeleccionarEmpresa',
+            component: () => import('../components/vistas/SeleccionEmpresa.vue'),
+            meta: { requiresAuth: false }   
+        },
         // Ruta para página no encontrada
         {
             path: '/:pathMatch(.*)*',

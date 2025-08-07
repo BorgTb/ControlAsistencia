@@ -54,6 +54,7 @@ class AuthService {
 
       if (response.data.token) {
         const authStore = useAuthStore()
+        authStore.setUser(response.data.user)
         authStore.setToken(response.data.token)
       }
 

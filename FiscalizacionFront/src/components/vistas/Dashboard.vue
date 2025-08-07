@@ -10,6 +10,23 @@
           <h1 class="text-4xl font-bold text-gray-900">Sistema de Fiscalización Laboral</h1>
           <p class="mt-2 text-lg text-gray-600">Acceso permanente e irrestricto según Art. 22.4</p>
           <p class="mt-1 text-sm text-blue-600 font-medium">Perfil: Solo Lectura | Acceso a todos los reportes exigidos</p>
+          
+          <!-- Empresa seleccionada -->
+          <div v-if="empresaSeleccionada" class="mt-4 inline-flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            <div class="text-left">
+              <div class="font-semibold">{{ empresaSeleccionada.nombre }}</div>
+              <div class="text-xs">RUT: {{ empresaSeleccionada.rut }}</div>
+            </div>
+            <button 
+              @click="cambiarEmpresa"
+              class="ml-3 text-blue-600 hover:text-blue-800 text-sm underline"
+            >
+              Cambiar
+            </button>
+          </div>
         </div>
 
         <!-- Legal Notice -->
@@ -201,14 +218,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import Header from '../component/header.vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useDataStore } from '../../store/dataStorage.js'
 
-// No necesitamos stats para el dashboard del fiscalizador
-// Solo mostramos los reportes exigidos por ley
+const router = useRouter()
+const dataStore = useDataStore()
+
+// Computed
+const empresaSeleccionada = computed(() => dataStore.getEmpresaSeleccionada)
+
+// Methods
+const cambiarEmpresa = () => {
+  router.push('/seleccion-empresa')
+}
 
 onMounted(() => {
-  // Solo verificamos acceso del fiscalizador
-  console.log('Dashboard de Fiscalizador cargado - Acceso Art. 22.4')
+  // Verificar si hay empresa seleccionada
+  if (!empresaSeleccionada.value) {
+    router.push('/seleccion-empresa')
+  } else {
+    console.log('Dashboard de Fiscalizador cargado - Empresa:', empresaSeleccionada.value.nombre)
+  }
 })
 </script>

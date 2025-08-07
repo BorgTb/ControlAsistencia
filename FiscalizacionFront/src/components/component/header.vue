@@ -51,9 +51,9 @@
               >
                 <!-- Información del usuario -->
                 <div class="px-4 py-3 border-b border-gray-200">
-                  <p class="text-sm font-medium text-gray-900">Fiscalizador</p>
-                  <p class="text-sm text-gray-500">fiscalizador@empresa.com</p>
-                  <p class="text-xs text-gray-400 mt-1">Control y Supervisión</p>
+                  <p class="text-sm font-medium text-gray-900">{{ user?.name || 'Fiscalizador' }}</p>
+                  <p class="text-sm text-gray-500">{{ user?.email || 'fiscalizador@empresa.com' }}</p>
+                  <p class="text-xs text-gray-400 mt-1">{{ user?.role || 'Control y Supervisión' }}</p>
                 </div>
 
                 <!-- Opciones del menú -->
@@ -87,17 +87,17 @@
                   <!-- Cerrar Sesión -->
                   <button
                     @click="handleDropdownLogout"
-                    :disabled="isLoading"
+                    :disabled="authLoading"
                     class="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg v-if="isLoading" class="animate-spin w-4 h-4 mr-3 text-red-500" fill="none" viewBox="0 0 24 24">
+                    <svg v-if="authLoading" class="animate-spin w-4 h-4 mr-3 text-red-500" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <svg v-else class="w-4 h-4 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
                     </svg>
-                    {{ isLoading ? 'Saliendo...' : 'Cerrar Sesión' }}
+                    {{ authLoading ? 'Saliendo...' : 'Cerrar Sesión' }}
                   </button>
                 </div>
               </div>
@@ -198,12 +198,12 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import AuthService from '../../services/authService.js';
+import { useAuth } from '../composables/useAuth.js';
 
 const router = useRouter();
+const { user, logout, isLoading: authLoading } = useAuth();
 
 const isUserDropdownOpen = ref(false);
-const isLoading = ref(false);
 
 const toggleUserDropdown = () => {
   isUserDropdownOpen.value = !isUserDropdownOpen.value;
@@ -230,10 +230,9 @@ const abrirAyuda = () => {
 
 const handleDropdownLogout = async () => {
   closeDropdowns();
-  isLoading.value = true;
   
   try {
-    const response = await AuthService.cerrarSesion();
+    const response = await logout();
     if (response.success) {
       router.push('/');
     } else {
@@ -243,22 +242,6 @@ const handleDropdownLogout = async () => {
   } catch (error) {
     console.error('Error during logout:', error);
     router.push('/'); // Redirigir de todas formas
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-// Función de logout existente (mantenida por compatibilidad)
-const logout = async () => {
-  try {
-    const response = await AuthService.cerrarSesion();
-    if (response.success) {
-      router.push('/');
-    } else {
-      console.error('Logout failed:', response.message);
-    }
-  } catch (error) {
-    console.error('Error during logout:', error);
   }
 };
 </script>

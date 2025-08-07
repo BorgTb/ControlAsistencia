@@ -29,7 +29,7 @@
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="Ingresa tu correo electrónico"
-                  :disabled="loading"
+                  :disabled="isLoading"
                 />
                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +65,7 @@
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="Ingresa el código recibido"
-                  :disabled="loading"
+                  :disabled="isLoading"
                   autocomplete="off"
                 />
                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -87,13 +87,13 @@
             <button
               type="submit"
               class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              :disabled="loading"
+              :disabled="isLoading"
             >
-              <svg v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {{ loading ? (codigoEnviado ? 'Verificando...' : 'Enviando...') : (codigoEnviado ? 'Verificar código' : 'Enviar código') }}
+              {{ isLoading ? (codigoEnviado ? 'Verificando...' : 'Enviando...') : (codigoEnviado ? 'Verificar código' : 'Enviar código') }}
             </button>
           </div>
 
@@ -136,10 +136,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import AuthService from '../../services/authService.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const router = useRouter()
-const loading = ref(false)
+const { solicitarAcceso, validarCodigo, isLoading } = useAuth()
+
 const error = ref('')
 const codigoEnviado = ref(false)
 
@@ -157,30 +158,25 @@ const resetForm = () => {
 
 const handleSubmit = async () => {
   error.value = ''
-  loading.value = true
 
   try {
     if (!codigoEnviado.value) {
-      // En el futuro, usar el servicio real:
-      const response = await AuthService.solicitarAcceso(form.email)
+      const response = await solicitarAcceso(form.email)
       if (response.success) {
         codigoEnviado.value = true
       } else {
         error.value = response.error || 'Error al solicitar el código'
       }
     } else {
-      // En el futuro, usar el servicio real:
-      const response = await AuthService.validarCodigo(form.email, form.codigo)
+      const response = await validarCodigo(form.email, form.codigo)
       if (response.success) {
-        router.push('/dashboard')
+        router.push('/seleccionar-empresa')
       } else {
         error.value = response.error || 'Código inválido'
       }
     }
   } catch (e) {
     error.value = 'Error de conexión. Por favor, intenta de nuevo.'
-  } finally {
-    loading.value = false
   }
 }
 </script>
