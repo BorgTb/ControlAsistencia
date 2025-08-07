@@ -27,6 +27,11 @@ class Usuario {
         return rows.map(row => new Usuario(...Object.values(row)));
     }
 
+    static async findAllWorkers() {
+        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rol = "trabajador"');
+        return rows.map(row => new Usuario(...Object.values(row)));
+    }
+
     static async create(data) {
         const { nombre, email, password, rol, rut, estado } = data;
         const [result] = await pool.query(

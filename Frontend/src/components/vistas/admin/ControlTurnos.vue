@@ -96,7 +96,7 @@
           <!-- Formulario de Turno -->
           <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">{{ editandoTurno ? 'Editar Turno' : 'Crear Nuevo Turno' }}</h3>
+              <h3 class="text-lg font-medium text-gray-900">Crear Nuevo Turno</h3>
             </div>
             <div class="p-6">
               <form @submit.prevent="guardarTurno" class="space-y-4">
@@ -105,11 +105,9 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">Trabajador</label>
                   <select v-model="formTurno.usuario_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Seleccionar trabajador</option>
-                    <option value="1">Juan Pérez</option>
-                    <option value="2">María González</option>
-                    <option value="3">Carlos Rodríguez</option>
-                    <option value="4">Luis Martínez</option>
-                    <option value="5">Ana Fernández</option>
+                    <option v-for="trabajador in trabajadores" :key="trabajador.id" :value="trabajador.id">
+                      {{ trabajador.nombre }}
+                    </option>
                   </select>
                 </div>
 
@@ -165,31 +163,20 @@
                   </div>
                 </div>
 
-                <!-- Motivo de Modificación (solo si está editando) -->
-                <div v-if="editandoTurno">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de Modificación</label>
-                  <textarea 
-                    v-model="formTurno.motivo_modificacion" 
-                    rows="3" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Explique el motivo del cambio..."
-                  ></textarea>
-                </div>
-
                 <!-- Botones -->
                 <div class="flex space-x-3">
                   <button 
                     type="submit" 
                     class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200"
                   >
-                    {{ editandoTurno ? 'Actualizar' : 'Crear' }}
+                    Crear Turno
                   </button>
                   <button 
                     type="button" 
-                    @click="cancelarEdicion"
+                    @click="limpiarFormulario"
                     class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors duration-200"
                   >
-                    Cancelar
+                    Limpiar
                   </button>
                 </div>
               </form>
@@ -393,60 +380,20 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
-                      <button @click="editarTurno(turno)" class="text-indigo-600 hover:text-indigo-900">Editar</button>
                       <button @click="eliminarTurno(turno.id)" class="text-red-600 hover:text-red-900">Eliminar</button>
                     </div>
                   </td>
                 </tr>
 
-                <!-- Datos de ejemplo si no hay turnosAsignados -->
-                <tr v-for="n in (turnosAsignados.length > 0 ? 0 : 5)" :key="'ejemplo-' + n" class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ n }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-10 w-10 flex-shrink-0">
-                        <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                          <span class="text-white font-medium">{{ ['JP', 'MG', 'CR', 'LM', 'AF'][n-1] }}</span>
-                        </div>
-                      </div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">
-                          {{ ['Juan Pérez', 'María González', 'Carlos Rodríguez', 'Luis Martínez', 'Ana Fernández'][n-1] }}
-                        </div>
-                        <div class="text-sm text-gray-500">ID: {{ n }}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span :class="{
-                      'bg-blue-100 text-blue-800': n <= 2,
-                      'bg-orange-100 text-orange-800': n === 3,
-                      'bg-purple-100 text-purple-800': n >= 4
-                    }" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                      {{ n <= 2 ? 'mañana' : n === 3 ? 'tarde' : 'noche' }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ n <= 2 ? '2024-12-15 08:00' : n === 3 ? '2024-12-15 14:00' : '2024-12-15 22:00' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ n <= 2 ? '2024-12-15 16:00' : n === 3 ? '2024-12-15 22:00' : '2024-12-16 06:00' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ n <= 2 ? '12:00 - 13:00' : n === 3 ? '18:00 - 18:45' : '02:00 - 02:30' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div v-if="n === 2" class="text-gray-400">
-                      <div class="text-xs">2024-12-14</div>
-                      <div class="text-xs text-gray-400">por Admin</div>
-                      <div class="text-xs text-blue-600 cursor-pointer">Ver motivo</div>
-                    </div>
-                    <div v-else class="text-gray-400">Original</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div class="flex justify-end space-x-2">
-                      <button class="text-indigo-600 hover:text-indigo-900">Editar</button>
-                      <button class="text-red-600 hover:text-red-900">Eliminar</button>
+                <!-- Mensaje cuando no hay turnos -->
+                <tr v-if="turnosAsignados.length === 0">
+                  <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                      <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <h3 class="text-lg font-medium text-gray-900 mb-2">No hay turnos asignados</h3>
+                      <p class="text-gray-500">Comience creando un nuevo turno usando el formulario de la izquierda.</p>
                     </div>
                   </td>
                 </tr>
@@ -458,13 +405,14 @@
           <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
             <div class="flex items-center justify-between">
               <div class="text-sm text-gray-700">
-                Mostrando <span class="font-medium">1</span> a <span class="font-medium">5</span> de <span class="font-medium">23</span> turnos
+                <span v-if="turnosAsignados.length > 0">
+                  Mostrando <span class="font-medium">1</span> a <span class="font-medium">{{ turnosAsignados.length }}</span> de <span class="font-medium">{{ turnosAsignados.length }}</span> turnos
+                </span>
+                <span v-else class="text-gray-500">No hay turnos para mostrar</span>
               </div>
-              <div class="flex space-x-2">
+              <div v-if="turnosAsignados.length > 0" class="flex space-x-2">
                 <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Anterior</button>
                 <button class="px-3 py-1 text-sm bg-purple-600 text-white rounded">1</button>
-                <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">2</button>
-                <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">3</button>
                 <button class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Siguiente</button>
               </div>
             </div>
@@ -476,88 +424,75 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import HeaderAdmin from '../../components/headerAdmin.vue';
+import AdminServices from '../../../services/AdminServices';
 
 // Estados reactivos
-const editandoTurno = ref(false);
 const filtroFecha = ref('');
 const filtroTipo = ref('');
 
-// Formulario para crear/editar turnos
+// Formulario para crear turnos
 const formTurno = reactive({
-  id: null,
   usuario_id: '',
   tipo: '',
   inicio: '',
   fin: '',
   colacion_inicio: '',
-  colacion_fin: '',
-  motivo_modificacion: ''
+  colacion_fin: ''
 });
 
-// Datos de ejemplo para turnos asignados (en producción vendrían del backend)
+// Array de trabajadores (implementar con datos del backend)
+const trabajadores = ref([
+  // Estructura esperada:
+  // {
+  //   id: 1,
+  //   nombre: 'Juan Pérez',
+  //   iniciales: 'JP'
+  // },
+  // {
+  //   id: 2,
+  //   nombre: 'María González',
+  //   iniciales: 'MG'
+  // }
+]);
+
+// Array de turnos asignados (inicialmente vacío)
 const turnosAsignados = ref([
-  {
-    id: 1,
-    usuario_id: 1,
-    trabajador_nombre: 'Juan Pérez',
-    trabajador_iniciales: 'JP',
-    tipo: 'mañana',
-    inicio: '2024-12-15T08:00:00',
-    fin: '2024-12-15T16:00:00',
-    colacion_inicio: '12:00',
-    colacion_fin: '13:00',
-    fecha_modificacion: null,
-    modificado_por: null,
-    motivo_modificacion: null
-  },
-  {
-    id: 2,
-    usuario_id: 2,
-    trabajador_nombre: 'María González',
-    trabajador_iniciales: 'MG',
-    tipo: 'tarde',
-    inicio: '2024-12-15T14:00:00',
-    fin: '2024-12-15T22:00:00',
-    colacion_inicio: '18:00',
-    colacion_fin: '18:45',
-    fecha_modificacion: '2024-12-14',
-    modificado_por: 'Admin',
-    motivo_modificacion: 'Cambio solicitado por necesidades del servicio'
-  }
+  // Estructura esperada:
+  // {
+  //   id: 1,
+  //   usuario_id: 1,
+  //   trabajador_nombre: 'Juan Pérez',
+  //   trabajador_iniciales: 'JP',
+  //   tipo: 'mañana',
+  //   inicio: '2024-12-15T08:00:00',
+  //   fin: '2024-12-15T16:00:00',
+  //   colacion_inicio: '12:00',
+  //   colacion_fin: '13:00',
+  //   fecha_modificacion: null,
+  //   modificado_por: null,
+  //   motivo_modificacion: null
+  // }
 ]);
 
 // Funciones
-const guardarTurno = () => {
-  if (editandoTurno.value) {
-    // Actualizar turno existente
-    const index = turnosAsignados.value.findIndex(t => t.id === formTurno.id);
-    if (index !== -1) {
-      turnosAsignados.value[index] = {
-        ...turnosAsignados.value[index],
-        ...formTurno,
-        fecha_modificacion: new Date().toISOString().split('T')[0],
-        modificado_por: 'Admin'
-      };
-    }
-  } else {
-    // Crear nuevo turno
-    const nuevoTurno = {
-      ...formTurno,
-      id: Date.now(),
-      trabajador_nombre: obtenerNombreTrabajador(formTurno.usuario_id),
-      trabajador_iniciales: obtenerIniciales(formTurno.usuario_id)
-    };
-    turnosAsignados.value.push(nuevoTurno);
+const guardarTurno = async () => {
+  try {
+    // Crear nuevo turno usando el servicio
+    const response = await AdminServices.createTurno(formTurno);
+    console.log('Turno creado:', response);
+    
+    // Limpiar el formulario
+    limpiarFormulario();
+    
+    // Opcional: recargar la lista de turnos si tienes un método para eso
+    // await obtenerTurnos();
+    
+  } catch (error) {
+    console.error('Error al crear turno:', error);
+    // Aquí podrías mostrar un mensaje de error al usuario
   }
-  
-  cancelarEdicion();
-};
-
-const editarTurno = (turno) => {
-  editandoTurno.value = true;
-  Object.assign(formTurno, turno);
 };
 
 const eliminarTurno = (id) => {
@@ -569,10 +504,9 @@ const eliminarTurno = (id) => {
   }
 };
 
-const cancelarEdicion = () => {
-  editandoTurno.value = false;
+const limpiarFormulario = () => {
   Object.keys(formTurno).forEach(key => {
-    formTurno[key] = key === 'id' ? null : '';
+    formTurno[key] = '';
   });
 };
 
@@ -610,24 +544,42 @@ const formatearFecha = (fecha) => {
 };
 
 const obtenerNombreTrabajador = (usuarioId) => {
-  const nombres = {
-    '1': 'Juan Pérez',
-    '2': 'María González',
-    '3': 'Carlos Rodríguez',
-    '4': 'Luis Martínez',
-    '5': 'Ana Fernández'
-  };
-  return nombres[usuarioId] || 'Trabajador Desconocido';
+  const trabajador = trabajadores.value.find(t => t.id == usuarioId);
+  return trabajador ? trabajador.nombre : 'Trabajador Desconocido';
 };
 
 const obtenerIniciales = (usuarioId) => {
-  const iniciales = {
-    '1': 'JP',
-    '2': 'MG',
-    '3': 'CR',
-    '4': 'LM',
-    '5': 'AF'
-  };
-  return iniciales[usuarioId] || 'TD';
+  const trabajador = trabajadores.value.find(t => t.id == usuarioId);
+  return trabajador ? trabajador.iniciales : 'TD';
 };
+
+
+const obtenerTrabajadores = async () => {
+  try {
+    const response = await AdminServices.obtenerTrabajadores();
+    console.log('Trabajadores obtenidos:', response.data);
+    trabajadores.value = response.data;
+  } catch (error) {
+    console.error('Error al obtener trabajadores:', error);
+  }
+};
+
+
+const obtenerTurnos = async () => {
+  try {
+    const response = await AdminServices.obtenerTurnos();
+    console.log('Turnos obtenidos:', response.data);
+    turnosAsignados.value = response.data;
+  } catch (error) {
+    console.error('Error al obtener turnos:', error);
+  }
+};
+
+onMounted(async () => {
+
+  await obtenerTrabajadores();
+  await obtenerTurnos();
+});
+
+
 </script>

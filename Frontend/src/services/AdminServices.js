@@ -71,7 +71,7 @@ class AdminServices{
 
   static async obtenerTrabajadores() {
     try {
-      const response = await apiClient.get('/trabajadores')
+      const response = await apiClient.get('/admin/trabajadores')
       return response.data
     } catch (error) {
       throw error
@@ -90,6 +90,34 @@ class AdminServices{
   static async eliminarTrabajador(trabajadorId) {
     try {
       const response = await apiClient.delete(`/trabajadores/${trabajadorId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async asignarTurno(turnoData) {
+    try {
+      const response = await apiClient.post('/admin/turnos', turnoData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async createTurno(turnoData) {
+    try {
+      const response = await apiClient.post('/admin/turnos', turnoData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async obtenerTurnos() {
+    try {
+      const response = await apiClient.get('/admin/turnos')
+      console.log('Turnos obtenidos:', response.data)
       return response.data
     } catch (error) {
       throw error

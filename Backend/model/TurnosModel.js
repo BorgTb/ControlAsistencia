@@ -3,7 +3,10 @@ import pool from '../config/dbconfig.js'
 
 class TurnosModel {
     static async getAllTurnos() {
-        const query = 'SELECT * FROM turnos';
+        const query = `SELECT turnos.*,usuarios.nombre as trabajador_nombre
+FROM turnos INNER JOIN usuarios
+ON turnos.usuario_id = usuarios.id
+;`;
         const [rows] = await pool.query(query);
         return rows;
     }
