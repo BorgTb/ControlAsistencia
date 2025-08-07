@@ -13,15 +13,15 @@ const generateToken = (user) => {
         id: user.id,
         email: user.email,
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: 15 }); // 15 seconds
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
 };
 
-// Function to generate JWT for fiscalizador so only email is needed
+// Funtion to generate JWT for fiscalizador so only email is needed
 const generateTokenForFiscalizador = (email) => {
     const payload = {
         email: email
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: 15 }); // 15 seconds
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
 };
 
 // Function to verify JWT token
