@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore.js'
+import { useDataStore } from '../store/dataStorage.js'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -48,8 +49,18 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       authStore.clearAuth()
       
-      // Redirigir al login si estamos en el navegador
-      router.push('/')
+      // Emitir evento personalizado para mostrar modal
+      window.dispatchEvent(new CustomEvent('session-expired', {
+        detail: {
+          motivo: 'token_expirado',
+          detalles: [
+            'Error detectado en servicio de autenticación',
+            `Status: ${error.response?.status}`,
+            `URL: ${error.config?.url || 'No disponible'}`,
+            `Hora: ${new Date().toLocaleTimeString()}`
+          ]
+        }
+      }))
     }
     
     return Promise.reject(error)
@@ -136,6 +147,27 @@ class AuthService {
       return {
         success: false,
         error: error.response?.data?.message || 'Error al cerrar sesión',
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Verifica si el token actual es válido
+   * @returns {Promise<Object>} Resultado de la verificación
+   */
+  async verificarToken() {
+    try {
+      const response = await apiClient.get('/auth/verify-token')
+      return {
+        success: true,
+        data: response.data,
+        message: 'Token válido'
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Token inválido',
         status: error.response?.status
       }
     }

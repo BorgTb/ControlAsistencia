@@ -56,11 +56,24 @@ apiClient.interceptors.response.use(
     const authStore = useAuthStore()
     const dataStore = useDataStore()
 
-    // Si recibimos un 401, limpiamos la autenticación
-    if (error.response?.status === 401) {
+    // Si recibimos un 401 o 403, el token no es válido
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('Token expirado o inválido, cerrando sesión...')
       authStore.clearAuth()
       dataStore.clearData()
-      router.push('login')
+      
+      // Emitir evento personalizado para mostrar modal
+      window.dispatchEvent(new CustomEvent('session-expired', {
+        detail: {
+          motivo: error.response?.status === 401 ? 'token_expirado' : 'acceso_no_autorizado',
+          detalles: [
+            'Error detectado en servicio de reportes',
+            `Status: ${error.response?.status}`,
+            `URL: ${error.config?.url || 'No disponible'}`,
+            `Hora: ${new Date().toLocaleTimeString()}`
+          ]
+        }
+      }))
     }       
 
     return Promise.reject(error)

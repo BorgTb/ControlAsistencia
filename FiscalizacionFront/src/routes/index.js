@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../store/authStore.js'
+import { useDataStore } from '../store/dataStorage.js'
 
 // Configuración del base URL
 const getBaseUrl = () => {
@@ -7,6 +8,31 @@ const getBaseUrl = () => {
     return import.meta.env.BASE_URL
   }
   return '/'
+}
+
+// Función para verificar token
+const verifyTokenAPI = async (token) => {
+  try {
+    const API_BASE_URL = (() => {
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        return import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      }
+      return process.env.VITE_API_URL || 'http://localhost:3000/api'
+    })()
+
+    const response = await fetch(`${API_BASE_URL}/auth/verify-token`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    return response.ok
+  } catch (error) {
+    console.warn('Error verificando token:', error)
+    return false
+  }
 }
 
 const router = createRouter({
@@ -96,10 +122,29 @@ const router = createRouter({
     }
 })
 
-// Guard de navegación global (deshabilitado para desarrollo)
-router.beforeEach((to, from, next) => {
-
+// Guard de navegación global con verificación de token
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
+    const dataStore = useDataStore()
+    // Si hay token y usuario autenticado, verificar que el token sea válido
+    if (authStore.getToken && authStore.isAuthenticated) {
+        try {
+            const isTokenValid = await verifyTokenAPI(authStore.getToken)
+            
+            if (!isTokenValid) {
+                console.warn('Token inválido en navegación, cerrando sesión...')
+                authStore.clearAuth()
+                dataStore.clearData()
+                next({ name: 'Login' })
+                return
+            }
+        } catch (error) {
+            console.warn('Error verificando token en navegación:', error)
+            authStore.clearAuth()
+            next({ name: 'Login' })
+            return
+        }
+    }
     
     // Verificar si la ruta requiere autenticación
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -116,7 +161,6 @@ router.beforeEach((to, from, next) => {
     }
     
     next()
-    
 })
 
 export default router

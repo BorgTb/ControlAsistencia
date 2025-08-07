@@ -47,6 +47,58 @@ export function useAuth() {
     return await validarCodigo(email, codigo)
   }
 
+  // Función para verificar si el token sigue siendo válido
+  const verifyToken = async () => {
+    if (!token.value) return false
+    
+    try {
+      const result = await AuthService.verificarToken()
+      if (!result.success) {
+        // Emitir evento de sesión expirada en lugar de clearAuth directo
+        window.dispatchEvent(new CustomEvent('session-expired', {
+          detail: {
+            motivo: 'token_invalido',
+            detalles: [
+              'Verificación periódica de token falló',
+              'El token ya no es válido en el servidor',
+              `Verificado a las: ${new Date().toLocaleTimeString()}`
+            ]
+          }
+        }))
+        return false
+      }
+      return true
+    } catch (error) {
+      console.warn('Error verificando token:', error)
+      window.dispatchEvent(new CustomEvent('session-expired', {
+        detail: {
+          motivo: 'error_servidor',
+          detalles: [
+            'Error al verificar token con el servidor',
+            `Error: ${error.message}`,
+            'Verifique su conexión a internet',
+            `Hora: ${new Date().toLocaleTimeString()}`
+          ]
+        }
+      }))
+      return false
+    }
+  }
+
+  // Función para manejar actividad del usuario
+  const handleUserActivity = () => {
+    if (isAuthenticated.value) {
+      verifyToken()
+    }
+  }
+
+  // Escuchar eventos de actividad del usuario (solo en el navegador)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('focus', handleUserActivity)
+    window.addEventListener('click', handleUserActivity)
+    window.addEventListener('keydown', handleUserActivity)
+  }
+
   // Utilidades
   const hasRole = (role) => {
     return user.value?.roles?.includes(role) || false
@@ -72,6 +124,7 @@ export function useAuth() {
     validarCodigo,
     loginConCodigo,
     logout,
+    verifyToken,
     
     // Utilidades
     hasRole,

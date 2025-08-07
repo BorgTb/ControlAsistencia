@@ -57,6 +57,21 @@ export function useReportes() {
       return response
     } catch (e) {
       error.value = 'Error de conexión. Por favor, intenta de nuevo.'
+      
+      // Emitir evento si es un error de token
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        window.dispatchEvent(new CustomEvent('session-expired', {
+          detail: {
+            motivo: e.response?.status === 401 ? 'token_expirado' : 'acceso_no_autorizado',
+            detalles: [
+              `Error al obtener reporte: ${tipoReporte}`,
+              `Status: ${e.response?.status}`,
+              `Hora: ${new Date().toLocaleTimeString()}`
+            ]
+          }
+        }))
+      }
+      
       return {
         success: false,
         error: error.value
@@ -112,6 +127,22 @@ export function useReportes() {
       return response
     } catch (e) {
       error.value = 'Error al exportar reporte. Por favor, intenta de nuevo.'
+      
+      // Emitir evento si es un error de token
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        window.dispatchEvent(new CustomEvent('session-expired', {
+          detail: {
+            motivo: e.response?.status === 401 ? 'token_expirado' : 'acceso_no_autorizado',
+            detalles: [
+              `Error al exportar reporte: ${tipoReporte}`,
+              `Formato: ${formato}`,
+              `Status: ${e.response?.status}`,
+              `Hora: ${new Date().toLocaleTimeString()}`
+            ]
+          }
+        }))
+      }
+      
       return {
         success: false,
         error: error.value

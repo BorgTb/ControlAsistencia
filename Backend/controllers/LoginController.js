@@ -128,10 +128,35 @@ const logout = async (req, res) => {
     }
 };
 
+const verifyToken = (req, res) => {
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'No token provided'
+            });
+        }
+        const decoded = AuthService.verifyToken(token);
+        res.status(200).json({
+            success: true,
+            message: 'Token is valid',
+            user: decoded
+        });
+    } catch (error) {
+        res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token',
+            error: error.message
+        });
+    }
+};
+
 const LoginController = {
     register,
     login,
-    logout
+    logout,
+    verifyToken
 };
 
 export default LoginController;
