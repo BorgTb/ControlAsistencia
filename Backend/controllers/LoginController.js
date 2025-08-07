@@ -93,12 +93,39 @@ const login = async (req, res) => {
 };
 
 
-const logout = (req, res) => {
-    // Aquí podrías manejar la lógica de cierre de sesión, como invalidar el token
-    res.status(200).json({ 
-        success: true, 
-        message: 'Logout successful' 
-    });
+const logout = async (req, res) => {
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No token provided' 
+            });
+        }
+
+        // Verify and decode the token to get user info
+        const decoded = AuthService.verifyToken(token);
+        
+        // Optional: You could add token to a blacklist here
+        // await TokenBlacklistModel.addToBlacklist(token);
+        
+        // Optional: Log the logout activity
+        console.log(`User ${decoded.email} logged out at ${new Date().toISOString()}`);
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Logout successful' 
+        });
+
+    } catch (error) {
+        // Even if token verification fails, we still consider logout successful
+        // This prevents issues if token is already expired or invalid
+        res.status(200).json({ 
+            success: true, 
+            message: 'Logout successful' 
+        });
+    }
 };
 
 const LoginController = {

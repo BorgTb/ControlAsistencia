@@ -15,6 +15,7 @@ router.post('/login', LoginControlller.login);
 router.post('/logout', LoginControlller.logout);
 router.post('/register', LoginControlller.register);
 router.post('/solicitar-acceso', FiscalizadorController.solicitarAcceso);
+router.post('/validar-codigo', FiscalizadorController.validarCodigo);
 
 
 // Export the router

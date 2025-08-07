@@ -1,4 +1,7 @@
 <template>
+    <header>
+        <Header v-if="showHeader" />
+    </header>
     
     <div id="app">
         <RouterView />
@@ -9,6 +12,13 @@
 
 <script setup>
 import { RouterView, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import Header from './components/component/header.vue';
+
+
+const route = useRoute()
+const hiddenRoutes = ['/']
+const showHeader = computed(() => !hiddenRoutes.includes(route.path))
 </script>
 
 

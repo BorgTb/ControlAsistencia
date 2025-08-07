@@ -16,6 +16,14 @@ const generateToken = (user) => {
     return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
 };
 
+// Funtion to generate JWT for fiscalizador so only email is needed
+const generateTokenForFiscalizador = (email) => {
+    const payload = {
+        email: email
+    };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
+};
+
 // Function to verify JWT token
 const verifyToken = (token) => {
     try {
@@ -178,6 +186,7 @@ const AuthService = {
     updateUserPassword,
     generateAccessCode,
     generateTemporaryCode,
+    generateTokenForFiscalizador,
 };
 
 // Export an object containing the functions

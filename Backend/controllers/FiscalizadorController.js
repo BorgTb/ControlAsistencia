@@ -43,11 +43,92 @@ const solicitarAcceso = async (req, res) => {
     }
 }
 
+const validarCodigo = async (req, res) => {
+    try {
+        const { email, codigo } = req.body;
+        if (!email || !codigo) {
+            return res.status(400).json({ message: 'Email y código son obligatorios' });
+        }
+
+        // Check if the code is valid
+        const validCode = await LoginCodigoModel.findValidCodeByCode(codigo);
+        if (!validCode) {
+            return res.status(400).json({ message: 'Código inválido o expirado' });
+        }
+
+        // Verify that the code belongs to the provided email
+        if (validCode.email !== email) {
+            return res.status(400).json({ message: 'El código no corresponde al email proporcionado' });
+        }
+
+        // Mark the code as verified
+        const isVerified = await LoginCodigoModel.markAsVerified(validCode.id);
+        if (!isVerified) {
+            return res.status(500).json({ message: 'Error al verificar el código' });
+        }
+
+        
+
+        // Generate JWT token
+        const token = AuthService.generateTokenForFiscalizador(email);
+
+        // If everything is successful
+        res.status(200).json({
+            success: true,
+            message: "Código verificado exitosamente",
+            token: token,
+            user: {
+                email: email
+            }
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+}
+
+const cerrarSesion = async (req, res) => {
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No token provided' 
+            });
+        }
+
+        // Verify and decode the token
+        const decoded = AuthService.verifyToken(token);
+        
+        // Optional: Invalidate all active codes for this user
+        if (decoded.email) {
+            await LoginCodigoModel.invalidateUserCodes(decoded.email);
+        }
+        
+        // Log the logout activity
+        console.log(`Fiscalizador ${decoded.email} logged out at ${new Date().toISOString()}`);
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Sesión cerrada exitosamente' 
+        });
+
+    } catch (error) {
+        // Even if token verification fails, we still consider logout successful
+        res.status(200).json({ 
+            success: true, 
+            message: 'Sesión cerrada exitosamente' 
+        });
+    }
+}
+
 
 
 
 const FiscalizadorController = {
-  solicitarAcceso
+  solicitarAcceso,
+  validarCodigo,
+  cerrarSesion
 }
 
 
