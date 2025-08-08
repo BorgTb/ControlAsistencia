@@ -64,6 +64,13 @@ class Marcaciones {
         const [rows] = await pool.execute(query, [usuario_id, fecha]);
         return rows.length > 0 ? rows[0] : null;
     }
+    async obtenerTodasLasMarcaciones() {
+        const query = `
+            SELECT * FROM marcaciones
+        `;
+        const [rows] = await pool.execute(query);
+        return rows;
+    }
 }
 
 export default new Marcaciones();

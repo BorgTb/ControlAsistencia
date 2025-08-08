@@ -26,6 +26,7 @@ app.use('/api/marcaciones', router.marcaciones);
 app.use('/api/user', router.users);
 app.use('/api/empresas', router.empresas);
 app.use('/api/admin', router.admin);
+app.use('/api/reportes', router.reportes);
 
 
 // START SERVER

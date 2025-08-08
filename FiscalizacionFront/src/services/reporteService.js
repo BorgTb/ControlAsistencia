@@ -113,6 +113,7 @@ class ReporteService {
   async obtenerReporteAsistencia(filtros = {}) {
     try {
       const response = await apiClient.get('/reportes/asistencia', { params: filtros })
+      console.log("Reporte de asistencia obtenido:", response)
       return {
         success: true,
         data: response.data,

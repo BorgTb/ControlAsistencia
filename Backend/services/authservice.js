@@ -21,7 +21,7 @@ const generateTokenForFiscalizador = (email) => {
     const payload = {
         email: email
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '24h' });
 };
 
 // Function to verify JWT token

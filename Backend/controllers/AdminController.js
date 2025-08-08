@@ -4,6 +4,7 @@ import TurnosModel from "../model/TurnosModel.js";
 
 
 
+
 const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
