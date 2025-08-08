@@ -585,3 +585,22 @@ Para soporte técnico o preguntas sobre la implementación, contactar al equipo 
 **Versión:** 1.0.0  
 **Última actualización:** Enero 2025  
 **Autor:** Equipo de Desarrollo TELEMEDIOS
+
+📅 Martes 00:00:00 (Santiago)
+├── Cron ejecuta programarAlertasDiarias()
+├── Encuentra turno: Juan 09:00-17:00
+├── Programa alerta entrada: 09:30
+├── Programa alerta salida: 17:30
+└── Jobs guardados en Redis
+
+⏰ Martes 09:30:00 (Santiago)
+├── Bull detecta job listo
+├── Ejecuta procesarRecordatorioEntrada()
+├── Verifica si Juan marcó entrada
+└── Envía correo si no marcó
+
+🚪 Martes 17:30:00 (Santiago)
+├── Bull detecta job listo
+├── Ejecuta procesarRecordatorioSalida()
+├── Verifica si Juan marcó salida
+└── Envía correo si no marcó

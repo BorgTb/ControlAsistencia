@@ -360,7 +360,7 @@ class AlertasService {
     async verificarSalidaMarcada(usuario_id, fecha) {
         try {
             const salida = await MarcacionesService.obtenerSalidaPorUsuario(usuario_id, fecha);
-            return salida.success && salida.data && salida.data.length > 0;
+            return salida.success && salida.data && salida.data.id;
         } catch (error) {
             console.error('Error verificando salida:', error);
             return false;
@@ -760,7 +760,7 @@ class AlertasService {
     }
 
     // Método para programar alerta manual (útil para testing)
-    async programarAlertaManual(usuario_id, delay_minutos = 1, tipo = 'entrada') {
+    async programarAlertaManual(usuario_id, delay_minutos = 0.2, tipo = 'entrada') {
         try {
             const usuario = await UserModel.findById(usuario_id);
             if (!usuario) {
