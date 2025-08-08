@@ -123,21 +123,21 @@
                   </select>
                 </div>
 
-                <!-- Fecha y Hora de Inicio -->
+                <!-- Hora de Inicio -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Inicio del Turno</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora de Inicio</label>
                   <input 
-                    type="datetime-local" 
+                    type="time" 
                     v-model="formTurno.inicio" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
 
-                <!-- Fecha y Hora de Fin -->
+                <!-- Hora de Fin -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Fin del Turno</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora de Fin</label>
                   <input 
-                    type="datetime-local" 
+                    type="time" 
                     v-model="formTurno.fin" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   />
@@ -326,8 +326,8 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inicio</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fin</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Inicio</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Fin</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colación</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modificado</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -355,10 +355,10 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ formatearFechaHora(turno.inicio) }}
+                    {{ formatearHora(turno.inicio) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ formatearFechaHora(turno.fin) }}
+                    {{ formatearHora(turno.fin) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div v-if="turno.colacion_inicio && turno.colacion_fin">
@@ -466,8 +466,8 @@ const turnosAsignados = ref([
   //   trabajador_nombre: 'Juan Pérez',
   //   trabajador_iniciales: 'JP',
   //   tipo: 'mañana',
-  //   inicio: '2024-12-15T08:00:00',
-  //   fin: '2024-12-15T16:00:00',
+  //   inicio: '08:00',
+  //   fin: '16:00',
   //   colacion_inicio: '12:00',
   //   colacion_fin: '13:00',
   //   fecha_modificacion: null,
@@ -530,6 +530,11 @@ const getColorTipo = (tipo) => {
 };
 
 const formatearFechaHora = (fechaHora) => {
+  // Si es solo hora (formato HH:MM), devolverla tal como está
+  if (typeof fechaHora === 'string' && fechaHora.includes(':') && !fechaHora.includes('T')) {
+    return fechaHora;
+  }
+  // Si es fecha completa, formatearla como antes
   return new Date(fechaHora).toLocaleString('es-CL', {
     year: 'numeric',
     month: '2-digit',
@@ -537,6 +542,11 @@ const formatearFechaHora = (fechaHora) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+const formatearHora = (hora) => {
+  // Formatear solo la hora
+  return hora || 'No definido';
 };
 
 const formatearFecha = (fecha) => {

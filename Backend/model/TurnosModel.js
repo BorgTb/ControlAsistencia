@@ -17,6 +17,12 @@ ON turnos.usuario_id = usuarios.id
         return rows[0];
     }
 
+    static async getTurnosByUsuarioId(usuario_id) {
+        const query = 'SELECT * FROM turnos WHERE usuario_id = ?';
+        const [rows] = await pool.query(query, [usuario_id]);
+        return rows;
+    }
+
     static async createTurno(turnoData) {
         const query = `
             INSERT INTO turnos (usuario_id, tipo, inicio, fin, motivo_modificacion, modificado_por, fecha_modificacion, colacion_inicio, colacion_fin)
