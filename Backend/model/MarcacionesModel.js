@@ -64,6 +64,18 @@ class Marcaciones {
         const [rows] = await pool.execute(query, [usuario_id, fecha]);
         return rows.length > 0 ? rows[0] : null;
     }
+    
+    async obtenerSalidaPorUsuario(usuario_id, fecha) {
+        console.log(usuario_id);
+        console.log(fecha);
+        const query = `
+            SELECT * FROM marcaciones
+            WHERE usuario_id = ? AND tipo = 'salida' AND DATE(fecha) = ?
+        `;
+        const [rows] = await pool.execute(query, [usuario_id, fecha]);
+        return rows.length > 0 ? rows[0] : null;
+    }
+    
     async obtenerTodasLasMarcaciones() {
         const query = `
             SELECT * FROM marcaciones

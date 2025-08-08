@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import router from './routes/index.js';
 
 
+
 dotenv.config();
 
 
@@ -27,9 +28,23 @@ app.use('/api/user', router.users);
 app.use('/api/empresas', router.empresas);
 app.use('/api/admin', router.admin);
 app.use('/api/reportes', router.reportes);
+app.use('/api/test/alertas', router.test);
+
 
 
 // START SERVER
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    
+});
+
+// Manejo de cierre graceful
+process.on('SIGTERM', async () => {
+    console.log('🛑 Cerrando servidor...');
+    process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+    console.log('🛑 Cerrando servidor...');
+    process.exit(0);
 });

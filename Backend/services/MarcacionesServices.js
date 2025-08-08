@@ -108,6 +108,32 @@ class MarcacionesService {
             };
         }
     }
+
+    async obtenerSalidaPorUsuario(usuario_id, fecha = null) {
+        try {
+            const marcaciones = await MarcacionesModel.obtenerSalidaPorUsuario(usuario_id, fecha);
+            
+            if (!marcaciones || marcaciones.length === 0) {
+                return {
+                    success: true,
+                    message: 'No se encontraron salidas para el usuario en la fecha especificada',
+                    data: []
+                };
+            }
+            
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener salida por usuario:', error);
+            return {
+                success: false,
+                message: 'Error al obtener la salida del usuario',
+                error: error.message
+            };
+        }
+    }
     
     async eliminarMarcacion(id) {
         try {
