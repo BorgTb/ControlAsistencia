@@ -416,9 +416,9 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <div class="text-sm text-gray-900">{{ empleado.cargo }}</div>
-                      <div class="text-sm text-gray-500">{{ empleado.jornada }} - {{ empleado.departamento }}</div>
+                      <div class="text-sm text-gray-500">{{ empleado.tipoJornada }} - {{ empleado.departamento }}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.lugar?.replace('_', ' ') || 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.lugarTrabajo?.replace('_', ' ') || 'N/A' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.entrada }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.salida }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -718,229 +718,134 @@ const exportData = () => {
 }
 
 
-const loadData = async () => {
-  // Simular datos ampliados para desarrollo con nuevos campos
-  empleados.value = [
-    {
-      id: 1,
-      nombre: 'Juan Pérez Martínez',
-      cedula: '12345678',
-      iniciales: 'JP',
-      departamento: 'IT',
-      tipoJornada: 'fija',
-      turnoEspecifico: 'mañana_lv',
-      lugarTrabajo: 'oficina',
-      region: 'metropolitana',
-      establecimiento: 'rm_central',
-      entrada: '08:00',
-      salida: '17:00',
-      estado: 'PRESENTE',
-      cargo: 'tecnico',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'abc123def456'
-    },
-    {
-      id: 2,
-      nombre: 'María González Silva',
-      cedula: '87654321',
-      iniciales: 'MG',
-      departamento: 'RRHH',
-      tipoJornada: 'turnos',
-      turnoEspecifico: 'mañana_lj',
-      lugarTrabajo: 'mixto',
-      region: 'metropolitana',
-      establecimiento: 'rm_las_condes',
-      entrada: '10:00',
-      salida: '18:00',
-      estado: 'PRESENTE',
-      cargo: 'administrativo',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'def456ghi789'
-    },
-    {
-      id: 3,
-      nombre: 'Carlos López Fernández',
-      cedula: '11223344',
-      iniciales: 'CL',
-      departamento: 'VENTAS',
-      tipoJornada: 'ciclos',
-      turnoEspecifico: '4x4',
-      lugarTrabajo: 'terreno',
-      region: 'antofagasta',
-      establecimiento: 'af_calama',
-      entrada: '06:00',
-      salida: '18:00',
-      estado: 'PRESENTE',
-      cargo: 'operario',
-      empresaTransitoria: 'manpower',
-      fecha: '2024-01-15',
-      hashChecksum: 'ghi789jkl012'
-    },
-    {
-      id: 4,
-      nombre: 'Ana Rodríguez Castro',
-      cedula: '55667788',
-      iniciales: 'AR',
-      departamento: 'MARKETING',
-      tipoJornada: 'parcial',
-      turnoEspecifico: 'mañana_lv',
-      lugarTrabajo: 'remoto',
-      region: 'valparaiso',
-      establecimiento: 'vp_viña',
-      entrada: '09:00',
-      salida: '13:00',
-      estado: 'PRESENTE',
-      cargo: 'administrativo',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'jkl012mno345'
-    },
-    {
-      id: 5,
-      nombre: 'Roberto Sanchez Torres',
-      cedula: '99887766',
-      iniciales: 'RS',
-      departamento: 'PRODUCCION',
-      tipoJornada: 'turnos',
-      turnoEspecifico: 'rotativo_247',
-      lugarTrabajo: 'terreno',
-      region: 'biobio',
-      establecimiento: 'bb_los_angeles',
-      entrada: '22:00',
-      salida: '06:00',
-      estado: 'TARDANZA',
-      cargo: 'operario',
-      empresaTransitoria: 'randstad',
-      fecha: '2024-01-15',
-      hashChecksum: 'mno345pqr678'
-    },
-    // Agregar más empleados para probar la búsqueda grupal
-    {
-      id: 6,
-      nombre: 'Patricia Morales Vega',
-      cedula: '22334455',
-      iniciales: 'PM',
-      departamento: 'ADMINISTRACION',
-      tipoJornada: 'fija',
-      turnoEspecifico: 'mañana_lv',
-      lugarTrabajo: 'oficina',
-      region: 'metropolitana',
-      establecimiento: 'rm_central',
-      entrada: '08:30',
-      salida: '17:30',
-      estado: 'PRESENTE',
-      cargo: 'contador',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'pqr678stu901'
-    },
-    {
-      id: 7,
-      nombre: 'Diego Herrera Luna',
-      cedula: '66778899',
-      iniciales: 'DH',
-      departamento: 'IT',
-      tipoJornada: 'excepcional',
-      turnoEspecifico: 'tarde_lv',
-      lugarTrabajo: 'remoto',
-      region: 'metropolitana',
-      establecimiento: 'rm_providencia',
-      entrada: '14:00',
-      salida: '23:00',
-      estado: 'AUSENTE',
-      cargo: 'tecnico',
-      empresaTransitoria: 'adecco',
-      fecha: '2024-01-15',
-      hashChecksum: 'stu901vwx234'
-    },
-    {
-      id: 8,
-      nombre: 'Carmen Espinoza Ramos',
-      cedula: '33445566',
-      iniciales: 'CE',
-      departamento: 'VENTAS',
-      tipoJornada: 'bisemanal',
-      turnoEspecifico: '7x7',
-      lugarTrabajo: 'mixto',
-      region: 'valparaiso',
-      establecimiento: 'vp_valpo',
-      entrada: '08:00',
-      salida: '17:00',
-      estado: 'LICENCIA_MEDICA',
-      cargo: 'vendedor',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'vwx234yza567'
-    },
-    {
-      id: 9,
-      nombre: 'Francisco Silva Peña',
-      cedula: '77889900',
-      iniciales: 'FS',
-      departamento: 'PRODUCCION',
-      tipoJornada: 'turnos',
-      turnoEspecifico: 'noche_lv',
-      lugarTrabajo: 'terreno',
-      region: 'antofagasta',
-      establecimiento: 'af_antofagasta',
-      entrada: '22:00',
-      salida: '06:00',
-      estado: 'PRESENTE',
-      cargo: 'supervisor',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'yza567bcd890'
-    },
-    {
-      id: 10,
-      nombre: 'Lorena Cáceres Muñoz',
-      cedula: '44556677',
-      iniciales: 'LC',
-      departamento: 'RRHH',
-      tipoJornada: 'fija',
-      turnoEspecifico: 'mañana_lv',
-      lugarTrabajo: 'oficina',
-      region: 'biobio',
-      establecimiento: 'bb_concepcion',
-      entrada: '08:00',
-      salida: '17:00',
-      estado: 'AUSENCIA_JUSTIFICADA',
-      cargo: 'gerente',
-      empresaTransitoria: null,
-      fecha: '2024-01-15',
-      hashChecksum: 'bcd890efg123'
-    },
-    {
-      id: 11,
-      nombre: 'Andrés Valenzuela Soto',
-      cedula: '88990011',
-      iniciales: 'AV',
-      departamento: 'MARKETING',
-      tipoJornada: 'parcial',
-      turnoEspecifico: 'mañana_lj',
-      lugarTrabajo: 'remoto',
-      region: 'metropolitana',
-      establecimiento: 'rm_maipu',
-      entrada: '10:00',
-      salida: '14:00',
-      estado: 'PRESENTE',
-      cargo: 'administrativo',
-      empresaTransitoria: 'experis',
-      fecha: '2024-01-15',
-      hashChecksum: 'efg123hij456'
-    }
-  ]
-
-
+const loadData = async (apiData = null) => {
+  if (apiData && apiData.length > 0) {
+    // Usar datos reales de la API
+    empleados.value = apiData.map(empleado => ({
+      ...empleado,
+      // Normalizar campos para compatibilidad con la vista
+      estado: empleado.estado?.toUpperCase() || 'PRESENTE', // Convertir a mayúsculas
+      tipoJornada: normalizeJornadaType(empleado.tipoJornada),
+      turnoEspecifico: normalizeTurnoType(empleado.turnoEspecifico),
+      lugarTrabajo: normalizeLugarType(empleado.lugarTrabajo),
+      region: normalizeRegionType(empleado.region),
+      // Asegurar que horas esté calculado
+      horas: empleado.horas || calcularHorasTrabajadas(empleado.entrada, empleado.salida)
+    }))
+  } else {
+    // Datos de fallback/simulados para desarrollo
+    empleados.value = [
+      {
+        id: 1,
+        nombre: 'Juan Pérez Martínez',
+        cedula: '12345678',
+        iniciales: 'JP',
+        departamento: 'IT',
+        tipoJornada: 'fija',
+        turnoEspecifico: 'mañana_lv',
+        lugarTrabajo: 'oficina',
+        region: 'metropolitana',
+        establecimiento: 'rm_central',
+        entrada: '08:00',
+        salida: '17:00',
+        estado: 'PRESENTE',
+        cargo: 'tecnico',
+        empresaTransitoria: null,
+        fecha: '2024-01-15',
+        hashChecksum: 'abc123def456',
+        horas: '9:00'
+      }
+    ]
+  }
   
   // Cargar empleados disponibles para búsqueda grupal
   empleadosDisponibles.value = [...empleados.value]
 }
 
+// Funciones de normalización para compatibilidad
+const normalizeJornadaType = (jornada) => {
+  if (!jornada) return 'fija'
+  const jornadaLower = jornada.toLowerCase()
+  if (jornadaLower.includes('completa')) return 'fija'
+  if (jornadaLower.includes('parcial')) return 'parcial'
+  if (jornadaLower.includes('turno')) return 'turnos'
+  return 'fija'
+}
+
+const normalizeTurnoType = (turno) => {
+  if (!turno) return 'mañana_lv'
+  const turnoLower = turno.toLowerCase()
+  if (turnoLower.includes('mañana')) return 'mañana_lv'
+  if (turnoLower.includes('tarde')) return 'tarde_lv'
+  if (turnoLower.includes('noche')) return 'noche_lv'
+  return 'mañana_lv'
+}
+
+const normalizeLugarType = (lugar) => {
+  if (!lugar) return 'oficina'
+  const lugarLower = lugar.toLowerCase()
+  if (lugarLower.includes('central') || lugarLower.includes('oficina')) return 'oficina'
+  if (lugarLower.includes('terreno')) return 'terreno'
+  if (lugarLower.includes('remoto')) return 'remoto'
+  if (lugarLower.includes('mixto')) return 'mixto'
+  return 'oficina'
+}
+
+const normalizeRegionType = (region) => {
+  if (!region) return 'metropolitana'
+  const regionLower = region.toLowerCase()
+  if (regionLower.includes('metropolitana')) return 'metropolitana'
+  if (regionLower.includes('valparaiso')) return 'valparaiso'
+  if (regionLower.includes('biobio')) return 'biobio'
+  if (regionLower.includes('antofagasta')) return 'antofagasta'
+  return 'metropolitana'
+}
+
+const calcularHorasTrabajadas = (entrada, salida) => {
+  if (!entrada || !salida) return '0:00'
+  
+  try {
+    // Convertir horas a minutos para calcular
+    const [entradaH, entradaM, entradaS] = entrada.split(':').map(Number)
+    const [salidaH, salidaM, salidaS] = salida.split(':').map(Number)
+    
+    const entradaMinutos = entradaH * 60 + entradaM
+    const salidaMinutos = salidaH * 60 + salidaM
+    
+    let diferenciaMinutos = salidaMinutos - entradaMinutos
+    
+    // Si la salida es al día siguiente (para turnos nocturnos)
+    if (diferenciaMinutos < 0) {
+      diferenciaMinutos += 24 * 60
+    }
+    
+    const horas = Math.floor(diferenciaMinutos / 60)
+    const minutos = diferenciaMinutos % 60
+    
+    return `${horas}:${minutos.toString().padStart(2, '0')}`
+  } catch (error) {
+    console.error('Error calculando horas:', error)
+    return '0:00'
+  }
+}
+
 onMounted(async () => {
-  await obtenerReporteAsistencia()
-  loadData()
+  try {
+    const rest = await obtenerReporteAsistencia()
+    console.log('Datos recibidos de la API:', rest.data.data)
+    
+    // Verificar si la respuesta tiene la estructura esperada
+    if (rest?.data?.data && Array.isArray(rest.data.data)) {
+      await loadData(rest.data.data)
+      console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
+    } else {
+      console.warn('No se recibieron datos válidos de la API, usando datos de fallback')
+      await loadData()
+    }
+  } catch (error) {
+    console.error('Error al obtener datos de asistencia:', error)
+    // En caso de error, cargar datos de fallback
+    await loadData()
+  }
 })
 </script>

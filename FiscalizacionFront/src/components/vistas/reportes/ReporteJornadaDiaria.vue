@@ -8,7 +8,55 @@
         <!-- Page Header -->
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-gray-900">Reporte Jornada Diaria</h1>
-          <p class="mt-2 text-gray-600">Control de horas trabajadas y cumplimiento de jornada</p>
+          <p class="mt-2 text-gray-600">Control de horas trabajadas y cumplimiento de jornada laboral según normativa</p>
+        </div>
+
+        <!-- Encabezado Legal Requerido -->
+        <div class="bg-white shadow rounded-lg mb-6">
+          <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">📋 Información Legal del Reporte</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Información de la Empresa -->
+              <div class="space-y-3">
+                <h4 class="font-medium text-gray-800 border-b pb-2">Datos de la Empresa</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">Razón Social:</span>
+                    <span class="text-gray-900">{{ encabezado.razonSocial }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">RUT Empresa:</span>
+                    <span class="text-gray-900">{{ encabezado.rutEmpresa }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">Lugar de Trabajo:</span>
+                    <span class="text-gray-900">{{ encabezado.lugarTrabajo }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Información del Trabajador -->
+              <div class="space-y-3">
+                <h4 class="font-medium text-gray-800 border-b pb-2">Datos del Trabajador</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">Nombre Completo:</span>
+                    <span class="text-gray-900">{{ encabezado.nombreTrabajador }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">RUT Trabajador:</span>
+                    <span class="text-gray-900">{{ encabezado.rutTrabajador }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-600">Banda Horaria:</span>
+                    <span class="text-gray-900" :class="encabezado.bandaHoraria ? 'text-blue-600' : 'text-gray-500'">
+                      {{ encabezado.bandaHoraria || 'No Aplica' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Filtros Avanzados (Art. 25) - Sin scroll lateral, todos visibles -->
@@ -283,8 +331,8 @@
           <div class="px-4 py-5 sm:p-6">
             <div class="sm:flex sm:items-center">
               <div class="sm:flex-auto">
-                <h3 class="text-lg font-medium text-gray-900">Detalle de Jornadas</h3>
-                <p class="mt-2 text-sm text-gray-700">Registro detallado de horas trabajadas por empleado</p>
+                <h3 class="text-lg font-medium text-gray-900">Registro Detallado de Jornada Laboral</h3>
+                <p class="mt-2 text-sm text-gray-700">Control diario según normativa laboral vigente</p>
               </div>
               <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
                 <button 
@@ -295,47 +343,186 @@
                 </button>
               </div>
             </div>
-            <div class="mt-8 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+            
+            <!-- Tabla Principal -->
+            <div class="mt-8 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Empleado</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Turno</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Entrada</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Salida</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Horas Trabajadas</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Horas Requeridas</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Diferencia</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[90px]">
+                      Fecha<br/><span class="text-xs font-normal">(dd/mm/aa)</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[100px]">
+                      Jornada Ordinaria<br/><span class="text-xs font-normal">Pactada</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[120px]">
+                      Marcaciones Jornada<br/><span class="text-xs font-normal">Inicio/Fin</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[100px]">
+                      Colación<br/><span class="text-xs font-normal">Pactada</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[120px]">
+                      Marcaciones<br/><span class="text-xs font-normal">Colación</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[100px]">
+                      Tiempo<br/><span class="text-xs font-normal text-red-600">Faltante (-)</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[100px]">
+                      Tiempo<br/><span class="text-xs font-normal text-blue-600">Extra (+)</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[120px]">
+                      Otras<br/><span class="text-xs font-normal">Marcaciones</span>
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[120px]">
+                      Observaciones
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide min-w-[120px]">
+                      Distribución<br/><span class="text-xs font-normal">Excepcional</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="registro in filteredData" :key="registro.id">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10">
-                          <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span class="text-sm font-medium text-gray-700">{{ registro.iniciales }}</span>
-                          </div>
+                  <!-- Registros diarios -->
+                  <tr v-for="registro in filteredData" :key="registro.id" class="hover:bg-gray-50">
+                    <!-- 1. Fecha -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {{ formatearFecha(registro.fecha) }}
+                    </td>
+                    
+                    <!-- 2. Jornada Ordinaria Pactada -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-mono">
+                      {{ registro.jornadaPactada }}
+                    </td>
+                    
+                    <!-- 3. Marcaciones Jornada (Inicio/Fin) -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div class="space-y-1">
+                        <div class="flex items-center">
+                          <span class="w-8 text-xs text-gray-500">In:</span>
+                          <span class="font-mono">{{ registro.entrada }}</span>
                         </div>
-                        <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900">{{ registro.nombre }}</div>
-                          <div class="text-sm text-gray-500">{{ registro.departamento }}</div>
+                        <div class="flex items-center">
+                          <span class="w-8 text-xs text-gray-500">Out:</span>
+                          <span class="font-mono">{{ registro.salida }}</span>
                         </div>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ registro.turno }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ registro.entrada }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ registro.salida }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ registro.horasTrabajadas }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ registro.horasRequeridas }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm" :class="getDiferenciaClass(registro.diferencia)">
-                      {{ registro.diferencia }}
+                    
+                    <!-- 4. Colación Pactada -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-mono">
+                      {{ registro.colacionPactada }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span :class="getCumplimientoClass(registro.cumplimiento)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                        {{ registro.cumplimiento }}
+                    
+                    <!-- 5. Marcaciones Colación -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div v-if="registro.colacionInicio && registro.colacionFin" class="space-y-1">
+                        <div class="flex items-center">
+                          <span class="w-8 text-xs text-gray-500">In:</span>
+                          <span class="font-mono">{{ registro.colacionInicio }}</span>
+                        </div>
+                        <div class="flex items-center">
+                          <span class="w-8 text-xs text-gray-500">Out:</span>
+                          <span class="font-mono">{{ registro.colacionFin }}</span>
+                        </div>
+                      </div>
+                      <div v-else class="text-center text-gray-500 italic">
+                        No Aplica
+                      </div>
+                    </td>
+                    
+                    <!-- 6. Tiempo Faltante -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-mono">
+                      <span v-if="registro.tiempoFaltante" class="text-red-600 font-medium">
+                        {{ registro.tiempoFaltante }}
                       </span>
+                      <span v-else class="text-gray-400">-</span>
+                    </td>
+                    
+                    <!-- 7. Tiempo Extra -->
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-center font-mono">
+                      <span v-if="registro.tiempoExtra" class="text-blue-600 font-medium">
+                        {{ registro.tiempoExtra }}
+                      </span>
+                      <span v-else class="text-gray-400">-</span>
+                    </td>
+                    
+                    <!-- 8. Otras Marcaciones -->
+                    <td class="px-3 py-4 text-sm text-gray-900">
+                      <div v-if="registro.otrasMarcaciones && registro.otrasMarcaciones.length > 0" class="space-y-1">
+                        <div v-for="(marca, index) in registro.otrasMarcaciones" :key="index" class="text-xs">
+                          <span class="font-medium">{{ marca.tipo }}:</span>
+                          <span class="font-mono ml-1">{{ marca.horario }}</span>
+                        </div>
+                      </div>
+                      <div v-else class="text-center text-gray-500 italic text-xs">
+                        Sin registros
+                      </div>
+                    </td>
+                    
+                    <!-- 9. Observaciones -->
+                    <td class="px-3 py-4 text-sm text-gray-900">
+                      <div v-if="registro.observaciones" class="max-w-xs">
+                        <p class="text-xs leading-relaxed">{{ registro.observaciones }}</p>
+                      </div>
+                      <div v-else class="text-center text-gray-500 italic text-xs">
+                        Sin observaciones
+                      </div>
+                    </td>
+                    
+                    <!-- 10. Distribución Excepcional -->
+                    <td class="px-3 py-4 text-sm text-gray-900">
+                      <div v-if="registro.distribucionExcepcional" class="max-w-xs">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          {{ registro.distribucionExcepcional }}
+                        </span>
+                      </div>
+                      <div v-else class="text-center text-gray-500 italic text-xs">
+                        No Aplica
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Fila de Totales Semanales -->
+                  <tr v-if="totalesSemanales" class="bg-blue-50 border-t-2 border-blue-200">
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
+                      TOTALES SEMANALES
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono font-bold text-blue-900 text-center">
+                      {{ totalesSemanales.jornadaPactadaTotal }}
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono font-bold text-blue-900 text-center">
+                      {{ totalesSemanales.horasTrabajadasTotal }}
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono font-bold text-blue-900 text-center">
+                      {{ totalesSemanales.colacionTotal }}
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-blue-900 text-center">
+                      -
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono font-bold text-center">
+                      <span v-if="totalesSemanales.tiempoFaltanteTotal" class="text-red-600">
+                        {{ totalesSemanales.tiempoFaltanteTotal }}
+                      </span>
+                      <span v-else class="text-gray-400">-</span>
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-mono font-bold text-center">
+                      <span v-if="totalesSemanales.tiempoExtraTotal" class="text-blue-600">
+                        {{ totalesSemanales.tiempoExtraTotal }}
+                      </span>
+                      <span v-else class="text-gray-400">-</span>
+                    </td>
+                    <td class="px-3 py-4 text-sm font-bold text-blue-900 text-center">
+                      {{ totalesSemanales.otrasMarcacionesCount }} registros
+                    </td>
+                    <td class="px-3 py-4 text-sm font-bold text-blue-900 text-center">
+                      RESUMEN SEMANAL
+                    </td>
+                    <td class="px-3 py-4 text-sm font-bold text-blue-900 text-center">
+                      <div class="flex items-center justify-center space-x-2">
+                        <span v-if="totalesSemanales.balancePositivo" class="text-green-600 font-bold">✓</span>
+                        <span v-if="totalesSemanales.balanceNegativo" class="text-red-600 font-bold">⚠</span>
+                        <span class="text-xs">{{ totalesSemanales.balance }}</span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -369,6 +556,58 @@ const filters = ref({
 })
 
 const registros = ref([])
+
+// Datos del encabezado legal requerido
+const encabezado = ref({
+  razonSocial: 'TELEMEDIOS S.A.',
+  rutEmpresa: '96.789.123-4',
+  nombreTrabajador: 'Sin seleccionar',
+  rutTrabajador: 'Sin seleccionar',
+  lugarTrabajo: 'Oficina Central Santiago',
+  bandaHoraria: 'Turno Mañana (08:00 - 17:00)'
+})
+
+// Computed para totales semanales
+const totalesSemanales = computed(() => {
+  const data = filteredData.value
+  if (data.length === 0) return null
+  
+  const totalJornadaPactada = data.reduce((sum, r) => sum + convertirHorasAMinutos(r.jornadaPactada || '08:00:00'), 0)
+  const totalHorasTrabajadas = data.reduce((sum, r) => {
+    const entrada = convertirHoraAMinutos(r.entrada)
+    const salida = convertirHoraAMinutos(r.salida)
+    return sum + (salida - entrada)
+  }, 0)
+  
+  const totalColacion = data.reduce((sum, r) => sum + convertirHorasAMinutos(r.colacionPactada || '01:00:00'), 0)
+  
+  let totalFaltante = 0
+  let totalExtra = 0
+  
+  data.forEach(r => {
+    if (r.tiempoFaltante) {
+      totalFaltante += convertirHorasAMinutos(r.tiempoFaltante.replace('-', ''))
+    }
+    if (r.tiempoExtra) {
+      totalExtra += convertirHorasAMinutos(r.tiempoExtra.replace('+', ''))
+    }
+  })
+  
+  const otrasMarcacionesCount = data.reduce((sum, r) => sum + (r.otrasMarcaciones?.length || 0), 0)
+  const balance = totalExtra > totalFaltante ? 'Positivo' : totalFaltante > totalExtra ? 'Negativo' : 'Equilibrado'
+  
+  return {
+    jornadaPactadaTotal: convertirMinutosAHoras(totalJornadaPactada),
+    horasTrabajadasTotal: convertirMinutosAHoras(totalHorasTrabajadas),
+    colacionTotal: convertirMinutosAHoras(totalColacion),
+    tiempoFaltanteTotal: totalFaltante > 0 ? `-${convertirMinutosAHoras(totalFaltante)}` : null,
+    tiempoExtraTotal: totalExtra > 0 ? `+${convertirMinutosAHoras(totalExtra)}` : null,
+    otrasMarcacionesCount,
+    balance,
+    balancePositivo: balance === 'Positivo',
+    balanceNegativo: balance === 'Negativo'
+  }
+})
 
 const stats = computed(() => {
   const data = filteredData.value
@@ -473,7 +712,7 @@ const getDiferenciaClass = (diferencia) => {
 }
 
 const loadData = async () => {
-  // Simular datos ampliados para desarrollo
+  // Simular datos según el formato legal requerido
   registros.value = [
     {
       id: 1,
@@ -485,13 +724,22 @@ const loadData = async () => {
       lugar: 'sucursal_central',
       cargo: 'tecnico',
       empresaTransitoria: null,
-      entrada: '08:00',
-      salida: '17:30',
-      horasTrabajadas: '9.5',
-      horasRequeridas: '8.0',
-      diferencia: '+1.5',
-      cumplimiento: 'EXCEDIDO',
       fecha: '2024-01-15',
+      jornadaPactada: '08:00:00',
+      entrada: '08:00:00',
+      salida: '17:30:00',
+      colacionPactada: '01:00:00',
+      colacionInicio: '12:30:00',
+      colacionFin: '13:30:00',
+      tiempoFaltante: null,
+      tiempoExtra: '+01:30:00',
+      otrasMarcaciones: [
+        { tipo: 'Descanso', horario: '10:15-10:30' },
+        { tipo: 'Descanso', horario: '15:00-15:15' }
+      ],
+      observaciones: 'Trabajador cumplió jornada completa con horas extras autorizadas',
+      distribucionExcepcional: null,
+      cumplimiento: 'EXCEDIDO',
       hashChecksum: 'abc123def456'
     },
     {
@@ -504,13 +752,21 @@ const loadData = async () => {
       lugar: 'sucursal_central',
       cargo: 'administrativo',
       empresaTransitoria: null,
-      entrada: '08:15',
-      salida: '17:00',
-      horasTrabajadas: '8.75',
-      horasRequeridas: '8.0',
-      diferencia: '+0.75',
-      cumplimiento: 'EXCEDIDO',
       fecha: '2024-01-15',
+      jornadaPactada: '08:00:00',
+      entrada: '08:15:00',
+      salida: '17:00:00',
+      colacionPactada: '01:00:00',
+      colacionInicio: '13:00:00',
+      colacionFin: '14:00:00',
+      tiempoFaltante: '-00:15:00',
+      tiempoExtra: null,
+      otrasMarcaciones: [
+        { tipo: 'Reunión', horario: '09:00-10:00' }
+      ],
+      observaciones: 'Tardanza justificada por transporte público',
+      distribucionExcepcional: null,
+      cumplimiento: 'INCOMPLETO',
       hashChecksum: 'def456ghi789'
     },
     {
@@ -523,13 +779,19 @@ const loadData = async () => {
       lugar: 'sucursal_norte',
       cargo: 'vendedor',
       empresaTransitoria: 'manpower',
-      entrada: '14:00',
-      salida: '21:30',
-      horasTrabajadas: '7.5',
-      horasRequeridas: '8.0',
-      diferencia: '-0.5',
-      cumplimiento: 'INCOMPLETO',
       fecha: '2024-01-15',
+      jornadaPactada: '08:00:00',
+      entrada: '14:00:00',
+      salida: '21:30:00',
+      colacionPactada: '00:30:00',
+      colacionInicio: '18:00:00',
+      colacionFin: '18:30:00',
+      tiempoFaltante: '-01:00:00',
+      tiempoExtra: null,
+      otrasMarcaciones: [],
+      observaciones: 'Salida anticipada por cita médica autorizada',
+      distribucionExcepcional: 'Jornada reducida autorizada',
+      cumplimiento: 'INCOMPLETO',
       hashChecksum: 'ghi789jkl012'
     },
     {
@@ -542,13 +804,21 @@ const loadData = async () => {
       lugar: 'oficina_comercial',
       cargo: 'administrativo',
       empresaTransitoria: null,
-      entrada: '08:00',
-      salida: '16:00',
-      horasTrabajadas: '8.0',
-      horasRequeridas: '8.0',
-      diferencia: '0.0',
-      cumplimiento: 'COMPLETO',
       fecha: '2024-01-15',
+      jornadaPactada: '08:00:00',
+      entrada: '08:00:00',
+      salida: '16:00:00',
+      colacionPactada: '01:00:00',
+      colacionInicio: '12:00:00',
+      colacionFin: '13:00:00',
+      tiempoFaltante: null,
+      tiempoExtra: null,
+      otrasMarcaciones: [
+        { tipo: 'Capacitación', horario: '14:00-15:00' }
+      ],
+      observaciones: 'Jornada normal sin novedades',
+      distribucionExcepcional: null,
+      cumplimiento: 'COMPLETO',
       hashChecksum: 'jkl012mno345'
     },
     {
@@ -561,16 +831,71 @@ const loadData = async () => {
       lugar: 'planta_produccion',
       cargo: 'operario',
       empresaTransitoria: 'randstad',
-      entrada: '06:00',
-      salida: '15:30',
-      horasTrabajadas: '9.5',
-      horasRequeridas: '8.0',
-      diferencia: '+1.5',
-      cumplimiento: 'HORAS_EXTRA',
       fecha: '2024-01-15',
+      jornadaPactada: '08:00:00',
+      entrada: '06:00:00',
+      salida: '15:30:00',
+      colacionPactada: '00:30:00',
+      colacionInicio: null,
+      colacionFin: null,
+      tiempoFaltante: null,
+      tiempoExtra: '+01:00:00',
+      otrasMarcaciones: [
+        { tipo: 'Jornada Pasiva', horario: '11:00-11:30' },
+        { tipo: 'Mantenimiento', horario: '14:00-14:30' }
+      ],
+      observaciones: 'Turno nocturno con horas extras por producción urgente',
+      distribucionExcepcional: 'Turno especial 24/7',
+      cumplimiento: 'HORAS_EXTRA',
       hashChecksum: 'mno345pqr678'
     }
   ]
+  
+  // Actualizar encabezado con el primer trabajador si existe
+  if (registros.value.length > 0) {
+    const primerTrabajador = registros.value[0]
+    encabezado.value.nombreTrabajador = primerTrabajador.nombre
+    encabezado.value.rutTrabajador = formatearRut(primerTrabajador.cedula)
+  }
+}
+
+// Funciones auxiliares para manejo de tiempo
+const convertirHorasAMinutos = (hora) => {
+  if (!hora) return 0
+  const [h, m, s] = hora.split(':').map(Number)
+  return h * 60 + m + (s ? Math.round(s / 60) : 0)
+}
+
+const convertirHoraAMinutos = (hora) => {
+  if (!hora) return 0
+  const [h, m] = hora.split(':').map(Number)
+  return h * 60 + m
+}
+
+const convertirMinutosAHoras = (minutos) => {
+  const horas = Math.floor(minutos / 60)
+  const mins = minutos % 60
+  return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`
+}
+
+const formatearFecha = (fecha) => {
+  const date = new Date(fecha)
+  const dia = date.getDate().toString().padStart(2, '0')
+  const mes = (date.getMonth() + 1).toString().padStart(2, '0')
+  const año = date.getFullYear().toString().slice(-2)
+  return `${dia}/${mes}/${año}`
+}
+
+const formatearRut = (rut) => {
+  if (!rut) return 'Sin RUT'
+  // Simular formato de RUT chileno
+  const rutLimpio = rut.replace(/[.-]/g, '')
+  if (rutLimpio.length >= 7) {
+    const cuerpo = rutLimpio.slice(0, -1)
+    const dv = rutLimpio.slice(-1)
+    return `${cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
+  }
+  return rut
 }
 
 const applyFilters = () => {
