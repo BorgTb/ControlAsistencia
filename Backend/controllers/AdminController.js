@@ -1,6 +1,8 @@
 import AuthService from "../services/authservice.js";
+import TelegestorService from "../services/TelegestorService.js";
 import UserModel from "../model/UserModel.js";
 import TurnosModel from "../model/TurnosModel.js";
+
 
 
 
@@ -32,7 +34,8 @@ const createTurno = async (req, res) => {
 
 const obtenerTrabajadores = async (req, res) => {
     try {
-        const trabajadores = await UserModel.findAllWorkers();
+        const { rut } = req.params;
+        const trabajadores = await TelegestorService.getCompanyWorkers(rut);
         res.status(200).json({ success: true, data: trabajadores });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);

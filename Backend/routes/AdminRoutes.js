@@ -6,7 +6,7 @@ const router = express.Router();
 
 
 router.post('/trabajador', AdminController.createTrabajador);
-router.get('/trabajadores', AdminController.obtenerTrabajadores);
+router.get('/trabajador/:rut', AdminController.obtenerTrabajadores);
 router.post('/turnos', AdminController.createTurno);
 router.get('/turnos', AdminController.obtenerTurnos);
 

@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore.js'
 
-
-
 // Configuración de la URL base de la API
 const API_BASE_URL = (() => {
   // Verificar si estamos en un entorno Vite
@@ -69,9 +67,9 @@ class AdminServices{
     }
   }
 
-  static async obtenerTrabajadores() {
+  static async obtenerTrabajadores(rut) {
     try {
-      const response = await apiClient.get('/admin/trabajadores')
+      const response = await apiClient.get(`/admin/trabajador/${rut}`)
       return response.data
     } catch (error) {
       throw error

@@ -40,6 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoading,
+    esAdmin,
     // Getters
     isAuthenticated,
     getToken,
