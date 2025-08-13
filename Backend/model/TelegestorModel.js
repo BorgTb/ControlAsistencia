@@ -26,6 +26,9 @@ class  TelegestorModel {
             ORDER BY contrato_trabajador.con_trab_idn DESC;
         `;
         const [rows] = await pool.query(query, [rut]);
+        if (rows.length === 0) {
+            return null;
+        }
         return rows;
     }
     async getCompanyWorkers(rutEmpresa = null) {

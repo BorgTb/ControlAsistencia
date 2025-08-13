@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt, { hash } from 'bcrypt';
 import dotenv from 'dotenv';
 import UserModel from '../model/UserModel.js'; // Import your user model
+import TelegestorService from './TelegestorService.js';
 
 dotenv.config();
 
@@ -73,11 +74,18 @@ const loginUser = async (email, password) => {
     // Use UserModel to find user
     
     const user = await UserModel.findByEmail(email);
+        
     
 
     if (!user) {
         throw new Error('User not found');
     }
+    const valid = await TelegestorService.verifyWorker(user.rut);
+
+    if (!valid) {
+        throw new Error('Worker is not valid');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {

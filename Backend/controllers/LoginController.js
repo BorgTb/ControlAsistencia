@@ -77,7 +77,7 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        if (error.message === 'User not found' || error.message === 'Invalid password') {
+        if (error.message === 'User not found' || error.message === 'Invalid password' || error.message === 'Worker is not valid') {
             return res.status(401).json({ 
                 success: false, 
                 message: 'Invalid credentials' 
