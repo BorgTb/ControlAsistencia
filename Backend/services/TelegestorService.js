@@ -2,7 +2,7 @@ import TelegestorModel from "../model/TelegestorModel.js";
 import TeleticketServices from "./TeleticketServices.js";
 
 
-const verifyWorker = async (rut = null, email = null) => {
+const verifyWorker = async (rut = null) => {
     const workerData = rut ? await TelegestorModel.getWorker(rut) : null;
     const worker = Array.isArray(workerData) ? workerData[0] : workerData;
     
@@ -32,9 +32,7 @@ const verifyWorker = async (rut = null, email = null) => {
                 {"est_con_trab_idn":"20","est_con_trab_nombre":"EL PERJUICIO MATERIAL CAUSADO INTENCIONALMENTE EN LAS INSTALACIONES","est_con_trab_finiquito":"0","est_con_trab_art_ley":"160 numero 6","est_con_trab_codigo_lre":"15"},
                 {"est_con_trab_idn":"21","est_con_trab_nombre":"INCUMPLIMIENTO GRAVE DE LAS OBLIGACIONES QUE IMPONE EL CONTRATO","est_con_trab_finiquito":"0","est_con_trab_art_ley":"160 numero 7","est_con_trab_codigo_lre":"16"}
             ]
-    */
-    const isValidWorker = await TeleticketServices.validarExistenciaUsuarioEmpresa(email);
-    console.log(`Worker validation for ${email}: ${isValidWorker}`);
+    */    
     if (worker === null) {
         return false;
     }
