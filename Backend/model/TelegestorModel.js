@@ -46,6 +46,15 @@ class  TelegestorModel {
         const [rows] = await pool.query(query, [rutEmpresa]);
         return rows;    
     }
+    
+    async getEmpresa(rut = null){
+        const query = `SELECT * FROM empresa WHERE emp_rut = ?`;
+        const [rows] = await pool.query(query, [rut]);
+        if (rows.length === 0) {
+            return null;
+        }
+        return rows[0];
+    }
 }
 
  

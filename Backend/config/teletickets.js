@@ -6,11 +6,11 @@ dotenv.config();
 
 // MySQL Database Connection Pool
 const pool = mysql.createPool({
-    host: process.env.DB_HOST, 
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
+    host: process.env.TELETICKETS_DB_HOST, 
+    user: process.env.TELETICKETS_DB_USER,
+    password: process.env.TELETICKETS_DB_PASSWORD,
+    database: process.env.TELETICKETS_DB_NAME,
+    port: process.env.TELETICKETS_DB_PORT,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -19,7 +19,7 @@ const pool = mysql.createPool({
 
 try {
     const connection = await pool.getConnection();
-    console.log('Connected to the Control de Asistencia database.');
+    console.log('Connected to the Teletickets database.');
     connection.release(); // Devuelve la conexión al pool
 } catch (error) {
     console.error('Error connecting to the database:', error);

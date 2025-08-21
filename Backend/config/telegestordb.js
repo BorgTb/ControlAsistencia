@@ -19,7 +19,7 @@ const pool = mysql.createPool({
 
 try {
     const connection = await pool.getConnection();
-    console.log('Connected to the MySQL database.');
+    console.log('Connected to the Telegestor database.');
     connection.release(); // Devuelve la conexión al pool
 } catch (error) {
     console.error('Error connecting to the database:', error);
