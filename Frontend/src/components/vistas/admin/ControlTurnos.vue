@@ -429,9 +429,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import HeaderAdmin from '../../components/headerAdmin.vue';
-import ModalNuevoTurno from '../../modals/ModalNuevoTurno.vue';
-import AdminServices from '../../../services/AdminServices';
+import AdminServices from '../../../services/AdminServices.js';
 import { useAdmin } from '../../../composables/useAdmin.js';
 
 const { obtenerTrabajadores } = useAdmin();
@@ -441,7 +439,6 @@ const filtroFecha = ref('');
 const filtroTipo = ref('');
 const trabajadores = ref([]);
 const cargando = ref(false);
-const modalNuevoTurnoAbierto = ref(false);
 
 // Formulario para crear turnos
 const formTurno = reactive({

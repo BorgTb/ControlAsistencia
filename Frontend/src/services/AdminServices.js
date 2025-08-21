@@ -121,6 +121,15 @@ class AdminServices{
       throw error
     }
   }
+
+  static async enrolarTrabajador(datosEnrolamiento) {
+    try {
+      const response = await apiClient.post('/admin/enrolar-trabajador', datosEnrolamiento)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
 export default AdminServices

@@ -34,7 +34,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Total Trabajadores</p>
-                <p class="text-2xl font-bold text-gray-900">245</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.total }}</p>
               </div>
             </div>
           </div>
@@ -47,8 +47,8 @@
                 </svg>
               </div>
               <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Activos</p>
-                <p class="text-2xl font-bold text-gray-900">198</p>
+                <p class="text-sm font-medium text-gray-500">Enrolados</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.enrolados }}</p>
               </div>
             </div>
           </div>
@@ -62,7 +62,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Pendientes</p>
-                <p class="text-2xl font-bold text-gray-900">47</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.pendientes }}</p>
               </div>
             </div>
           </div>
@@ -75,8 +75,8 @@
                 </svg>
               </div>
               <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Inactivos</p>
-                <p class="text-2xl font-bold text-gray-900">15</p>
+                <p class="text-sm font-medium text-gray-500">No Enrolados</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.noEnrolados }}</p>
               </div>
             </div>
           </div>
@@ -108,8 +108,8 @@
               <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
               <select v-model="filtros.estado" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="">Todos</option>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
+                <option value="enrolado">Enrolado</option>
+                <option value="no enrolado">No Enrolado</option>
                 <option value="pendiente">Pendiente</option>
               </select>
             </div>
@@ -186,8 +186,8 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trabajador.prov_rut }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trabajador.departamento || 'Sin asignar' }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span :class="getEstadoClass(trabajador.estado)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                      {{ trabajador.estado || 'Pendiente' }}
+                    <span :class="getEstadoClass(trabajador)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                      {{ getEstadoTrabajador(trabajador) }}
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -203,8 +203,8 @@
                       <button @click="editarTrabajador(trabajador)" class="text-indigo-600 hover:text-indigo-900">Editar</button>
                       <button @click="gestionarBiometria(trabajador)" class="text-green-600 hover:text-green-900">Biometría</button>
                       <button @click="toggleEstadoTrabajador(trabajador)" 
-                              :class="trabajador.estado === 'activo' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'">
-                        {{ trabajador.estado === 'activo' ? 'Desactivar' : 'Activar' }}
+                              :class="getEstadoTrabajador(trabajador) === 'enrolado' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'">
+                        {{ getEstadoTrabajador(trabajador) === 'enrolado' ? 'Desenrolar' : 'Enrolar' }}
                       </button>
                     </div>
                   </td>
@@ -261,12 +261,21 @@
       @close="cerrarModalNuevo"
       @success="onTrabajadorCreado"
     />
+
+    <!-- Modal Enrolar Trabajador -->
+    <ModalEnrolarTrabajador 
+      :is-open="modalEnrolarAbierto"
+      :trabajador="trabajadorSeleccionado"
+      @close="cerrarModalEnrolar"
+      @success="onTrabajadorEnrolado"
+    />
   </div>
 </template>
 
 <script setup>
 import HeaderAdmin from '../../components/headerAdmin.vue';
 import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
+import ModalEnrolarTrabajador from '../../modals/ModalEnrolarTrabajador.vue';
 import { ref, onMounted, computed } from 'vue';
 import { useAdmin } from '../../../composables/useAdmin.js';
 
@@ -276,6 +285,8 @@ const { obtenerTrabajadores } = useAdmin();
 // Estados reactivos
 const trabajadores = ref([]);
 const modalNuevoAbierto = ref(false);
+const modalEnrolarAbierto = ref(false);
+const trabajadorSeleccionado = ref(null);
 const cargando = ref(false);
 const filtros = ref({
   busqueda: '',
@@ -289,16 +300,29 @@ const trabajadoresFiltrados = computed(() => {
   
   return trabajadores.value.filter(trabajador => {
     const matchBusqueda = !filtros.value.busqueda || 
-      trabajador.nombre.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
-      trabajador.apellido.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
-      trabajador.rut.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
+      trabajador.trab_nombre.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
+      trabajador.trab_ap_paterno.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
+      trabajador.prov_rut.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
       (trabajador.email && trabajador.email.toLowerCase().includes(filtros.value.busqueda.toLowerCase()));
     
-    const matchEstado = !filtros.value.estado || trabajador.estado === filtros.value.estado;
+    const estadoTrabajador = getEstadoTrabajador(trabajador);
+    const matchEstado = !filtros.value.estado || estadoTrabajador === filtros.value.estado;
     const matchDepartamento = !filtros.value.departamento || trabajador.departamento === filtros.value.departamento;
     
     return matchBusqueda && matchEstado && matchDepartamento;
   });
+});
+
+// Computed para estadísticas
+const estadisticas = computed(() => {
+  if (!trabajadores.value) return { total: 0, enrolados: 0, noEnrolados: 0, pendientes: 0 };
+  
+  const total = trabajadores.value.length;
+  const enrolados = trabajadores.value.filter(t => t.cuenta_creada === true).length;
+  const noEnrolados = trabajadores.value.filter(t => t.cuenta_creada === false).length;
+  const pendientes = trabajadores.value.filter(t => t.cuenta_creada === null || t.cuenta_creada === undefined).length;
+  
+  return { total, enrolados, noEnrolados, pendientes };
 });
 
 // Métodos para el modal
@@ -312,6 +336,23 @@ const cerrarModalNuevo = () => {
 
 const onTrabajadorCreado = (nuevoTrabajador) => {
   console.log('Nuevo trabajador creado:', nuevoTrabajador);
+  // Recargar la lista de trabajadores
+  cargarTrabajadores();
+};
+
+// Métodos para el modal de enrolamiento
+const abrirModalEnrolar = (trabajador) => {
+  trabajadorSeleccionado.value = trabajador;
+  modalEnrolarAbierto.value = true;
+};
+
+const cerrarModalEnrolar = () => {
+  modalEnrolarAbierto.value = false;
+  trabajadorSeleccionado.value = null;
+};
+
+const onTrabajadorEnrolado = (trabajadorEnrolado) => {
+  console.log('Trabajador enrolado:', trabajadorEnrolado);
   // Recargar la lista de trabajadores
   cargarTrabajadores();
 };
@@ -336,11 +377,22 @@ const getInitials = (nombre, apellido) => {
   return initial1 + initial2;
 };
 
-const getEstadoClass = (estado) => {
-  switch (estado?.toLowerCase()) {
-    case 'activo':
+const getEstadoTrabajador = (trabajador) => {
+  if (trabajador.cuenta_creada === true) {
+    return 'enrolado';
+  } else if (trabajador.cuenta_creada === false) {
+    return 'no enrolado';
+  } else {
+    return 'pendiente';
+  }
+};
+
+const getEstadoClass = (trabajador) => {
+  const estado = getEstadoTrabajador(trabajador);
+  switch (estado) {
+    case 'enrolado':
       return 'bg-green-100 text-green-800';
-    case 'inactivo':
+    case 'no enrolado':
       return 'bg-red-100 text-red-800';
     case 'pendiente':
       return 'bg-yellow-100 text-yellow-800';
@@ -374,8 +426,16 @@ const gestionarBiometria = (trabajador) => {
 };
 
 const toggleEstadoTrabajador = (trabajador) => {
-  console.log('Toggle estado:', trabajador);
-  // TODO: Implementar cambio de estado
+  const estadoActual = getEstadoTrabajador(trabajador);
+  
+  if (estadoActual === 'enrolado') {
+    // TODO: Implementar desenrolamiento
+    console.log('Desenrolar trabajador:', trabajador);
+    // Aquí iría la lógica para desenrolar (cambiar cuenta_creada a false)
+  } else {
+    // Abrir modal para enrolar
+    abrirModalEnrolar(trabajador);
+  }
 };
 
 

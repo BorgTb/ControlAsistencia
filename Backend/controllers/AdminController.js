@@ -36,6 +36,20 @@ const obtenerTrabajadores = async (req, res) => {
     try {
         const { rut } = req.params;
         const trabajadores = await TelegestorService.getCompanyWorkers(rut);
+
+        // para cada trabajador verificar si existe un usuario
+        for (const trabajador of trabajadores) {
+            const usuario = await UserModel.findByRut(trabajador.prov_rut);
+            if (!usuario){
+                // si no existe decir que no tiene cuenta creada en el sistema
+                trabajador.cuenta_creada = false;
+            } else {
+                // si existe, marcar que sí tiene cuenta creada
+                trabajador.cuenta_creada = true;
+            }
+        }
+
+        console.log("Trabajadores obtenidos:", trabajadores);
         res.status(200).json({ success: true, data: trabajadores });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
@@ -62,9 +76,42 @@ const obtenerTurnos = async (req, res) => {
     }
 };
 
+const enrolarTrabajador = async (req, res) => {
+    try {
+        const { rut, email, password, rol, nombre } = req.body;
+        console.log("Enrolando trabajador:", { rut, email, rol, nombre });
+        
+        // Verificar si ya existe un usuario con este RUT
+        const existingUser = await UserModel.findByRut(rut);
+        if (existingUser) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Ya existe una cuenta para este trabajador" 
+            });
+        }
+
+        // Crear el usuario
+        const newUser = await AuthService.registerUser(email, password, nombre, rol, rut, 'activo');
+        
+        res.status(201).json({ 
+            success: true, 
+            message: "Trabajador enrolado exitosamente",
+            data: newUser 
+        });
+    } catch (error) {
+        console.error("Error enrolando trabajador:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
+    enrolarTrabajador,
     createTurno,
     obtenerTurnos
 };

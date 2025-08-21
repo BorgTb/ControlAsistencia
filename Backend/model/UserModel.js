@@ -21,6 +21,11 @@ class Usuario {
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
         return rows.length ? new Usuario(...Object.values(rows[0])) : null;
     }
+    
+    static async findByRut(rut) {
+        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rut = ?', [rut]);
+        return rows.length ? new Usuario(...Object.values(rows[0])) : null;
+    }
 
     static async findAll() {
         const [rows] = await pool.query('SELECT * FROM usuarios');
