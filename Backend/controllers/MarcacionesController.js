@@ -1,6 +1,7 @@
 import MarcacionesService from '../services/MarcacionesServices.js';
 import NotificacionService from '../services/NotificacionService.js';
 import TurnosModel from '../model/TurnosModel.js';
+import {DateTime} from 'luxon'
 
 
 function calcularDiferenciaHoras(hora1, hora2) {
@@ -73,15 +74,34 @@ const registrarEntrada = async (req, res) => {
             });
         }
 
-        
+        const [turno] = await TurnosModel.getTurnosByUsuarioId(usuario_id);
+        if (!turno){
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró un turno asociado al usuario.'
+            });
+        }
 
-    
+
+        //verificamos si la hora actual es mayor a la hora de salida
+        const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
+        if (horaActual > turno.fin) {
+            return res.status(400).json({
+                success: false,
+                message: 'No se puede registrar la entrada fuera del horario del turno.'
+            });
+        }
+
         const result = await MarcacionesService.registrarMarcacion(
             usuario_id, 'entrada', geo_lat, geo_lon, ip_cliente
         ); 
         const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
-        const [turno] = await TurnosModel.getTurnosByUsuarioId(usuario_id);
+        
+        
 
+        
+        
+        
         // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
         const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);
 
