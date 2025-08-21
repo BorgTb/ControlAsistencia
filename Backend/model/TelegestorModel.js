@@ -55,6 +55,12 @@ class  TelegestorModel {
         }
         return rows[0];
     }
+
+    async getHorariosEmpresa(rutEmpresa = null){
+        const query = `SELECT * FROM horario_empresa WHERE emp_rut = ?`;
+        const [rows] = await pool.query(query, [rutEmpresa]);
+        return rows;
+    }
 }
 
  

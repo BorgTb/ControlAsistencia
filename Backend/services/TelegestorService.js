@@ -48,8 +48,13 @@ const getCompanyWorkers = async (rutEmpresa = null) => {
     return workers;
 };
 
+const getHorariosEmpresa = async (rutEmpresa = null) => {
+    return rutEmpresa ? await TelegestorModel.getHorariosEmpresa(rutEmpresa) : null;
+};
+
 const TelegestorService = {
     verifyWorker,
+    getHorariosEmpresa,
     getCompanyWorkers
 };
 

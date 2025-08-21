@@ -1,3 +1,5 @@
+import TelegestorService from "../services/TelegestorService.js";
+
 // Mock data para simular la base de datos de empresas
 const empresasMock = [
   {
@@ -154,12 +156,30 @@ const buscarEmpresasPorNombre = (req, res) => {
   }
 };
 
+const getHorariosEmpresa = async (req, res) => {
+  try {
+    const { rut } = req.params;
+    const horarios = await TelegestorService.getHorariosEmpresa(rut);
+    res.status(200).json({
+      success: true,
+      data: horarios,
+      message: "Horarios de la empresa obtenidos exitosamente"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener los horarios de la empresa",
+      error: error.message
+    });
+  }
+};
+
 const EmpresaController = {
   getAllEmpresas,
   getEmpresasActivas,
   getEmpresaById,
   buscarEmpresasPorNombre,
-  empresasMock // Exportar también el array para uso en otros módulos si es necesario
+  getHorariosEmpresa
 };
 
 export default EmpresaController;

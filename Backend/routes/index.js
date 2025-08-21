@@ -5,11 +5,13 @@ import EmpresasRoutes from "./EmpresasRoutes.js";
 import AdminRoutes from "./AdminRoutes.js";
 import ReportesRoutes from "./ReportesRoutes.js";
 import TestRoutes from "./TestRoutes.js";
+import UserEmpresaRoutes from "./UserEmpresa.js";
 
 const router = {
     login: AuthRoutes,
     marcaciones: MarcacionesRoutes,
     users: UserRoutes,
+    userEmpresa: UserEmpresaRoutes,
     reportes: ReportesRoutes,
     admin: AdminRoutes,
     empresas: EmpresasRoutes,

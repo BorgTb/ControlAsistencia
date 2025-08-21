@@ -320,7 +320,6 @@ const cargarTrabajadores = async () => {
   try {
     cargando.value = true;
     const response = await obtenerTrabajadores();
-    
     trabajadores.value = response || [];
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);

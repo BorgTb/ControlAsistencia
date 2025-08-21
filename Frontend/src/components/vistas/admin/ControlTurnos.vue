@@ -103,10 +103,14 @@
                 <!-- Trabajador -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Trabajador</label>
-                  <select v-model="formTurno.usuario_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                  <div v-if="cargando" class="flex items-center py-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
+                    <span class="text-sm text-gray-600">Cargando trabajadores...</span>
+                  </div>
+                  <select v-else v-model="formTurno.usuario_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Seleccionar trabajador</option>
-                    <option v-for="trabajador in trabajadores" :key="trabajador.id" :value="trabajador.id">
-                      {{ trabajador.nombre }}
+                    <option v-for="trabajador in trabajadores" :key="trabajador.prov_id || trabajador.id" :value="trabajador.prov_id || trabajador.id">
+                      {{ trabajador.trab_nombre }} {{ trabajador.trab_ap_paterno }}
                     </option>
                   </select>
                 </div>
@@ -426,11 +430,18 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import HeaderAdmin from '../../components/headerAdmin.vue';
+import ModalNuevoTurno from '../../modals/ModalNuevoTurno.vue';
 import AdminServices from '../../../services/AdminServices';
+import { useAdmin } from '../../../composables/useAdmin.js';
+
+const { obtenerTrabajadores } = useAdmin();
 
 // Estados reactivos
 const filtroFecha = ref('');
 const filtroTipo = ref('');
+const trabajadores = ref([]);
+const cargando = ref(false);
+const modalNuevoTurnoAbierto = ref(false);
 
 // Formulario para crear turnos
 const formTurno = reactive({
@@ -441,21 +452,6 @@ const formTurno = reactive({
   colacion_inicio: '',
   colacion_fin: ''
 });
-
-// Array de trabajadores (implementar con datos del backend)
-const trabajadores = ref([
-  // Estructura esperada:
-  // {
-  //   id: 1,
-  //   nombre: 'Juan Pérez',
-  //   iniciales: 'JP'
-  // },
-  // {
-  //   id: 2,
-  //   nombre: 'María González',
-  //   iniciales: 'MG'
-  // }
-]);
 
 // Array de turnos asignados (inicialmente vacío)
 const turnosAsignados = ref([
@@ -554,23 +550,31 @@ const formatearFecha = (fecha) => {
 };
 
 const obtenerNombreTrabajador = (usuarioId) => {
-  const trabajador = trabajadores.value.find(t => t.id == usuarioId);
-  return trabajador ? trabajador.nombre : 'Trabajador Desconocido';
+  const trabajador = trabajadores.value.find(t => (t.prov_id || t.id) == usuarioId);
+  return trabajador ? `${trabajador.trab_nombre} ${trabajador.trab_ap_paterno}` : 'Trabajador Desconocido';
 };
 
 const obtenerIniciales = (usuarioId) => {
-  const trabajador = trabajadores.value.find(t => t.id == usuarioId);
-  return trabajador ? trabajador.iniciales : 'TD';
+  const trabajador = trabajadores.value.find(t => (t.prov_id || t.id) == usuarioId);
+  if (trabajador) {
+    const inicial1 = trabajador.trab_nombre ? trabajador.trab_nombre.charAt(0).toUpperCase() : '';
+    const inicial2 = trabajador.trab_ap_paterno ? trabajador.trab_ap_paterno.charAt(0).toUpperCase() : '';
+    return inicial1 + inicial2;
+  }
+  return 'TD';
 };
 
 
-const obtenerTrabajadores = async () => {
+const cargarTrabajadores = async () => {
   try {
-    const response = await AdminServices.obtenerTrabajadores();
-    console.log('Trabajadores obtenidos:', response.data);
-    trabajadores.value = response.data;
+    cargando.value = true;
+    const response = await obtenerTrabajadores();
+    trabajadores.value = response || [];
   } catch (error) {
-    console.error('Error al obtener trabajadores:', error);
+    console.error('Error al cargar trabajadores:', error);
+    trabajadores.value = [];
+  } finally {
+    cargando.value = false;
   }
 };
 
@@ -586,8 +590,7 @@ const obtenerTurnos = async () => {
 };
 
 onMounted(async () => {
-
-  await obtenerTrabajadores();
+  await cargarTrabajadores();
   await obtenerTurnos();
 });
 
