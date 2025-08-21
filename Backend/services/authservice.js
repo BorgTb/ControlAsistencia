@@ -82,7 +82,7 @@ const loginUser = async (email, password) => {
     }
     const valid = await TelegestorService.verifyWorker(user.rut);
 
-    if (!valid) {
+    if (!valid && user.rol !== 'empleador') {
         throw new Error('Worker is not valid');
     }
 
