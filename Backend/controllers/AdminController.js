@@ -81,17 +81,25 @@ const enrolarTrabajador = async (req, res) => {
         const { rut, email, password, rol, nombre } = req.body;
         console.log("Enrolando trabajador:", { rut, email, rol, nombre });
         
-        // Verificar si ya existe un usuario con este RUT
-        const existingUser = await UserModel.findByRut(rut);
-        if (existingUser) {
+        // Verificar si ya existe un usuario con este RUT o email
+        const existingUserByRut = await UserModel.findByRut(rut);
+        if (existingUserByRut) {
             return res.status(400).json({ 
-                success: false, 
-                message: "Ya existe una cuenta para este trabajador" 
+            success: false, 
+            message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            });
+        }
+
+        const existingUserByEmail = await UserModel.findByEmail(email);
+        if (existingUserByEmail) {
+            return res.status(400).json({ 
+            success: false, 
+            message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
             });
         }
 
         // Crear el usuario
-        const newUser = await AuthService.registerUser(email, password, nombre, rol, rut, 'activo');
+        const newUser = await AuthService.registerUser(email, password, nombre, rol, rut);
         
         res.status(201).json({ 
             success: true, 

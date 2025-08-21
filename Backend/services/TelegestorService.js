@@ -5,7 +5,7 @@ import TeleticketServices from "./TeleticketServices.js";
 const verifyWorker = async (rut = null) => {
     const workerData = rut ? await TelegestorModel.getWorker(rut) : null;
     const worker = Array.isArray(workerData) ? workerData[0] : workerData;
-    
+  
     /*
         Verficar cada caso para el trabajador est_cont_trab_idn
         Estados:
@@ -36,7 +36,7 @@ const verifyWorker = async (rut = null) => {
     if (worker === null) {
         return false;
     }
-    if (worker.est_con_trab_idn !== "1" && worker.prov_rut !== 21199220) {
+    if (worker.est_con_trab_idn !== 1 && worker.prov_rut !== 21199220) {
         return false;
     }
 
