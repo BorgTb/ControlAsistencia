@@ -109,8 +109,8 @@
                   </div>
                   <select v-else v-model="formTurno.usuario_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Seleccionar trabajador</option>
-                    <option v-for="trabajador in trabajadores" :key="trabajador.prov_id || trabajador.id" :value="trabajador.prov_id || trabajador.id">
-                      {{ trabajador.trab_nombre }} {{ trabajador.trab_ap_paterno }}
+                    <option v-for="trabajador in trabajadores" :key="trabajador.usuario_data.id" :value="trabajador.usuario_data.id">
+                      {{ trabajador.usuario_data.nombre }} 
                     </option>
                   </select>
                 </div>
@@ -473,6 +473,7 @@ const turnosAsignados = ref([
 const guardarTurno = async () => {
   try {
     // Crear nuevo turno usando el servicio
+    console.log('Guardando turno:', formTurno);
     const response = await AdminServices.createTurno(formTurno);
     console.log('Turno creado:', response);
     
@@ -565,8 +566,9 @@ const obtenerIniciales = (usuarioId) => {
 const cargarTrabajadores = async () => {
   try {
     cargando.value = true;
-    const response = await obtenerTrabajadores();
+    const response = await obtenerTrabajadores(true);
     trabajadores.value = response || [];
+    console.log(trabajadores.value)
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);
     trabajadores.value = [];

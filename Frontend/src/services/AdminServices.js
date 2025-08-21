@@ -67,9 +67,12 @@ class AdminServices{
     }
   }
 
-  static async obtenerTrabajadores(rut) {
+  static async obtenerTrabajadores(rut, enrolados = false) {
+    console.log("Obteniendo trabajadores para RUT:", rut, "Enrolados:", enrolados);
     try {
-      const response = await apiClient.get(`/admin/trabajador/${rut}`)
+      const response = await apiClient.get(`/admin/trabajador/${rut}`, {
+        params: { enrolados: enrolados }
+      })
       return response.data
     } catch (error) {
       throw error

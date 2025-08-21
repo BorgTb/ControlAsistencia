@@ -192,16 +192,14 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div class="flex space-x-1">
-                      <span v-if="trabajador.biometria_registrada" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Biometría</span>
                       <span v-if="trabajador.tarjeta_asignada" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Tarjeta</span>
-                      <span v-if="!trabajador.biometria_registrada && !trabajador.tarjeta_asignada" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Sin ID</span>
+                      <span v-if="!trabajador.tarjeta_asignada" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Sin ID</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(trabajador.ultimo_acceso) }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
                       <button @click="editarTrabajador(trabajador)" class="text-indigo-600 hover:text-indigo-900">Editar</button>
-                      <button @click="gestionarBiometria(trabajador)" class="text-green-600 hover:text-green-900">Biometría</button>
                       <button @click="toggleEstadoTrabajador(trabajador)" 
                               :class="getEstadoTrabajador(trabajador) === 'enrolado' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'">
                         {{ getEstadoTrabajador(trabajador) === 'enrolado' ? 'Desenrolar' : 'Enrolar' }}
@@ -418,11 +416,6 @@ const formatDate = (dateString) => {
 const editarTrabajador = (trabajador) => {
   console.log('Editar trabajador:', trabajador);
   // TODO: Implementar edición
-};
-
-const gestionarBiometria = (trabajador) => {
-  console.log('Gestionar biometría:', trabajador);
-  // TODO: Implementar gestión de biometría
 };
 
 const toggleEstadoTrabajador = (trabajador) => {

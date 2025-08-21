@@ -35,22 +35,34 @@ const createTurno = async (req, res) => {
 const obtenerTrabajadores = async (req, res) => {
     try {
         const { rut } = req.params;
+        const { enrolados } = req.query; // Obtener el parámetro desde query parameters
+        
         const trabajadores = await TelegestorService.getCompanyWorkers(rut);
 
         // para cada trabajador verificar si existe un usuario
         for (const trabajador of trabajadores) {
             const usuario = await UserModel.findByRut(trabajador.prov_rut);
-            if (!usuario){
+            if (!usuario) {
                 // si no existe decir que no tiene cuenta creada en el sistema
                 trabajador.cuenta_creada = false;
             } else {
-                // si existe, marcar que sí tiene cuenta creada
+                // si existe, marcar que sí tiene cuenta creada y agregar la data del usuario
                 trabajador.cuenta_creada = true;
+                trabajador.usuario_data = usuario; // Agregar la data del usuario
             }
         }
 
-        console.log("Trabajadores obtenidos:", trabajadores);
-        res.status(200).json({ success: true, data: trabajadores });
+        // Filtrar según el parámetro enrolados si se proporciona
+        let trabajadoresFiltrados = trabajadores;
+        if (enrolados !== undefined) {
+            const filtroEnrolados = enrolados === 'true';
+            trabajadoresFiltrados = trabajadores.filter(trabajador => 
+                trabajador.cuenta_creada === filtroEnrolados
+            );
+        }
+
+        console.log("Trabajadores obtenidos:", trabajadoresFiltrados);
+        res.status(200).json({ success: true, data: trabajadoresFiltrados });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
         res.status(500).json({ error: "Internal server error" });
