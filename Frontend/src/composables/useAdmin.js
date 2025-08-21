@@ -13,7 +13,18 @@ export function useAdmin() {
     }
   };
 
+  const obtenerTurnos = async () => {
+    try {
+      const response = await AdminServices.obtenerTurnos(user.value.rut);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener turnos:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
+    obtenerTurnos
   };
 }

@@ -432,7 +432,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import AdminServices from '../../../services/AdminServices.js';
 import { useAdmin } from '../../../composables/useAdmin.js';
 
-const { obtenerTrabajadores } = useAdmin();
+const { obtenerTrabajadores, obtenerTurnos  } = useAdmin();
 
 // Estados reactivos
 const filtroFecha = ref('');
@@ -578,11 +578,10 @@ const cargarTrabajadores = async () => {
 };
 
 
-const obtenerTurnos = async () => {
+const fetchTurnos = async () => {
   try {
-    const response = await AdminServices.obtenerTurnos();
-    console.log('Turnos obtenidos:', response.data);
-    turnosAsignados.value = response.data;
+    const response = await obtenerTurnos();
+    turnosAsignados.value = response;
   } catch (error) {
     console.error('Error al obtener turnos:', error);
   }
@@ -590,7 +589,7 @@ const obtenerTurnos = async () => {
 
 onMounted(async () => {
   await cargarTrabajadores();
-  await obtenerTurnos();
+  await fetchTurnos();
 });
 
 

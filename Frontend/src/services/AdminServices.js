@@ -115,9 +115,9 @@ class AdminServices{
     }
   }
 
-  static async obtenerTurnos() {
+  static async obtenerTurnos(rut) {
     try {
-      const response = await apiClient.get('/admin/turnos')
+      const response = await apiClient.get(`/admin/turnos/${rut}`)
       console.log('Turnos obtenidos:', response.data)
       return response.data
     } catch (error) {

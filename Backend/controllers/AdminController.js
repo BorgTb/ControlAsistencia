@@ -57,27 +57,51 @@ const obtenerTrabajadores = async (req, res) => {
         if (enrolados === 'true') {
             trabajadoresFiltrados = trabajadores.filter(trabajador => trabajador.cuenta_creada === true);
         }
-
-        console.log("Trabajadores obtenidos:", trabajadoresFiltrados);
         res.status(200).json({ success: true, data: trabajadoresFiltrados });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
-
 const obtenerTurnos = async (req, res) => {
     try {
-        const turnos = await TurnosModel.getAllTurnos();
+        const { rut } = req.params;
+        console.log("Obteniendo turnos para RUT:", rut);
 
-        // para cada turno agregar un atributo que sea trabajador_iniciales, que toma las iniciales de trabajador_nombre y las deja en mayuscula ej: Agustin: AG
-        turnos.forEach(turno => {
-            const nombres = turno.trabajador_nombre.split(" ");
+        // Obtener los trabajadores de la compañía
+        const trabajadores = await TelegestorService.getCompanyWorkers(rut);
+
+        // Obtener los IDs de los trabajadores desde el UserModel
+        const trabajadoresIds = [];
+        for (const trabajador of trabajadores) {
+            const usuario = await UserModel.findByRut(trabajador.prov_rut);
+            if (usuario) {
+                trabajadoresIds.push(usuario.id);
+            }
+        }
+
+
+        if (trabajadoresIds.length === 0) {
+            console.log("No se encontraron trabajadores para el RUT:", rut);
+            return res.status(404).json({ success: false, message: "No se encontraron trabajadores" });
+        }
+
+        // Obtener los turnos que correspondan a los IDs de los trabajadores
+        const turnos = await TurnosModel.getTurnosByUsuarioId(trabajadoresIds);
+
+        // Para cada turno, agregar un atributo que sea trabajador_iniciales basado en el nombre del usuario en UserModel
+        for (const turno of turnos) {
+            const usuario = await UserModel.findById(turno.usuario_id);
+            if (usuario) {
+            const nombres = usuario.nombre.split(" ");
             const iniciales = nombres.map(nombre => nombre.charAt(0).toUpperCase()).join("");
             turno.trabajador_iniciales = iniciales;
-        });
-        console.log("Turnos obtenidos:", turnos);
+            } else {
+            turno.trabajador_iniciales = "N/A"; // Si no se encuentra el usuario, asignar "N/A"
+            }
+        }
 
+        console.log("Turnos obtenidos:", turnos);
         res.status(200).json({ success: true, data: turnos });
     } catch (error) {
         console.error("Error fetching turnos:", error);
