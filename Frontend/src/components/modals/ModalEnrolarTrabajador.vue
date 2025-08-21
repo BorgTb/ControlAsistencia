@@ -132,17 +132,13 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     Rol *
                   </label>
-                  <select
-                    v-model="form.rol"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">Seleccionar rol</option>
-                    <option value="trabajador">Trabajador</option>
-                    <option value="empleador">Empleador</option>
-                    <option value="fiscalizador">Fiscalizador</option>
-                  </select>
-                  <span v-if="errors.rol" class="text-red-500 text-xs mt-1">{{ errors.rol }}</span>
+                  <input
+                    type="text"
+                    value="Trabajador"
+                    readonly
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                  <span class="text-gray-500 text-xs mt-1">El rol por defecto es trabajador y no puede ser modificado</span>
                 </div>
               </div>
             </div>
@@ -230,14 +226,13 @@ const mensajeExito = ref('')
 const form = reactive({
   email: '',
   password: '',
-  rol: 'trabajador'
+  rol: 'trabajador' // Rol fijo, no cambiable
 })
 
 // Errores de validación
 const errors = reactive({
   email: '',
-  password: '',
-  rol: ''
+  password: ''
 })
 
 // Métodos
@@ -269,7 +264,7 @@ const resetForm = () => {
   // Resetear datos del formulario
   form.email = ''
   form.password = ''
-  form.rol = 'trabajador'
+  // El rol siempre permanece como 'trabajador' y no se resetea
   
   // Resetear errores
   Object.keys(errors).forEach(key => {
@@ -310,11 +305,6 @@ const validateForm = () => {
     isValid = false
   } else if (form.password.length < 6) {
     errors.password = 'La contraseña debe tener al menos 6 caracteres'
-    isValid = false
-  }
-  
-  if (!form.rol) {
-    errors.rol = 'El rol es requerido'
     isValid = false
   }
   
