@@ -295,12 +295,52 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
     }
 };
 
+const obtenerHorarioHoy = async (req, res) => {
+    try {
+        const { user } = req;
+        const usuario_id = user.id;
+        
+        // Obtener fecha actual en zona horaria de Chile
+        const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
+        
+        // Buscar turno asignado para el usuario en la fecha actual
+        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuario_id, fechaHoy);
+        
+        if (!turno) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+                message: 'No hay horario asignado para hoy'
+            });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            data: {
+                tipo: turno.tipo,
+                inicio: turno.inicio,
+                fin: turno.fin,
+                fecha: turno.fecha
+            },
+            message: 'Horario obtenido correctamente'
+        });
+        
+    } catch (error) {
+        console.error('Error en obtenerHorarioHoy:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
 const MarcacionesController = {
     registrarEntrada,
     registrarSalida,
     obtenerMarcacionesPorUsuario,
     registrarColacion,
-    registrarTerminoColacion,  // Agregar esta línea
+    registrarTerminoColacion,
+    obtenerHorarioHoy
 }
 
 export default MarcacionesController;

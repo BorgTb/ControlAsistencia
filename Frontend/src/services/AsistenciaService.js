@@ -637,6 +637,30 @@ class AsistenciaService {
     }
   }
 
+  /**
+   * Obtiene el horario del usuario para el día actual
+   * @returns {Promise<Object>} Horario del usuario
+   */
+  async obtenerHorarioHoy() {
+    try {
+      const response = await apiClient.get('/marcaciones/horario-hoy')
+      
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Horario obtenido correctamente'
+      }
+    } catch (error) {
+      console.error('Error obteniendo horario:', error)
+      
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener horario',
+        status: error.response?.status
+      }
+    }
+  }
+
   
 }
 

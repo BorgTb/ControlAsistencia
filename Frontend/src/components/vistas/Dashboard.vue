@@ -12,6 +12,69 @@
               Panel de Control
             </h3>
             
+            <!-- Horario del Día -->
+            <div class="mb-6 bg-white p-6 rounded-lg shadow border">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Mi Horario de Hoy
+              </h3>
+              
+              <div v-if="isLoadingHorario" class="flex justify-center items-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span class="ml-3 text-gray-600">Cargando horario...</span>
+              </div>
+              
+              <div v-else-if="horarioHoy" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Turno -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div class="flex items-center mb-2">
+                    <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 00-2 2H10a2 2 0 00-2-2V6m8 0h2l-2 2-2-2h2z"></path>
+                    </svg>
+                    <span class="font-medium text-blue-900">Turno</span>
+                  </div>
+                  <p class="text-lg font-bold text-blue-800 capitalize">{{ horarioHoy.tipo || 'No asignado' }}</p>
+                </div>
+                
+                <!-- Hora de Entrada -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div class="flex items-center mb-2">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span class="font-medium text-green-900">Entrada</span>
+                  </div>
+                  <p class="text-lg font-bold text-green-800">{{ formatearHora(horarioHoy.inicio) || '--:--' }}</p>
+                </div>
+                
+                <!-- Hora de Salida -->
+                <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <div class="flex items-center mb-2">
+                    <svg class="w-4 h-4 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span class="font-medium text-red-900">Salida</span>
+                  </div>
+                  <p class="text-lg font-bold text-red-800">{{ formatearHora(horarioHoy.fin) || '--:--' }}</p>
+                </div>
+              </div>
+              
+              <div v-else class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-sm">No tienes horario asignado para hoy</p>
+                <button
+                  @click="cargarHorarioHoy"
+                  class="mt-2 text-sm text-indigo-600 hover:text-indigo-500"
+                >
+                  Recargar horario
+                </button>
+              </div>
+            </div>
+            
             <!-- Control de Asistencia -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               <!-- Panel de Registro -->
@@ -232,6 +295,10 @@ const errorUbicacion = ref('')
 // Estado para marcaciones del día
 const marcacionesHoy = ref([])
 const isLoadingMarcaciones = ref(false)
+
+// Estado para horario del usuario
+const horarioHoy = ref(null)
+const isLoadingHorario = ref(false)
 
 // Timer para actualizar la fecha/hora
 let dateTimeInterval = null
@@ -648,6 +715,26 @@ const cargarMarcacionesHoy = async () => {
   }
 }
 
+const cargarHorarioHoy = async () => {
+  isLoadingHorario.value = true
+  
+  try {
+    const result = await AsistenciaService.obtenerHorarioHoy()
+    console.log('Resultado de obtenerHorarioHoy:', result)
+    if (result.success) {
+      horarioHoy.value = result.data
+    } else {
+      console.error('Error cargando horario:', result.error)
+      horarioHoy.value = null
+    }
+  } catch (error) {
+    console.error('Error cargando horario del día:', error)
+    horarioHoy.value = null
+  } finally {
+    isLoadingHorario.value = false
+  }
+}
+
 const formatearFecha = (fecha) => {
   return new Date(fecha).toLocaleDateString('es-ES', {
     day: '2-digit',
@@ -723,6 +810,7 @@ onMounted(async () => {
   
   // Cargar datos iniciales
   await cargarMarcacionesHoy()
+  await cargarHorarioHoy()
   
   // Cleanup en onUnmounted
   onUnmounted(() => {

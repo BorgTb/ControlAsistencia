@@ -1,4 +1,5 @@
 import pool from '../config/dbconfig.js'
+import { DateTime } from 'luxon';
 
 
 class TurnosModel {
@@ -70,6 +71,23 @@ ON turnos.usuario_id = usuarios.id
         const [result] = await pool.query(query, [id]);
         return result.affectedRows;
     }
+
+    static async obtenerTurnoPorUsuarioYFecha(usuario_id, fecha) {
+        // Convertir la fecha a día de la semana en español usando luxon
+        const diasSemana = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+        const fechaObj = DateTime.fromISO(fecha);
+        const diaSemana = diasSemana[fechaObj.weekday - 1]; // Luxon weekday: 1 (lunes) to 7 (domingo)
+        console.log(`Obteniendo turno para usuario_id: ${usuario_id}, día: ${diaSemana}`);  
+        const query = `
+            SELECT * FROM turnos 
+            WHERE usuario_id = ? AND LOWER(dia) = LOWER(?)
+            ORDER BY id DESC
+            LIMIT 1
+        `;
+        const [rows] = await pool.query(query, [usuario_id, diaSemana]);
+        return rows[0];
+    }
 }
+
 
 export default TurnosModel;
