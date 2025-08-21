@@ -54,11 +54,8 @@ const obtenerTrabajadores = async (req, res) => {
 
         // Filtrar según el parámetro enrolados si se proporciona
         let trabajadoresFiltrados = trabajadores;
-        if (enrolados !== undefined) {
-            const filtroEnrolados = enrolados === 'true';
-            trabajadoresFiltrados = trabajadores.filter(trabajador => 
-                trabajador.cuenta_creada === filtroEnrolados
-            );
+        if (enrolados === 'true') {
+            trabajadoresFiltrados = trabajadores.filter(trabajador => trabajador.cuenta_creada === true);
         }
 
         console.log("Trabajadores obtenidos:", trabajadoresFiltrados);

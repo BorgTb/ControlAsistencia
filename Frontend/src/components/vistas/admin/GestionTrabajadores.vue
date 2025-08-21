@@ -358,7 +358,7 @@ const onTrabajadorEnrolado = (trabajadorEnrolado) => {
 const cargarTrabajadores = async () => {
   try {
     cargando.value = true;
-    const response = await obtenerTrabajadores();
+    const response = await obtenerTrabajadores(false);
     trabajadores.value = response || [];
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);
