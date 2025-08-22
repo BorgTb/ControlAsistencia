@@ -45,6 +45,11 @@ apiClient.interceptors.response.use(
   (error) => {
     const authStore = useAuthStore()
     
+    // Detectar errores de red
+    if (!navigator.onLine || error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      error.isNetworkError = true
+    }
+    
     // Si recibimos un 401, limpiamos la autenticación
     if (error.response?.status === 401) {
       authStore.clearAuth()
@@ -127,11 +132,37 @@ class AsistenciaService {
   }
 
   /**
-   * Registra una entrada del usuario
+   * Registra una entrada del usuario (con soporte offline)
    * @param {Object} ubicacion - Coordenadas de ubicación (opcional)
+   * @param {boolean} isOfflineRetry - Si es un reintento offline
    * @returns {Promise<Object>} Respuesta del servidor
    */
-  async registrarEntrada(ubicacion = null) {
+  async registrarEntrada(ubicacion = null, isOfflineRetry = false) {
+    // Verificar conectividad
+    if (!navigator.onLine && !isOfflineRetry) {
+      // Importar dinámicamente para evitar dependencias circulares
+      const { useOffline } = await import('../composables/useOffline.js')
+      const { addPendingAction } = useOffline()
+      
+      const actionId = addPendingAction({
+        type: 'entrada',
+        data: { ubicacion },
+        userFriendlyName: 'Entrada'
+      })
+      
+      return {
+        success: true,
+        offline: true,
+        actionId,
+        message: 'Entrada registrada offline. Se sincronizará cuando tengas conexión.',
+        data: {
+          tipo: 'entrada',
+          fecha: new Date().toISOString(),
+          offline: true
+        }
+      }
+    }
+
     try {
       const payload = {
         tipo: 'entrada'
@@ -170,8 +201,6 @@ class AsistenciaService {
         payload.location_quality = ubicacion.precision <= 50 ? 'high' : 'low'
       }
 
-      
-      
       const response = await apiClient.post('/marcaciones/entrada', payload)
       
       return {
@@ -182,6 +211,11 @@ class AsistenciaService {
     } catch (error) {
       console.error('Error registrando entrada:', error)
       
+      // Si falla por conectividad y no es un reintento, guardar offline
+      if (!isOfflineRetry && (error.isNetworkError || !navigator.onLine)) {
+        return this.registrarEntrada(ubicacion, false) // Llamar versión offline
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || 'Error al registrar entrada',
@@ -191,11 +225,35 @@ class AsistenciaService {
   }
 
   /**
-   * Registra una salida del usuario
+   * Registra una salida del usuario (con soporte offline)
    * @param {Object} ubicacion - Coordenadas de ubicación (opcional)
+   * @param {boolean} isOfflineRetry - Si es un reintento offline
    * @returns {Promise<Object>} Respuesta del servidor
    */
-  async registrarSalida(ubicacion = null) {
+  async registrarSalida(ubicacion = null, isOfflineRetry = false) {
+    if (!navigator.onLine && !isOfflineRetry) {
+      const { useOffline } = await import('../composables/useOffline.js')
+      const { addPendingAction } = useOffline()
+      
+      const actionId = addPendingAction({
+        type: 'salida',
+        data: { ubicacion },
+        userFriendlyName: 'Salida'
+      })
+      
+      return {
+        success: true,
+        offline: true,
+        actionId,
+        message: 'Salida registrada offline. Se sincronizará cuando tengas conexión.',
+        data: {
+          tipo: 'salida',
+          fecha: new Date().toISOString(),
+          offline: true
+        }
+      }
+    }
+
     try {
       const payload = {
         tipo: 'salida'
@@ -244,6 +302,11 @@ class AsistenciaService {
     } catch (error) {
       console.error('Error registrando salida:', error)
       
+      // Si falla por conectividad y no es un reintento, guardar offline
+      if (!isOfflineRetry && (error.isNetworkError || !navigator.onLine)) {
+        return this.registrarSalida(ubicacion, false) // Llamar versión offline
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || 'Error al registrar salida',
@@ -253,12 +316,36 @@ class AsistenciaService {
   }
 
   /**
-   * Registra una entrada o salida de colación
+   * Registra una entrada o salida de colación (con soporte offline)
    * @param {Object} ubicacion - Coordenadas de ubicación (opcional)
    * @param {string} tipoColacion - 'colacion' para entrada a colación
+   * @param {boolean} isOfflineRetry - Si es un reintento offline
    * @returns {Promise<Object>} Respuesta del servidor
    */
-  async registrarColacion(ubicacion = null, tipoColacion = 'colacion') {
+  async registrarColacion(ubicacion = null, tipoColacion = 'colacion', isOfflineRetry = false) {
+    if (!navigator.onLine && !isOfflineRetry) {
+      const { useOffline } = await import('../composables/useOffline.js')
+      const { addPendingAction } = useOffline()
+      
+      const actionId = addPendingAction({
+        type: 'colacion',
+        data: { ubicacion, tipoColacion },
+        userFriendlyName: 'Colación'
+      })
+      
+      return {
+        success: true,
+        offline: true,
+        actionId,
+        message: 'Colación registrada offline. Se sincronizará cuando tengas conexión.',
+        data: {
+          tipo: 'colacion',
+          fecha: new Date().toISOString(),
+          offline: true
+        }
+      }
+    }
+
     try {
       const payload = {
         tipo: tipoColacion
@@ -291,6 +378,11 @@ class AsistenciaService {
     } catch (error) {
       console.error('Error registrando colación:', error)
       
+      // Si falla por conectividad y no es un reintento, guardar offline
+      if (!isOfflineRetry && (error.isNetworkError || !navigator.onLine)) {
+        return this.registrarColacion(ubicacion, tipoColacion, false) // Llamar versión offline
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || 'Error al registrar colación',
@@ -299,7 +391,30 @@ class AsistenciaService {
     }
   }
 
-  async registrarTerminoColacion(ubicacion = null) {
+  async registrarTerminoColacion(ubicacion = null, isOfflineRetry = false) {
+    if (!navigator.onLine && !isOfflineRetry) {
+      const { useOffline } = await import('../composables/useOffline.js')
+      const { addPendingAction } = useOffline()
+      
+      const actionId = addPendingAction({
+        type: 'termino_colacion',
+        data: { ubicacion },
+        userFriendlyName: 'Término Colación'
+      })
+      
+      return {
+        success: true,
+        offline: true,
+        actionId,
+        message: 'Término de colación registrado offline. Se sincronizará cuando tengas conexión.',
+        data: {
+          tipo: 'colacion',
+          fecha: new Date().toISOString(),
+          offline: true
+        }
+      }
+    }
+
     try {
         const payload = {
             // Mantener el tipo como colacion
@@ -349,6 +464,11 @@ class AsistenciaService {
     } catch (error) {
         console.error('Error registrando término de colación:', error)
 
+        // Si falla por conectividad y no es un reintento, guardar offline
+        if (!isOfflineRetry && (error.isNetworkError || !navigator.onLine)) {
+          return this.registrarTerminoColacion(ubicacion, false) // Llamar versión offline
+        }
+
         return {
             success: false,
             error: error.response?.data?.message || 'Error al registrar término de colación',
@@ -359,11 +479,35 @@ class AsistenciaService {
 
 
   /**
-   * Registra un descanso
+   * Registra un descanso (con soporte offline)
    * @param {Object} ubicacion - Coordenadas de ubicación (opcional)
+   * @param {boolean} isOfflineRetry - Si es un reintento offline
    * @returns {Promise<Object>} Respuesta del servidor
    */
-  async registrarDescanso(ubicacion = null) {
+  async registrarDescanso(ubicacion = null, isOfflineRetry = false) {
+    if (!navigator.onLine && !isOfflineRetry) {
+      const { useOffline } = await import('../composables/useOffline.js')
+      const { addPendingAction } = useOffline()
+      
+      const actionId = addPendingAction({
+        type: 'descanso',
+        data: { ubicacion },
+        userFriendlyName: 'Descanso'
+      })
+      
+      return {
+        success: true,
+        offline: true,
+        actionId,
+        message: 'Descanso registrado offline. Se sincronizará cuando tengas conexión.',
+        data: {
+          tipo: 'descanso',
+          fecha: new Date().toISOString(),
+          offline: true
+        }
+      }
+    }
+
     try {
       const payload = {
         tipo: 'descanso'
@@ -385,6 +529,11 @@ class AsistenciaService {
       }
     } catch (error) {
       console.error('Error registrando descanso:', error)
+      
+      // Si falla por conectividad y no es un reintento, guardar offline
+      if (!isOfflineRetry && (error.isNetworkError || !navigator.onLine)) {
+        return this.registrarDescanso(ubicacion, false) // Llamar versión offline
+      }
       
       return {
         success: false,

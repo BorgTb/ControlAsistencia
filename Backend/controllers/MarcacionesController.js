@@ -320,7 +320,9 @@ const obtenerHorarioHoy = async (req, res) => {
                 tipo: turno.tipo,
                 inicio: turno.inicio,
                 fin: turno.fin,
-                fecha: turno.fecha
+                fecha: turno.fecha,
+                colacion_inicio: turno.colacion_inicio,
+                colacion_fin: turno.colacion_fin
             },
             message: 'Horario obtenido correctamente'
         });

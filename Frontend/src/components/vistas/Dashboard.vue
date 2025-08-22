@@ -12,6 +12,50 @@
               Panel de Control
             </h3>
             
+            <!-- Indicador de estado de conexión -->
+            <div class="mb-4 p-4 rounded-lg" :class="getConnectionStatusClass()">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <!-- Spinner para sincronización -->
+                  <svg v-if="isSyncing" class="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <!-- Icono de offline -->
+                  <svg v-else-if="isOffline" class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                  <!-- Icono de online -->
+                  <svg v-else class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium" :class="getConnectionTextClass()">
+                    {{ getConnectionStatusText() }}
+                  </p>
+                  <p class="text-xs" :class="getConnectionSubTextClass()">
+                    {{ getConnectionSubText() }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mostrar acciones pendientes si las hay -->
+            <div v-if="pendingActions.length > 0" class="mb-4 p-4 bg-blue-100 border border-blue-400 rounded-lg">
+              <h4 class="text-sm font-medium text-blue-800 mb-2">
+                Marcaciones pendientes de sincronización ({{ pendingActions.length }})
+              </h4>
+              <ul class="text-xs text-blue-600 space-y-1">
+                <li v-for="action in pendingActions" :key="action.id" class="flex justify-between items-center">
+                  <span>{{ action.userFriendlyName }} - {{ formatearFechaCompleta(action.timestamp) }}</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-200 text-blue-800">
+                    Pendiente
+                  </span>
+                </li>
+              </ul>
+            </div>
+            
             <!-- Horario del Día -->
             <div class="mb-6 bg-white p-6 rounded-lg shadow border">
               <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -26,7 +70,7 @@
                 <span class="ml-3 text-gray-600">Cargando horario...</span>
               </div>
               
-              <div v-else-if="horarioHoy" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div v-else-if="horarioHoy" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Turno -->
                 <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <div class="flex items-center mb-2">
@@ -47,6 +91,19 @@
                     <span class="font-medium text-green-900">Entrada</span>
                   </div>
                   <p class="text-lg font-bold text-green-800">{{ formatearHora(horarioHoy.inicio) || '--:--' }}</p>
+                </div>
+                
+                <!-- Horario de Colación -->
+                <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <div class="flex items-center mb-2">
+                    <svg class="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium text-orange-900">Colación</span>
+                  </div>
+                  <p class="text-sm font-bold text-orange-800">
+                    {{ formatearHora(horarioHoy.colacion_inicio) || '--:--' }} - {{ formatearHora(horarioHoy.colacion_fin) || '--:--' }}
+                  </p>
                 </div>
                 
                 <!-- Hora de Salida -->
@@ -199,6 +256,17 @@
                 <div v-if="tieneEntradaYSalida" class="mt-4 p-3 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">
                   <p class="text-sm">✅ Jornada laboral completada. Ya tienes registradas tu entrada y salida del día.</p>
                 </div>
+
+                <!-- Mensaje informativo cuando está en colación -->
+                <div v-if="tieneColacionActiva" class="mt-4 p-3 rounded-lg bg-orange-100 text-orange-700 border border-orange-200">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm font-medium">🍽️ Actualmente en colación</p>
+                  </div>
+                  <p class="text-xs mt-1 opacity-75">Recuerda terminar tu colación antes de marcar salida</p>
+                </div>
               </div>
 
               <!-- Historial del Día -->
@@ -275,10 +343,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import AsistenciaService from '../../services/AsistenciaService.js'
+import { useOffline } from '../../composables/useOffline.js'
 
-
+// Agregar composable offline
+const { isOnline, isOffline, pendingActions, processPendingActions, isSyncing } = useOffline()
 
 // Estado para el control de asistencia
 const currentStatus = ref('fuera') // 'dentro' | 'fuera'
@@ -444,6 +514,11 @@ const tieneColacionActiva = computed(() => {
   return colaciones.length % 2 === 1
 })
 
+// Computed para verificar si puede marcar entrada
+const puedeMarcarEntrada = computed(() => {
+  return currentStatus.value === 'fuera' && !tieneEntradaYSalida.value
+})
+
 // Computed para verificar si puede marcar salida
 const puedeMarcarSalida = computed(() => {
   return currentStatus.value === 'dentro' && !tieneColacionActiva.value
@@ -463,6 +538,55 @@ const puedeTerminarColacion = computed(() => {
 const botonesMarcacionDeshabilitados = computed(() => {
   return isRegistering.value || tieneEntradaYSalida.value
 })
+
+// Función para recargar todos los datos
+const recargarDatos = async () => {
+  console.log('🔄 Recargando datos del dashboard...')
+  try {
+    // Recargar marcaciones
+    await cargarMarcacionesHoy()
+    
+    // Recargar horario
+    if (typeof cargarHorarioHoy === 'function') {
+      await cargarHorarioHoy()
+    }
+    
+    console.log('✅ Datos recargados exitosamente')
+  } catch (error) {
+    console.error('❌ Error recargando datos:', error)
+  }
+}
+
+// Funciones para manejar el estado de conexión en el template
+const getConnectionStatusClass = () => {
+  if (isSyncing.value) return 'bg-blue-100 border border-blue-400'
+  if (isOffline.value) return 'bg-yellow-100 border border-yellow-400'
+  return 'bg-green-100 border border-green-400'
+}
+
+const getConnectionTextClass = () => {
+  if (isSyncing.value) return 'text-blue-800'
+  if (isOffline.value) return 'text-yellow-800'
+  return 'text-green-800'
+}
+
+const getConnectionSubTextClass = () => {
+  if (isSyncing.value) return 'text-blue-600'
+  if (isOffline.value) return 'text-yellow-600'
+  return 'text-green-600'
+}
+
+const getConnectionStatusText = () => {
+  if (isSyncing.value) return 'Sincronizando...'
+  if (isOffline.value) return 'Modo Offline'
+  return 'Conectado'
+}
+
+const getConnectionSubText = () => {
+  if (isSyncing.value) return `Procesando ${pendingActions.value.length} marcaciones pendientes`
+  if (isOffline.value) return 'Las marcaciones se guardarán y sincronizarán automáticamente'
+  return 'Todas las funciones disponibles'
+}
 
 // Resto de métodos existentes
 const updateDateTime = () => {
@@ -549,7 +673,7 @@ const obtenerUbicacion = () => {
 }
 
 const registrarEntrada = async () => {
-  if (isRegistering.value || currentStatus.value === 'dentro') return
+  if (isRegistering.value || !puedeMarcarEntrada.value) return
   
   isRegistering.value = true
   pendingAction.value = 'entrada'
@@ -561,10 +685,32 @@ const registrarEntrada = async () => {
     const result = await AsistenciaService.registrarEntrada(ubicacion)
     
     if (result.success) {
-      currentStatus.value = 'dentro'
-      showMessage('Entrada registrada correctamente', 'success')
-      await cargarMarcacionesHoy()
-      // El estado se actualiza automáticamente en cargarMarcacionesHoy()
+      if (result.offline) {
+        // Marcación offline
+        currentStatus.value = 'dentro'
+        showMessage(result.message, 'info')
+        
+        // Agregar marcación temporal a la lista local
+        marcacionesHoy.value.push({
+          id: result.actionId,
+          tipo: 'entrada',
+          fecha: result.data.fecha,
+          hora: new Date().toLocaleTimeString('es-CL', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          }),
+          offline: true,
+          temporal: true
+        })
+      } else {
+        // Marcación online normal
+        currentStatus.value = 'dentro'
+        showMessage('Entrada registrada correctamente', 'success')
+        // Recargar datos inmediatamente para marcaciones online
+        await recargarDatos()
+      }
     } else {
       showMessage(result.error || 'Error al registrar entrada', 'error')
     }
@@ -596,10 +742,32 @@ const registrarSalida = async () => {
     const result = await AsistenciaService.registrarSalida(ubicacion)
     
     if (result.success) {
-      currentStatus.value = 'fuera'
-      showMessage('Salida registrada correctamente', 'success')
-      await cargarMarcacionesHoy()
-      // El estado se actualiza automáticamente en cargarMarcacionesHoy()
+      if (result.offline) {
+        // Marcación offline
+        currentStatus.value = 'fuera'
+        showMessage(result.message, 'info')
+        
+        // Agregar marcación temporal a la lista local
+        marcacionesHoy.value.push({
+          id: result.actionId,
+          tipo: 'salida',
+          fecha: result.data.fecha,
+          hora: new Date().toLocaleTimeString('es-CL', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          }),
+          offline: true,
+          temporal: true
+        })
+      } else {
+        // Marcación online normal
+        currentStatus.value = 'fuera'
+        showMessage('Salida registrada correctamente', 'success')
+        // Recargar datos inmediatamente para marcaciones online
+        await recargarDatos()
+      }
     } else {
       showMessage(result.error || 'Error al registrar salida', 'error')
     }
@@ -625,8 +793,28 @@ const registrarColacion = async () => {
     const result = await AsistenciaService.registrarColacion(ubicacion)
     
     if (result.success) {
-      showMessage('Colación iniciada correctamente', 'success')
-      await cargarMarcacionesHoy()
+      if (result.offline) {
+        showMessage(result.message, 'info')
+        
+        // Para marcaciones offline, agregar marcación temporal
+        marcacionesHoy.value.push({
+          id: result.actionId,
+          tipo: 'colacion',
+          fecha: result.data.fecha,
+          hora: new Date().toLocaleTimeString('es-CL', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          }),
+          offline: true,
+          temporal: true
+        })
+      } else {
+        showMessage('Colación registrada correctamente', 'success')
+        // Recargar datos inmediatamente para marcaciones online
+        await recargarDatos()
+      }
     } else {
       showMessage(result.error || 'Error al registrar colación', 'error')
     }
@@ -652,8 +840,28 @@ const terminarColacion = async () => {
     const result = await AsistenciaService.registrarTerminoColacion(ubicacion)
     
     if (result.success) {
-      showMessage('Colación terminada correctamente', 'success')
-      await cargarMarcacionesHoy()
+      if (result.offline) {
+        showMessage(result.message, 'info')
+        
+        // Para marcaciones offline, agregar marcación temporal
+        marcacionesHoy.value.push({
+          id: result.actionId,
+          tipo: 'colacion',
+          fecha: result.data.fecha,
+          hora: new Date().toLocaleTimeString('es-CL', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          }),
+          offline: true,
+          temporal: true
+        })
+      } else {
+        showMessage('Término de colación registrado correctamente', 'success')
+        // Recargar datos inmediatamente para marcaciones online
+        await recargarDatos()
+      }
     } else {
       showMessage(result.error || 'Error al terminar colación', 'error')
     }
@@ -795,6 +1003,40 @@ const getColorByType = (tipo, marcacion) => {
   }
   return colors[tipo] || 'bg-gray-500'
 }
+
+const formatearFechaCompleta = (timestamp) => {
+  return new Date(timestamp).toLocaleString('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+// Watcher mejorado para recargar cuando vuelve la conexión
+watch(isOnline, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+    showMessage('📶 Conexión restaurada', 'info')
+    
+    // Si hay acciones pendientes, mostrar mensaje de sincronización
+    if (pendingActions.value.length > 0) {
+      showMessage('🔄 Sincronizando marcaciones pendientes...', 'info')
+    } else {
+      // Si no hay acciones pendientes, solo recargar los datos
+      await recargarDatos()
+    }
+  }
+})
+
+// Watcher para mostrar estado de sincronización
+watch(isSyncing, (newValue) => {
+  if (newValue) {
+    showMessage('🔄 Sincronizando marcaciones...', 'info')
+  }
+})
+
 // Lifecycle hooks
 onMounted(async () => {
   // Inicializar fecha/hora
@@ -812,11 +1054,30 @@ onMounted(async () => {
   await cargarMarcacionesHoy()
   await cargarHorarioHoy()
   
+  // Listener para cuando termina la sincronización offline
+  const handleSyncCompleted = async (event) => {
+    const { success, failed, total } = event.detail
+    
+    if (success > 0) {
+      showMessage(`✅ ${success} marcaciones sincronizadas correctamente`, 'success')
+      
+      // Recargar datos automáticamente después de la sincronización
+      await recargarDatos()
+    }
+    
+    if (failed > 0) {
+      showMessage(`⚠️ ${failed} marcaciones no se pudieron sincronizar`, 'warning')
+    }
+  }
+  
+  window.addEventListener('offlineSyncCompleted', handleSyncCompleted)
+  
   // Cleanup en onUnmounted
   onUnmounted(() => {
     if (dateTimeInterval) {
       clearInterval(dateTimeInterval)
     }
+    window.removeEventListener('offlineSyncCompleted', handleSyncCompleted)
   })
 })
 </script>
