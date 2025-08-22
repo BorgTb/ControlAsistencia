@@ -13,5 +13,10 @@ router.post('/termino-colacion', AuthService.verifyToken, MarcacionesController.
 router.get('/hoy', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorUsuario);
 router.get('/horario-hoy', AuthService.verifyToken, MarcacionesController.obtenerHorarioHoy);
 
+// Rutas para administración de marcaciones
+router.get('/admin/todas', AuthService.verifyToken, MarcacionesController.obtenerTodasLasMarcaciones);
+router.get('/admin/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorFecha );
+router.get('/admin/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
+
 
 export default router;

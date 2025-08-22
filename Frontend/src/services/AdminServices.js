@@ -133,6 +133,34 @@ class AdminServices{
       throw error
     }
   }
+
+  // Métodos para marcaciones
+  static async obtenerTodasLasMarcaciones() {
+    try {
+      const response = await apiClient.get('/marcaciones/admin/todas')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async obtenerMarcacionesPorFecha(rutEmpresa, fecha) {
+    try {
+      const response = await apiClient.get(`/marcaciones/admin/empresa/${rutEmpresa}/fecha/${fecha}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async obtenerMarcacionesPorEmpresa(rutEmpresa) {
+    try {
+      const response = await apiClient.get(`/marcaciones/admin/empresa/${rutEmpresa}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
 export default AdminServices

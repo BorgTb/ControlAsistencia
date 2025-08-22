@@ -83,6 +83,37 @@ class Marcaciones {
         const [rows] = await pool.execute(query);
         return rows;
     }
+
+    async obtenerMarcacionesPorRutYFecha(rutUsuario, fecha) {
+        const query = `
+            SELECT 
+                m.*,
+                u.nombre,
+                u.rut
+            FROM marcaciones m
+            JOIN usuarios u ON m.usuario_id = u.id
+            WHERE u.rut = ? 
+            AND DATE(m.fecha) = ?
+            ORDER BY m.fecha DESC, m.hora DESC
+        `;
+        const [rows] = await pool.execute(query, [rutUsuario, fecha]);
+        return rows;
+    }
+
+    async obtenerMarcacionesPorRutUsuario(rutUsuario) {
+        const query = `
+            SELECT 
+                m.*,
+                u.nombre,
+                u.rut
+            FROM marcaciones m
+            JOIN usuarios u ON m.usuario_id = u.id
+            WHERE u.rut = ?
+            ORDER BY m.fecha DESC, m.hora DESC
+        `;
+        const [rows] = await pool.execute(query, [rutUsuario]);
+        return rows;
+    }
 }
 
 export default new Marcaciones();

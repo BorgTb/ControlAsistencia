@@ -106,12 +106,13 @@
       <!-- Filtros y Búsqueda -->
       <div class="px-4 py-6 sm:px-0">
         <div class="bg-white p-6 rounded-lg shadow mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <!-- Búsqueda -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Buscar Trabajador</label>
               <div class="relative">
                 <input
+                  v-model="filtros.busqueda"
                   type="text"
                   placeholder="Nombre o RUT..."
                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -126,6 +127,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
               <input
+                v-model="filtros.fecha"
                 type="date"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
               />
@@ -134,7 +136,7 @@
             <!-- Tipo de Marcación -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-              <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+              <select v-model="filtros.tipo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="">Todos</option>
                 <option value="entrada">Entrada</option>
                 <option value="salida">Salida</option>
@@ -145,8 +147,15 @@
 
             <!-- Botón Filtrar -->
             <div class="flex items-end">
-              <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
+              <button @click="aplicarFiltros" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
                 Filtrar
+              </button>
+            </div>
+
+            <!-- Botón Limpiar -->
+            <div class="flex items-end">
+              <button @click="limpiarFiltros" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
+                Limpiar
               </button>
             </div>
           </div>
@@ -207,7 +216,20 @@
       <div class="px-4 py-6 sm:px-0">
         <div class="bg-white shadow overflow-hidden sm:rounded-md">
           <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Registro de Marcaciones - Hoy</h3>
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg font-medium text-gray-900">
+                Registro de Marcaciones
+                <span v-if="filtros.fecha" class="text-sm text-gray-500 ml-2">
+                  - {{ new Date(filtros.fecha).toLocaleDateString('es-CL') }}
+                </span>
+                <span v-else class="text-sm text-gray-500 ml-2">- Todas</span>
+              </h3>
+              <div class="text-sm text-gray-500">
+                {{ marcaciones.length }} 
+                {{ marcaciones.length === 1 ? 'marcación' : 'marcaciones' }}
+                {{ marcaciones.length !== marcacionesOriginales.length ? 'filtradas' : 'encontradas' }}
+              </div>
+            </div>
           </div>
           
           <div class="overflow-x-auto">
@@ -223,7 +245,21 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="marcacion in marcaciones" :key="marcacion.id" class="hover:bg-gray-50" 
+                <!-- Indicador de carga -->
+                <tr v-if="cargando">
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <div class="flex justify-center items-center">
+                      <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Cargando marcaciones...
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Marcaciones -->
+                <tr v-else v-for="marcacion in marcaciones" :key="marcacion.id" class="hover:bg-gray-50" 
                     :class="{ 
                       'bg-yellow-50': marcacion.modificada, 
                       'bg-green-50': marcacion.agregada 
@@ -238,7 +274,6 @@
                       </div>
                       <div class="ml-4">
                         <div class="text-sm font-medium text-gray-900">{{ marcacion.nombreTrabajador }}</div>
-                        <div class="text-sm text-gray-500">{{ marcacion.departamento }}</div>
                       </div>
                     </div>
                   </td>
@@ -274,7 +309,7 @@
                 </tr>
                 
                 <!-- Mensaje cuando no hay marcaciones -->
-                <tr v-if="marcaciones.length === 0">
+                <tr v-if="!cargando && marcaciones.length === 0">
                   <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                     No hay marcaciones para mostrar
                   </td>
@@ -296,8 +331,11 @@
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p class="text-sm text-gray-700">
-                  Mostrando <span class="font-medium">1</span> al <span class="font-medium">20</span> de{' '}
-                  <span class="font-medium">1,247</span> marcaciones
+                  Mostrando <span class="font-medium">{{ marcaciones.length > 0 ? 1 : 0 }}</span> al <span class="font-medium">{{ marcaciones.length }}</span> de{' '}
+                  <span class="font-medium">{{ marcaciones.length }}</span> marcaciones
+                  <span v-if="marcaciones.length !== marcacionesOriginales.length" class="text-indigo-600">
+                    (filtradas de {{ marcacionesOriginales.length }} total)
+                  </span>
                 </p>
               </div>
               <div>
@@ -328,10 +366,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useAdmin } from '../../../composables/useAdmin.js';
+
+// Composables
+const { obtenerMarcacionesPorEmpresa } = useAdmin();
 
 // Estados reactivos
 const marcaciones = ref([]);
+const marcacionesOriginales = ref([]); // Para mantener los datos originales sin filtrar
 /* Formato esperado para marcaciones:
 {
   id: string | number,
@@ -379,9 +422,147 @@ const estadisticas = ref({});
 }
 */
 
+const cargando = ref(false);
+
+// Variables para filtros
+const filtros = ref({
+  busqueda: '',
+  fecha: '',
+  tipo: ''
+});
+
+// Función para obtener las iniciales del nombre
+const obtenerIniciales = (nombre, apellido) => {
+  const primerNombre = nombre ? nombre.charAt(0).toUpperCase() : '';
+  const primerApellido = apellido ? apellido.charAt(0).toUpperCase() : '';
+  return primerNombre + primerApellido;
+};
+
+// Función para obtener color de avatar aleatorio
+const obtenerColorAvatar = () => {
+  const colores = [
+    'bg-indigo-500',
+    'bg-purple-500', 
+    'bg-green-500',
+    'bg-blue-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-pink-500',
+    'bg-gray-500'
+  ];
+  return colores[Math.floor(Math.random() * colores.length)];
+};
+
+// Función para obtener clases CSS del badge de tipo
+const obtenerClaseTipo = (tipo) => {
+  const clases = {
+    'entrada': 'bg-green-100 text-green-800',
+    'salida': 'bg-red-100 text-red-800',
+    'colacion': 'bg-yellow-100 text-yellow-800',
+    'descanso': 'bg-blue-100 text-blue-800'
+  };
+  return clases[tipo] || 'bg-gray-100 text-gray-800';
+};
+
+// Función para formatear fecha
+const formatearFecha = (fecha) => {
+  return new Date(fecha).toLocaleDateString('es-CL');
+};
+
+// Función para capitalizar tipo
+const capitalizarTipo = (tipo) => {
+  const tipos = {
+    'entrada': 'Entrada',
+    'salida': 'Salida', 
+    'colacion': 'Colación',
+    'descanso': 'Descanso'
+  };
+  return tipos[tipo] || tipo;
+};
+
+// Función para cargar marcaciones
+const cargarMarcaciones = async () => {
+  try {
+    cargando.value = true;
+    const response = await obtenerMarcacionesPorEmpresa();
+    
+    // Transformar los datos del backend al formato esperado por el frontend
+    const marcacionesTransformadas = response.map(marcacion => ({
+      id: marcacion.id,
+      nombreTrabajador: `${marcacion.nombre}`,
+      departamento: null, // Usando empresa como departamento temporal
+      iniciales: obtenerIniciales(marcacion.nombre, marcacion.apellido),
+      avatarColor: obtenerColorAvatar(),
+      fecha: formatearFecha(marcacion.fecha),
+      hora: marcacion.hora,
+      horaOriginal: null, 
+      tipo: capitalizarTipo(marcacion.tipo),
+      tipoOriginal: marcacion.tipo, // Mantener el tipo original para filtros
+      tipoClase: obtenerClaseTipo(marcacion.tipo),
+      metodo: 'Manual', 
+      modificada: false, 
+      agregada: false, 
+      modificadoPor: null, 
+      fechaModificacion: null,
+      // Campos adicionales para filtros
+      rut: marcacion.rut,
+      fechaOriginal: marcacion.fecha
+    }));
+    
+    marcacionesOriginales.value = marcacionesTransformadas;
+    marcaciones.value = marcacionesTransformadas;
+    
+  } catch (error) {
+    console.error('Error al cargar marcaciones:', error);
+  } finally {
+    cargando.value = false;
+  }
+};
+
+// Función para aplicar filtros
+const aplicarFiltros = () => {
+  let marcacionesFiltradas = [...marcacionesOriginales.value];
+  
+  // Filtro por búsqueda (nombre o RUT)
+  if (filtros.value.busqueda.trim()) {
+    const busqueda = filtros.value.busqueda.toLowerCase().trim();
+    marcacionesFiltradas = marcacionesFiltradas.filter(marcacion => 
+      marcacion.nombreTrabajador.toLowerCase().includes(busqueda) ||
+      marcacion.rut.toLowerCase().includes(busqueda)
+    );
+  }
+  
+  // Filtro por fecha
+  if (filtros.value.fecha) {
+    marcacionesFiltradas = marcacionesFiltradas.filter(marcacion => {
+      // Convertir la fecha original a formato YYYY-MM-DD
+      const fechaMarcacion = new Date(marcacion.fechaOriginal).toISOString().split('T')[0];
+      return fechaMarcacion === filtros.value.fecha;
+    });
+  }
+  
+  // Filtro por tipo
+  if (filtros.value.tipo) {
+    marcacionesFiltradas = marcacionesFiltradas.filter(marcacion => 
+      marcacion.tipoOriginal === filtros.value.tipo
+    );
+  }
+  
+  marcaciones.value = marcacionesFiltradas;
+};
+
+// Función para limpiar filtros
+const limpiarFiltros = () => {
+  filtros.value = {
+    busqueda: '',
+    fecha: '',
+    tipo: ''
+  };
+  marcaciones.value = [...marcacionesOriginales.value];
+};
+
 onMounted(() => {
   console.log('Vista Gestión de Marcaciones cargada');
-  // Aquí se cargarían los datos desde el backend
-  // cargarDatos();
+  cargarMarcaciones();
 });
 </script>

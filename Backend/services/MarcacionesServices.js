@@ -1,5 +1,8 @@
+import { Console } from 'console';
 import MarcacionesModel from '../model/MarcacionesModel.js';
 import crypto from 'crypto';
+import TelegestorService from './TelegestorService.js';
+import UserModel from '../model/UserModel.js';
 
 class MarcacionesService {
     async registrarMarcacion(usuario_id, tipo, geo_lat, geo_lon, ip_origen) {
@@ -199,6 +202,90 @@ class MarcacionesService {
         } catch (error) {
             console.error('Error verificando colación activa:', error);
             return false;
+        }
+    }
+
+    async obtenerTodasLasMarcaciones() {
+        try {
+            const marcaciones = await MarcacionesModel.obtenerTodasLasMarcaciones();
+            console.log('Todas las marcaciones obtenidas:', marcaciones);
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener todas las marcaciones:', error);
+            return {
+                success: false,
+                message: 'Error al obtener las marcaciones',
+                error: error.message
+            };
+        }
+    }
+
+    async obtenerMarcacionesPorFechaYEmpresa(fecha, rutEmpresa) {
+        try {
+            const trabajadoresEmpresa = await TelegestorService.getCompanyWorkers(rutEmpresa);
+            const rutTrabajadoresActivos = [];
+            for (const trabajador of trabajadoresEmpresa) {
+                const activeUser = await UserModel.findByRut(trabajador.prov_rut);
+                if (activeUser) {
+                    rutTrabajadoresActivos.push(activeUser.rut);
+                }
+            }
+            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
+            console.log(rutTrabajadoresActivos);
+            const marcaciones = [];
+            for (const rut of rutTrabajadoresActivos) {
+                const marcacionesPorTrabajador = await MarcacionesModel.obtenerMarcacionesPorRutYFecha(rut, fecha);
+                marcaciones.push(...marcacionesPorTrabajador);
+            }
+
+            console.log('Marcaciones obtenidas por fecha y empresa:', marcaciones);
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener marcaciones por fecha y empresa:', error);
+            return {
+                success: false,
+                message: 'Error al obtener las marcaciones por fecha y empresa',
+                error: error.message
+            };
+        }
+    }
+
+    async obtenerMarcacionesPorEmpresa(rutEmpresa) {
+        try {
+            const trabajadoresEmpresa = await TelegestorService.getCompanyWorkers(rutEmpresa);
+            const rutTrabajdoresActivos = [];
+            for (const trabajador of trabajadoresEmpresa) {
+                const activeUser = await UserModel.findByRut(trabajador.prov_rut);
+                if (activeUser) {
+                    rutTrabajdoresActivos.push(activeUser.rut);
+                }
+            }
+            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
+            console.log(rutTrabajdoresActivos);
+            const marcaciones = [];
+            for (const rut of rutTrabajdoresActivos) {
+                const marcacionesPorTrabajador = await MarcacionesModel.obtenerMarcacionesPorRutUsuario(rut);
+                marcaciones.push(...marcacionesPorTrabajador);
+            }
+
+            console.log('Marcaciones obtenidas por empresa:', marcaciones);
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener marcaciones por empresa:', error);
+            return {
+                success: false,
+                message: 'Error al obtener las marcaciones por empresa',
+                error: error.message
+            };
         }
     }
 }

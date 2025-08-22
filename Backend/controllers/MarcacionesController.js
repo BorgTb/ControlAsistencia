@@ -336,13 +336,91 @@ const obtenerHorarioHoy = async (req, res) => {
     }
 };
 
+const obtenerTodasLasMarcaciones = async (req, res) => {
+    try {
+        const result = await MarcacionesService.obtenerTodasLasMarcaciones();
+        
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+        
+        return res.status(200).json(result);
+        
+    } catch (error) {
+        console.error('Error en obtenerTodasLasMarcaciones:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+const obtenerMarcacionesPorFecha = async (req, res) => {
+    try {
+        const { rutEmpresa, fecha } = req.params;
+
+        if (!fecha) {
+            return res.status(400).json({
+                success: false,
+                message: 'La fecha es requerida'
+            });
+        }
+
+        const result = await MarcacionesService.obtenerMarcacionesPorFechaYEmpresa(rutEmpresa, fecha);
+
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+        
+        return res.status(200).json(result);
+        
+    } catch (error) {
+        console.error('Error en obtenerMarcacionesPorFecha:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+const obtenerMarcacionesPorEmpresa = async (req, res) => {
+    try {
+        const { rutEmpresa } = req.params;
+        
+        if (!rutEmpresa) {
+            return res.status(400).json({
+                success: false,
+                message: 'El RUT de la empresa es requerido'
+            });
+        }
+        
+        const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(rutEmpresa);
+        
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+        
+        return res.status(200).json(result);
+        
+    } catch (error) {
+        console.error('Error en obtenerMarcacionesPorEmpresa:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
 const MarcacionesController = {
     registrarEntrada,
     registrarSalida,
     obtenerMarcacionesPorUsuario,
     registrarColacion,
     registrarTerminoColacion,
-    obtenerHorarioHoy
+    obtenerHorarioHoy,
+    obtenerTodasLasMarcaciones,
+    obtenerMarcacionesPorFecha,
+    obtenerMarcacionesPorEmpresa
 }
 
 export default MarcacionesController;
