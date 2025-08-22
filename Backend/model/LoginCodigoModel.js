@@ -28,7 +28,6 @@ class LoginCodigoModel {
         const query = `
             SELECT * FROM login_codigos 
             WHERE codigo = ? 
-            AND verificado = FALSE 
             AND expires_at > NOW()
         `;
         const [rows] = await pool.execute(query, [codigo]);

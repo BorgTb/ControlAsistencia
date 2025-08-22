@@ -52,6 +52,7 @@ const validarCodigo = async (req, res) => {
 
         // Check if the code is valid
         const validCode = await LoginCodigoModel.findValidCodeByCode(codigo);
+        
         if (!validCode) {
             return res.status(400).json({ message: 'Código inválido o expirado' });
         }
