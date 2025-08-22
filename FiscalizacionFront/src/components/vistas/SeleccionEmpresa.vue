@@ -186,7 +186,7 @@ const empresasFiltradas = computed(() => {
   const filtro = filtroEmpresa.value.toLowerCase()
   return empresas.value.filter(empresa => 
     empresa.nombre.toLowerCase().includes(filtro) ||
-    empresa.rut.toLowerCase().includes(filtro)
+    empresa.rut.toString().toLowerCase().includes(filtro)
   )
 })
 
