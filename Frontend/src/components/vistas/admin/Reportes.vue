@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gray-100">
 
 
@@ -37,19 +37,19 @@
           <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600">15</div>
+                <div class="text-3xl font-bold text-blue-600">{{ resumenHoy.reportesGenerados }}</div>
                 <div class="text-sm text-gray-500">Reportes Generados</div>
               </div>
               <div class="text-center">
-                <div class="text-3xl font-bold text-green-600">8</div>
+                <div class="text-3xl font-bold text-green-600">{{ resumenHoy.enviadosEmail }}</div>
                 <div class="text-sm text-gray-500">Enviados por Email</div>
               </div>
               <div class="text-center">
-                <div class="text-3xl font-bold text-purple-600">245</div>
+                <div class="text-3xl font-bold text-purple-600">{{ resumenHoy.trabajadoresIncluidos }}</div>
                 <div class="text-sm text-gray-500">Trabajadores Incluidos</div>
               </div>
               <div class="text-center">
-                <div class="text-3xl font-bold text-orange-600">1,247</div>
+                <div class="text-3xl font-bold text-orange-600">{{ resumenHoy.marcacionesProcesadas }}</div>
                 <div class="text-sm text-gray-500">Marcaciones Procesadas</div>
               </div>
             </div>
@@ -282,15 +282,15 @@
                 <div class="space-y-2">
                   <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Todos los departamentos</option>
-                    <option value="admin">Administración</option>
-                    <option value="ventas">Ventas</option>
-                    <option value="produccion">Producción</option>
+                    <option v-for="departamento in departamentos" :key="departamento.id" :value="departamento.id">
+                      {{ departamento.nombre }}
+                    </option>
                   </select>
                   <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Todos los turnos</option>
-                    <option value="manana">Mañana</option>
-                    <option value="tarde">Tarde</option>
-                    <option value="noche">Noche</option>
+                    <option v-for="turno in turnos" :key="turno.id" :value="turno.id">
+                      {{ turno.nombre }}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -320,34 +320,38 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="n in 10" :key="n" class="hover:bg-gray-50">
+                <tr v-for="reporte in historialReportes" :key="reporte.id" class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <svg class="h-5 w-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                       </svg>
                       <span class="text-sm font-medium text-gray-900">
-                        {{ ['Asistencia', 'Jornada Diaria', 'Marcaciones', 'Incidentes', 'Modificaciones'][n % 5] }}
+                        {{ reporte.tipo }}
                       </span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    01/08/2025 - 07/08/2025
+                    {{ reporte.periodo }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Admin</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reporte.generadoPor }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    07/08/2025<br />
-                    {{ String(Math.floor(Math.random() * 24)).padStart(2, '0') }}:{{ String(Math.floor(Math.random() * 60)).padStart(2, '0') }}
+                    {{ reporte.fechaGeneracion }}<br />
+                    {{ reporte.horaGeneracion }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex space-x-1">
-                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">PDF</span>
-                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Excel</span>
+                      <span v-for="formato in reporte.formatos" :key="formato" 
+                            :class="getFormatoClass(formato)"
+                            class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                        {{ formato.toUpperCase() }}
+                      </span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      Completado
+                    <span :class="getEstadoClass(reporte.estado)"
+                          class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                      {{ reporte.estado }}
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -381,7 +385,53 @@ const configuracion = ref({
   turno: ''
 });
 
+// Resumen de reportes del día actual
+// Debe recibir: { reportesGenerados: number, enviadosEmail: number, trabajadoresIncluidos: number, marcacionesProcesadas: number }
+const resumenHoy = ref({
+  reportesGenerados: 0,    // Número total de reportes generados hoy
+  enviadosEmail: 0,        // Número de reportes enviados por email hoy
+  trabajadoresIncluidos: 0, // Número total de trabajadores incluidos en reportes
+  marcacionesProcesadas: 0  // Número total de marcaciones procesadas
+});
+
+// Lista de departamentos para filtros
+// Debe recibir: [{ id: string|number, nombre: string }]
+const departamentos = ref([]);
+
+// Lista de turnos para filtros  
+// Debe recibir: [{ id: string|number, nombre: string }]
+const turnos = ref([]);
+
+// Historial de reportes generados
+// Debe recibir: [{ id: string|number, tipo: string, periodo: string, generadoPor: string, fechaGeneracion: string, horaGeneracion: string, formatos: string[], estado: string }]
+const historialReportes = ref([]);
+
+// Funciones auxiliares para clases CSS
+const getFormatoClass = (formato) => {
+  const clases = {
+    'pdf': 'bg-red-100 text-red-800',
+    'excel': 'bg-green-100 text-green-800',
+    'word': 'bg-blue-100 text-blue-800'
+  };
+  return clases[formato.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
+
+const getEstadoClass = (estado) => {
+  const clases = {
+    'completado': 'bg-green-100 text-green-800',
+    'procesando': 'bg-yellow-100 text-yellow-800',
+    'error': 'bg-red-100 text-red-800',
+    'pendiente': 'bg-gray-100 text-gray-800'
+  };
+  return clases[estado.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
+
 onMounted(() => {
   console.log('Vista Reportes cargada');
+  // Aquí se deben cargar los datos desde el backend:
+  // - cargarResumenHoy()
+  // - cargarDepartamentos()
+  // - cargarTurnos()
+  // - cargarHistorialReportes()
 });
 </script>
