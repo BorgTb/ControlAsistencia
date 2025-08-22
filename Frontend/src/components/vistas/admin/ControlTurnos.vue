@@ -11,81 +11,6 @@
             <h1 class="text-3xl font-bold text-gray-900">Control de Turnos</h1>
             <p class="text-gray-600 mt-2">Asignación, modificación y gestión de turnos de trabajo</p>
           </div>
-          <div class="flex space-x-3">
-            <button class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              <span>Nuevo Turno</span>
-            </button>
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-              </svg>
-              <span>Asignar Masivo</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel de Estadísticas de Turnos -->
-      <div class="px-4 py-6 sm:px-0">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-              </div>
-              <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Turno Mañana</p>
-                <p class="text-2xl font-bold text-gray-900">98 trabajadores</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-8 w-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-              </div>
-              <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Turno Tarde</p>
-                <p class="text-2xl font-bold text-gray-900">72 trabajadores</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-8 w-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                </svg>
-              </div>
-              <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Turno Noche</p>
-                <p class="text-2xl font-bold text-gray-900">45 trabajadores</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                </svg>
-              </div>
-              <div class="ml-5">
-                <p class="text-sm font-medium text-gray-500">Cambios Hoy</p>
-                <p class="text-2xl font-bold text-gray-900">12</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -185,65 +110,7 @@
                 </div>
               </form>
             </div>
-          </div>
-
-          <!-- Panel de Turnos Definidos -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">Turnos Definidos</h3>
-            </div>
-            <div class="p-6">
-              <div class="space-y-4">
-                <!-- Turno Mañana -->
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <div>
-                      <h4 class="font-medium text-gray-900">Turno Mañana</h4>
-                      <p class="text-sm text-gray-500">08:00 - 16:00</p>
-                      <p class="text-xs text-gray-400">Colación: 12:00 - 13:00</p>
-                    </div>
-                  </div>
-                  <div class="flex space-x-2">
-                    <button @click="editarTipoTurno('mañana')" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</button>
-                    <button class="text-green-600 hover:text-green-900 text-sm">Asignar</button>
-                  </div>
-                </div>
-
-                <!-- Turno Tarde -->
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <div>
-                      <h4 class="font-medium text-gray-900">Turno Tarde</h4>
-                      <p class="text-sm text-gray-500">14:00 - 22:00</p>
-                      <p class="text-xs text-gray-400">Colación: 18:00 - 18:45</p>
-                    </div>
-                  </div>
-                  <div class="flex space-x-2">
-                    <button @click="editarTipoTurno('tarde')" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</button>
-                    <button class="text-green-600 hover:text-green-900 text-sm">Asignar</button>
-                  </div>
-                </div>
-
-                <!-- Turno Noche -->
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <div>
-                      <h4 class="font-medium text-gray-900">Turno Noche</h4>
-                      <p class="text-sm text-gray-500">22:00 - 06:00</p>
-                      <p class="text-xs text-gray-400">Colación: 02:00 - 02:30</p>
-                    </div>
-                  </div>
-                  <div class="flex space-x-2">
-                    <button @click="editarTipoTurno('noche')" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</button>
-                    <button class="text-green-600 hover:text-green-900 text-sm">Asignar</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </div>          
 
           <!-- Panel de Cambios Recientes -->
           <div class="bg-white rounded-lg shadow">
