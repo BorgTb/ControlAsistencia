@@ -40,7 +40,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Marcaciones Hoy</p>
-                <p class="text-2xl font-bold text-gray-900">1,247</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.marcacionesHoy || 0 }}</p>
               </div>
             </div>
           </div>
@@ -54,7 +54,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Modificadas</p>
-                <p class="text-2xl font-bold text-gray-900">23</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.modificadas || 0 }}</p>
               </div>
             </div>
           </div>
@@ -68,7 +68,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Agregadas</p>
-                <p class="text-2xl font-bold text-gray-900">8</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.agregadas || 0 }}</p>
               </div>
             </div>
           </div>
@@ -82,7 +82,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Conflictos</p>
-                <p class="text-2xl font-bold text-gray-900">5</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.conflictos || 0 }}</p>
               </div>
             </div>
           </div>
@@ -96,7 +96,7 @@
               </div>
               <div class="ml-5">
                 <p class="text-sm font-medium text-gray-500">Pendientes</p>
-                <p class="text-2xl font-bold text-gray-900">12</p>
+                <p class="text-2xl font-bold text-gray-900">{{ estadisticas.pendientes || 0 }}</p>
               </div>
             </div>
           </div>
@@ -106,7 +106,7 @@
       <!-- Filtros y Búsqueda -->
       <div class="px-4 py-6 sm:px-0">
         <div class="bg-white p-6 rounded-lg shadow mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Búsqueda -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Buscar Trabajador</label>
@@ -138,20 +138,8 @@
                 <option value="">Todos</option>
                 <option value="entrada">Entrada</option>
                 <option value="salida">Salida</option>
-                <option value="almuerzo_salida">Salida Almuerzo</option>
-                <option value="almuerzo_entrada">Entrada Almuerzo</option>
-              </select>
-            </div>
-
-            <!-- Estado -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-              <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="">Todos</option>
-                <option value="normal">Normal</option>
-                <option value="modificada">Modificada</option>
-                <option value="agregada">Agregada</option>
-                <option value="pendiente">Pendiente</option>
+                <option value="colacion">Colación</option>
+                <option value="descanso">Descanso</option>
               </select>
             </div>
 
@@ -172,50 +160,25 @@
             <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación</h3>
           </div>
           <div class="p-6">
-            <div class="space-y-4">
-              <!-- Solicitud 1 -->
-              <div class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+            <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
+              <div 
+                v-for="solicitud in solicitudesPendientes" 
+                :key="solicitud.id"
+                class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg"
+              >
                 <div class="flex items-center space-x-4">
                   <div class="flex-shrink-0">
-                    <svg class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-if="solicitud.tipo === 'modificacion'" class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                     </svg>
-                  </div>
-                  <div>
-                    <h4 class="font-medium text-gray-900">Juan Pérez - Modificación de Entrada</h4>
-                    <p class="text-sm text-gray-600">
-                      Solicita modificar entrada del 07/08/2025 de 08:30 a 08:00
-                    </p>
-                    <p class="text-xs text-gray-500">Motivo: Problema con transporte público</p>
-                  </div>
-                </div>
-                <div class="flex space-x-2">
-                  <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Aprobar
-                  </button>
-                  <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Rechazar
-                  </button>
-                  <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
-                    Ver Detalles
-                  </button>
-                </div>
-              </div>
-
-              <!-- Solicitud 2 -->
-              <div class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
-                <div class="flex items-center space-x-4">
-                  <div class="flex-shrink-0">
-                    <svg class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-medium text-gray-900">María González - Agregar Marcación</h4>
-                    <p class="text-sm text-gray-600">
-                      Solicita agregar marcación de salida para el 06/08/2025 a las 17:00
-                    </p>
-                    <p class="text-xs text-gray-500">Motivo: Olvidó marcar al salir</p>
+                    <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
+                    <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
+                    <p class="text-xs text-gray-500">Motivo: {{ solicitud.motivo }}</p>
                   </div>
                 </div>
                 <div class="flex space-x-2">
@@ -230,6 +193,11 @@
                   </button>
                 </div>
               </div>
+            </div>
+            
+            <!-- Mensaje cuando no hay solicitudes -->
+            <div v-else class="text-center py-8">
+              <p class="text-gray-500">No hay solicitudes pendientes de aprobación</p>
             </div>
           </div>
         </div>
@@ -250,133 +218,65 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modificado por</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <!-- Marcación Normal -->
-                <tr class="hover:bg-gray-50">
+                <tr v-for="marcacion in marcaciones" :key="marcacion.id" class="hover:bg-gray-50" 
+                    :class="{ 
+                      'bg-yellow-50': marcacion.modificada, 
+                      'bg-green-50': marcacion.agregada 
+                    }">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="h-10 w-10 flex-shrink-0">
-                        <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                          <span class="text-white font-medium">JP</span>
+                        <div class="h-10 w-10 rounded-full flex items-center justify-center"
+                             :class="marcacion.avatarColor">
+                          <span class="text-white font-medium">{{ marcacion.iniciales }}</span>
                         </div>
                       </div>
                       <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Juan Pérez</div>
-                        <div class="text-sm text-gray-500">Administración</div>
+                        <div class="text-sm font-medium text-gray-900">{{ marcacion.nombreTrabajador }}</div>
+                        <div class="text-sm text-gray-500">{{ marcacion.departamento }}</div>
                       </div>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    07/08/2025<br />
-                    <span class="text-green-600 font-medium">08:00:15</span>
+                    {{ marcacion.fecha }}<br />
+                    <span v-if="marcacion.horaOriginal" class="text-red-600 line-through">{{ marcacion.horaOriginal }}</span>
+                    <span v-if="marcacion.horaOriginal"><br /></span>
+                    <span class="text-green-600 font-medium">{{ marcacion.hora }}</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      Entrada
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                          :class="marcacion.tipoClase">
+                      {{ marcacion.tipo }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Biometría</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      Normal
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ marcacion.metodo }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span v-if="marcacion.modificadoPor">
+                      {{ marcacion.modificadoPor }}<br />
+                      <span class="text-xs">{{ marcacion.fechaModificacion }}</span>
                     </span>
+                    <span v-else>-</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
-                      <button class="text-yellow-600 hover:text-yellow-900">Modificar</button>
+                      <button v-if="marcacion.modificada" 
+                              class="text-purple-600 hover:text-purple-900">Historial</button>
+                      <button v-else 
+                              class="text-yellow-600 hover:text-yellow-900">Modificar</button>
                       <button class="text-indigo-600 hover:text-indigo-900">Ver</button>
                     </div>
                   </td>
                 </tr>
-
-                <!-- Marcación Modificada -->
-                <tr class="hover:bg-gray-50 bg-yellow-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-10 w-10 flex-shrink-0">
-                        <div class="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center">
-                          <span class="text-white font-medium">MG</span>
-                        </div>
-                      </div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">María González</div>
-                        <div class="text-sm text-gray-500">Ventas</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    07/08/2025<br />
-                    <span class="text-red-600 line-through">08:25:30</span><br />
-                    <span class="text-green-600 font-medium">08:00:00</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      Entrada
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Tarjeta</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      Modificada
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    Admin<br />
-                    <span class="text-xs">07/08 09:15</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div class="flex justify-end space-x-2">
-                      <button class="text-purple-600 hover:text-purple-900">Historial</button>
-                      <button class="text-indigo-600 hover:text-indigo-900">Ver</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- Marcación Agregada -->
-                <tr class="hover:bg-gray-50 bg-green-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-10 w-10 flex-shrink-0">
-                        <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
-                          <span class="text-white font-medium">CR</span>
-                        </div>
-                      </div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Carlos Rodríguez</div>
-                        <div class="text-sm text-gray-500">Producción</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    06/08/2025<br />
-                    <span class="text-green-600 font-medium">17:00:00</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                      Salida
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Manual</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      Agregada
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    Admin<br />
-                    <span class="text-xs">07/08 08:30</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div class="flex justify-end space-x-2">
-                      <button class="text-yellow-600 hover:text-yellow-900">Modificar</button>
-                      <button class="text-indigo-600 hover:text-indigo-900">Ver</button>
-                    </div>
+                
+                <!-- Mensaje cuando no hay marcaciones -->
+                <tr v-if="marcaciones.length === 0">
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    No hay marcaciones para mostrar
                   </td>
                 </tr>
               </tbody>
@@ -428,14 +328,60 @@
 </template>
 
 <script setup>
-import HeaderAdmin from '../../components/headerAdmin.vue';
 import { ref, onMounted } from 'vue';
 
 // Estados reactivos
 const marcaciones = ref([]);
+/* Formato esperado para marcaciones:
+{
+  id: string | number,
+  nombreTrabajador: string,
+  departamento: string,
+  iniciales: string, // Ej: "JP"
+  avatarColor: string, // Clases CSS como "bg-indigo-500"
+  fecha: string, // Formato: "07/08/2025"
+  hora: string, // Formato: "08:00:15"
+  horaOriginal?: string, // Solo para marcaciones modificadas
+  tipo: string, // "entrada", "salida", "colacion", "descanso"
+  tipoClase: string, // Clases CSS para el badge del tipo
+  metodo: string, // "Biometría", "Tarjeta", "Manual", etc.
+  modificada?: boolean, // true si fue modificada
+  agregada?: boolean, // true si fue agregada manualmente
+  modificadoPor?: string, // Solo si fue modificada
+  fechaModificacion?: string // Solo si fue modificada, formato: "07/08 09:15"
+}
+*/
+
 const solicitudesPendientes = ref([]);
+/* Formato esperado para solicitudesPendientes:
+{
+  id: string | number,
+  nombreTrabajador: string,
+  tipo: string, // "modificacion" | "agregada"
+  tipoDescripcion: string, // "Modificación de Entrada", "Agregar Marcación"
+  descripcion: string, // Descripción detallada de la solicitud
+  motivo: string, // Motivo de la solicitud
+  fecha: string,
+  horaOriginal?: string, // Para modificaciones
+  horaNueva?: string, // Para modificaciones o nuevas marcaciones
+  tipoMarcacion: string // "entrada", "salida", "colacion", "descanso"
+}
+*/
+
+const estadisticas = ref({});
+/* Formato esperado para estadisticas:
+{
+  marcacionesHoy: number,
+  modificadas: number,
+  agregadas: number,
+  conflictos: number,
+  pendientes: number
+}
+*/
 
 onMounted(() => {
   console.log('Vista Gestión de Marcaciones cargada');
+  // Aquí se cargarían los datos desde el backend
+  // cargarDatos();
 });
 </script>
