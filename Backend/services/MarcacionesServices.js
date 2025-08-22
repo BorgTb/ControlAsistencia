@@ -259,6 +259,7 @@ class MarcacionesService {
     async obtenerMarcacionesPorEmpresa(rutEmpresa) {
         try {
             const trabajadoresEmpresa = await TelegestorService.getCompanyWorkers(rutEmpresa);
+            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
             const rutTrabajdoresActivos = [];
             for (const trabajador of trabajadoresEmpresa) {
                 const activeUser = await UserModel.findByRut(trabajador.prov_rut);
@@ -266,15 +267,11 @@ class MarcacionesService {
                     rutTrabajdoresActivos.push(activeUser.rut);
                 }
             }
-            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
-            console.log(rutTrabajdoresActivos);
             const marcaciones = [];
             for (const rut of rutTrabajdoresActivos) {
                 const marcacionesPorTrabajador = await MarcacionesModel.obtenerMarcacionesPorRutUsuario(rut);
                 marcaciones.push(...marcacionesPorTrabajador);
             }
-
-            console.log('Marcaciones obtenidas por empresa:', marcaciones);
             return {
                 success: true,
                 data: marcaciones

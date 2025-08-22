@@ -111,9 +111,9 @@ class ReporteService {
    * @returns {Promise<Object>} Reporte de asistencia
    */
   async obtenerReporteAsistencia(filtros = {}) {
+    const dataStore = useDataStore()
     try {
-      const response = await apiClient.get('/reportes/asistencia', { params: filtros })
-      
+      const response = await apiClient.get(`/reportes/asistencia/${dataStore.empresaSeleccionada.rut}`, { params: filtros })
       return {
         success: true,
         data: response.data,

@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 
-router.get('/asistencia', ReportesController.obtenerReporteAsistencia);
+router.get('/asistencia/:empresa', ReportesController.obtenerReporteAsistencia);
 
 
 export default router;

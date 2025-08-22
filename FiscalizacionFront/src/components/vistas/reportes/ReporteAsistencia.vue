@@ -448,17 +448,16 @@ import { useReportes } from '../../composables/useReportes'
 const {obtenerReporteAsistencia} = useReportes()
 
 const filters = ref({
-  // Filtros según Art. 25
   trabajadorNombre: '',
   trabajadorRut: '',
-  tipoJornada: '', // Nuevo: Fija, Turnos, Ciclos, etc.
-  turnoEspecifico: '', // Nuevo: Turnos por extensión horaria
-  lugarTrabajo: '', // Nuevo: Oficina, Terreno, Mixto, Remoto
-  fechaDesde: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Última semana por defecto
-  fechaHasta: new Date().toISOString().split('T')[0],
-  periodoRapido: 'semana',
-  region: '', // Nuevo: Filtro por región
-  establecimiento: '', // Nuevo: Local/Establecimiento/Faena
+  tipoJornada: '',
+  turnoEspecifico: '',
+  lugarTrabajo: '',
+  fechaDesde: '',
+  fechaHasta: '',
+  periodoRapido: '',
+  region: '',
+  establecimiento: '',
   cargo: '',
   empresaTransitoria: '',
   hashChecksum: '',
@@ -721,6 +720,7 @@ const exportData = () => {
 const loadData = async (apiData = null) => {
   if (apiData && apiData.length > 0) {
     // Usar datos reales de la API
+
     empleados.value = apiData.map(empleado => ({
       ...empleado,
       // Normalizar campos para compatibilidad con la vista
@@ -732,6 +732,7 @@ const loadData = async (apiData = null) => {
       // Asegurar que horas esté calculado
       horas: empleado.horas || calcularHorasTrabajadas(empleado.entrada, empleado.salida)
     }))
+
   } else {
     // Datos de fallback/simulados para desarrollo
     empleados.value = [
@@ -832,11 +833,11 @@ const calcularHorasTrabajadas = (entrada, salida) => {
 onMounted(async () => {
   try {
     const rest = await obtenerReporteAsistencia()
-    console.log('Datos recibidos de la API:', rest.data.data)
+    console.log('Datos recibidos de la API:', rest.data)
     
     // Verificar si la respuesta tiene la estructura esperada
-    if (rest?.data?.data && Array.isArray(rest.data.data)) {
-      await loadData(rest.data.data)
+    if (rest?.data && Array.isArray(rest.data)) {
+      await loadData(rest.data)
       console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
     } else {
       console.warn('No se recibieron datos válidos de la API, usando datos de fallback')
