@@ -65,11 +65,17 @@ const empresasMock = [
 ];
 
 // Controlador para obtener todas las empresas
-const getAllEmpresas = (req, res) => {
+const getAllEmpresas = async   (req, res) => {
+    const empresas = await TelegestorService.getEmpresas();
+    for (let empresa of empresas) {
+      // contar cantidad de trabajadores
+      empresa.totalEmpleados = await TelegestorService.getCantidadDeTrabajadores(empresa.rut);
+    }
+
   try {
     res.status(200).json({
       success: true,
-      data: empresasMock,
+      data: empresas,
       message: "Empresas obtenidas exitosamente"
     });
   } catch (error) {
@@ -82,7 +88,7 @@ const getAllEmpresas = (req, res) => {
 };
 
 // Controlador para obtener empresas activas únicamente
-const getEmpresasActivas = (req, res) => {
+const getEmpresasActivas = async (req, res) => {
   try {
     const empresasActivas = empresasMock.filter(empresa => empresa.activa);
     res.status(200).json({

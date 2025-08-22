@@ -52,10 +52,20 @@ const getHorariosEmpresa = async (rutEmpresa = null) => {
     return rutEmpresa ? await TelegestorModel.getHorariosEmpresa(rutEmpresa) : null;
 };
 
+const getEmpresas = async () => {
+    return await TelegestorModel.getEmpresas();
+};
+
+const getCantidadDeTrabajadores = async (rutEmpresa = null) => {
+    return rutEmpresa ? await TelegestorModel.getCantidadDeTrabajadores(rutEmpresa).then(res => res.cant_trabajadores) : null;
+};
+
 const TelegestorService = {
     verifyWorker,
     getHorariosEmpresa,
-    getCompanyWorkers
+    getCompanyWorkers,
+    getCantidadDeTrabajadores,
+    getEmpresas
 };
 
 

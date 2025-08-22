@@ -40,8 +40,8 @@ apiClient.interceptors.request.use((config) => {
   // Agregar empresa seleccionada como parámetro
   const dataStore = useDataStore()
   const empresaSeleccionada = dataStore.getEmpresaSeleccionada
-  if (empresaSeleccionada?.id) {
-    config.params = { ...config.params, empresaId: empresaSeleccionada.id }
+  if (empresaSeleccionada?.rut) {
+    config.params = { ...config.params, empresaRut: empresaSeleccionada.rut }
   }
 
   return config

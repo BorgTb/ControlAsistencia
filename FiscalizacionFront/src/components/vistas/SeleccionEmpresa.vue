@@ -83,10 +83,10 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
             <div
               v-for="empresa in empresasFiltradas"
-              :key="empresa.id"
+              :key="empresa.rut"
               @click="seleccionarEmpresa(empresa)"
               class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
-              :class="{ 'border-blue-500 bg-blue-50': empresaActual?.id === empresa.id }"
+              :class="{ 'border-blue-500 bg-blue-50': empresaActual?.rut === empresa.rut }"
             >
               <div class="flex items-start justify-between">
                 <div class="flex-1">
