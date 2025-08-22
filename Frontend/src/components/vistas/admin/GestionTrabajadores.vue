@@ -295,12 +295,12 @@ const filtros = ref({
 // Computed para filtrar trabajadores
 const trabajadoresFiltrados = computed(() => {
   if (!trabajadores.value) return [];
-  
+  console.log(trabajadores.value);
   return trabajadores.value.filter(trabajador => {
     const matchBusqueda = !filtros.value.busqueda || 
       trabajador.trab_nombre.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
       trabajador.trab_ap_paterno.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
-      trabajador.prov_rut.toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
+      trabajador.prov_rut.toString().toLowerCase().includes(filtros.value.busqueda.toLowerCase()) ||
       (trabajador.email && trabajador.email.toLowerCase().includes(filtros.value.busqueda.toLowerCase()));
     
     const estadoTrabajador = getEstadoTrabajador(trabajador);
