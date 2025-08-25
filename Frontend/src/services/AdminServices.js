@@ -19,16 +19,21 @@ const apiClient = axios.create({
   timeout: 10000
 })
 
-// Interceptor para agregar el token a las peticiones
+// Interceptor para agregar el token y el user a las peticiones
 apiClient.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
     const token = authStore.getToken
-    
+    const user = authStore.getUser
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    
+
+    if (user) {
+      config.headers['X-User'] = user
+    }
+
     return config
   },
   (error) => {
@@ -58,6 +63,7 @@ apiClient.interceptors.response.use(
 
 
 class AdminServices{
+
   static async crearTrabajador(trabajadorData) {
     try {
       const response = await apiClient.post('/admin/trabajador', trabajadorData)

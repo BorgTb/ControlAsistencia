@@ -8,7 +8,7 @@ class UsuarioEmpresaModel {
             INSERT INTO usuarios_empresas (usuario_id, empresa_id, rol_en_empresa, fecha_inicio, fecha_fin, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `;
-        
+        console.log('Creating usuario_empresa with data:', usuarioEmpresaData);
         const [result] = await db.execute(query, [
             usuarioEmpresaData.usuario_id,
             usuarioEmpresaData.empresa_id,

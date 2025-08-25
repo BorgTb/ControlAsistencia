@@ -1,6 +1,9 @@
 import AuthService from "../services/authservice.js";
 import UserModel from "../model/UserModel.js";
 import TurnosModel from "../model/TurnosModel.js";
+import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
+import { DateTime } from "luxon";
+
 
 
 
@@ -9,10 +12,30 @@ import TurnosModel from "../model/TurnosModel.js";
 const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
-        console.log("Creating trabajador with data:", userData);
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+
+
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        
+        
         const newUser = await AuthService.registerUser(userData.email, userData.password, userData.nombre, userData.rol, userData.rut, userData.estado);
         
-        res.status(201).json({ success: true, message: "Trabajador creado exitosamente" });
+        // si new user throw error
+        if (!newUser) {
+            return res.status(400).json({ success: false, message: "Error creando trabajador" });
+        }
+        
+        // si se creo correctamente entonces relacionarlo con la empresa que lo creo
+        console.log(empresa);
+        console.log(newUser);
+        await UsuarioEmpresaModel.createUsuarioEmpresa({
+            usuario_id: newUser.id,
+            empresa_id: empresa.empresa_id,
+            fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
+        });
+
+        res.status(500).json({ success: true, message: "Trabajador creado exitosamente" });
     } catch (error) {
         console.error("Error creating trabajador:", error);
         res.status(500).json({ error: "Internal server error" });
