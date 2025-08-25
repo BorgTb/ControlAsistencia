@@ -56,8 +56,13 @@ const createTurno = async (req, res) => {
 
 const obtenerTrabajadores = async (req, res) => {
     try {
-        // Funcionalidad de Telegestor removida
-        res.status(200).json({ success: true, data: [] });
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
+
+        console.log("Trabajadores obtenidos:", trabajadores);
+        res.status(200).json({ success: true, data: trabajadores });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
         res.status(500).json({ error: "Internal server error" });
