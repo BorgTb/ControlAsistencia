@@ -1,7 +1,6 @@
 import { Console } from 'console';
 import MarcacionesModel from '../model/MarcacionesModel.js';
 import crypto from 'crypto';
-import TelegestorService from './TelegestorService.js';
 import UserModel from '../model/UserModel.js';
 
 class MarcacionesService {
@@ -225,26 +224,9 @@ class MarcacionesService {
 
     async obtenerMarcacionesPorFechaYEmpresa(fecha, rutEmpresa) {
         try {
-            const trabajadoresEmpresa = await TelegestorService.getCompanyWorkers(rutEmpresa);
-            const rutTrabajadoresActivos = [];
-            for (const trabajador of trabajadoresEmpresa) {
-                const activeUser = await UserModel.findByRut(trabajador.prov_rut);
-                if (activeUser) {
-                    rutTrabajadoresActivos.push(activeUser.rut);
-                }
-            }
-            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
-            console.log(rutTrabajadoresActivos);
-            const marcaciones = [];
-            for (const rut of rutTrabajadoresActivos) {
-                const marcacionesPorTrabajador = await MarcacionesModel.obtenerMarcacionesPorRutYFecha(rut, fecha);
-                marcaciones.push(...marcacionesPorTrabajador);
-            }
-
-            console.log('Marcaciones obtenidas por fecha y empresa:', marcaciones);
-            return {
+                return {
                 success: true,
-                data: marcaciones
+                data: []
             };
         } catch (error) {
             console.error('Error al obtener marcaciones por fecha y empresa:', error);
@@ -258,23 +240,10 @@ class MarcacionesService {
 
     async obtenerMarcacionesPorEmpresa(rutEmpresa) {
         try {
-            const trabajadoresEmpresa = await TelegestorService.getCompanyWorkers(rutEmpresa);
-            console.log('Trabajadores de la empresa obtenidos:', trabajadoresEmpresa);
-            const rutTrabajdoresActivos = [];
-            for (const trabajador of trabajadoresEmpresa) {
-                const activeUser = await UserModel.findByRut(trabajador.prov_rut);
-                if (activeUser) {
-                    rutTrabajdoresActivos.push(activeUser.rut);
-                }
-            }
-            const marcaciones = [];
-            for (const rut of rutTrabajdoresActivos) {
-                const marcacionesPorTrabajador = await MarcacionesModel.obtenerMarcacionesPorRutUsuario(rut);
-                marcaciones.push(...marcacionesPorTrabajador);
-            }
+            
             return {
                 success: true,
-                data: marcaciones
+                data: []
             };
         } catch (error) {
             console.error('Error al obtener marcaciones por empresa:', error);

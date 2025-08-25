@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import router from './routes/index.js';
-import TelegestorService from './services/TelegestorService.js';
 
 
 

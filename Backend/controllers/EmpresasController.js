@@ -1,5 +1,3 @@
-import TelegestorService from "../services/TelegestorService.js";
-
 // Mock data para simular la base de datos de empresas
 const empresasMock = [
   {
@@ -65,14 +63,14 @@ const empresasMock = [
 ];
 
 // Controlador para obtener todas las empresas
-const getAllEmpresas = async   (req, res) => {
-    const empresas = await TelegestorService.getEmpresas();
-    for (let empresa of empresas) {
-      // contar cantidad de trabajadores
-      empresa.totalEmpleados = await TelegestorService.getCantidadDeTrabajadores(empresa.rut);
-    }
-
+const getAllEmpresas = async (req, res) => {
   try {
+    // Usar datos mock en lugar de TelegestorService
+    const empresas = empresasMock.map(empresa => ({
+      ...empresa,
+      totalEmpleados: Math.floor(Math.random() * 100) + 1 // Simular cantidad de empleados
+    }));
+    
     res.status(200).json({
       success: true,
       data: empresas,
@@ -165,10 +163,54 @@ const buscarEmpresasPorNombre = (req, res) => {
 const getHorariosEmpresa = async (req, res) => {
   try {
     const { rut } = req.params;
-    const horarios = await TelegestorService.getHorariosEmpresa(rut);
+    
+    // Buscar empresa por RUT en los datos mock
+    const empresa = empresasMock.find(emp => emp.rut === rut);
+    
+    if (!empresa) {
+      return res.status(404).json({
+        success: false,
+        message: "Empresa no encontrada"
+      });
+    }
+    
+    // Simular horarios de empresa
+    const horariosSimulados = [
+      {
+        dia: "Lunes",
+        hora_inicio: "08:00",
+        hora_fin: "17:00",
+        activo: true
+      },
+      {
+        dia: "Martes",
+        hora_inicio: "08:00",
+        hora_fin: "17:00",
+        activo: true
+      },
+      {
+        dia: "Miércoles",
+        hora_inicio: "08:00",
+        hora_fin: "17:00",
+        activo: true
+      },
+      {
+        dia: "Jueves",
+        hora_inicio: "08:00",
+        hora_fin: "17:00",
+        activo: true
+      },
+      {
+        dia: "Viernes",
+        hora_inicio: "08:00",
+        hora_fin: "17:00",
+        activo: true
+      }
+    ];
+    
     res.status(200).json({
       success: true,
-      data: horarios,
+      data: horariosSimulados,
       message: "Horarios de la empresa obtenidos exitosamente"
     });
   } catch (error) {
