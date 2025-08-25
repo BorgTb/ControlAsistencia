@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt, { hash } from 'bcrypt';
 import dotenv from 'dotenv';
 import UserModel from '../model/UserModel.js'; // Import your user model
+import EmpresaModel from '../model/EmpresaModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 
 
 dotenv.config();
@@ -90,7 +92,11 @@ const loginUser = async (email, password) => {
     
     // Generate token
     const token = generateToken(user);
-    
+
+    const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
+
+
+    console.log("Usuario Empresas:", usuarioEmpresas);
     // Return both token and user info (without password)
     return {
         token,
@@ -99,7 +105,7 @@ const loginUser = async (email, password) => {
             nombre: user.nombre,
             email: user.email,
             rol: user.rol,
-            rut: user.rut,
+            rut: usuarioEmpresas.empresa_rut,
             estado: user.estado
         }
     };
