@@ -35,7 +35,7 @@ const createTrabajador = async (req, res) => {
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
-        res.status(500).json({ success: true, message: "Trabajador creado exitosamente" });
+        res.status(201).json({ success: true, message: "Trabajador creado exitosamente" });
     } catch (error) {
         console.error("Error creating trabajador:", error);
         res.status(500).json({ error: "Internal server error" });
