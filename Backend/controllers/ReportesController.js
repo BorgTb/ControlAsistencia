@@ -38,28 +38,34 @@ const obtenerReporteAsistencia = async (req, res) => {
          const reporte = await reporteService.getReporteAsistentica(empresa);
          console.log('Reporte de asistencia obtenido:', reporte);
 
-         // Transformar el reporte agregando los campos faltantes con valores por defecto
-         const reporteTransformado = reporte.map((marcacion) => ({
-              id: marcacion.usuario_id,
-              nombre: marcacion.nombre || 'Usuario Desconocido',
-              cedula: marcacion.rut || '00000000-0',
-              iniciales: marcacion.nombre
-                    ? marcacion.nombre.split(' ').map((n) => n[0]).join('').toUpperCase()
-                    : 'UD',
-              departamento: 'Operaciones', // Default
-              entrada: marcacion.tipo === 'entrada' ? marcacion.hora : '--:--',
-              salida: marcacion.tipo === 'salida' ? marcacion.hora : '--:--',
-              estado: marcacion.tipo === 'entrada' ? 'Presente' : 'Ausente',
-              cargo: 'trabajador', // Default
-              fecha: marcacion.fecha,
-              empresaTransitoria: null, // Default
-              hashChecksum: marcacion.hash,
-              tipoJornada: 'Completa', // Default
-              turnoEspecifico: 'Mañana', // Default
-              lugarTrabajo: 'Oficina Central', // Default
-              region: 'Metropolitana', // Default
-              establecimiento: 'EST001' // Default
-         }));
+      // Transformar el reporte agrupando las marcaciones por usuario y consolidando en un solo registro
+      const reporteTransformado = Object.entries(reporte).map(([usuarioId, marcaciones]) => {
+            const entrada = marcaciones.find((m) => m.tipo === 'entrada')?.hora || '--:--';
+            const salida = marcaciones.find((m) => m.tipo === 'salida')?.hora || '--:--';
+            const usuario = marcaciones[0]; // Usar la primera marcación para obtener datos del usuario
+
+            return {
+                  id: usuario.usuario_id,
+                  nombre: `${usuario.nombre} ${usuario.apellido}` || 'Usuario Desconocido',
+                  cedula: usuario.rut || '00000000-0',
+                  iniciales: usuario.nombre
+                         ? usuario.nombre.split(' ').map((n) => n[0]).join('').toUpperCase()
+                         : 'UD',
+                  departamento: 'Operaciones', // Default
+                  entrada: entrada,
+                  salida: salida,
+                  estado: entrada !== '--:--' ? 'Presente' : 'Ausente',
+                  cargo: usuario.rol_en_empresa || 'trabajador',
+                  fecha: usuario.fecha,
+                  empresaTransitoria: null, // Default
+                  hashChecksum: usuario.hash,
+                  tipoJornada: 'Completa', // Default
+                  turnoEspecifico: 'Mañana', // Default
+                  lugarTrabajo: 'Oficina Central', // Default
+                  region: 'Metropolitana', // Default
+                  establecimiento: 'EST001' // Default
+            };
+      });
 
          res.status(200).json(reporteTransformado);
     } catch (error) {

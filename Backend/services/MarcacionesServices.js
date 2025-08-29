@@ -241,10 +241,20 @@ class MarcacionesService {
 
     async obtenerMarcacionesPorEmpresa(rutEmpresa) {
         try {
-            
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorEmpresaRut(rutEmpresa);
+            // agrupar por usuario_id
+            const marcacionesAgrupadas = marcaciones.reduce((acc, marcacion) => {
+                const usuarioId = marcacion.usuario_id;
+                if (!acc[usuarioId]) {
+                    acc[usuarioId] = [];
+                }
+                acc[usuarioId].push(marcacion);
+                return acc;
+            }, {});
+            console.log('Marcaciones agrupadas por usuario:', marcacionesAgrupadas);
             return {
                 success: true,
-                data: []
+                data: marcacionesAgrupadas
             };
         } catch (error) {
             console.error('Error al obtener marcaciones por empresa:', error);

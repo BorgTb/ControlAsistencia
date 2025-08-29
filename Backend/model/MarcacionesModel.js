@@ -137,6 +137,18 @@ class Marcaciones {
         const [rows] = await pool.execute(query, [rutUsuario]);
         return rows;
     }
+    async obtenerMarcacionesPorEmpresaRut(rutEmpresa) {
+        const query = `SELECT marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
+usuarios.nombre,usuarios.apellido,usuarios.rut,usuarios.id as usuario_id,
+usuarios_empresas.rol_en_empresa
+FROM marcaciones 
+INNER JOIN usuarios_empresas ON marcaciones.usuario_empresa_id = usuarios_empresas.id
+INNER JOIN empresa ON empresa.empresa_id = usuarios_empresas.empresa_id
+INNER JOIN usuarios ON usuarios_empresas.usuario_id = usuarios.id
+WHERE empresa.emp_rut = ?`;
+        const [rows] = await pool.execute(query, [rutEmpresa]);
+        return rows;
+    }
 }
 
 export default new Marcaciones();
