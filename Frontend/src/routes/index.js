@@ -31,6 +31,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresUser: true}    
         },
         {
+            path: '/historial',
+            name: 'HistorialUsuario',
+            component: () => import('../components/vistas/HistorialUsuario.vue'),
+            meta: { requiresAuth: true, requiresUser: true }
+        },
+        {
             path: '/administracion',
             name: 'Admin',
             component: () => import('../components/vistas/Administrador.vue'),
