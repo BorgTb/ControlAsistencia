@@ -37,6 +37,8 @@ class Marcaciones {
         return rows;
     }
 
+
+
     async getMarcacionById(id) {
         const query = `
             SELECT 

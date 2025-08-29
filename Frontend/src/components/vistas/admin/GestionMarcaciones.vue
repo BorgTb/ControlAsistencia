@@ -157,54 +157,7 @@
       </div>
 
       <!-- Solicitudes Pendientes -->
-      <div class="px-4 py-6 sm:px-0">
-        <div class="bg-white rounded-lg shadow mb-6">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación</h3>
-          </div>
-          <div class="p-6">
-            <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
-              <div 
-                v-for="solicitud in solicitudesPendientes" 
-                :key="solicitud.id"
-                class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg"
-              >
-                <div class="flex items-center space-x-4">
-                  <div class="flex-shrink-0">
-                    <svg v-if="solicitud.tipo === 'modificacion'" class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                    <svg v-else class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
-                    <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
-                    <p class="text-xs text-gray-500">Motivo: {{ solicitud.motivo }}</p>
-                  </div>
-                </div>
-                <div class="flex space-x-2">
-                  <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Aprobar
-                  </button>
-                  <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Rechazar
-                  </button>
-                  <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
-                    Ver Detalles
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Mensaje cuando no hay solicitudes -->
-            <div v-else class="text-center py-8">
-              <p class="text-gray-500">No hay solicitudes pendientes de aprobación</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       <!-- Tabla de Marcaciones -->
       <div class="px-4 py-6 sm:px-0">
@@ -233,8 +186,8 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modificado por</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Origen</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -268,6 +221,7 @@
                       </div>
                       <div class="ml-4">
                         <div class="text-sm font-medium text-gray-900">{{ marcacion.nombreTrabajador }}</div>
+                        <div class="text-sm text-gray-500">RUT: {{ marcacion.rut }}</div>
                       </div>
                     </div>
                   </td>
@@ -283,13 +237,22 @@
                       {{ marcacion.tipo }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ marcacion.metodo }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div v-if="marcacion.geo_lat && marcacion.geo_lon" class="flex items-center">
+                      <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-xs">GPS Registrado</span>
+                    </div>
+                    <div v-else class="flex items-center">
+                      <svg class="w-4 h-4 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-xs text-gray-400">Sin ubicación</span>
+                    </div>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span v-if="marcacion.modificadoPor">
-                      {{ marcacion.modificadoPor }}<br />
-                      <span class="text-xs">{{ marcacion.fechaModificacion }}</span>
-                    </span>
-                    <span v-else>-</span>
+                    {{ marcacion.ip_origen || 'No disponible' }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
@@ -297,7 +260,6 @@
                               class="text-purple-600 hover:text-purple-900">Historial</button>
                       <button v-else 
                               class="text-yellow-600 hover:text-yellow-900">Modificar</button>
-                      <button class="text-indigo-600 hover:text-indigo-900">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -354,6 +316,54 @@
             </div>
           </div>
         </div>
+        <div class="px-4 py-6 sm:px-0">
+        <div class="bg-white rounded-lg shadow mb-6">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación</h3>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
+              <div 
+                v-for="solicitud in solicitudesPendientes" 
+                :key="solicitud.id"
+                class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg"
+              >
+                <div class="flex items-center space-x-4">
+                  <div class="flex-shrink-0">
+                    <svg v-if="solicitud.tipo === 'modificacion'" class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <svg v-else class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
+                    <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
+                    <p class="text-xs text-gray-500">Motivo: {{ solicitud.motivo }}</p>
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                    Aprobar
+                  </button>
+                  <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                    Rechazar
+                  </button>
+                  <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                    Ver Detalles
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Mensaje cuando no hay solicitudes -->
+            <div v-else class="text-center py-8">
+              <p class="text-gray-500">No hay solicitudes pendientes de aprobación</p>
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
     </main>
   </div>
@@ -474,37 +484,85 @@ const capitalizarTipo = (tipo) => {
   return tipos[tipo] || tipo;
 };
 
+// Función para calcular estadísticas
+const calcularEstadisticas = (marcacionesData) => {
+  const hoy = new Date().toISOString().split('T')[0];
+  
+  estadisticas.value = {
+    marcacionesHoy: marcacionesData.filter(m => {
+      const fechaMarcacion = new Date(m.fechaOriginal).toISOString().split('T')[0];
+      return fechaMarcacion === hoy;
+    }).length,
+    modificadas: marcacionesData.filter(m => m.modificada).length,
+    agregadas: marcacionesData.filter(m => m.agregada).length,
+    conflictos: 0, // Por ahora en 0, se puede implementar lógica de conflictos
+    pendientes: solicitudesPendientes.value.length
+  };
+};
+
 // Función para cargar marcaciones
 const cargarMarcaciones = async () => {
   try {
     cargando.value = true;
     const response = await obtenerMarcacionesPorEmpresa();
     
-    // Transformar los datos del backend al formato esperado por el frontend
-    const marcacionesTransformadas = response.map(marcacion => ({
-      id: marcacion.id,
-      nombreTrabajador: `${marcacion.nombre}`,
-      departamento: null, // Usando empresa como departamento temporal
-      iniciales: obtenerIniciales(marcacion.nombre, marcacion.apellido),
-      avatarColor: obtenerColorAvatar(),
-      fecha: formatearFecha(marcacion.fecha),
-      hora: marcacion.hora,
-      horaOriginal: null, 
-      tipo: capitalizarTipo(marcacion.tipo),
-      tipoOriginal: marcacion.tipo, // Mantener el tipo original para filtros
-      tipoClase: obtenerClaseTipo(marcacion.tipo),
-      metodo: 'Manual', 
-      modificada: false, 
-      agregada: false, 
-      modificadoPor: null, 
-      fechaModificacion: null,
-      // Campos adicionales para filtros
-      rut: marcacion.rut,
-      fechaOriginal: marcacion.fecha
-    }));
+    console.log('Respuesta de marcaciones:', response);
+    
+    // Transformar el objeto agrupado por usuario_id a un array plano
+    const marcacionesTransformadas = [];
+    
+    if (response && typeof response === 'object') {
+      // Iterar sobre cada usuario_id
+      Object.keys(response).forEach(usuarioId => {
+        const marcacionesUsuario = response[usuarioId];
+        
+        if (Array.isArray(marcacionesUsuario)) {
+          // Procesar cada marcación del usuario
+          marcacionesUsuario.forEach((marcacion, index) => {
+            const marcacionTransformada = {
+              id: `${usuarioId}_${index}`, // ID único combinando usuario_id e índice
+              nombreTrabajador: `${marcacion.nombre} ${marcacion.apellido}`,
+              rut: marcacion.rut,
+              iniciales: obtenerIniciales(marcacion.nombre, marcacion.apellido),
+              avatarColor: obtenerColorAvatar(),
+              fecha: formatearFecha(marcacion.fecha),
+              fechaOriginal: marcacion.fecha, // Mantener fecha original para filtros
+              hora: marcacion.hora,
+              tipo: capitalizarTipo(marcacion.tipo),
+              tipoOriginal: marcacion.tipo, // Mantener tipo original para filtros
+              tipoClase: obtenerClaseTipo(marcacion.tipo),
+              metodo: 'GPS/Web', // Asumir método basado en datos disponibles
+              modificada: false, // Por defecto no modificada
+              agregada: false, // Por defecto no agregada manualmente
+              
+              // Datos adicionales de la marcación
+              geo_lat: marcacion.geo_lat,
+              geo_lon: marcacion.geo_lon,
+              ip_origen: marcacion.ip_origen,
+              hash: marcacion.hash,
+              usuario_id: marcacion.usuario_id,
+              rol_en_empresa: marcacion.rol_en_empresa,
+              created_at: marcacion.created_at
+            };
+            
+            marcacionesTransformadas.push(marcacionTransformada);
+          });
+        }
+      });
+    }
+    
+    // Ordenar por fecha y hora más recientes primero
+    marcacionesTransformadas.sort((a, b) => {
+      const fechaHoraA = new Date(`${a.fechaOriginal}T${a.hora}`);
+      const fechaHoraB = new Date(`${b.fechaOriginal}T${b.hora}`);
+      return fechaHoraB.getTime() - fechaHoraA.getTime();
+    });
     
     marcacionesOriginales.value = marcacionesTransformadas;
     marcaciones.value = marcacionesTransformadas;
+    
+    // Calcular estadísticas
+    calcularEstadisticas(marcacionesTransformadas);
     
   } catch (error) {
     console.error('Error al cargar marcaciones:', error);

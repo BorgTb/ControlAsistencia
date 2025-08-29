@@ -200,10 +200,6 @@
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
                       <button @click="editarTrabajador(trabajador)" class="text-indigo-600 hover:text-indigo-900">Editar</button>
-                      <button @click="toggleEstadoTrabajador(trabajador)" 
-                              :class="getEstadoTrabajador(trabajador) === 'enrolado' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'">
-                        {{ getEstadoTrabajador(trabajador) === 'enrolado' ? 'Desenrolar' : 'Enrolar' }}
-                      </button>
                     </div>
                   </td>
                 </tr>

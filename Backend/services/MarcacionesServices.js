@@ -224,10 +224,13 @@ class MarcacionesService {
     }
 
     async obtenerMarcacionesPorFechaYEmpresa(fecha, rutEmpresa) {
+
+        const marcaciones = await MarcacionesModel.obtenerMarcacionesPorEmpresaRut(fecha, rutEmpresa);
+        
         try {
                 return {
                 success: true,
-                data: []
+                data: marcaciones
             };
         } catch (error) {
             console.error('Error al obtener marcaciones por fecha y empresa:', error);

@@ -41,6 +41,7 @@ export function useAdmin() {
   const obtenerMarcacionesPorEmpresa = async (fecha) => {
     try {
       const response = await AdminServices.obtenerMarcacionesPorEmpresa(user.value.rut, fecha);
+      console.log('marcaciones', response.data)
       return response.data;
     } catch (error) {
       console.error("Error al obtener marcaciones por empresa:", error);
