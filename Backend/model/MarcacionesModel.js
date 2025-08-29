@@ -4,11 +4,11 @@ class Marcaciones {
     async createMarcacion(data) {
         const query = `
             INSERT INTO marcaciones (
-                usuario_id, fecha, hora, tipo, hash, ip_origen, geo_lat, geo_lon
+                usuario_empresa_id, fecha, hora, tipo, hash, ip_origen, geo_lat, geo_lon
             ) VALUES (?, CURRENT_DATE(), CURRENT_TIME(), ?, ?, ?, ?, ?)
         `;
         const values = [
-            data.usuario_id,
+            data.usuario_empresa_id,
             data.tipo,
             data.hash,
             data.ip_origen,

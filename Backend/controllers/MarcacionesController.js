@@ -75,7 +75,16 @@ const registrarEntrada = async (req, res) => {
             });
         }
 
-        const [turno] = await TurnosModel.getTurnosByUsuarioId(usuario_id);
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (!usuarioEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la información de la empresa del usuario.'
+            });
+        }
+
+        const [turno] = await TurnosModel.getTurnosByUsuarioId(usuarioEmpresa.id);
+        
         if (!turno){
             return res.status(404).json({
                 success: false,
@@ -83,6 +92,7 @@ const registrarEntrada = async (req, res) => {
             });
         }
 
+        
 
         //verificamos si la hora actual es mayor a la hora de salida
         const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
@@ -98,10 +108,7 @@ const registrarEntrada = async (req, res) => {
         ); 
         const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
         
-        
 
-        
-        
         
         // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
         const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);

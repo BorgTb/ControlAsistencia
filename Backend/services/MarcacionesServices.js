@@ -12,7 +12,7 @@ class MarcacionesService {
             
             // Preparar datos para insertar (sin fecha y hora, la BD las manejará)
             const marcacionData = {
-                usuario_id,
+                usuario_empresa_id: usuario_id,
                 fecha: null, // La BD asignará CURRENT_DATE
                 hora: null,  // La BD asignará CURRENT_TIME
                 tipo,
