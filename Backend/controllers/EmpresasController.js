@@ -1,3 +1,7 @@
+import EmpresaModel from "../model/EmpresaModel.js";
+import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
+
+
 // Mock data para simular la base de datos de empresas
 const empresasMock = [
   {
@@ -6,70 +10,18 @@ const empresasMock = [
     rut: "96.123.456-7",
     activa: true
   },
-  {
-    id: 2,
-    nombre: "Tecnología Digital Ltda.",
-    rut: "76.987.654-3",
-    activa: true
-  },
-  {
-    id: 3,
-    nombre: "Comunicaciones del Sur",
-    rut: "85.456.789-0",
-    activa: false
-  },
-  {
-    id: 4,
-    nombre: "Servicios Integrales S.A.",
-    rut: "92.345.678-1",
-    activa: true
-  },
-  {
-    id: 5,
-    nombre: "Innovación y Desarrollo",
-    rut: "81.234.567-8",
-    activa: true
-  },
-  {
-    id: 6,
-    nombre: "Sistemas Avanzados Ltda.",
-    rut: "77.876.543-2",
-    activa: false
-  },
-  {
-    id: 7,
-    nombre: "Consultoría Empresarial",
-    rut: "93.567.890-4",
-    activa: true
-  },
-  {
-    id: 8,
-    nombre: "Soluciones Tecnológicas",
-    rut: "88.432.109-6",
-    activa: true
-  },
-  {
-    id: 9,
-    nombre: "Medios y Comunicación",
-    rut: "79.654.321-5",
-    activa: false
-  },
-  {
-    id: 10,
-    nombre: "Desarrollo Software Chile",
-    rut: "94.789.012-3",
-    activa: true
-  }
 ];
 
 // Controlador para obtener todas las empresas
 const getAllEmpresas = async (req, res) => {
   try {
-    // Usar datos mock en lugar de TelegestorService
-    const empresas = empresasMock.map(empresa => ({
-      ...empresa,
-      totalEmpleados: Math.floor(Math.random() * 100) + 1 // Simular cantidad de empleados
+    const empresas = await EmpresaModel.getAllEmpresas();
+    await Promise.all(empresas.map(async empresa => {
+      empresa.activa = empresa.activa === 1;
+      empresa.totalEmpleados = (await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresa.id)).length;
     }));
+    console.log(empresas);
+
     
     res.status(200).json({
       success: true,

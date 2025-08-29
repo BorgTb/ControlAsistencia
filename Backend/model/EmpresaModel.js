@@ -63,10 +63,10 @@ class EmpresaModel {
     static async getAllEmpresas() {
         const query = `
             SELECT 
-                e.empresa_id,
-                e.emp_nombre,
-                e.emp_rut,
-                e.estado as empresa_estado,
+                e.empresa_id as id,
+                e.emp_nombre as nombre,
+                e.emp_rut as rut,
+                e.estado as activa,
                 e.created_at as empresa_created_at,
                 e.updated_at as empresa_updated_at,
                 l.lugar_id,
@@ -82,33 +82,12 @@ class EmpresaModel {
                 l.lon,
                 l.estado as lugar_estado
             FROM empresa e
-            LEFT JOIN lugar l ON e.grupo_emp_idn = l.lugar_id
+            LEFT JOIN empresa_lugar l ON e.empresa_id = l.empresa_id
             ORDER BY e.emp_nombre ASC
         `;
         
         const [rows] = await db.execute(query);
-        return rows.map(row => ({
-            empresa_id: row.empresa_id,
-            emp_nombre: row.emp_nombre,
-            emp_rut: row.emp_rut,
-            estado: row.empresa_estado,
-            created_at: row.empresa_created_at,
-            updated_at: row.empresa_updated_at,
-            direccion: {
-                lugar_id: row.lugar_id,
-                nombre: row.lugar_nombre,
-                calle: row.calle,
-                numero: row.numero,
-                piso: row.piso,
-                oficina: row.oficina,
-                comuna: row.comuna,
-                ciudad: row.ciudad,
-                region: row.region,
-                lat: row.lat,
-                lon: row.lon,
-                estado: row.lugar_estado
-            }
-        }));
+       return rows
     }
     
     // Obtener empresa por ID
