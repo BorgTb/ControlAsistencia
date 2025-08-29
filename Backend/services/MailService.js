@@ -145,7 +145,7 @@ class MailService {
 
 
     
-    async enviarNotificacionMarcacion(email, nombreUsuario, tipoMarcacion, fecha, hora) {
+    async enviarNotificacionMarcacion(usuario,marcacion) {
         /** 
         @params {string} email - El correo electrónico del usuario
         @params {string} nombreUsuario - El nombre del usuario
@@ -154,50 +154,54 @@ class MailService {
         @params {string} hora - La hora de la marcación
         */
 
-        console.log('Enviando notificación de marcación a:', email);
+        console.log('Enviando notificación de marcación a:', usuario.email);
 
-        const asunto = `Marcación de ${tipoMarcacion} registrada`;
-        
+        const asunto = `Marcación de ${marcacion.data.tipo} registrada`;
+
         const contenidoHTML = `
             <!DOCTYPE html>
             <html>
             <head>
-                <meta charset="UTF-8">
-                <title>Marcación Registrada</title>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
-                    .content { padding: 20px; background-color: #f9f9f9; }
-                    .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
-                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-                </style>
+            <meta charset="UTF-8">
+            <title>Marcación Registrada</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background-color: #f9f9f9; }
+                .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
+                .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+            </style>
             </head>
             <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>Marcación Registrada</h1>
-                    </div>
-                    <div class="content">
-                        <h2>Hola ${nombreUsuario},</h2>
-                        <p>Se ha registrado una nueva marcación en tu cuenta:</p>
-                        <div class="marcacion-info">
-                            <h3>Detalles de la marcación:</h3>
-                            <p><strong>Tipo:</strong> ${tipoMarcacion.toUpperCase()}</p>
-                            <p><strong>Fecha:</strong> ${fecha}</p>
-                            <p><strong>Hora:</strong> ${hora}</p>
-                        </div>
-                        <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
-                    </div>
-                    <div class="footer">
-                        <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
-                    </div>
+            <div class="container">
+                <div class="header">
+                <h1>Marcación Registrada</h1>
                 </div>
+                <div class="content">
+                <h2>Hola ${usuario.nombre} ${usuario.apellido},</h2>
+                <p>Se ha registrado una nueva marcación en tu cuenta:</p>
+                <div class="marcacion-info">
+                    <h3>Detalles de la marcación:</h3>
+                    <p><strong>Fecha:</strong> ${new Date(marcacion.data.fecha).toLocaleDateString('es-CL')}</p>
+                    <p><strong>Hora:</strong> ${marcacion.data.hora}</p>
+                    <p><strong>Nombre completo:</strong> ${usuario.nombre} ${usuario.apellido}</p>
+                    <p><strong>RUT:</strong> ${usuario.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}-${usuario.rut.slice(-1)}</p>
+                    <p><strong>Resolución excepcional:</strong> Número y fecha no especificados</p>
+                    <p><strong>Geolocalización:</strong> Latitud ${marcacion.data.geo_lat}, Longitud ${marcacion.data.geo_lon}</p>
+                    <p><strong>Hash:</strong> ${marcacion.data.hash}</p>
+                </div>
+                <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
+                </div>
+                <div class="footer">
+                <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                </div>
+            </div>
             </body>
             </html>
         `;
 
-        return await this.enviarCorreo(email, asunto, contenidoHTML);
+        return await this.enviarCorreo(usuario.email, asunto, contenidoHTML);
     }
 
     async enviarNotificacionCodigoAcceso(email, codigo) {

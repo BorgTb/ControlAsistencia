@@ -27,13 +27,11 @@ class NotificacionService {
                 };
             }
             console.log('Usuario para notificación:', usuario);
+            console.log('Marcación para notificación:', marcacion);
             // Enviar notificación
             const estado = await MailService.enviarNotificacionMarcacion(
-                usuario.email,
-                usuario.nombre,
-                marcacion.data.tipo,
-                DateTime.fromISO(marcacion.data.fecha, { zone: 'America/Santiago' }).toFormat('yyyy-MM-dd'),
-                marcacion.data.hora
+                usuario,
+                marcacion
             );
 
             console.log('Estado de envío de correo:', estado);
