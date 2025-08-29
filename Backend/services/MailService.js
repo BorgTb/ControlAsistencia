@@ -154,6 +154,7 @@ class MailService {
         @params {string} hora - La hora de la marcación
         */
 
+        console.log('Enviando notificación de marcación a:', email);
 
         const asunto = `Marcación de ${tipoMarcacion} registrada`;
         

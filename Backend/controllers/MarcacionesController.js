@@ -83,8 +83,10 @@ const registrarEntrada = async (req, res) => {
             });
         }
 
-        const [turno] = await TurnosModel.getTurnosByUsuarioId(usuarioEmpresa.id);
-        
+        const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
+        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
+        console.log('Turno obtenido:', turno);
+
         if (!turno){
             return res.status(404).json({
                 success: false,
@@ -104,7 +106,7 @@ const registrarEntrada = async (req, res) => {
         }
 
         const result = await MarcacionesService.registrarMarcacion(
-            usuario_id, 'entrada', geo_lat, geo_lon, ip_cliente
+            usuarioEmpresa.id, 'entrada', geo_lat, geo_lon, ip_cliente
         ); 
         const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
         
@@ -117,7 +119,7 @@ const registrarEntrada = async (req, res) => {
             return res.status(500).json(result);
         }
         
-
+        
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
         NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id)
             .catch(error => console.error('Error en notificación:', error));
@@ -161,13 +163,50 @@ const registrarSalida = async (req, res) => {
             ip_cliente
         });
 
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (!usuarioEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la información de la empresa del usuario.'
+            });
+        }
+
         const result = await MarcacionesService.registrarMarcacion(
-            usuario_id, 
+            usuarioEmpresa.id, 
             'salida', 
             geo_lat, 
             geo_lon, 
             ip_cliente
         );
+
+
+        const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
+        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
+
+        if (!turno){
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró un turno asociado al usuario.'
+            });
+        }
+
+        const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
+        // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
+        const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);
+
+        if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
+            result.tarde = true;
+            result.diferencia = diferencia.formato;
+        }
+
+        if (!marcacion) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la marcación registrada.'
+            });
+        }
+
+        
 
         if (!result.success) {
             return res.status(500).json(result);
@@ -284,9 +323,8 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
                 message: 'Usuario no identificado'
             });
         }
-
-        const result = { success: false };
-        //const result = await MarcacionesService.obtenerMarcacionesPorUsuario(usuario_id, fecha);
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fecha);
         // si tiene entrada y salida, devolver que 
 
         if (result.success) {
@@ -316,10 +354,10 @@ const obtenerHorarioHoy = async (req, res) => {
                 message: 'Usuario no pertenece a ninguna empresa'
             });
         }
-
+        
         //Obtener fecha actual en zona horaria de Chile
         const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
-        console.log(usuarioEmpresa);
+
 
         // obtener turno asignado para el usuario en la fecha actual
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);

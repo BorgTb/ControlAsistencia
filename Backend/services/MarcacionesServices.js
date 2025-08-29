@@ -12,7 +12,7 @@ class MarcacionesService {
             
             // Preparar datos para insertar (sin fecha y hora, la BD las manejará)
             const marcacionData = {
-                usuario_empresa_id: usuario_id,
+                usuario_id,
                 fecha: null, // La BD asignará CURRENT_DATE
                 hora: null,  // La BD asignará CURRENT_TIME
                 tipo,
@@ -48,6 +48,7 @@ class MarcacionesService {
     
     async obtenerMarcacionesPorUsuario(usuario_id, fecha = null) {
         try {
+            console.log('Obteniendo marcaciones para usuario:', usuario_id, 'en fecha:', fecha);
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fecha);
             console.log('Marcaciones obtenidas:', marcaciones);
 

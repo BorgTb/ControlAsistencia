@@ -8,7 +8,7 @@ class Marcaciones {
             ) VALUES (?, CURRENT_DATE(), CURRENT_TIME(), ?, ?, ?, ?, ?)
         `;
         const values = [
-            data.usuario_empresa_id,
+            data.usuario_id,
             data.tipo,
             data.hash,
             data.ip_origen,
@@ -19,12 +19,12 @@ class Marcaciones {
         return result;
     }
 
-    async getMarcacionesByUsuario(usuario_id, fecha = null) {
+    async getMarcacionesByUsuario(usuario_empresa_id, fecha = null) {
         let query = `
             SELECT * FROM marcaciones
-            WHERE usuario_id = ?
+            WHERE usuario_empresa_id = ?
         `;
-        let params = [usuario_id];
+        let params = [usuario_empresa_id];
         
         if (fecha) {
             query += ` AND DATE(fecha) = ?`;
@@ -39,8 +39,16 @@ class Marcaciones {
 
     async getMarcacionById(id) {
         const query = `
-            SELECT * FROM marcaciones
-            WHERE id = ?
+            SELECT 
+                m.*,
+                ue.usuario_id,
+                u.nombre,
+                u.apellido,
+                u.email 
+            FROM marcaciones m
+            LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            WHERE m.id = ?
         `;
         const [rows] = await pool.execute(query, [id]);
         return rows[0];
@@ -54,31 +62,42 @@ class Marcaciones {
         const [result] = await pool.execute(query, [id]);
         return result;
     }
-    async obtenerEntradaPorUsuario(usuario_id, fecha) {
-        console.log(usuario_id);
+    async obtenerEntradaPorUsuario(usuario_empresa_id, fecha) {
+        console.log(usuario_empresa_id);
         console.log(fecha);
         const query = `
             SELECT * FROM marcaciones
-            WHERE usuario_id = ? AND tipo = 'entrada' AND DATE(fecha) = ?
+            WHERE usuario_empresa_id = ? AND tipo = 'entrada' AND DATE(fecha) = ?
         `;
-        const [rows] = await pool.execute(query, [usuario_id, fecha]);
+        const [rows] = await pool.execute(query, [usuario_empresa_id, fecha]);
         return rows.length > 0 ? rows[0] : null;
     }
     
-    async obtenerSalidaPorUsuario(usuario_id, fecha) {
-        console.log(usuario_id);
+    async obtenerSalidaPorUsuario(usuario_empresa_id, fecha) {
+        console.log(usuario_empresa_id);
         console.log(fecha);
         const query = `
             SELECT * FROM marcaciones
-            WHERE usuario_id = ? AND tipo = 'salida' AND DATE(fecha) = ?
+            WHERE usuario_empresa_id = ? AND tipo = 'salida' AND DATE(fecha) = ?
         `;
-        const [rows] = await pool.execute(query, [usuario_id, fecha]);
+        const [rows] = await pool.execute(query, [usuario_empresa_id, fecha]);
         return rows.length > 0 ? rows[0] : null;
     }
     
     async obtenerTodasLasMarcaciones() {
         const query = `
-            SELECT * FROM marcaciones
+            SELECT 
+                m.*,
+                ue.usuario_id,
+                u.nombre,
+                u.apellido,
+                u.rut,
+                e.emp_nombre as empresa_nombre
+            FROM marcaciones m
+            LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            ORDER BY m.fecha DESC, m.hora DESC
         `;
         const [rows] = await pool.execute(query);
         return rows;
@@ -89,9 +108,11 @@ class Marcaciones {
             SELECT 
                 m.*,
                 u.nombre,
+                u.apellido,
                 u.rut
             FROM marcaciones m
-            JOIN usuarios u ON m.usuario_id = u.id
+            LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
             WHERE u.rut = ? 
             AND DATE(m.fecha) = ?
             ORDER BY m.fecha DESC, m.hora DESC
@@ -105,9 +126,11 @@ class Marcaciones {
             SELECT 
                 m.*,
                 u.nombre,
+                u.apellido,
                 u.rut
             FROM marcaciones m
-            JOIN usuarios u ON m.usuario_id = u.id
+            LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
             WHERE u.rut = ?
             ORDER BY m.fecha DESC, m.hora DESC
         `;

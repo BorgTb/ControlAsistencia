@@ -1,6 +1,7 @@
 import MailService from './MailService.js';
 import UserModel from '../model/UserModel.js';
 import MarcacionesService from './MarcacionesServices.js';
+import {DateTime} from 'luxon';
 
 class NotificacionService {
     async procesarNotificacionMarcacion(usuario_id, marcacion_id) {
@@ -10,7 +11,6 @@ class NotificacionService {
             if (!usuario) {
                 throw new Error('Usuario no encontrado');
             }
-
             // Obtener datos de la marcación
             const marcacion = await MarcacionesService.obtenerMarcacionPorId(marcacion_id);
             if (!marcacion.success) {
@@ -26,13 +26,13 @@ class NotificacionService {
                     message: 'Error de conexión con el servicio de correo'
                 };
             }
-
+            console.log('Usuario para notificación:', usuario);
             // Enviar notificación
             const estado = await MailService.enviarNotificacionMarcacion(
                 usuario.email,
                 usuario.nombre,
                 marcacion.data.tipo,
-                new Date(marcacion.data.fecha).toISOString().split('T')[0],
+                DateTime.fromISO(marcacion.data.fecha, { zone: 'America/Santiago' }).toFormat('yyyy-MM-dd'),
                 marcacion.data.hora
             );
 
