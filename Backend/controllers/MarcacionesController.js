@@ -1,6 +1,7 @@
 import MarcacionesService from '../services/MarcacionesServices.js';
 import NotificacionService from '../services/NotificacionService.js';
 import TurnosModel from '../model/TurnosModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import {DateTime} from 'luxon'
 
 
@@ -277,7 +278,8 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
             });
         }
 
-        const result = await MarcacionesService.obtenerMarcacionesPorUsuario(usuario_id, fecha);
+        const result = { success: false };
+        //const result = await MarcacionesService.obtenerMarcacionesPorUsuario(usuario_id, fecha);
         // si tiene entrada y salida, devolver que 
 
         if (result.success) {
@@ -299,13 +301,22 @@ const obtenerHorarioHoy = async (req, res) => {
     try {
         const { user } = req;
         const usuario_id = user.id;
-        
-        // Obtener fecha actual en zona horaria de Chile
+        // obtener usuario-empresa
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (!usuarioEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no pertenece a ninguna empresa'
+            });
+        }
+
+        //Obtener fecha actual en zona horaria de Chile
         const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
-        
-        // Buscar turno asignado para el usuario en la fecha actual
-        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuario_id, fechaHoy);
-        
+        console.log(usuarioEmpresa);
+
+        // obtener turno asignado para el usuario en la fecha actual
+        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
+
         if (!turno) {
             return res.status(200).json({
                 success: true,
