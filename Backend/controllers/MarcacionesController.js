@@ -241,8 +241,18 @@ const registrarColacion = async (req, res) => {
         console.log('Datos recibidos para registrar colación:', {
             usuario_id, geo_lat, geo_lon, ip_cliente
         });
+
+
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (!userEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la información de la empresa del usuario.'
+            });
+        }
+
         const result = await MarcacionesService.registrarMarcacion(
-            usuario_id, 'colacion', geo_lat, geo_lon, ip_cliente
+            userEmpresa.id, 'colacion', geo_lat, geo_lon, ip_cliente
         );
         if (!result.success) {
             return res.status(500).json(result);
@@ -272,9 +282,17 @@ const registrarTerminoColacion = async (req, res) => {
             });
         }
         
+    const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (!userEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la información de la empresa del usuario.'
+            });
+        }
+
         // Verificar que tiene una colación activa
-        const tieneColacionActiva = await MarcacionesService.verificarColacionActiva(usuario_id);
-        
+        const tieneColacionActiva = await MarcacionesService.verificarColacionActiva(userEmpresa.id);
+
         if (!tieneColacionActiva) {
             return res.status(400).json({
                 success: false,
@@ -286,9 +304,12 @@ const registrarTerminoColacion = async (req, res) => {
             usuario_id, geo_lat, geo_lon, ip_cliente
         });
         
+
+        
+
         // Cambiar 'termino_colacion' por 'colacion'
         const result = await MarcacionesService.registrarMarcacion(
-            usuario_id, 'colacion', geo_lat, geo_lon, ip_cliente
+            userEmpresa.id, 'colacion', geo_lat, geo_lon, ip_cliente
         );
         
         if (!result.success) {
