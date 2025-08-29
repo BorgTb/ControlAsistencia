@@ -601,9 +601,10 @@ class AsistenciaService {
    * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD)
    * @returns {Promise<Object>} Marcaciones del período
    */
-  async obtenerMarcacionesPorPeriodo(fechaInicio, fechaFin) {
+  async obtenerMarcacionesPorPeriodo(fechaInicio = null, fechaFin = null) {
     try {
-      const response = await apiClient.get('/marcaciones', {
+      const authStore = useAuthStore();
+      const response = await apiClient.get(`/marcaciones/${authStore.user.id}`, {
         params: {
           fechaInicio,
           fechaFin

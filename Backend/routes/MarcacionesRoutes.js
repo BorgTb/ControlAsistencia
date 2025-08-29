@@ -12,6 +12,8 @@ router.post('/inicio-colacion', AuthService.verifyToken, MarcacionesController.r
 router.post('/termino-colacion', AuthService.verifyToken, MarcacionesController.registrarTerminoColacion);
 router.get('/hoy', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorUsuario);
 router.get('/horario-hoy', AuthService.verifyToken, MarcacionesController.obtenerHorarioHoy);
+router.get('/:id', AuthService.verifyToken, MarcacionesController.obtenerMarcacionPorUserId);
+
 
 // Rutas para administración de marcaciones
 router.get('/admin/todas', AuthService.verifyToken, MarcacionesController.obtenerTodasLasMarcaciones);

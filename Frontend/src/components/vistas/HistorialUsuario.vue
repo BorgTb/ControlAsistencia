@@ -351,7 +351,7 @@ const cargarHistorial = async () => {
   error.value = ''
 
   try {
-    const result = await AsistenciaService.obtenerHistorialMarcaciones()
+    const result = await AsistenciaService.obtenerMarcacionesPorPeriodo()
     
     if (result.success) {
       marcaciones.value = result.data || []
@@ -471,7 +471,7 @@ const getColorByType = (tipo) => {
 }
 
 // Lifecycle
-onMounted(() => {
-  cargarHistorial()
+onMounted(async () => {
+  await cargarHistorial()
 })
 </script>
