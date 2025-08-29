@@ -46,6 +46,13 @@ const createTurno = async (req, res) => {
     try {
         const turnoData = req.body;
         console.log("Creating turno with data:", turnoData);
+
+        // verificar si existe ya un turno 
+        const existingTurno = await TurnosModel.obtenerTurnoPorUsuarioYDia(turnoData.usuario_id, turnoData.dia);
+        if (existingTurno) {
+            return res.status(400).json({ success: false, message: "Ya existe un turno para este trabajador en la fecha seleccionada" });
+        }
+
         const newTurno = await TurnosModel.createTurno(turnoData);
         res.status(201).json({ success: true, message: "Turno creado exitosamente" });
     } catch (error) {
@@ -71,10 +78,29 @@ const obtenerTrabajadores = async (req, res) => {
 const obtenerTurnos = async (req, res) => {
     try {
         const { rut } = req.params;
-        console.log("Obteniendo turnos para RUT:", rut);
 
-        // Funcionalidad de Telegestor removida
-        res.status(200).json({ success: true, data: [] });
+        const turnos = [];
+
+        // obtener trabajadores
+        const trabajadores = await UsuarioEmpresaModel.getUsuariosByEmpresaRut(rut);
+        // para cada trabajador obtener sus turnos e incluir información del trabajador
+        
+        for (const trabajador of trabajadores) {
+            const trabajadorTurnos = await TurnosModel.getTurnosByUsuarioId(trabajador.id);
+            const turnosConInfoTrabajador = trabajadorTurnos.map(turno => ({
+                ...turno,
+                trabajador: {
+                    id: trabajador.id,
+                    nombre: trabajador.usuario_nombre,
+                    apellido: trabajador.usuario_apellido,
+                    rut: trabajador.usuario_rut,
+                    iniciales: trabajador.usuario_nombre.charAt(0) + trabajador.usuario_apellido.charAt(0)
+                }
+            }));
+            turnos.push(...turnosConInfoTrabajador);
+        }
+        
+        res.status(200).json({ success: true, data: turnos });
     } catch (error) {
         console.error("Error fetching turnos:", error);
         res.status(500).json({ error: "Internal server error" });

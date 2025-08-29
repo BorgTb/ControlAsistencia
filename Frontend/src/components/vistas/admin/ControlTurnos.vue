@@ -34,8 +34,8 @@
                   </div>
                   <select v-else v-model="formTurno.usuario_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Seleccionar trabajador</option>
-                    <option v-for="trabajador in trabajadores" :key="trabajador.usuario_data.id" :value="trabajador.usuario_data.id">
-                      {{ trabajador.usuario_data.nombre }} 
+                    <option v-for="trabajador in trabajadores" :key="trabajador.id" :value="trabajador.id">
+                      {{ trabajador.usuario_nombre }} 
                     </option>
                   </select>
                 </div>
@@ -49,6 +49,21 @@
                     <option value="tarde">Tarde</option>
                     <option value="noche">Noche</option>
                     <option value="especial">Especial</option>
+                  </select>
+                </div>
+
+                <!-- Día -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Día</label>
+                  <select v-model="formTurno.dia" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Seleccionar día</option>
+                    <option value="lunes">Lunes</option>
+                    <option value="martes">Martes</option>
+                    <option value="miercoles">Miércoles</option>
+                    <option value="jueves">Jueves</option>
+                    <option value="viernes">Viernes</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
                   </select>
                 </div>
 
@@ -212,12 +227,12 @@
                     <div class="flex items-center">
                       <div class="h-10 w-10 flex-shrink-0">
                         <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                          <span class="text-white font-medium">{{ turno.trabajador_iniciales }}</span>
+                          <span class="text-white font-medium">{{ turno.trabajador.iniciales }}</span>
                         </div>
                       </div>
                       <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">{{ turno.trabajador_nombre }}</div>
-                        <div class="text-sm text-gray-500">ID: {{ turno.usuario_id }}</div>
+                        <div class="text-sm font-medium text-gray-900">{{ turno.trabajador.nombre }}</div>
+                        <div class="text-sm text-gray-500">ID: {{ turno.trabajador.id }}</div>
                       </div>
                     </div>
                   </td>
@@ -315,6 +330,7 @@ const cargando = ref(false);
 const formTurno = reactive({
   usuario_id: '',
   tipo: '',
+  dia: '',
   inicio: '',
   fin: '',
   colacion_inicio: '',

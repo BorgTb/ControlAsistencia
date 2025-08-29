@@ -26,8 +26,8 @@ ON turnos.usuario_id = usuarios.id
 
     static async createTurno(turnoData) {
         const query = `
-            INSERT INTO turnos (usuario_id, tipo, inicio, fin, motivo_modificacion, modificado_por, fecha_modificacion, colacion_inicio, colacion_fin)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO turnos (usuario_id, tipo, inicio, fin, motivo_modificacion, modificado_por, fecha_modificacion, colacion_inicio, colacion_fin, dia)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             turnoData.usuario_id,
@@ -39,6 +39,7 @@ ON turnos.usuario_id = usuarios.id
             turnoData.fecha_modificacion,
             turnoData.colacion_inicio,
             turnoData.colacion_fin,
+            turnoData.dia
         ];
         const [result] = await pool.query(query, values);
         return result.insertId;
@@ -87,6 +88,18 @@ ON turnos.usuario_id = usuarios.id
         const [rows] = await pool.query(query, [usuario_id, diaSemana]);
         return rows[0];
     }
+
+    static async obtenerTurnoPorUsuarioYDia(usuario_id, dia) {
+        const query = `
+            SELECT * FROM turnos 
+            WHERE usuario_id = ? AND LOWER(dia) = LOWER(?)
+            ORDER BY id DESC
+            LIMIT 1
+        `;
+        const [rows] = await pool.query(query, [usuario_id, dia]);
+        return rows[0];
+    }
+
 }
 
 
