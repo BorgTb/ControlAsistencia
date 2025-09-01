@@ -40,16 +40,46 @@
                 <!-- Nombre -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre Completo *
+                    Nombres *
                   </label>
                   <input
                     v-model="trabajador.nombre"
                     type="text"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Ej: Juan Carlos Pérez González"
+                    placeholder="Ej: Juan Carlos"
                   />
                   <span v-if="errors.nombre" class="text-red-500 text-xs mt-1">{{ errors.nombre }}</span>
+                </div>
+
+                <!-- Apellido Paterno -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Apellido Paterno *
+                  </label>
+                  <input
+                    v-model="trabajador.apellido_pat"
+                    type="text"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ej: Pérez"
+                  />
+                  <span v-if="errors.apellido_pat" class="text-red-500 text-xs mt-1">{{ errors.apellido_pat }}</span>
+                </div>
+
+                <!-- Apellido Materno -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Apellido Materno *
+                  </label>
+                  <input
+                    v-model="trabajador.apellido_mat"
+                    type="text"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ej: González"
+                  />
+                  <span v-if="errors.apellido_mat" class="text-red-500 text-xs mt-1">{{ errors.apellido_mat }}</span>
                 </div>
 
                 <!-- Email -->
@@ -198,6 +228,8 @@ const errorGeneral = ref('')
 // Datos del trabajador
 const trabajador = reactive({
   nombre: '',
+  apellido_pat: '',
+  apellido_mat: '',
   email: '',
   password: '',
   rol: 'trabajador',
@@ -208,6 +240,8 @@ const trabajador = reactive({
 // Errores de validación
 const errors = reactive({
   nombre: '',
+  apellido_pat: '',
+  apellido_mat: '',
   email: '',
   password: '',
   rol: '',
@@ -242,6 +276,8 @@ const closeOnBackdrop = (event) => {
 const resetForm = () => {
   // Resetear datos del trabajador
   trabajador.nombre = ''
+  trabajador.apellido_pat = ''
+  trabajador.apellido_mat = ''
   trabajador.email = ''
   trabajador.password = ''
   trabajador.rol = 'trabajador'
@@ -269,6 +305,16 @@ const validateForm = () => {
   // Validar campos requeridos
   if (!trabajador.nombre.trim()) {
     errors.nombre = 'El nombre es requerido'
+    isValid = false
+  }
+  
+  if (!trabajador.apellido_pat.trim()) {
+    errors.apellido_pat = 'El apellido paterno es requerido'
+    isValid = false
+  }
+  
+  if (!trabajador.apellido_mat.trim()) {
+    errors.apellido_mat = 'El apellido materno es requerido'
     isValid = false
   }
   

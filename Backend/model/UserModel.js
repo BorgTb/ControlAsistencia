@@ -32,10 +32,10 @@ class UserModel {
     }
 
     static async create(data) {
-        const { nombre, apellido, email, password, rol, rut, estado } = data;
+        const { nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado } = data;
         const [result] = await pool.query(
-            'INSERT INTO usuarios (nombre, apellido, email, password, rol, rut, estado) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [nombre, apellido || null, email, password, rol, rut, estado]
+            'INSERT INTO usuarios (nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [nombre, apellido_pat || null, apellido_mat || null, email, password, rol, rut, estado]
         );
         return result.insertId;
     }

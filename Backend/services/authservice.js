@@ -38,7 +38,7 @@ const verifyToken = (token) => {
 };
 
 // Function to register a user (hash password)
-const registerUser = async (email, password, nombre, rol = 'trabajador', rut, estado = 1) => {
+const registerUser = async (email, password, nombre, apellido_pat, apellido_mat, rol = 'trabajador', rut, estado = 1) => {
     // Check if user already exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
@@ -50,6 +50,8 @@ const registerUser = async (email, password, nombre, rol = 'trabajador', rut, es
     // Create user data object
     const userData = {
         nombre,
+        apellido_pat,
+        apellido_mat,
         email,
         password: hashedPassword,
         rol,
@@ -64,6 +66,8 @@ const registerUser = async (email, password, nombre, rol = 'trabajador', rut, es
     return {
         id: userId,
         nombre,
+        apellido_pat,
+        apellido_mat,
         email,
         rol,
         rut,
@@ -103,6 +107,8 @@ const loginUser = async (email, password) => {
         user: {
             id: user.id,
             nombre: user.nombre,
+            apellido_pat: user.apellido_pat,
+            apellido_mat: user.apellido_mat,
             email: user.email,
             rol: user.rol,
             rut: usuarioEmpresas.empresa_rut,
@@ -122,6 +128,8 @@ const getUserById = async (id) => {
     return {
         id: user.id,
         nombre: user.nombre,
+        apellido_pat: user.apellido_pat,
+        apellido_mat: user.apellido_mat,
         email: user.email,
         rol: user.rol,
         rut: user.rut,
@@ -140,6 +148,8 @@ const getUserByEmail = async (email) => {
     return {
         id: user.id,
         nombre: user.nombre,
+        apellido_pat: user.apellido_pat,
+        apellido_mat: user.apellido_mat,
         email: user.email,
         rol: user.rol,
         rut: user.rut,

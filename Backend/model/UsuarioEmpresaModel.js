@@ -36,7 +36,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 e.emp_nombre as empresa_nombre,
@@ -68,7 +69,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 e.emp_nombre as empresa_nombre,
@@ -123,7 +125,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 u.rol as usuario_rol_global,
@@ -152,7 +155,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 u.rol as usuario_rol_global,
@@ -185,7 +189,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 u.rol as usuario_rol_global,
@@ -251,7 +256,8 @@ class UsuarioEmpresaModel {
                 ue.fecha_inicio,
                 ue.fecha_fin,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 u.estado as usuario_estado
@@ -356,7 +362,8 @@ class UsuarioEmpresaModel {
                 ue.created_at,
                 ue.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
                 e.emp_nombre as empresa_nombre,
@@ -374,9 +381,14 @@ class UsuarioEmpresaModel {
             params.push(`%${filtros.usuario_nombre}%`);
         }
         
-        if (filtros.usuario_apellido) {
-            query += ` AND u.apellido LIKE ?`;
-            params.push(`%${filtros.usuario_apellido}%`);
+        if (filtros.usuario_apellido_pat) {
+            query += ` AND u.apellido_pat LIKE ?`;
+            params.push(`%${filtros.usuario_apellido_pat}%`);
+        }
+        
+        if (filtros.usuario_apellido_mat) {
+            query += ` AND u.apellido_mat LIKE ?`;
+            params.push(`%${filtros.usuario_apellido_mat}%`);
         }
         
         if (filtros.empresa_nombre) {

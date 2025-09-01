@@ -14,12 +14,35 @@ const createTrabajador = async (req, res) => {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-
-
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         
+        // Verificar si ya existe un usuario con este RUT o email
+        const existingUserByRut = await UserModel.findByRut(userData.rut);
+        if (existingUserByRut) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            });
+        }
+
+        const existingUserByEmail = await UserModel.findByEmail(userData.email);
+        if (existingUserByEmail) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
+            });
+        }
         
-        const newUser = await AuthService.registerUser(userData.email, userData.password, userData.nombre, userData.rol, userData.rut, userData.estado);
+        const newUser = await AuthService.registerUser(
+            userData.email, 
+            userData.password, 
+            userData.nombre, 
+            userData.apellido_pat,
+            userData.apellido_mat,
+            userData.rol, 
+            userData.rut, 
+            userData.estado
+        );
         
         // si new user throw error
         if (!newUser) {
@@ -92,9 +115,10 @@ const obtenerTurnos = async (req, res) => {
                 trabajador: {
                     id: trabajador.id,
                     nombre: trabajador.usuario_nombre,
-                    apellido: trabajador.usuario_apellido,
+                    apellido_pat: trabajador.usuario_apellido_pat,
+                    apellido_mat: trabajador.usuario_apellido_mat,
                     rut: trabajador.usuario_rut,
-                    iniciales: trabajador.usuario_nombre.charAt(0) + trabajador.usuario_apellido.charAt(0)
+                    iniciales: trabajador.usuario_nombre.charAt(0) + (trabajador.usuario_apellido_pat ? trabajador.usuario_apellido_pat.charAt(0) : '')
                 }
             }));
             turnos.push(...turnosConInfoTrabajador);
@@ -109,7 +133,7 @@ const obtenerTurnos = async (req, res) => {
 
 const enrolarTrabajador = async (req, res) => {
     try {
-        const { rut, email, password, rol, nombre } = req.body;
+        const { rut, email, password, rol, nombre, apellido_pat, apellido_mat } = req.body;
         console.log("Enrolando trabajador:", { rut, email, rol, nombre });
         
         // Verificar si ya existe un usuario con este RUT o email
@@ -130,7 +154,7 @@ const enrolarTrabajador = async (req, res) => {
         }
 
         // Crear el usuario
-        const newUser = await AuthService.registerUser(email, password, nombre, rol, rut);
+        const newUser = await AuthService.registerUser(email, password, nombre, apellido_pat, apellido_mat, rol, rut);
         
         res.status(201).json({ 
             success: true, 
