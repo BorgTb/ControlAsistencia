@@ -145,17 +145,46 @@ class MailService {
 
 
     
-    async enviarNotificacionMarcacion(usuario, marcacion, empresa) {
+    async enviarNotificacionMarcacion(usuario, marcacion, empresa, lugar, domicilio_prestacion) {
         /**
         @params {object} usuario - Objeto con los datos del usuario
         @params {object} marcacion - Objeto con los datos de la marcación
         @params {object} empresa - Objeto con los datos de la empresa
+        @params {object} lugar - Objeto con los datos del lugar (puede ser null)
+        @params {string|null} domicilio_prestacion - Dirección de prestación (puede ser null)
         */
 
         // Formatear RUT empresa con puntos y guion
         const rutEmpresaFormateado = empresa.emp_rut
             ? empresa.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa.emp_rut.slice(-1)
             : '';
+
+        // Si lugar no es null, armar el bloque HTML
+        let lugarHTML = '';
+        if (lugar) {
+            lugarHTML = `
+                <div class="lugar-info" style="background-color: #fffde7; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFEB3B;">
+                    <h3>Información del lugar:</h3>
+                    <p><strong>Nombre:</strong> ${lugar.nombre}</p>
+                    <p><strong>Calle:</strong> ${lugar.calle}</p>
+                    <p><strong>Número:</strong> ${lugar.numero}</p>
+                    <p><strong>Comuna:</strong> ${lugar.comuna}</p>
+                    <p><strong>Ciudad:</strong> ${lugar.ciudad}</p>
+                    <p><strong>Región:</strong> ${lugar.region}</p>
+                </div>
+            `;
+        }
+
+        // Si domicilio_prestacion no es null, agregar bloque HTML
+        let domicilioPrestacionHTML = '';
+        if (domicilio_prestacion) {
+            domicilioPrestacionHTML = `
+                <div class="domicilio-prestacion" style="background-color: #f1f8e9; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #8BC34A;">
+                    <h3>Domicilio de prestación:</h3>
+                    <p>${domicilio_prestacion}</p>
+                </div>
+            `;
+        }
 
         const asunto = `Marcación de ${marcacion.data.tipo} registrada`;
 
@@ -172,6 +201,8 @@ class MailService {
             .content { padding: 20px; background-color: #f9f9f9; }
             .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
             .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+            .lugar-info { background-color: #fffde7; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFEB3B; }
+            .domicilio-prestacion { background-color: #f1f8e9; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #8BC34A; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
             </style>
             </head>
@@ -201,6 +232,8 @@ class MailService {
                 <p><strong>Nombre:</strong> ${empresa.emp_nombre}</p>
                 <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
             </div>
+            ${lugarHTML}
+            ${domicilioPrestacionHTML}
             <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
             </div>
             <div class="footer">

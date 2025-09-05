@@ -162,6 +162,15 @@ WHERE empresa.emp_rut = ?`;
         const [result] = await pool.execute(query, [domicilioPrestacion, marcacionId]);
         return result;
     }
+    async agregarLugarMarcacion(marcacionId, lugarId) {
+        const query = `
+            UPDATE marcaciones
+            SET lugar_id = ?
+            WHERE id = ?
+        `;
+        const [result] = await pool.execute(query, [lugarId, marcacionId]);
+        return result;
+    }
 }
 
 export default new Marcaciones();

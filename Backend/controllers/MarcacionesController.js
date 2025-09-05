@@ -129,14 +129,21 @@ const registrarEntrada = async (req, res) => {
         }
         
         
-        const lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id,usuarioEmpresa.empresa_id); // este dato se puede usar para guardar el lugar mas cercano a la marcacion asociado a la empresa.
+        let lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id,usuarioEmpresa.empresa_id); // este dato se puede usar para guardar el lugar mas cercano a la marcacion asociado a la empresa.
 
         if (domicilio_prestacion) {
             await MarcacionesService.agregarDomicilioPrestacion(result.data.id, domicilio_prestacion);
+            lugar = null; // si se agrega un domicilio de prestación, no es necesario enviar el lugar aproximado
+        }else{
+            MarcacionesService.agregarLugarMarcacion(result.data.id, lugar.lugar_id);
         }
 
+
+
+
+
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa, lugar)
+        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa, lugar, domicilio_prestacion)
             .catch(error => console.error('Error en notificación:', error));
 
 
@@ -201,7 +208,7 @@ const registrarSalida = async (req, res) => {
         const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
         // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
         const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);
-
+        
         if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
             result.tarde = true;
             result.diferencia = diferencia.formato;
@@ -213,7 +220,6 @@ const registrarSalida = async (req, res) => {
                 message: 'No se encontró la marcación registrada.'
             });
         }
-
         
 
         if (!result.success) {

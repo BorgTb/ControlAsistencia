@@ -287,6 +287,28 @@ class MarcacionesService {
             };
         }
     }
+    async agregarLugarMarcacion(marcacion_id, lugar_id) {
+        try {
+            const result = await MarcacionesModel.agregarLugarMarcacion(marcacion_id, lugar_id);
+            if (result.affectedRows === 0) {
+                return {
+                    success: false,
+                    message: 'Marcación no encontrada o no se pudo actualizar'
+                };
+            }
+            return {
+                success: true,
+                message: 'Lugar de marcación agregado correctamente'
+            };
+        } catch (error) {
+            console.error('Error al agregar lugar de marcación:', error);
+            return {
+                success: false,
+                message: 'Error al agregar lugar de marcación',
+                error: error.message
+            };
+        }
+    }
 
 }
 

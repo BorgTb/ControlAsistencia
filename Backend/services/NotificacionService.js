@@ -6,7 +6,7 @@ import EmpresaModel from '../model/EmpresaModel.js';
 import {DateTime} from 'luxon';
 
 class NotificacionService {
-    async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa = null) {
+    async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa = null, lugar = null, domicilio_prestacion = null) {
         try {
 
             // Obtener datos del usuario
@@ -41,11 +41,16 @@ class NotificacionService {
                     message: 'Error de conexión con el servicio de correo'
                 };
             }
+
+            console.log('Lugar aproximado de la marcación:', lugar);
+
             // Enviar notificación
             const estado = await MailService.enviarNotificacionMarcacion(
                 usuario,
                 marcacion,
-                empresa
+                empresa,
+                lugar,
+                domicilio_prestacion
             );
 
             return estado;
