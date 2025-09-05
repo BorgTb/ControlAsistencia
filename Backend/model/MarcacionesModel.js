@@ -32,7 +32,7 @@ class Marcaciones {
         }
         
         query += ` ORDER BY fecha DESC, hora DESC`;
-        
+        console.log('Executing query:', query, 'with params:', params);
         const [rows] = await pool.execute(query, params);
         return rows;
     }
@@ -45,7 +45,8 @@ class Marcaciones {
                 m.*,
                 ue.usuario_id,
                 u.nombre,
-                u.apellido,
+                u.apellido_pat,
+                u.apellido_mat,
                 u.email 
             FROM marcaciones m
             LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
@@ -92,7 +93,8 @@ class Marcaciones {
                 m.*,
                 ue.usuario_id,
                 u.nombre,
-                u.apellido,
+                u.apellido_pat,
+                u.apellido_mat,
                 u.rut,
                 e.emp_nombre as empresa_nombre
             FROM marcaciones m
@@ -110,7 +112,8 @@ class Marcaciones {
             SELECT 
                 m.*,
                 u.nombre,
-                u.apellido,
+                u.apellido_pat,
+                u.apellido_mat,
                 u.rut
             FROM marcaciones m
             LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
@@ -128,7 +131,8 @@ class Marcaciones {
             SELECT 
                 m.*,
                 u.nombre,
-                u.apellido,
+                u.apellido_pat,
+                u.apellido_mat,
                 u.rut
             FROM marcaciones m
             LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
@@ -141,7 +145,7 @@ class Marcaciones {
     }
     async obtenerMarcacionesPorEmpresaRut(rutEmpresa) {
         const query = `SELECT marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
-usuarios.nombre,usuarios.apellido,usuarios.rut,usuarios.id as usuario_id,
+usuarios.nombre,usuarios.apellido_pat,usuarios.apellido_mat,usuarios.rut,usuarios.id as usuario_id,
 usuarios_empresas.rol_en_empresa
 FROM marcaciones 
 INNER JOIN usuarios_empresas ON marcaciones.usuario_empresa_id = usuarios_empresas.id

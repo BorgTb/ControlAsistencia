@@ -1,10 +1,11 @@
 import MailService from './MailService.js';
 import UserModel from '../model/UserModel.js';
 import MarcacionesService from './MarcacionesServices.js';
+import ResolucionModel from '../model/usuarios_empresas_resoluciones.js';
 import {DateTime} from 'luxon';
 
 class NotificacionService {
-    async procesarNotificacionMarcacion(usuario_id, marcacion_id) {
+    async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa_id = null) {
         try {
             // Obtener datos del usuario
             const usuario = await UserModel.findById(usuario_id);
@@ -15,6 +16,15 @@ class NotificacionService {
             const marcacion = await MarcacionesService.obtenerMarcacionPorId(marcacion_id);
             if (!marcacion.success) {
                 throw new Error('Marcación no encontrada');
+            }
+
+            // Ver si el usuario se encuentra afecto a un sistema excepcional
+            const [resolucion] = await ResolucionModel.findByUsuarioEmpresaId(usuario_empresa_id);
+            console.log('Resolución para usuario_empresa_id', usuario_empresa_id, ':', resolucion);
+            if (resolucion) {
+                //agregar datos de resolucion a la marcacion
+                console.log('Resolución encontrada para usuario_empresa_id:', usuario_empresa_id, resolucion);
+                marcacion.data.resolucion = resolucion;
             }
 
             // Verificar conexión de correo

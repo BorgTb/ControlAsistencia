@@ -98,7 +98,18 @@ const registrarEntrada = async (req, res) => {
 
         //verificamos si la hora actual es mayor a la hora de salida
         const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
-        if (horaActual > turno.fin) {
+        console.log('Hora actual:', horaActual , 'Turno fin:', turno.fin);
+        
+        // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
+        if (turno.fin < turno.inicio) {
+            // Si es así, la hora actual debe ser mayor que turno.inicio
+            if (horaActual < turno.inicio) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No se puede registrar la entrada fuera del horario del turno.'
+                });
+            }
+        } else if (horaActual > turno.fin) {
             return res.status(400).json({
                 success: false,
                 message: 'No se puede registrar la entrada fuera del horario del turno.'
@@ -121,7 +132,7 @@ const registrarEntrada = async (req, res) => {
         
         
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id)
+        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa.id)
             .catch(error => console.error('Error en notificación:', error));
 
 
@@ -213,7 +224,7 @@ const registrarSalida = async (req, res) => {
         }
 
         // Procesar notificación de salida de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id)
+        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa.id)
             .catch(error => console.error('Error en notificación de salida:', error));
 
         return res.status(200).json(result);
@@ -334,8 +345,8 @@ const registrarTerminoColacion = async (req, res) => {
 const obtenerMarcacionesPorUsuario = async (req, res) => {
     try {
         const usuario_id = req.user?.id;
-        const fechaActual = new Date();
-        const fecha = req.query.fecha || fechaActual.toISOString().split('T')[0];
+        const fechaActual = DateTime.now().setZone('America/Santiago');
+        const fecha = req.query.fecha || fechaActual.toISODate();
         console.log('Fecha consultada:', fecha);
 
         if (!usuario_id) {

@@ -145,13 +145,10 @@ class MailService {
 
 
     
-    async enviarNotificacionMarcacion(usuario,marcacion) {
-        /** 
-        @params {string} email - El correo electrónico del usuario
-        @params {string} nombreUsuario - El nombre del usuario
-        @params {string} tipoMarcacion - El tipo de marcación (entrada/salida)
-        @params {string} fecha - La fecha de la marcación
-        @params {string} hora - La hora de la marcación
+    async enviarNotificacionMarcacion(usuario, marcacion) {
+        /**
+        @params {object} usuario - Objeto con los datos del usuario
+        @params {object} marcacion - Objeto con los datos de la marcación
         */
 
         console.log('Enviando notificación de marcación a:', usuario.email);
@@ -179,17 +176,20 @@ class MailService {
             <h1>Marcación Registrada</h1>
             </div>
             <div class="content">
-            <h2>Hola ${usuario.nombre} ${usuario.apellido},</h2>
+            <h2>Hola ${usuario.nombre} ${usuario.apellido_pat} ${usuario.apellido_mat},</h2>
             <p>Se ha registrado una nueva marcación en tu cuenta:</p>
             <div class="marcacion-info">
                 <h3>Detalles de la marcación:</h3>
                 <p><strong>Fecha:</strong> ${new Date(marcacion.data.fecha).toLocaleDateString('es-CL', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
                 <p><strong>Hora:</strong> ${marcacion.data.hora}</p>
-                <p><strong>Nombre completo:</strong> ${usuario.nombre} ${usuario.apellido}</p>
+                <p><strong>Nombre completo:</strong> ${usuario.nombre} ${usuario.apellido_pat} ${usuario.apellido_mat}</p>
                 <p><strong>RUT:</strong> ${usuario.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}-${usuario.rut.slice(-1)}</p>
-                <p><strong>Resolución excepcional:</strong> Número y fecha no especificados</p>
                 <p><strong>Geolocalización:</strong> Latitud ${marcacion.data.geo_lat}, Longitud ${marcacion.data.geo_lon}</p>
                 <p><strong>Hash:</strong> ${marcacion.data.hash}</p>
+                ${marcacion.data.resolucion ? `
+                <p><strong>Resolución Número:</strong> ${marcacion.data.resolucion.resolucion_numero || 'No corresponde'}</p>
+                <p><strong>Resolución Fecha:</strong> ${marcacion.data.resolucion.resolucion_fecha ? new Date(marcacion.data.resolucion.resolucion_fecha).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'No corresponde'}</p>
+                ` : ''}
             </div>
             <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
             </div>

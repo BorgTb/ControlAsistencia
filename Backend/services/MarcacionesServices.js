@@ -48,7 +48,6 @@ class MarcacionesService {
     
     async obtenerMarcacionesPorUsuario(usuario_id, fecha = null) {
         try {
-            console.log('Obteniendo marcaciones para usuario:', usuario_id, 'en fecha:', fecha);
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fecha);
             console.log('Marcaciones obtenidas:', marcaciones);
 
