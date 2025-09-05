@@ -164,6 +164,60 @@
               </div>
             </div>
 
+            <!-- Sistema Excepcional de Jornada -->
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <h4 class="text-lg font-medium text-gray-900 mb-4">Sistema Excepcional de Jornada de Trabajo</h4>
+              
+              <div class="space-y-4">
+                <!-- Pregunta principal -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-3">
+                    ¿Se encuentra afecto a un sistema excepcional de jornada de trabajo?
+                  </label>
+                  <div class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        v-model="trabajador.sistemaExcepcional"
+                        type="checkbox"
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span class="ml-2 text-sm text-gray-700">Sí, está afecto a sistema excepcional</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Campos adicionales cuando está marcado -->
+                <div v-if="trabajador.sistemaExcepcional" class="space-y-4 pl-6 border-l-2 border-yellow-300">
+                  <!-- Número de Resolución -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Número de la Resolución *
+                    </label>
+                    <input
+                      v-model="trabajador.numeroResolucion"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Ej: RES-2024-001"
+                    />
+                    <span v-if="errors.numeroResolucion" class="text-red-500 text-xs mt-1">{{ errors.numeroResolucion }}</span>
+                  </div>
+
+                  <!-- Fecha de Resolución -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha de la Resolución *
+                    </label>
+                    <input
+                      v-model="trabajador.fechaResolucion"
+                      type="date"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <span v-if="errors.fechaResolucion" class="text-red-500 text-xs mt-1">{{ errors.fechaResolucion }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Mensaje de Error General -->
             <div v-if="errorGeneral" class="bg-red-50 border border-red-200 rounded-md p-3">
               <div class="flex">
@@ -234,7 +288,10 @@ const trabajador = reactive({
   password: '',
   rol: 'trabajador',
   rut: '',
-  estado: true
+  estado: true,
+  sistemaExcepcional: false,
+  numeroResolucion: '',
+  fechaResolucion: ''
 })
 
 // Errores de validación
@@ -245,7 +302,9 @@ const errors = reactive({
   email: '',
   password: '',
   rol: '',
-  rut: ''
+  rut: '',
+  numeroResolucion: '',
+  fechaResolucion: ''
 })
 
 // Métodos
@@ -283,6 +342,9 @@ const resetForm = () => {
   trabajador.rol = 'trabajador'
   trabajador.rut = ''
   trabajador.estado = true
+  trabajador.sistemaExcepcional = false
+  trabajador.numeroResolucion = ''
+  trabajador.fechaResolucion = ''
   
   // Resetear errores
   Object.keys(errors).forEach(key => {
@@ -342,6 +404,19 @@ const validateForm = () => {
   if (!trabajador.rol) {
     errors.rol = 'El rol es requerido'
     isValid = false
+  }
+  
+  // Validar sistema excepcional
+  if (trabajador.sistemaExcepcional) {
+    if (!trabajador.numeroResolucion.trim()) {
+      errors.numeroResolucion = 'El número de resolución es requerido'
+      isValid = false
+    }
+    
+    if (!trabajador.fechaResolucion.trim()) {
+      errors.fechaResolucion = 'La fecha de resolución es requerida'
+      isValid = false
+    }
   }
   
   return isValid

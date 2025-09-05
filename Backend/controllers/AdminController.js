@@ -2,6 +2,7 @@ import AuthService from "../services/authservice.js";
 import UserModel from "../model/UserModel.js";
 import TurnosModel from "../model/TurnosModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
+import ResolucionModel from "../model/usuarios_empresas_resoluciones.js";
 import { DateTime } from "luxon";
 
 
@@ -13,6 +14,7 @@ const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
+        console.log("Creating trabajador with data:", userData);
 
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         
@@ -52,13 +54,27 @@ const createTrabajador = async (req, res) => {
         // si se creo correctamente entonces relacionarlo con la empresa que lo creo
         console.log(empresa);
         console.log(newUser);
-        await UsuarioEmpresaModel.createUsuarioEmpresa({
+        const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: newUser.id,
             empresa_id: empresa.empresa_id,
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
-        res.status(201).json({ success: true, message: "Trabajador creado exitosamente" });
+
+
+        if (userData.sistemaExcepcional && userData.sistemaExcepcional === true) {
+            // crear resolucion para este usuario empresa
+            ResolucionModel.create({
+                usuario_empresa_id: newUserEmpresa.id,
+                resolucion_numero: userData.numeroResolucion || 'EX-2024-00001',
+                resolucion_fecha: userData.fechaResolucion || DateTime.now().setZone("America/Santiago").toISODate()
+            });
+        }  
+            
+
+
+
+        res.status(500).json({ success: true, message: "Trabajador creado exitosamente" });
     } catch (error) {
         console.error("Error creating trabajador:", error);
         res.status(500).json({ error: "Internal server error" });
