@@ -264,6 +264,30 @@ class MarcacionesService {
             };
         }
     }
+
+    async agregarDomicilioPrestacion(marcacion_id, domicilio_prestacion) {
+        try {
+            const result = await MarcacionesModel.agregarDomicilioPrestacion(marcacion_id, domicilio_prestacion);
+            if (result.affectedRows === 0) {
+                return {
+                    success: false,
+                    message: 'Marcación no encontrada o no se pudo actualizar'
+                };
+            }
+            return {
+                success: true,
+                message: 'Domicilio de prestación agregado correctamente'
+            };
+        } catch (error) {
+            console.error('Error al agregar domicilio de prestación:', error);
+            return {
+                success: false,
+                message: 'Error al agregar domicilio de prestación',
+                error: error.message
+            };
+        }
+    }
+
 }
 
 export default new MarcacionesService();

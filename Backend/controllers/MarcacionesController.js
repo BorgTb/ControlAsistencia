@@ -65,7 +65,7 @@ function calcularDiferenciaHoras(hora1, hora2) {
 
 const registrarEntrada = async (req, res) => {
     try {
-        const { geo_lat, geo_lon, location_quality, ip_cliente } = req.body;
+        const { geo_lat, geo_lon, location_quality, ip_cliente, domicilio_prestacion } = req.body;
         const usuario_id = req.user?.id;
         
         if (!usuario_id || !geo_lat || !geo_lon || !location_quality || !ip_cliente) {
@@ -131,7 +131,9 @@ const registrarEntrada = async (req, res) => {
         
         const lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id,usuarioEmpresa.empresa_id); // este dato se puede usar para guardar el lugar mas cercano a la marcacion asociado a la empresa.
 
-        console.log('Lugar aproximado de la marcación:', lugar);
+        if (domicilio_prestacion) {
+            await MarcacionesService.agregarDomicilioPrestacion(result.data.id, domicilio_prestacion);
+        }
 
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
         NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa, lugar)

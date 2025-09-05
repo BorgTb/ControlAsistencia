@@ -183,6 +183,11 @@ class AsistenciaService {
         payload.geo_lat = ubicacion.latitud
         payload.geo_lon = ubicacion.longitud
         payload.precision = ubicacion.precision
+
+        // Si el objeto ubicacion incluye domicilio (desde modal), agregarlo
+        if (ubicacion.domicilio) {
+          payload.domicilio_prestacion = ubicacion.domicilio
+        }
         
         // Información adicional de calidad de ubicación
         if (ubicacion.altitude !== null) {
@@ -274,6 +279,10 @@ class AsistenciaService {
         payload.geo_lat = ubicacion.latitud
         payload.geo_lon = ubicacion.longitud
         payload.precision = ubicacion.precision
+
+        if (ubicacion.domicilio) {
+          payload.domicilio_prestacion = ubicacion.domicilio
+        }
         
         // Información adicional de calidad de ubicación
         if (ubicacion.altitude !== null) {
@@ -366,6 +375,10 @@ class AsistenciaService {
         payload.geo_lat = ubicacion.latitud
         payload.geo_lon = ubicacion.longitud
         payload.precision = ubicacion.precision
+
+        if (ubicacion.domicilio) {
+          payload.domicilio_prestacion = ubicacion.domicilio
+        }
       }
       
       const response = await apiClient.post('/marcaciones/inicio-colacion', payload)
@@ -438,7 +451,7 @@ class AsistenciaService {
             payload.precision = ubicacion.precision
 
             // Información adicional de calidad de ubicación
-            if (ubicacion.altitude !== null) {
+      if (ubicacion.altitude !== null) {
                 payload.altitude = ubicacion.altitude
             }
             if (ubicacion.altitudeAccuracy !== null) {
@@ -452,6 +465,10 @@ class AsistenciaService {
             }
             payload.location_timestamp = ubicacion.timestamp
             payload.location_quality = ubicacion.precision <= 50 ? 'high' : 'low'
+
+            if (ubicacion.domicilio) {
+              payload.domicilio_prestacion = ubicacion.domicilio
+            }
         }
 
         const response = await apiClient.post('/marcaciones/termino-colacion', payload)
@@ -518,6 +535,10 @@ class AsistenciaService {
         payload.geo_lat = ubicacion.latitud
         payload.geo_lon = ubicacion.longitud
         payload.precision = ubicacion.precision
+
+        if (ubicacion.domicilio) {
+          payload.domicilio_prestacion = ubicacion.domicilio
+        }
       }
       
       const response = await apiClient.post('/marcaciones/descanso', payload)

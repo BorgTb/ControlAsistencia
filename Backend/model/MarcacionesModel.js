@@ -152,6 +152,16 @@ WHERE empresa.emp_rut = ?`;
         const [rows] = await pool.execute(query, [rutEmpresa]);
         return rows;
     }
+
+    async agregarDomicilioPrestacion(marcacionId, domicilioPrestacion) {
+        const query = `
+            UPDATE marcaciones
+            SET domicilio_prestacion = ?
+            WHERE id = ?
+        `;
+        const [result] = await pool.execute(query, [domicilioPrestacion, marcacionId]);
+        return result;
+    }
 }
 
 export default new Marcaciones();
