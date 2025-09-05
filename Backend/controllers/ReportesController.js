@@ -32,11 +32,9 @@ import ReporteService from "../services/ReportesServices.js";
  */
 const obtenerReporteAsistencia = async (req, res) => {
     const { empresa } = req.params;
-    console.log('Empresa recibida:', empresa);
     const reporteService = new ReporteService();
     try {
          const reporte = await reporteService.getReporteAsistentica(empresa);
-         console.log('Reporte de asistencia obtenido:', reporte);
 
       // Transformar el reporte agrupando las marcaciones por usuario y consolidando en un solo registro
       const reporteTransformado = Object.entries(reporte).map(([usuarioId, marcaciones]) => {

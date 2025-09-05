@@ -145,13 +145,17 @@ class MailService {
 
 
     
-    async enviarNotificacionMarcacion(usuario, marcacion) {
+    async enviarNotificacionMarcacion(usuario, marcacion, empresa) {
         /**
         @params {object} usuario - Objeto con los datos del usuario
         @params {object} marcacion - Objeto con los datos de la marcación
+        @params {object} empresa - Objeto con los datos de la empresa
         */
 
-        console.log('Enviando notificación de marcación a:', usuario.email);
+        // Formatear RUT empresa con puntos y guion
+        const rutEmpresaFormateado = empresa.emp_rut
+            ? empresa.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa.emp_rut.slice(-1)
+            : '';
 
         const asunto = `Marcación de ${marcacion.data.tipo} registrada`;
 
@@ -167,6 +171,7 @@ class MailService {
             .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
             .content { padding: 20px; background-color: #f9f9f9; }
             .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
+            .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
             </style>
             </head>
@@ -190,6 +195,11 @@ class MailService {
                 <p><strong>Resolución Número:</strong> ${marcacion.data.resolucion.resolucion_numero || 'No corresponde'}</p>
                 <p><strong>Resolución Fecha:</strong> ${marcacion.data.resolucion.resolucion_fecha ? new Date(marcacion.data.resolucion.resolucion_fecha).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'No corresponde'}</p>
                 ` : ''}
+            </div>
+            <div class="empresa-info">
+                <h3>Información de la empresa:</h3>
+                <p><strong>Nombre:</strong> ${empresa.emp_nombre}</p>
+                <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
             </div>
             <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
             </div>

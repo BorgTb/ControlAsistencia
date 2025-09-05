@@ -110,8 +110,6 @@ const logout = async (req, res) => {
         // Optional: You could add token to a blacklist here
         // await TokenBlacklistModel.addToBlacklist(token);
         
-        // Optional: Log the logout activity
-        console.log(`User ${decoded.email} logged out at ${new Date().toISOString()}`);
 
         res.status(200).json({ 
             success: true, 

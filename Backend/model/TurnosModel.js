@@ -78,7 +78,7 @@ ON turnos.usuario_id = usuarios.id
         const diasSemana = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
         const fechaObj = DateTime.fromISO(fecha);
         const diaSemana = diasSemana[fechaObj.weekday - 1]; // Luxon weekday: 1 (lunes) to 7 (domingo)
-        console.log(`Obteniendo turno para usuario_id: ${usuario_id}, día: ${diaSemana}`);  
+
         const query = `
             SELECT * FROM turnos 
             WHERE usuario_id = ? AND LOWER(dia) = LOWER(?)

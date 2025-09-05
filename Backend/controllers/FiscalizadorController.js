@@ -106,8 +106,6 @@ const cerrarSesion = async (req, res) => {
             await LoginCodigoModel.invalidateUserCodes(decoded.email);
         }
         
-        // Log the logout activity
-        console.log(`Fiscalizador ${decoded.email} logged out at ${new Date().toISOString()}`);
 
         res.status(200).json({ 
             success: true, 

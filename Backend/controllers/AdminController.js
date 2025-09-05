@@ -14,7 +14,7 @@ const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
-        console.log("Creating trabajador with data:", userData);
+        
 
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         
@@ -51,9 +51,6 @@ const createTrabajador = async (req, res) => {
             return res.status(400).json({ success: false, message: "Error creando trabajador" });
         }
         
-        // si se creo correctamente entonces relacionarlo con la empresa que lo creo
-        console.log(empresa);
-        console.log(newUser);
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: newUser.id,
             empresa_id: empresa.empresa_id,
@@ -84,7 +81,6 @@ const createTrabajador = async (req, res) => {
 const createTurno = async (req, res) => {
     try {
         const turnoData = req.body;
-        console.log("Creating turno with data:", turnoData);
 
         // verificar si existe ya un turno 
         const existingTurno = await TurnosModel.obtenerTurnoPorUsuarioYDia(turnoData.usuario_id, turnoData.dia);
@@ -107,7 +103,6 @@ const obtenerTrabajadores = async (req, res) => {
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 
-        console.log("Trabajadores obtenidos:", trabajadores);
         res.status(200).json({ success: true, data: trabajadores });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
@@ -150,7 +145,6 @@ const obtenerTurnos = async (req, res) => {
 const enrolarTrabajador = async (req, res) => {
     try {
         const { rut, email, password, rol, nombre, apellido_pat, apellido_mat } = req.body;
-        console.log("Enrolando trabajador:", { rut, email, rol, nombre });
         
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(rut);

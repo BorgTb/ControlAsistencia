@@ -100,7 +100,6 @@ const loginUser = async (email, password) => {
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
 
 
-    console.log("Usuario Empresas:", usuarioEmpresas);
     // Return both token and user info (without password)
     return {
         token,

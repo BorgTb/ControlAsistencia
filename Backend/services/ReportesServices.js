@@ -13,7 +13,7 @@ class ReporteService {
 
     async getReporteAsistentica(empresa) {
         try {
-            console.log('Empresa recibida en el servicio:', empresa);
+            
             const marcaciones = await MarcacionesServices.obtenerMarcacionesPorEmpresa(empresa);
             if (marcaciones.success) {
                 return marcaciones.data;

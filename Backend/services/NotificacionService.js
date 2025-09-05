@@ -2,11 +2,13 @@ import MailService from './MailService.js';
 import UserModel from '../model/UserModel.js';
 import MarcacionesService from './MarcacionesServices.js';
 import ResolucionModel from '../model/usuarios_empresas_resoluciones.js';
+import EmpresaModel from '../model/EmpresaModel.js';
 import {DateTime} from 'luxon';
 
 class NotificacionService {
-    async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa_id = null) {
+    async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa = null) {
         try {
+
             // Obtener datos del usuario
             const usuario = await UserModel.findById(usuario_id);
             if (!usuario) {
@@ -19,13 +21,16 @@ class NotificacionService {
             }
 
             // Ver si el usuario se encuentra afecto a un sistema excepcional
-            const [resolucion] = await ResolucionModel.findByUsuarioEmpresaId(usuario_empresa_id);
-            console.log('Resolución para usuario_empresa_id', usuario_empresa_id, ':', resolucion);
+            const [resolucion] = await ResolucionModel.findByUsuarioEmpresaId(usuario_empresa.id);
             if (resolucion) {
                 //agregar datos de resolucion a la marcacion
-                console.log('Resolución encontrada para usuario_empresa_id:', usuario_empresa_id, resolucion);
                 marcacion.data.resolucion = resolucion;
             }
+
+            // agregar datos de la empresa
+            const empresa = await EmpresaModel.getEmpresaById(usuario_empresa.empresa_id);
+
+            console.log(empresa);
 
             // Verificar conexión de correo
             const conexionValida = await MailService.verificarConexion();
@@ -36,15 +41,13 @@ class NotificacionService {
                     message: 'Error de conexión con el servicio de correo'
                 };
             }
-            console.log('Usuario para notificación:', usuario);
-            console.log('Marcación para notificación:', marcacion);
             // Enviar notificación
             const estado = await MailService.enviarNotificacionMarcacion(
                 usuario,
-                marcacion
+                marcacion,
+                empresa
             );
 
-            console.log('Estado de envío de correo:', estado);
             return estado;
 
         } catch (error) {

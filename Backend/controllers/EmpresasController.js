@@ -20,7 +20,6 @@ const getAllEmpresas = async (req, res) => {
       empresa.activa = empresa.activa === 1;
       empresa.totalEmpleados = (await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresa.id)).length;
     }));
-    console.log(empresas);
 
     
     res.status(200).json({

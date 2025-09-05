@@ -85,7 +85,6 @@ const registrarEntrada = async (req, res) => {
 
         const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-        console.log('Turno obtenido:', turno);
 
         if (!turno){
             return res.status(404).json({
@@ -98,7 +97,6 @@ const registrarEntrada = async (req, res) => {
 
         //verificamos si la hora actual es mayor a la hora de salida
         const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
-        console.log('Hora actual:', horaActual , 'Turno fin:', turno.fin);
         
         // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
         if (turno.fin < turno.inicio) {
@@ -131,8 +129,12 @@ const registrarEntrada = async (req, res) => {
         }
         
         
+        const lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id,usuarioEmpresa.empresa_id); // este dato se puede usar para guardar el lugar mas cercano a la marcacion asociado a la empresa.
+
+        console.log('Lugar aproximado de la marcación:', lugar);
+
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa.id)
+        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa, lugar)
             .catch(error => console.error('Error en notificación:', error));
 
 
@@ -166,13 +168,6 @@ const registrarSalida = async (req, res) => {
             });
         }
         
-        console.log('Datos recibidos para registrar salida:', {
-            usuario_id,
-            geo_lat,
-            geo_lon,
-            location_quality,
-            ip_cliente
-        });
 
         const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
         if (!usuarioEmpresa) {
@@ -224,7 +219,7 @@ const registrarSalida = async (req, res) => {
         }
 
         // Procesar notificación de salida de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa.id)
+        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa)
             .catch(error => console.error('Error en notificación de salida:', error));
 
         return res.status(200).json(result);
@@ -242,17 +237,14 @@ const registrarColacion = async (req, res) => {
     try {
         const { geo_lat, geo_lon, ip_cliente } = req.body;
         const usuario_id = req.user?.id;
-        console.log(req)
+        
         if (!usuario_id || !geo_lat || !geo_lon || !ip_cliente) {
             return res.status(400).json({
                 success: false,
                 message: 'Faltan datos requeridos para registrar la colación.'
             });
         }
-        console.log('Datos recibidos para registrar colación:', {
-            usuario_id, geo_lat, geo_lon, ip_cliente
-        });
-
+        
 
         const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
         if (!userEmpresa) {
@@ -311,9 +303,6 @@ const registrarTerminoColacion = async (req, res) => {
             });
         }
         
-        console.log('Datos recibidos para terminar colación:', {
-            usuario_id, geo_lat, geo_lon, ip_cliente
-        });
         
 
         
@@ -347,7 +336,6 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
         const usuario_id = req.user?.id;
         const fechaActual = DateTime.now().setZone('America/Santiago');
         const fecha = req.query.fecha || fechaActual.toISODate();
-        console.log('Fecha consultada:', fecha);
 
         if (!usuario_id) {
             return res.status(400).json({

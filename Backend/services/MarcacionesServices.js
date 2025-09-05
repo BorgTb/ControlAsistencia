@@ -49,7 +49,6 @@ class MarcacionesService {
     async obtenerMarcacionesPorUsuario(usuario_id, fecha = null) {
         try {
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fecha);
-            console.log('Marcaciones obtenidas:', marcaciones);
 
             // Si no hay marcaciones, devolver estructura vacía
             if (!marcaciones || marcaciones.length === 0) {
@@ -207,7 +206,6 @@ class MarcacionesService {
     async obtenerTodasLasMarcaciones() {
         try {
             const marcaciones = await MarcacionesModel.obtenerTodasLasMarcaciones();
-            console.log('Todas las marcaciones obtenidas:', marcaciones);
             return {
                 success: true,
                 data: marcaciones
@@ -253,7 +251,6 @@ class MarcacionesService {
                 acc[usuarioId].push(marcacion);
                 return acc;
             }, {});
-            console.log('Marcaciones agrupadas por usuario:', marcacionesAgrupadas);
             return {
                 success: true,
                 data: marcacionesAgrupadas

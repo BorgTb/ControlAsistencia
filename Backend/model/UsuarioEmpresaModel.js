@@ -8,7 +8,6 @@ class UsuarioEmpresaModel {
             INSERT INTO usuarios_empresas (usuario_id, empresa_id, rol_en_empresa, fecha_inicio, fecha_fin, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `;
-        console.log('Creating usuario_empresa with data:', usuarioEmpresaData);
         const [result] = await db.execute(query, [
             usuarioEmpresaData.usuario_id,
             usuarioEmpresaData.empresa_id,
@@ -414,6 +413,31 @@ class UsuarioEmpresaModel {
         
         const [rows] = await db.execute(query, params);
         return rows;
+    }
+
+    static async obtenerEmpresaLugarAproximado(marcacion_id, empresa_id) {
+        const query = `
+        SELECT 
+        el.lugar_id,
+        el.empresa_id,
+        el.nombre,
+        el.calle, el.numero, el.comuna, el.ciudad, el.region,
+        ( 6371 * ACOS( 
+            COS(RADIANS(m.geo_lat)) * COS(RADIANS(el.lat)) *
+            COS(RADIANS(el.lon) - RADIANS(m.geo_lon)) +
+            SIN(RADIANS(m.geo_lat)) * SIN(RADIANS(el.lat))
+        )
+        ) AS distancia_km
+        FROM marcaciones m
+        JOIN usuarios_empresas ue ON ue.id = m.usuario_empresa_id
+        JOIN empresa_lugar el ON el.empresa_id = ue.empresa_id
+        WHERE m.id = ?
+        AND el.empresa_id = ?
+        ORDER BY distancia_km ASC
+        LIMIT 1;  
+        `;
+        const [rows] = await db.execute(query, [marcacion_id, empresa_id]);
+        return rows.length > 0 ? rows[0] : null;
     }
 }
 

@@ -32,7 +32,6 @@ class Marcaciones {
         }
         
         query += ` ORDER BY fecha DESC, hora DESC`;
-        console.log('Executing query:', query, 'with params:', params);
         const [rows] = await pool.execute(query, params);
         return rows;
     }
@@ -66,8 +65,7 @@ class Marcaciones {
         return result;
     }
     async obtenerEntradaPorUsuario(usuario_empresa_id, fecha) {
-        console.log(usuario_empresa_id);
-        console.log(fecha);
+
         const query = `
             SELECT * FROM marcaciones
             WHERE usuario_empresa_id = ? AND tipo = 'entrada' AND DATE(fecha) = ?
@@ -77,8 +75,7 @@ class Marcaciones {
     }
     
     async obtenerSalidaPorUsuario(usuario_empresa_id, fecha) {
-        console.log(usuario_empresa_id);
-        console.log(fecha);
+
         const query = `
             SELECT * FROM marcaciones
             WHERE usuario_empresa_id = ? AND tipo = 'salida' AND DATE(fecha) = ?
