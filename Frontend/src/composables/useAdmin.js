@@ -1,4 +1,4 @@
-import AdminServices from "../services/AdminServices.js";
+import AdminServices from "../services/EmpresaService.js";
 import { useAuth } from "./useAuth.js";
 export function useAdmin() {
   const { user } = useAuth();

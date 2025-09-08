@@ -66,7 +66,7 @@ class AdminServices{
 
   static async crearTrabajador(trabajadorData) {
     try {
-      const response = await apiClient.post('/admin/trabajador', trabajadorData)
+      const response = await apiClient.post('/userEmpresa/trabajador', trabajadorData)
       return response.data
     } catch (error) {
       throw error
@@ -76,7 +76,7 @@ class AdminServices{
   static async obtenerTrabajadores(rut, enrolados = false) {
     console.log("Obteniendo trabajadores para RUT:", rut, "Enrolados:", enrolados);
     try {
-      const response = await apiClient.get(`/admin/trabajador/${rut}`, {
+      const response = await apiClient.get(`/userEmpresa/trabajador/${rut}`, {
         params: { enrolados: enrolados }
       })
       return response.data
@@ -87,7 +87,7 @@ class AdminServices{
 
   static async actualizarTrabajador(trabajadorId, trabajadorData) {
     try {
-      const response = await apiClient.put(`/trabajadores/${trabajadorId}`, trabajadorData)
+      const response = await apiClient.put(`/userEmpresa/trabajadores/${trabajadorId}`, trabajadorData)
       return response.data
     } catch (error) {
       throw error
@@ -96,7 +96,7 @@ class AdminServices{
 
   static async eliminarTrabajador(trabajadorId) {
     try {
-      const response = await apiClient.delete(`/trabajadores/${trabajadorId}`)
+      const response = await apiClient.delete(`/userEmpresa/trabajadores/${trabajadorId}`)
       return response.data
     } catch (error) {
       throw error
@@ -105,7 +105,7 @@ class AdminServices{
 
   static async asignarTurno(turnoData) {
     try {
-      const response = await apiClient.post('/admin/turnos', turnoData)
+      const response = await apiClient.post('/userEmpresa/turnos', turnoData)
       return response.data
     } catch (error) {
       throw error
@@ -114,7 +114,7 @@ class AdminServices{
 
   static async createTurno(turnoData) {
     try {
-      const response = await apiClient.post('/admin/turnos', turnoData)
+      const response = await apiClient.post('/userEmpresa/turnos', turnoData)
       return response.data
     } catch (error) {
       throw error
@@ -123,7 +123,7 @@ class AdminServices{
 
   static async obtenerTurnos(rut) {
     try {
-      const response = await apiClient.get(`/admin/turnos/${rut}`)
+      const response = await apiClient.get(`/userEmpresa/turnos/${rut}`)
       console.log('Turnos obtenidos:', response.data)
       return response.data
     } catch (error) {
@@ -133,7 +133,7 @@ class AdminServices{
 
   static async enrolarTrabajador(datosEnrolamiento) {
     try {
-      const response = await apiClient.post('/admin/enrolar-trabajador', datosEnrolamiento)
+      const response = await apiClient.post('/userEmpresa/enrolar-trabajador', datosEnrolamiento)
       return response.data
     } catch (error) {
       throw error
@@ -143,7 +143,7 @@ class AdminServices{
   // Métodos para marcaciones
   static async obtenerTodasLasMarcaciones() {
     try {
-      const response = await apiClient.get('/marcaciones/admin/todas')
+      const response = await apiClient.get('/marcaciones/userEmpresa/todas')
       return response.data
     } catch (error) {
       throw error
@@ -152,7 +152,7 @@ class AdminServices{
 
   static async obtenerMarcacionesPorFecha(rutEmpresa, fecha) {
     try {
-      const response = await apiClient.get(`/marcaciones/admin/empresa/${rutEmpresa}/fecha/${fecha}`)
+      const response = await apiClient.get(`/marcaciones/userEmpresa/empresa/${rutEmpresa}/fecha/${fecha}`)
       return response.data
     } catch (error) {
       throw error
@@ -161,7 +161,7 @@ class AdminServices{
 
   static async obtenerMarcacionesPorEmpresa(rutEmpresa) {
     try {
-      const response = await apiClient.get(`/marcaciones/admin/empresa/${rutEmpresa}`)
+      const response = await apiClient.get(`/marcaciones/userEmpresa/empresa/${rutEmpresa}`)
       return response.data
     } catch (error) {
       throw error

@@ -15,10 +15,10 @@ router.get('/horario-hoy', AuthService.verifyToken, MarcacionesController.obtene
 router.get('/:id', AuthService.verifyToken, MarcacionesController.obtenerMarcacionPorUserId);
 
 
-// Rutas para administración de marcaciones
-router.get('/admin/todas', AuthService.verifyToken, MarcacionesController.obtenerTodasLasMarcaciones);
-router.get('/admin/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorFecha );
-router.get('/admin/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
+// Rutas para userEmpresa de marcaciones
+router.get('/userEmpresa/todas', AuthService.verifyToken, MarcacionesController.obtenerTodasLasMarcaciones);
+router.get('/userEmpresa/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorFecha );
+router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
 
 
 export default router;

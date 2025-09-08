@@ -315,7 +315,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import AdminServices from '../../../services/AdminServices.js';
+import AdminServices from '../../../services/EmpresaService.js';
 import { useAdmin } from '../../../composables/useAdmin.js';
 
 const { obtenerTrabajadores, obtenerTurnos  } = useAdmin();

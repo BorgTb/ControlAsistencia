@@ -262,7 +262,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import AdminServices from '../../services/AdminServices.js'
+import AdminServices from '../../services/EmpresaService.js'
 
 // Props
 const props = defineProps({
