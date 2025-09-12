@@ -360,6 +360,7 @@
             <!-- Mensaje cuando no hay solicitudes -->
             <div v-else class="text-center py-8">
               <p class="text-gray-500">No hay solicitudes pendientes de aprobación</p>
+
             </div>
           </div>
         </div>
