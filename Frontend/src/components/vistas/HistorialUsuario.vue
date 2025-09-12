@@ -150,6 +150,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Origen</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -187,11 +188,23 @@
                     Procesada
                   </span>
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button 
+                    @click="abrirModalReporte(marcacion)"
+                    class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                    title="Reportar problema con esta marcación"
+                  >
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    Reportar
+                  </button>
+                </td>
               </tr>
 
               <!-- Mensaje cuando no hay marcaciones -->
               <tr v-if="marcacionesFiltradas.length === 0">
-                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                   <div class="flex flex-col items-center">
                     <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -240,17 +253,36 @@
         </div>
       </div>
     </div>
+    
+    <!-- Modal de Reporte -->
+    <ReporteModal 
+      v-if="showReporteModal && marcacionSeleccionada" 
+      :marcacion="marcacionSeleccionada"
+      @confirm="manejarEnvioReporte" 
+      @cancel="cerrarModalReporte" 
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AsistenciaService from '../../services/AsistenciaService.js'
+import ReporteModal from '../modals/ReporteModal.vue'
+import { useReportes } from '../../composables/useReportes.js'
 
 // Estados reactivos
 const marcaciones = ref([])
 const cargando = ref(false)
 const error = ref('')
+
+// Composable de reportes
+const { 
+  showReporteModal, 
+  marcacionSeleccionada, 
+  abrirModalReporte, 
+  cerrarModalReporte, 
+  enviarReporte 
+} = useReportes()
 
 // Filtros
 const filtros = ref({
@@ -468,6 +500,22 @@ const getColorByType = (tipo) => {
     'descanso': 'bg-blue-500'
   }
   return colors[tipo] || 'bg-gray-500'
+}
+
+// Manejador del modal de reporte
+const manejarEnvioReporte = async (reporteData) => {
+  const result = await enviarReporte(reporteData)
+  
+  if (result.success) {
+    // Mostrar mensaje de éxito (podrías usar una notificación aquí)
+    console.log('Reporte enviado exitosamente:', result.message)
+    // Opcional: Mostrar una notificación toast o similar
+    alert('Reporte enviado correctamente. Será revisado por el equipo de soporte.')
+  } else {
+    // Mostrar mensaje de error
+    console.error('Error enviando reporte:', result.error)
+    alert('Error al enviar el reporte: ' + result.error)
+  }
 }
 
 // Lifecycle

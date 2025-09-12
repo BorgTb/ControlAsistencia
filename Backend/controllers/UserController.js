@@ -1,5 +1,6 @@
 import UserModel from '../model/UserModel.js';
 import authservice from '../services/authservice.js';
+import {DateTime} from 'luxon';
 
 
 const updateEmail = async (req, res) => {
@@ -64,13 +65,38 @@ const updatePassword = async (req, res) => {
     });
 }
 
-
+const createReporte = async (req, res) => {
+    const reporteData = req.body;
+    const user = req.user;
+    try {
+        console.log('Datos del reporte recibido:', reporteData);
+        console.log('Usuario que envía el reporte:', user);
+        // Aquí iría la lógica para guardar el reporte en la base de datos
+        // Por ahora, solo simulamos una respuesta exitosa
+        res.status(201).json({
+            success: true,
+            message: 'Reporte enviado correctamente',
+            data: {
+            reporte_id: 456, // ID simulado del nuevo reporte
+            estado: 'pendiente',
+            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
+            }
+        });
+    } catch (error) {
+        console.error('Error al crear el reporte:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al enviar el reporte'
+        });
+    }
+}
 
 
 
 const UserController = {
     updateEmail,
-    updatePassword
+    updatePassword,
+    createReporte
 }
 
 
