@@ -134,6 +134,18 @@
             <span>Dashboard</span>
           </router-link>
 
+          <!-- Empresas -->
+          <router-link
+            to="/administrarempresa"
+            class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
+            active-class="text-indigo-600 bg-white border-indigo-600"
+          >
+            <svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21V7a2 2 0 012-2h2a2 2 0 012 2v14M17 21V3a2 2 0 00-2-2h-2a2 2 0 00-2 2v18M21 21V11a2 2 0 00-2-2h-2a2 2 0 00-2 2v10" />
+            </svg>
+            <span>Empresas</span>
+          </router-link>
+
           <!-- Gestión de Trabajadores -->
           <router-link
             to="/admin/trabajadores"

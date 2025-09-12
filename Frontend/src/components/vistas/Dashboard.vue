@@ -1,6 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
+    <!-- El botón de cerrar sesión ha sido removido -->
 
     <!-- Main content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -164,8 +165,8 @@
 
                 <!-- Botones de Entrada/Salida -->
                 <div class="space-y-3">
-          <button
-            @click="preConfirm('entrada')"
+                  <button
+                    @click="registrarEntrada"
                     :disabled="botonesMarcacionDeshabilitados || currentStatus === 'dentro'"
                     class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -179,8 +180,8 @@
                     {{ isRegistering && pendingAction === 'entrada' ? 'Registrando...' : 'Registrar Entrada' }}
                   </button>
 
-          <button
-            @click="preConfirm('salida')"
+                  <button
+                    @click="registrarSalida"
                     :disabled="isRegistering || !puedeMarcarSalida"
                     class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -199,7 +200,7 @@
                     <!-- Botón de Iniciar Colación -->
                     <button
                       v-if="!tieneColacionActiva"
-                        @click="preConfirm('colacion')"
+                      @click="registrarColacion"
                       :disabled="isRegistering || !puedeMarcarColacion"
                       class="flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -216,7 +217,7 @@
                     <!-- Botón de Terminar Colación -->
                     <button
                       v-if="tieneColacionActiva"
-                      @click="preConfirm('termino_colacion')"
+                      @click="terminarColacion"
                       :disabled="isRegistering || !puedeTerminarColacion"
                       class="flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-400 hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -231,7 +232,7 @@
                     </button>
 
                     <button
-                      @click="preConfirm('descanso')"
+                      @click="registrarDescanso"
                       :disabled="isRegistering || currentStatus === 'fuera'"
                       class="flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -339,17 +340,14 @@
         </div>
       </div>
     </main>
-  
-    <!-- Modal de confirmación de ubicación -->
-    <ConfirmUbicacionModal v-if="showConfirmModal" @confirm="onModalConfirm" @cancel="onModalCancel" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import ConfirmUbicacionModal from '../modals/ConfirmUbicacionModal.vue'
 import AsistenciaService from '../../services/AsistenciaService.js'
 import { useOffline } from '../../composables/useOffline.js'
+import { useRouter } from 'vue-router'
 
 // Agregar composable offline
 const { isOnline, isOffline, pendingActions, processPendingActions, isSyncing } = useOffline()
@@ -366,13 +364,6 @@ const currentDateTime = ref('')
 const ubicacionActual = ref(null)
 const errorUbicacion = ref('')
 
-// Modal de confirmación de ubicación
-const showConfirmModal = ref(false)
-const pendingMarcacionType = ref(null) // tipo pendiente: 'entrada','salida','colacion','termino_colacion','descanso'
-
-// Guardar ultimo payload de ubicacion para reenviarlo si modal confirma
-let ultimoUbicacionSolicitada = null
-
 // Estado para marcaciones del día
 const marcacionesHoy = ref([])
 const isLoadingMarcaciones = ref(false)
@@ -383,6 +374,9 @@ const isLoadingHorario = ref(false)
 
 // Timer para actualizar la fecha/hora
 let dateTimeInterval = null
+
+// Router para navegación
+const router = useRouter()
 
 // Computed properties
 const statusText = computed(() => {
@@ -690,11 +684,10 @@ const registrarEntrada = async () => {
   pendingAction.value = 'entrada'
   
   try {
-  // Intentar obtener ubicación (no es bloqueante)
-  const ubicacion = await obtenerUbicacion()
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
     
-  // Llamada directa con la ubicacion (si el modal devolvió domicilio, AsistenciaService aceptará el campo domicilio en payload)
-  const result = await AsistenciaService.registrarEntrada({ ...ubicacion, domicilio: ultimoUbicacionSolicitada?.domicilio })
+    const result = await AsistenciaService.registrarEntrada(ubicacion)
     
     if (result.success) {
       if (result.offline) {
@@ -748,10 +741,10 @@ const registrarSalida = async () => {
   pendingAction.value = 'salida'
   
   try {
-  // Intentar obtener ubicación (no es bloqueante)
-  const ubicacion = await obtenerUbicacion()
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
     
-  const result = await AsistenciaService.registrarSalida({ ...ubicacion, domicilio: ultimoUbicacionSolicitada?.domicilio })
+    const result = await AsistenciaService.registrarSalida(ubicacion)
     
     if (result.success) {
       if (result.offline) {
@@ -799,10 +792,10 @@ const registrarColacion = async () => {
   pendingAction.value = 'colacion'
   
   try {
-  // Intentar obtener ubicación (no es bloqueante)
-  const ubicacion = await obtenerUbicacion()
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
     
-  const result = await AsistenciaService.registrarColacion({ ...ubicacion, domicilio: ultimoUbicacionSolicitada?.domicilio })
+    const result = await AsistenciaService.registrarColacion(ubicacion)
     
     if (result.success) {
       if (result.offline) {
@@ -846,10 +839,10 @@ const terminarColacion = async () => {
   pendingAction.value = 'termino_colacion'
   
   try {
-  // Intentar obtener ubicación (no es bloqueante)
-  const ubicacion = await obtenerUbicacion()
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
     
-  const result = await AsistenciaService.registrarTerminoColacion({ ...ubicacion, domicilio: ultimoUbicacionSolicitada?.domicilio })
+    const result = await AsistenciaService.registrarTerminoColacion(ubicacion)
     
     if (result.success) {
       if (result.offline) {
@@ -893,10 +886,10 @@ const registrarDescanso = async () => {
   pendingAction.value = 'descanso'
   
   try {
-  // Intentar obtener ubicación (no es bloqueante)
-  const ubicacion = await obtenerUbicacion()
+    // Intentar obtener ubicación (no es bloqueante)
+    const ubicacion = await obtenerUbicacion()
     
-  const result = await AsistenciaService.registrarDescanso({ ...ubicacion, domicilio: ultimoUbicacionSolicitada?.domicilio })
+    const result = await AsistenciaService.registrarDescanso(ubicacion)
     
     if (result.success) {
       showMessage('Descanso registrado correctamente', 'success')
@@ -1092,51 +1085,4 @@ onMounted(async () => {
     window.removeEventListener('offlineSyncCompleted', handleSyncCompleted)
   })
 })
-
-
-// Función que se ejecuta al presionar un botón de marcación: abre modal
-const preConfirm = async (tipo) => {
-  // Guardar tipo pendiente
-  pendingMarcacionType.value = tipo
-  ultimoUbicacionSolicitada = null
-  showConfirmModal.value = true
-}
-
-// Handler cuando el modal confirma
-const onModalConfirm = async (payload) => {
-  // payload: { sameLocation: boolean, domicilio: string|null }
-  showConfirmModal.value = false
-  ultimoUbicacionSolicitada = payload
-
-  // Llamar a la acción correspondiente
-  const tipo = pendingMarcacionType.value
-  pendingMarcacionType.value = null
-
-  switch (tipo) {
-    case 'entrada':
-      await registrarEntrada()
-      break
-    case 'salida':
-      await registrarSalida()
-      break
-    case 'colacion':
-      await registrarColacion()
-      break
-    case 'termino_colacion':
-      await terminarColacion()
-      break
-    case 'descanso':
-      await registrarDescanso()
-      break
-    default:
-      console.warn('Tipo de marcación desconocido:', tipo)
-  }
-}
-
-const onModalCancel = () => {
-  showConfirmModal.value = false
-  pendingMarcacionType.value = null
-  ultimoUbicacionSolicitada = null
-}
-
 </script>

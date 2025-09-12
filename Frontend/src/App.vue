@@ -1,18 +1,25 @@
 <template>
-  <Header v-if="showHeader" />
-  <HeaderAdmin v-else v-if="route.path !== '/'"/>
+  <HeaderAdmin v-if="isAdminRoute" />
   <RouterView />
 </template>
 
 <script setup>
-import Header from './components/components/header.vue'
 import HeaderAdmin from './components/components/headerAdmin.vue'
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const route = useRoute()
-const hiddenRoutes = ['/','/administracion','/admin/turnos','/admin/dashboard','/admin/trabajadores','/admin/turnos','/admin/marcaciones','/admin/reportes','/admin/configuracion']
-const showHeader = computed(() => !hiddenRoutes.includes(route.path))
+const adminRoutes = [
+  '/administrarempresa',
+  '/administracion',
+  '/admin/dashboard',
+  '/admin/trabajadores',
+  '/admin/turnos',
+  '/admin/marcaciones',
+  '/admin/reportes',
+  '/admin/configuracion'
+]
+const isAdminRoute = computed(() => adminRoutes.includes(route.path))
 </script>
 
 
