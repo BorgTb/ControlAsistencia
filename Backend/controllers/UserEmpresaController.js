@@ -190,7 +190,6 @@ const obtenerReportesMarcaciones = async (req, res) => {
         const { rut } = req.params;
         const empresa = await EmpresaModel.getEmpresaByRut(rut);
         const reportes = await ReporteMarcacionesModel.findByEmpresaId(empresa.empresa_id);
-        console.log(reportes);
         // para cada reporte, incluir info de la marcacion
         for (let reporte of reportes) {   
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
@@ -223,10 +222,24 @@ const aprobarCambioMarcacion = async (req, res) => {
         if (!reporte) {
             return res.status(404).json({ success: false, message: "Reporte no encontrado" });
         }
+
         // actualizar marcacion
-        await ReportesModel.aprobar(reporteId);
+        //await ReportesModel.aprobar(reporteId);
+
+        if (reporte.fecha_correcta){
+            await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
+        }
+
+        if (reporte.hora_correcta){
+            await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
+        }
+
+        ReporteMarcacionesModel.aprobar(reporteId);
 
         const reporteActualizado = await ReportesModel.findById(reporteId);
+
+        console.log("reportes actualizado:",reporteActualizado);
+
 
         res.status(200).json({ success: true, message: "Reporte aprobado y marcación actualizada", data: reporteActualizado });
     } catch (error) {

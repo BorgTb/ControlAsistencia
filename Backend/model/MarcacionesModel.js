@@ -171,6 +171,25 @@ WHERE empresa.emp_rut = ?`;
         const [result] = await pool.execute(query, [lugarId, marcacionId]);
         return result;
     }
+
+    async updateHoraMarcacion(marcacionId, nuevaHora) {
+        const query = `
+            UPDATE marcaciones
+            SET hora = ?
+            WHERE id = ?
+        `;
+        return pool.execute(query, [nuevaHora, marcacionId]);
+    }
+
+    async updateFechaMarcacion(marcacionId, nuevaFecha) {
+        const query = `
+            UPDATE marcaciones
+            SET fecha = ?
+            WHERE id = ?
+        `;
+        return pool.execute(query, [nuevaFecha, marcacionId]);
+    }
+    
 }
 
 export default new Marcaciones();
