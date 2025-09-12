@@ -176,6 +176,24 @@ class AdminServices{
       throw error
     }
   }
+
+  static async aprobarReporte(reporteId) {
+    try {
+      const response = await apiClient.post(`/userEmpresa/reportes/aprobar/${reporteId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async rechazarReporte(reporteId) {
+    try {
+      const response = await apiClient.post(`/userEmpresa/reportes/rechazar/${reporteId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
 export default AdminServices;

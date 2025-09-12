@@ -59,11 +59,33 @@ export function useEmpresa() {
     }
   };
 
+  const aprobarReporte = async (reporteId) => {
+    try {
+      const response = await EmpresaServices.aprobarReporte(reporteId);
+      return response;
+    } catch (error) {
+      console.error("Error al aprobar reporte:", error);
+      throw error;
+    }
+  };
+
+  const rechazarReporte = async (reporteId) => {
+    try {
+      const response = await EmpresaServices.rechazarReporte(reporteId);
+      return response;
+    } catch (error) {
+      console.error("Error al rechazar reporte:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
     obtenerMarcaciones,
     obtenerMarcacionesPorEmpresa,
-    obtenerReportesMarcaciones
+    obtenerReportesMarcaciones,
+    aprobarReporte,
+    rechazarReporte
   };
 }

@@ -350,10 +350,10 @@
                   </div>
                 </div>
                 <div class="flex space-x-2">
-                  <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                  <button @click="aprobarSolicitud(solicitud)" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                     Aprobar
                   </button>
-                  <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                  <button @click="rechazarSolicitud(solicitud)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                     Rechazar
                   </button>
                   <button @click="abrirModalDetalles(solicitud)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
@@ -479,13 +479,13 @@
             <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
               <!-- Botones de acción solo para solicitudes pendientes -->
               <template v-if="solicitudSeleccionada.estado === 'PENDIENTE'">
-                <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <button @click="aprobarSolicitud(solicitudSeleccionada)" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
                   <span>Aprobar Solicitud</span>
                 </button>
-                <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <button @click="rechazarSolicitud(solicitudSeleccionada)" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>
@@ -521,7 +521,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
 // Composables
-const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones} = useEmpresa();
+const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones, aprobarReporte, rechazarReporte} = useEmpresa();
 
 // Estados reactivos
 const marcaciones = ref([]);
@@ -796,6 +796,57 @@ const cerrarModalDetalles = () => {
   solicitudSeleccionada.value = null;
 };
 
+// Funciones para aprobar y rechazar solicitudes
+const aprobarSolicitud = async (solicitud) => {
+  try {
+    const response = await aprobarReporte(solicitud.id);
+    
+    if (response && response.success) {
+      // Actualizar el estado local de la solicitud
+      solicitud.estado = 'APROBADA';
+      
+      // Recargar las solicitudes para actualizar la lista
+      await cargarSolicitudes();
+      
+      // Mostrar mensaje de éxito
+      alert('Solicitud aprobada exitosamente');
+      
+      // Cerrar el modal
+      cerrarModalDetalles();
+    } else {
+      alert('Error al aprobar la solicitud: ' + (response?.message || 'Error desconocido'));
+    }
+  } catch (error) {
+    console.error('Error al aprobar solicitud:', error);
+    alert('Error al aprobar la solicitud');
+  }
+};
+
+const rechazarSolicitud = async (solicitud) => {
+  try {
+    const response = await rechazarReporte(solicitud.id);
+    
+    if (response && response.success) {
+      // Actualizar el estado local de la solicitud
+      solicitud.estado = 'RECHAZADA';
+      
+      // Recargar las solicitudes para actualizar la lista
+      await cargarSolicitudes();
+      
+      // Mostrar mensaje de éxito
+      alert('Solicitud rechazada exitosamente');
+      
+      // Cerrar el modal
+      cerrarModalDetalles();
+    } else {
+      alert('Error al rechazar la solicitud: ' + (response?.message || 'Error desconocido'));
+    }
+  } catch (error) {
+    console.error('Error al rechazar solicitud:', error);
+    alert('Error al rechazar la solicitud');
+  }
+};
+
 
 const cargarSolicitudes = async () => {
   try {
@@ -862,6 +913,8 @@ const cargarSolicitudes = async () => {
     solicitudesPendientes.value = [];
   }
 };
+
+
 
 onMounted(() => {
   

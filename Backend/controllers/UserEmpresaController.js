@@ -7,6 +7,7 @@ import ReporteMarcacionesModel from "../model/ReportesModel.js";
 import EmpresaModel from "../model/EmpresaModel.js";
 import MarcacionesServices from "../services/MarcacionesServices.js";
 import { DateTime } from "luxon";
+import ReportesModel from "../model/ReportesModel.js";
 
 
 
@@ -213,13 +214,57 @@ const obtenerReportesMarcaciones = async (req, res) => {
   }
 }
 
+
+const aprobarCambioMarcacion = async (req, res) => {
+    try {
+        const { reporteId } = req.params;
+        // obtener reporte
+        let reporte = await ReporteMarcacionesModel.findById(reporteId);
+        if (!reporte) {
+            return res.status(404).json({ success: false, message: "Reporte no encontrado" });
+        }
+        // actualizar marcacion
+        await ReportesModel.aprobar(reporteId);
+
+        const reporteActualizado = await ReportesModel.findById(reporteId);
+
+        res.status(200).json({ success: true, message: "Reporte aprobado y marcación actualizada", data: reporteActualizado });
+    } catch (error) {
+        console.error("Error aprobando reporte de marcación:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+};
+
+const rechazarCambioMarcacion = async (req, res) => {
+    try {
+        const { reporteId } = req.params;
+        // obtener reporte
+        const reporte = await ReporteMarcacionesModel.findById(reporteId);
+        if (!reporte) {
+            return res.status(404).json({ success: false, message: "Reporte no encontrado" });
+        }
+        // rechazar reporte
+        await ReportesModel.rechazar(reporteId);
+
+        const reporteActualizado = await ReportesModel.findById(reporteId);
+
+        res.status(200).json({ success: true, message: "Reporte rechazado", data: reporteActualizado });
+    } catch (error) {
+        console.error("Error rechazando reporte de marcación:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+};
+
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
     enrolarTrabajador,
     createTurno,
     obtenerTurnos,
-    obtenerReportesMarcaciones
+    obtenerReportesMarcaciones,
+    aprobarCambioMarcacion,
+    rechazarCambioMarcacion
 };
 
 

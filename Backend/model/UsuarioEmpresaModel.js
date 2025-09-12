@@ -450,6 +450,7 @@ class UsuarioEmpresaModel {
         const [rows] = await db.execute(query, [usuario_id]);
         return rows.length > 0 ? rows[0].empresa_id : null;
     }
+    
 
 }
 
