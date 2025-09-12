@@ -189,7 +189,7 @@ const obtenerReportesMarcaciones = async (req, res) => {
         const { rut } = req.params;
         const empresa = await EmpresaModel.getEmpresaByRut(rut);
         const reportes = await ReporteMarcacionesModel.findByEmpresaId(empresa.empresa_id);
-
+        console.log(reportes);
         // para cada reporte, incluir info de la marcacion
         for (let reporte of reportes) {   
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);

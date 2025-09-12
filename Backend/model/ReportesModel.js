@@ -6,7 +6,7 @@ class ReportesModel {
     static async create(data) {
         const { marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta, hora_correcta } = data;
         const [result] = await pool.query(
-            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta, hora_correcta, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
+            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta, hora_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, "PENDIENTE", CURRENT_TIMESTAMP)',
             [marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null]
         );
         return result.insertId;
@@ -61,6 +61,72 @@ class ReportesModel {
         return rows;
     }
 
+    // Obtener reportes por estado
+    static async findByEstado(estado) {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE estado = ? ORDER BY fecha_reporte DESC',
+            [estado]
+        );
+        return rows;
+    }
+
+    // Obtener reportes pendientes
+    static async findPendientes() {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE estado = "PENDIENTE" ORDER BY fecha_reporte DESC'
+        );
+        return rows;
+    }
+
+    // Obtener reportes aprobados
+    static async findAprobados() {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE estado = "APROBADA" ORDER BY fecha_reporte DESC'
+        );
+        return rows;
+    }
+
+    // Obtener reportes rechazados
+    static async findRechazados() {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE estado = "RECHAZADA" ORDER BY fecha_reporte DESC'
+        );
+        return rows;
+    }
+
+    // Aprobar un reporte
+    static async aprobar(id) {
+        const [result] = await pool.query(
+            'UPDATE reportes_marcaciones SET estado = "APROBADA" WHERE id = ?',
+            [id]
+        );
+        return result.affectedRows > 0;
+    }
+
+    // Rechazar un reporte
+    static async rechazar(id) {
+        const [result] = await pool.query(
+            'UPDATE reportes_marcaciones SET estado = "RECHAZADA" WHERE id = ?',
+            [id]
+        );
+        return result.affectedRows > 0;
+    }
+
+    // Cambiar estado de un reporte
+    static async cambiarEstado(id, estado) {
+        // Validar que el estado sea válido
+        const estadosValidos = ['APROBADA', 'PENDIENTE', 'RECHAZADA', ''];
+        if (!estadosValidos.includes(estado)) {
+            throw new Error('Estado no válido');
+        }
+        
+        const [result] = await pool.query(
+            'UPDATE reportes_marcaciones SET estado = ? WHERE id = ?',
+            [estado, id]
+        );
+        return result.affectedRows > 0;
+    }
+
     // Obtener reportes con información completa (JOIN con usuarios y marcaciones)
     static async findWithFullInfo(reporteId = null) {
         let query = `
@@ -72,6 +138,7 @@ class ReportesModel {
                 rm.descripcion,
                 rm.fecha_correcta,
                 rm.hora_correcta,
+                rm.estado,
                 rm.fecha_reporte,
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
@@ -153,6 +220,7 @@ class ReportesModel {
                 rm.descripcion,
                 rm.fecha_correcta,
                 rm.hora_correcta,
+                rm.estado,
                 rm.fecha_reporte,
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
@@ -199,6 +267,11 @@ class ReportesModel {
             params.push(filtros.marcacion_tipo);
         }
         
+        if (filtros.estado) {
+            query += ' AND rm.estado = ?';
+            params.push(filtros.estado);
+        }
+        
         query += ' ORDER BY rm.fecha_reporte DESC';
         
         if (filtros.limit) {
@@ -223,6 +296,33 @@ class ReportesModel {
         return rows;
     }
 
+    // Contar reportes por estado
+    static async countByEstado() {
+        const [rows] = await pool.query(`
+            SELECT 
+                estado,
+                COUNT(*) as total
+            FROM reportes_marcaciones 
+            GROUP BY estado
+            ORDER BY total DESC
+        `);
+        return rows;
+    }
+
+    // Obtener estadísticas de reportes por estado y tipo
+    static async getStatsCompletas() {
+        const [rows] = await pool.query(`
+            SELECT 
+                estado,
+                tipo_problema,
+                COUNT(*) as total
+            FROM reportes_marcaciones 
+            GROUP BY estado, tipo_problema
+            ORDER BY estado, total DESC
+        `);
+        return rows;
+    }
+
     // Obtener estadísticas generales de reportes
     static async getStats() {
         const [rows] = await pool.query(`
@@ -231,6 +331,9 @@ class ReportesModel {
                 COUNT(DISTINCT usuario_id) as usuarios_reportantes,
                 COUNT(DISTINCT marcacion_id) as marcaciones_reportadas,
                 COUNT(DISTINCT tipo_problema) as tipos_problemas_distintos,
+                SUM(CASE WHEN estado = 'PENDIENTE' THEN 1 ELSE 0 END) as pendientes,
+                SUM(CASE WHEN estado = 'APROBADA' THEN 1 ELSE 0 END) as aprobadas,
+                SUM(CASE WHEN estado = 'RECHAZADA' THEN 1 ELSE 0 END) as rechazadas,
                 MIN(fecha_reporte) as primer_reporte,
                 MAX(fecha_reporte) as ultimo_reporte
             FROM reportes_marcaciones

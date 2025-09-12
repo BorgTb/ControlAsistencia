@@ -414,6 +414,13 @@
                   <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.tipoDescripcion }}</p>
                 </div>
                 <div>
+                  <label class="block text-sm font-medium text-gray-700">Estado</label>
+                  <span class="inline-flex mt-1 px-2 py-1 text-xs font-semibold rounded-full"
+                        :class="obtenerClaseEstado(solicitudSeleccionada.estado)">
+                    {{ formatearEstado(solicitudSeleccionada.estado) }}
+                  </span>
+                </div>
+                <div>
                   <label class="block text-sm font-medium text-gray-700">Motivo</label>
                   <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.motivo }}</p>
                 </div>
@@ -470,18 +477,34 @@
 
             <!-- Acciones del Modal -->
             <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-              <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <span>Aprobar Solicitud</span>
-              </button>
-              <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                <span>Rechazar Solicitud</span>
-              </button>
+              <!-- Botones de acción solo para solicitudes pendientes -->
+              <template v-if="solicitudSeleccionada.estado === 'PENDIENTE'">
+                <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span>Aprobar Solicitud</span>
+                </button>
+                <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  <span>Rechazar Solicitud</span>
+                </button>
+              </template>
+              
+              <!-- Mensaje para solicitudes ya procesadas -->
+              <template v-else>
+                <div class="flex-1 text-center py-3">
+                  <p class="text-sm text-gray-600">
+                    Esta solicitud ya ha sido 
+                    <span :class="{ 'text-green-600 font-medium': solicitudSeleccionada.estado === 'APROBADA', 'text-red-600 font-medium': solicitudSeleccionada.estado === 'RECHAZADA' }">
+                      {{ formatearEstado(solicitudSeleccionada.estado).toLowerCase() }}
+                    </span>
+                  </p>
+                </div>
+              </template>
+              
               <button @click="cerrarModalDetalles" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200">
                 Cerrar
               </button>
@@ -535,7 +558,8 @@ const solicitudesPendientes = ref([]);
   fecha: string,
   horaOriginal?: string, // Para modificaciones
   horaNueva?: string, // Para modificaciones o nuevas marcaciones
-  tipoMarcacion: string // "entrada", "salida", "colacion", "descanso"
+  tipoMarcacion: string, // "entrada", "salida", "colacion", "descanso"
+  estado: string // "PENDIENTE", "APROBADA", "RECHAZADA", ""
 }
 */
 
@@ -610,6 +634,26 @@ const capitalizarTipo = (tipo) => {
     'descanso': 'Descanso'
   };
   return tipos[tipo] || tipo;
+};
+
+// Función para obtener clases CSS del badge de estado
+const obtenerClaseEstado = (estado) => {
+  const clases = {
+    'PENDIENTE': 'bg-yellow-100 text-yellow-800',
+    'APROBADA': 'bg-green-100 text-green-800',
+    'RECHAZADA': 'bg-red-100 text-red-800'
+  };
+  return clases[estado] || 'bg-gray-100 text-gray-800';
+};
+
+// Función para formatear texto de estado
+const formatearEstado = (estado) => {
+  const estados = {
+    'PENDIENTE': 'Pendiente',
+    'APROBADA': 'Aprobada',
+    'RECHAZADA': 'Rechazada'
+  };
+  return estados[estado] || estado;
 };
 
 // Función para calcular estadísticas
@@ -761,7 +805,7 @@ const cargarSolicitudes = async () => {
     // Verificar si hay datos en la respuesta
     if (response && Array.isArray(response)) {
       // Transformar los datos del servidor al formato esperado
-      solicitudesPendientes.value = response.map(reporte => {
+      const todasLasSolicitudes = response.map(reporte => {
         // Determinar el tipo de descripción basado en el tipo_problema
         let tipoDescripcion = '';
         let tipo = 'modificacion';
@@ -797,9 +841,15 @@ const cargarSolicitudes = async () => {
           tipoMarcacion: reporte.tipoMarcacion,
           marcacion_id: reporte.marcacion_id,
           usuario_id: reporte.usuario_id,
-          fecha_correcta: reporte.fecha_correcta
+          fecha_correcta: reporte.fecha_correcta,
+          estado: reporte.estado || 'PENDIENTE'
         };
       });
+      
+      // Filtrar solo las solicitudes con estado 'PENDIENTE'
+      solicitudesPendientes.value = todasLasSolicitudes.filter(solicitud => 
+        solicitud.estado === 'PENDIENTE'
+      );
     } else {
       solicitudesPendientes.value = [];
     }
