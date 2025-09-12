@@ -167,6 +167,16 @@ class AdminServices{
       throw error
     }
   }
+
+  static async obtenerReportesMarcaciones(rutEmpresa) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/reportes/${rutEmpresa}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
-export default AdminServices
+export default AdminServices;
+

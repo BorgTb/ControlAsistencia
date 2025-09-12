@@ -18,6 +18,16 @@ class ReportesModel {
         return rows.length ? rows[0] : null;
     }
 
+    static async findByEmpresaId(empresa_id) {
+        const [rows] = await pool.query(
+            `SELECT rm.* FROM reportes_marcaciones rm
+            JOIN usuarios_empresas ue ON rm.usuario_id = ue.id
+            WHERE ue.empresa_id = ? ORDER BY rm.fecha_reporte DESC`,
+            [empresa_id]
+        );
+        return rows;
+    }
+
     // Obtener todos los reportes
     static async findAll() {
         const [rows] = await pool.query('SELECT * FROM reportes_marcaciones ORDER BY fecha_reporte DESC');

@@ -3,6 +3,9 @@ import UserModel from "../model/UserModel.js";
 import TurnosModel from "../model/TurnosModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
 import ResolucionModel from "../model/usuarios_empresas_resoluciones.js";
+import ReporteMarcacionesModel from "../model/ReportesModel.js";
+import EmpresaModel from "../model/EmpresaModel.js";
+import MarcacionesServices from "../services/MarcacionesServices.js";
 import { DateTime } from "luxon";
 
 
@@ -181,12 +184,42 @@ const enrolarTrabajador = async (req, res) => {
     }
 };
 
+const obtenerReportesMarcaciones = async (req, res) => {
+    try {
+        const { rut } = req.params;
+        const empresa = await EmpresaModel.getEmpresaByRut(rut);
+        const reportes = await ReporteMarcacionesModel.findByEmpresaId(empresa.empresa_id);
+
+        // para cada reporte, incluir info de la marcacion
+        for (let reporte of reportes) {   
+            const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
+            reporte.nombreTrabajador = marcacion.data.nombre;
+            reporte.horaOriginal = marcacion.data.hora;
+            reporte.tipoMarcacion = marcacion.data.tipo;
+        }
+
+
+    res.status(200).json({
+      success: true,
+      data: reportes,
+      message: "Reportes de marcaciones obtenidos exitosamente"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener los reportes de marcaciones",
+      error: error.message
+    });
+  }
+}
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
     enrolarTrabajador,
     createTurno,
-    obtenerTurnos
+    obtenerTurnos,
+    obtenerReportesMarcaciones
 };
 
 

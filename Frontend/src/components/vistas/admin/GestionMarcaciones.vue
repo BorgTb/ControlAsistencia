@@ -340,7 +340,13 @@
                   <div>
                     <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
                     <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
-                    <p class="text-xs text-gray-500">Motivo: {{ solicitud.motivo }}</p>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                      <p class="text-xs text-gray-500">Tipo: {{ solicitud.motivo }}</p>
+                      <p class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
+                      <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
+                        Hora solicitada: {{ solicitud.horaNueva }}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div class="flex space-x-2">
@@ -350,7 +356,7 @@
                   <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                     Rechazar
                   </button>
-                  <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                  <button @click="abrirModalDetalles(solicitud)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
                     Ver Detalles
                   </button>
                 </div>
@@ -367,15 +373,132 @@
       </div>
       </div>
     </main>
+
+    <!-- Modal de Detalles de Solicitud -->
+    <div v-if="mostrarModalDetalles" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Header del Modal -->
+          <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Detalles de la Solicitud</h3>
+            <button @click="cerrarModalDetalles" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Contenido del Modal -->
+          <div v-if="solicitudSeleccionada" class="mt-6 space-y-6">
+            <!-- Información del Trabajador -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Información del Trabajador</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.nombreTrabajador }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">ID Usuario</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.usuario_id }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información de la Solicitud -->
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Información de la Solicitud</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Tipo de Solicitud</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.tipoDescripcion }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Motivo</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.motivo }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Fecha de Reporte</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.fecha }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">ID de Solicitud</label>
+                  <p class="mt-1 text-sm text-gray-900">#{{ solicitudSeleccionada.id }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Descripción Detallada -->
+            <div class="bg-yellow-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Descripción del Problema</h4>
+              <p class="text-sm text-gray-700 leading-relaxed">{{ solicitudSeleccionada.descripcion }}</p>
+            </div>
+
+            <!-- Información de la Marcación -->
+            <div class="bg-green-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Información de la Marcación</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">ID Marcación</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.marcacion_id }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Tipo de Marcación</label>
+                  <span class="inline-flex mt-1 px-2 py-1 text-xs font-semibold rounded-full"
+                        :class="obtenerClaseTipo(solicitudSeleccionada.tipoMarcacion)">
+                    {{ capitalizarTipo(solicitudSeleccionada.tipoMarcacion) }}
+                  </span>
+                </div>
+                <div v-if="solicitudSeleccionada.horaOriginal">
+                  <label class="block text-sm font-medium text-gray-700">Hora Original</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.horaOriginal }}</p>
+                </div>
+              </div>
+              
+              <!-- Hora Solicitada (si existe) -->
+              <div v-if="solicitudSeleccionada.horaNueva" class="mt-4">
+                <label class="block text-sm font-medium text-gray-700">Hora Solicitada</label>
+                <p class="mt-1 text-sm text-green-600 font-medium">{{ solicitudSeleccionada.horaNueva }}</p>
+              </div>
+
+              <!-- Fecha Correcta (si existe) -->
+              <div v-if="solicitudSeleccionada.fecha_correcta" class="mt-4">
+                <label class="block text-sm font-medium text-gray-700">Fecha Correcta Solicitada</label>
+                <p class="mt-1 text-sm text-green-600 font-medium">{{ new Date(solicitudSeleccionada.fecha_correcta).toLocaleDateString('es-CL') }}</p>
+              </div>
+            </div>
+
+            <!-- Acciones del Modal -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Aprobar Solicitud</span>
+              </button>
+              <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span>Rechazar Solicitud</span>
+              </button>
+              <button @click="cerrarModalDetalles" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useAdmin } from '../../../composables/useAdmin.js';
+import { useEmpresa } from '../../../composables/useEmpresa.js';
 
 // Composables
-const { obtenerMarcacionesPorEmpresa } = useAdmin();
+const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones} = useEmpresa();
 
 // Estados reactivos
 const marcaciones = ref([]);
@@ -435,6 +558,10 @@ const filtros = ref({
   fecha: '',
   tipo: ''
 });
+
+// Variables para el modal de detalles
+const mostrarModalDetalles = ref(false);
+const solicitudSeleccionada = ref(null);
 
 // Función para obtener las iniciales del nombre
 const obtenerIniciales = (nombre, apellido) => {
@@ -614,8 +741,83 @@ const limpiarFiltros = () => {
   marcaciones.value = [...marcacionesOriginales.value];
 };
 
+// Funciones para el modal de detalles
+const abrirModalDetalles = (solicitud) => {
+  solicitudSeleccionada.value = solicitud;
+  mostrarModalDetalles.value = true;
+};
+
+const cerrarModalDetalles = () => {
+  mostrarModalDetalles.value = false;
+  solicitudSeleccionada.value = null;
+};
+
+
+const cargarSolicitudes = async () => {
+  try {
+    const response = await obtenerReportesMarcaciones();
+    console.log('Respuesta de solicitudes pendientes:', response);
+    
+    // Verificar si hay datos en la respuesta
+    if (response && Array.isArray(response)) {
+      // Transformar los datos del servidor al formato esperado
+      solicitudesPendientes.value = response.map(reporte => {
+        // Determinar el tipo de descripción basado en el tipo_problema
+        let tipoDescripcion = '';
+        let tipo = 'modificacion';
+        
+        switch (reporte.tipo_problema) {
+          case 'ubicacion_incorrecta':
+            tipoDescripcion = 'Corrección de Ubicación';
+            break;
+          case 'hora_incorrecta':
+            tipoDescripcion = 'Corrección de Hora';
+            break;
+          case 'marcacion_faltante':
+            tipoDescripcion = 'Agregar Marcación';
+            tipo = 'agregada';
+            break;
+          default:
+            tipoDescripcion = 'Corrección de Marcación';
+        }
+        
+        // Formatear fecha
+        const fechaReporte = new Date(reporte.fecha_reporte).toLocaleDateString('es-CL');
+        
+        return {
+          id: reporte.id,
+          nombreTrabajador: reporte.nombreTrabajador,
+          tipo: tipo,
+          tipoDescripcion: tipoDescripcion,
+          descripcion: reporte.descripcion,
+          motivo: reporte.tipo_problema.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          fecha: fechaReporte,
+          horaOriginal: reporte.horaOriginal,
+          horaNueva: reporte.hora_correcta,
+          tipoMarcacion: reporte.tipoMarcacion,
+          marcacion_id: reporte.marcacion_id,
+          usuario_id: reporte.usuario_id,
+          fecha_correcta: reporte.fecha_correcta
+        };
+      });
+    } else {
+      solicitudesPendientes.value = [];
+    }
+    
+    // Actualizar estadísticas
+    calcularEstadisticas(marcacionesOriginales.value);
+    
+  } catch (error) {
+    console.error('Error al cargar solicitudes pendientes:', error);
+    solicitudesPendientes.value = [];
+  }
+};
+
 onMounted(() => {
-  console.log('Vista Gestión de Marcaciones cargada');
+  
+  
   cargarMarcaciones();
+  cargarSolicitudes();
+
 });
 </script>

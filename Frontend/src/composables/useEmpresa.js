@@ -1,11 +1,11 @@
-import AdminServices from "../services/EmpresaService.js";
+import EmpresaServices from "../services/EmpresaService.js";
 import { useAuth } from "./useAuth.js";
-export function useAdmin() {
+export function useEmpresa() {
   const { user } = useAuth();
 
   const obtenerTrabajadores = async (enrolados = false) => {
     try {
-        const response = await AdminServices.obtenerTrabajadores(user.value.rut,enrolados);
+        const response = await EmpresaServices.obtenerTrabajadores(user.value.rut,enrolados);
         return response.data;
     } catch (error) {
       console.error("Error al obtener trabajadores:", error);
@@ -15,7 +15,7 @@ export function useAdmin() {
 
   const obtenerTurnos = async () => {
     try {
-      const response = await AdminServices.obtenerTurnos(user.value.rut);
+      const response = await EmpresaServices.obtenerTurnos(user.value.rut);
       return response.data;
     } catch (error) {
       console.error("Error al obtener turnos:", error);
@@ -26,10 +26,10 @@ export function useAdmin() {
   const obtenerMarcaciones = async (fecha = null) => {
     try {
       if (fecha) {
-        const response = await AdminServices.obtenerMarcacionesPorFecha(fecha);
+        const response = await EmpresaServices.obtenerMarcacionesPorFecha(fecha);
         return response.data;
       } else {
-        const response = await AdminServices.obtenerTodasLasMarcaciones();
+        const response = await EmpresaServices.obtenerTodasLasMarcaciones();
         return response.data;
       }
     } catch (error) {
@@ -40,7 +40,7 @@ export function useAdmin() {
 
   const obtenerMarcacionesPorEmpresa = async (fecha) => {
     try {
-      const response = await AdminServices.obtenerMarcacionesPorEmpresa(user.value.rut, fecha);
+      const response = await EmpresaServices.obtenerMarcacionesPorEmpresa(user.value.rut, fecha);
       console.log('marcaciones', response.data)
       return response.data;
     } catch (error) {
@@ -49,10 +49,21 @@ export function useAdmin() {
     }
   };
 
+  const obtenerReportesMarcaciones = async () => {
+    try {
+      const response = await EmpresaServices.obtenerReportesMarcaciones(user.value.rut);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener reportes de marcaciones:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
     obtenerMarcaciones,
-    obtenerMarcacionesPorEmpresa
+    obtenerMarcacionesPorEmpresa,
+    obtenerReportesMarcaciones
   };
 }
