@@ -172,7 +172,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+// Se reemplaza el uso directo de axios por el servicio AdminServices
+import AdminServices from '../../services/EmpresaService.js'
 import * as XLSX from 'xlsx'
 
 const API_BASE_URL = 'http://localhost:3000/api/empresas'
@@ -187,7 +188,15 @@ const search = ref({ query: '' })
 const showModal = ref(false)
 const showViewModal = ref(false)
 const empresaView = ref({})
-const empresaForm = ref({ empresa_id: null, emp_nombre: '', emp_rut: '', telefono: '', descripcion: '', estado: 1 })
+const empresaForm = ref({
+  empresa_id: null,
+  emp_nombre: '',
+  emp_rut: '',
+  telefono: '',
+  descripcion: '',
+  estado: 1,
+  grup_emp_idn: null // Se deja null por defecto por ahora, para después configurarlo
+})
 
 const showDeleteModal = ref(false)
 const empresaAEliminar = ref(null)
@@ -203,14 +212,28 @@ const listaUsuarios = ref([])
 async function fetchEmpresas() {
   loading.value = true
   try {
-    const response = await axios.get(API_BASE_URL)
-    console.log(response.data)  
-    empresas.value = response.data.data || response.data
+    // Usar el servicio para asegurar que el token JWT se envía correctamente
+    const response = await AdminServices.obtenerEmpresas()
+    // Mapear los datos del backend a los nombres usados en el template
+    // Se agrega este mapeo porque los datos del backend venían con nombres distintos a los usados en el template,
+    // lo que causaba que solo se renderizaran tarjetas vacías en la web. Así, los campos coinciden y se muestran correctamente.
+    empresas.value = (response.data || response).map(e => ({
+      empresa_id: e.id,
+      emp_nombre: e.nombre,
+      emp_rut: e.rut,
+      estado: e.activa ? 1 : 0,
+      telefono: e.telefono || '',
+      descripcion: e.descripcion || '',
+      totalEmpleados: e.totalEmpleados ?? 0
+    }))
   } catch {
     error.value = 'Error al cargar empresas'
   } finally {
     loading.value = false
   }
+  // Comentario: Este cambio es necesario porque el uso directo de axios no incluye el token JWT,
+  // mientras que el servicio AdminServices sí lo agrega automáticamente mediante un interceptor.
+  // Así se evita el error 401 (Unauthorized) y se mantiene la consistencia de la autenticación.
 }
 
 function openModal() {
@@ -228,7 +251,9 @@ function cancelDeleteEmpresa() { showDeleteModal.value = false; empresaAEliminar
 async function confirmDeleteEmpresa() {
   submitting.value = true
   try {
-    await axios.delete(`${API_BASE_URL}/${empresaAEliminar.value.empresa_id}`)
+    // IMPORTANTE: Usar el servicio para que el token JWT se envíe correctamente
+    // Si usas axios directo, el backend puede rechazar la petición por falta de autenticación
+    await AdminServices.eliminarEmpresa(empresaAEliminar.value.empresa_id)
     await fetchEmpresas()
     showDeleteModal.value = false
     empresaAEliminar.value = null
@@ -242,18 +267,27 @@ async function confirmDeleteEmpresa() {
 async function saveEmpresa() {
   submitting.value = true
   try {
+    // IMPORTANTE: El backend espera emp_telefono y emp_descripcion, no telefono ni descripcion
+    // Por eso se mapean aquí los nombres correctamente
     const payload = {
       emp_nombre: empresaForm.value.emp_nombre,
       emp_rut: empresaForm.value.emp_rut,
+      emp_telefono: empresaForm.value.telefono, // <-- nombre esperado por el backend
+      emp_descripcion: empresaForm.value.descripcion, // <-- nombre esperado por el backend
       estado: Number(empresaForm.value.estado),
-      telefono: empresaForm.value.telefono,
-      descripcion: empresaForm.value.descripcion
+      grup_emp_idn: null // Se deja null por defecto por ahora, para después configurarlo
     }
+    // Usar el servicio para asegurar que el token JWT se envía correctamente
     if (empresaForm.value.empresa_id) {
-      await axios.put(`${API_BASE_URL}/${empresaForm.value.empresa_id}`, payload)
+      // Si se implementa updateEmpresa en AdminServices, usarlo aquí
+      // await AdminServices.updateEmpresa(empresaForm.value.empresa_id, payload)
+      await AdminServices.actualizarEmpresa(empresaForm.value.empresa_id, payload)
     } else {
-      await axios.post(API_BASE_URL, payload)
+      await AdminServices.createEmpresa(payload)
     }
+    // Comentario: Este cambio es necesario porque el uso directo de axios no incluye el token JWT,
+    // mientras que el servicio AdminServices sí lo agrega automáticamente mediante un interceptor.
+    // Así se evita el error 401 (Unauthorized) al crear o editar empresas.
     closeModal()
     await fetchEmpresas()
   } catch {

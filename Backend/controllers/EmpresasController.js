@@ -1,3 +1,84 @@
+// Controlador para eliminar una empresa (CRUD)
+// Se agrega para permitir el borrado real desde el frontend usando la tabla empresa
+const deleteEmpresa = async (req, res) => {
+  try {
+    const empresaId = req.params.id;
+    // Llamar al modelo para eliminar la empresa en la base de datos real
+    const empresaEliminada = await EmpresaModel.deleteEmpresa(empresaId);
+    res.status(200).json({
+      success: true,
+      data: empresaEliminada,
+      message: 'Empresa eliminada exitosamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar la empresa',
+      error: error.message
+    });
+  }
+};
+// Controlador para crear una nueva empresa (CRUD)
+// Se agrega para permitir la creación de empresas desde el frontend usando la tabla empresa real
+const createEmpresa = async (req, res) => {
+  try {
+    const empresaData = req.body;
+    // Validación básica (puedes mejorarla según tus reglas de negocio)
+    if (!empresaData.emp_nombre || !empresaData.emp_rut) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nombre y RUT son obligatorios'
+      });
+    }
+    // Llamar al modelo para crear la empresa en la base de datos real
+    const nuevaEmpresa = await EmpresaModel.createEmpresa(empresaData);
+    res.status(201).json({
+      success: true,
+      data: nuevaEmpresa,
+      message: 'Empresa creada exitosamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear la empresa',
+      error: error.message
+    });
+  }
+};
+// Se conecta este método con el modelo real para actualizar empresas en la base de datos.
+// Así, cuando el frontend edita una empresa, el cambio se guarda realmente y no solo en un mock.
+const updateEmpresa = async (req, res) => {
+  try {
+    const empresaId = req.params.id;
+    const empresaData = req.body;
+    // Validación básica (puedes mejorarla según tus reglas de negocio)
+    if (!empresaData.emp_nombre || !empresaData.emp_rut) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nombre y RUT son obligatorios'
+      });
+    }
+    // Llamar al modelo para actualizar la empresa en la base de datos
+    const empresaActualizada = await EmpresaModel.updateEmpresa(empresaId, empresaData);
+    if (!empresaActualizada) {
+      return res.status(404).json({
+        success: false,
+        message: 'Empresa no encontrada'
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: empresaActualizada,
+      message: 'Empresa actualizada exitosamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar la empresa',
+      error: error.message
+    });
+  }
+};
 import EmpresaModel from "../model/EmpresaModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
 
@@ -173,12 +254,19 @@ const getHorariosEmpresa = async (req, res) => {
   }
 };
 
+
+
+// Se agrega createEmpresa para exponer el endpoint POST y permitir crear empresas desde el frontend
+// Se agrega deleteEmpresa para exponer el endpoint DELETE y permitir borrar empresas desde el frontend
 const EmpresaController = {
   getAllEmpresas,
   getEmpresasActivas,
   getEmpresaById,
   buscarEmpresasPorNombre,
-  getHorariosEmpresa
+  getHorariosEmpresa,
+  updateEmpresa,
+  createEmpresa,
+  deleteEmpresa
 };
 
 export default EmpresaController;

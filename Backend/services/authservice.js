@@ -110,7 +110,8 @@ const loginUser = async (email, password) => {
             apellido_mat: user.apellido_mat,
             email: user.email,
             rol: user.rol,
-            rut: usuarioEmpresas.empresa_rut,
+            // Usamos optional chaining para evitar error si usuarioEmpresas es null, cuando no es null, no deja inciar sesión
+            rut: usuarioEmpresas?.empresa_rut || null,
             estado: user.estado
         }
     };
