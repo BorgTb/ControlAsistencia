@@ -12,6 +12,10 @@ router.get('/trabajador/:rut',AuthService.verifyToken, UserEmpresaController.obt
 router.post('/enrolar-trabajador',AuthService.verifyToken, UserEmpresaController.enrolarTrabajador);
 router.post('/turnos',AuthService.verifyToken, UserEmpresaController.createTurno);
 router.get('/turnos/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTurnos);
+router.get('/reportes/:rut',AuthService.verifyToken, UserEmpresaController.obtenerReportesMarcaciones);
+router.post('/reportes/aprobar/:reporteId',AuthService.verifyToken, UserEmpresaController.aprobarCambioMarcacion);
+router.post('/reportes/rechazar/:reporteId',AuthService.verifyToken, UserEmpresaController.rechazarCambioMarcacion);
+
 
 
 export default router;

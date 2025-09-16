@@ -309,7 +309,51 @@ class MarcacionesService {
             };
         }
     }
+    async updateHoraMarcacion(marcacion_id, nueva_hora) {
+        try {
+            const result = await MarcacionesModel.updateHoraMarcacion(marcacion_id, nueva_hora);
+            if (result.affectedRows === 0) {
+                return {
+                    success: false,
+                    message: 'Marcación no encontrada o no se pudo actualizar'
+                };
+            }
+            return {
+                success: true,
+                message: 'Hora de marcación actualizada correctamente'
+            };
+        } catch (error) {
+            console.error('Error al actualizar hora de marcación:', error);
+            return {
+                success: false,
+                message: 'Error al actualizar hora de marcación',
+                error: error.message
+            };
+        } 
+    }
 
+    async updateFechaMarcacion(marcacion_id, nueva_fecha) {
+        try {
+            const result = await MarcacionesModel.updateFechaMarcacion(marcacion_id, nueva_fecha);
+            if (result.affectedRows === 0) {
+                return {
+                    success: false,
+                    message: 'Marcación no encontrada o no se pudo actualizar'
+                };
+            }
+            return {
+                success: true,
+                message: 'Fecha de marcación actualizada correctamente'
+            };
+        } catch (error) {   
+            console.error('Error al actualizar fecha de marcación:', error);
+            return {
+                success: false,
+                message: 'Error al actualizar fecha de marcación',
+                error: error.message
+            };
+        }
+    }
 }
 
 export default new MarcacionesService();

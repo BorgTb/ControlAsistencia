@@ -271,10 +271,10 @@ import HeaderAdmin from '../../components/headerAdmin.vue';
 import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
 import ModalEnrolarTrabajador from '../../modals/ModalEnrolarTrabajador.vue';
 import { ref, onMounted, computed } from 'vue';
-import { useAdmin } from '../../../composables/useAdmin.js';
+import { useEmpresa } from '../../../composables/useEmpresa.js';
 
 
-const { obtenerTrabajadores } = useAdmin();
+const { obtenerTrabajadores } = useEmpresa();
 
 // Estados reactivos
 const trabajadores = ref([]);

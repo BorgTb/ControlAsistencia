@@ -316,9 +316,9 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import AdminServices from '../../../services/EmpresaService.js';
-import { useAdmin } from '../../../composables/useAdmin.js';
+import { useEmpresa } from '../../../composables/useEmpresa.js';
 
-const { obtenerTrabajadores, obtenerTurnos  } = useAdmin();
+const { obtenerTrabajadores, obtenerTurnos  } = useEmpresa();
 
 // Estados reactivos
 const filtroFecha = ref('');

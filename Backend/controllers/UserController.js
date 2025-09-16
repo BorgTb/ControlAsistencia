@@ -1,6 +1,8 @@
 import UserModel from '../model/UserModel.js';
 import authservice from '../services/authservice.js';
 import {DateTime} from 'luxon';
+import ReportesModel from '../model/ReportesModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 
 
 const updateEmail = async (req, res) => {
@@ -69,18 +71,23 @@ const createReporte = async (req, res) => {
     const reporteData = req.body;
     const user = req.user;
     try {
-        console.log('Datos del reporte recibido:', reporteData);
-        console.log('Usuario que envía el reporte:', user);
         // Aquí iría la lógica para guardar el reporte en la base de datos
-        // Por ahora, solo simulamos una respuesta exitosa
+        const nuevoReporte = {
+            marcacion_id: reporteData.marcacion_id,
+            usuario_id: await UsuarioEmpresaModel.obtenerEmpresaIdByUsuarioId(user.id),
+            tipo_problema: reporteData.tipo_problema,
+            descripcion: reporteData.descripcion,
+            fecha_correcta: reporteData.fecha_correcta,
+            hora_correcta: reporteData.hora_correcta,
+            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
+        };
+
+        // Guardar el reporte en la base de datos
+        const reporteGuardado = await ReportesModel.create(nuevoReporte);
         res.status(201).json({
             success: true,
             message: 'Reporte enviado correctamente',
-            data: {
-            reporte_id: 456, // ID simulado del nuevo reporte
-            estado: 'pendiente',
-            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
-            }
+            data: reporteGuardado
         });
     } catch (error) {
         console.error('Error al crear el reporte:', error);
