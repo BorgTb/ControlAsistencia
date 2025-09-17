@@ -10,6 +10,7 @@ export function useAuth() {
   const user = computed(() => authStore.getUser)
   const token = computed(() => authStore.getToken)
   const isLoading = computed(() => authStore.isLoading)
+  const esEst = computed(() => authStore.esEst)
 
   // Métodos de autenticación
   const login = async (credentials) => {
@@ -41,6 +42,8 @@ export function useAuth() {
     return user.value?.roles?.includes(role) || false
   }
 
+
+
   const hasPermission = (permission) => {
     return user.value?.permissions?.includes(permission) || false
   }
@@ -51,6 +54,7 @@ export function useAuth() {
     user,
     token,
     isLoading,
+    esEst,
     
     // Métodos
     login,

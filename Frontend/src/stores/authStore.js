@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const getToken = computed(() => token.value)
   const getUser = computed(() => user.value)
   const esEmpleador = computed(() => user.value?.rol?.includes('empleador'))
+  const esEst = computed(() => user.value?.est === true)
 
   // Actions
   function setToken(newToken) {
@@ -41,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isLoading,
     esEmpleador,
+    esEst,
     // Getters
     isAuthenticated,
     getToken,

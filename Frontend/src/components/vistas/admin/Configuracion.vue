@@ -114,7 +114,7 @@
             </div>
 
             <!-- Reglamento Interno -->
-            <div v-show="activeTab === 'reglamento'">
+            <div v-show="activeTab === 'reglamento' && !esEst">
               <h3 class="text-lg font-medium text-gray-900 mb-6">Reglamento Interno de Orden, Higiene y Seguridad</h3>
               
               <div class="space-y-6">
@@ -177,7 +177,7 @@
             </div>
 
             <!-- Marcaciones -->
-            <div v-show="activeTab === 'marcaciones'">
+            <div v-show="activeTab === 'marcaciones' && !esEst">
               <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Marcaciones</h3>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -256,7 +256,7 @@
             </div>
 
             <!-- Turnos -->
-            <div v-show="activeTab === 'turnos'">
+            <div v-show="activeTab === 'turnos' && !esEst">
               <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Turnos</h3>
               
               <div class="space-y-6">
@@ -396,7 +396,11 @@
 
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useAuth } from '../../../composables/useAuth.js';
+
+
+const { esEst } = useAuth();
 
 // Estados reactivos
 const activeTab = ref('general');
@@ -422,13 +426,22 @@ const BellIcon = {
   template: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5 5-5h-5m-6 0L9 7l-5 5 5 5h5m0 0v-5"></path></svg>`
 };
 
-const tabs = ref([
-  { id: 'general', name: 'General', icon: ConfigIcon },
-  { id: 'reglamento', name: 'Reglamento', icon: DocumentIcon },
-  { id: 'marcaciones', name: 'Marcaciones', icon: CheckIcon },
-  { id: 'turnos', name: 'Turnos', icon: ClockIcon },
-  { id: 'notificaciones', name: 'Notificaciones', icon: BellIcon }
-]);
+const tabs = computed(() => {
+  const baseTabs = [
+    { id: 'general', name: 'General', icon: ConfigIcon },
+    { id: 'notificaciones', name: 'Notificaciones', icon: BellIcon }
+  ];
+  
+  if (!esEst.value) {
+    baseTabs.splice(1, 0, 
+      { id: 'reglamento', name: 'Reglamento', icon: DocumentIcon },
+      { id: 'marcaciones', name: 'Marcaciones', icon: CheckIcon },
+      { id: 'turnos', name: 'Turnos', icon: ClockIcon }
+    );
+  }
+  
+  return baseTabs;
+});
 
 onMounted(() => {
   console.log('Vista Configuración cargada');

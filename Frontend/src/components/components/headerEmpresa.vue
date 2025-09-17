@@ -148,7 +148,7 @@
           </router-link>
 
           <!-- Control de Turnos -->
-          <router-link
+          <router-link v-show="!esEst"
             to="/empresa/turnos"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
@@ -216,7 +216,7 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '../../composables/useAuth.js';
 
 const router = useRouter();
-const { user, logout, isLoading: authLoading } = useAuth();
+const { user, logout, isLoading: authLoading, esEst } = useAuth();
 
 const isUserDropdownOpen = ref(false);
 
