@@ -12,11 +12,18 @@ const getBaseUrl = () => {
 const router = createRouter({
     history: createWebHistory(getBaseUrl()),
     routes: [
+        
         {
             path: '/',
             name: 'Login',
             component: () => import('../components/vistas/Login.vue'),
             meta: { requiresGuest: true} // Solo para usuarios no autenticados
+        },
+        {
+            path: '/administrarempresa',
+            name: 'AdminEmpresas',
+            component: () => import('../components/vistas/AdminEmpresas.vue'),
+            meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores autenticados
         },
         {
             path: '/dashboard',

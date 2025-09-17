@@ -1,3 +1,8 @@
+// NOTA:
+// Se eliminaron los métodos createEmpresa y actualizarEmpresa que estaban duplicados y fuera de la clase AdminServices.
+// Esto es necesario porque los métodos deben estar dentro de la clase para que el servicio funcione correctamente y evitar errores de sintaxis.
+// Además, así se mantiene la organización y encapsulamiento del código.
+// Esto permite que el CRUD de empresas funcione correctamente, mostrando los datos en la web y permitiendo crear, editar y visualizar sin errores de autenticación.
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore.js'
 
@@ -57,7 +62,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
 
 
 
