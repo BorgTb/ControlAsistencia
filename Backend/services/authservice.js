@@ -12,10 +12,11 @@ dotenv.config();
 const SECRET_KEY = process.env.SECRET_KEY || ''; 
 
 // Function to generate JWT
-const generateToken = (user) => {
+const generateToken = (user, empresa_id) => {
     const payload = {
         id: user.id,
         email: user.email,
+        empresa_id: empresa_id,
     };
     return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
 };
@@ -100,13 +101,13 @@ const loginUser = async (email, password) => {
         throw new Error('Invalid password');
     }
     
-    // Generate token
-    const token = generateToken(user);
+   
 
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
 
 
-
+ // Generate token
+    const token = generateToken(user, usuarioEmpresas.empresa_id);
 
 
     let est = false;

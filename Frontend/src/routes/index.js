@@ -86,6 +86,12 @@ const router = createRouter({
             component: () => import('../components/vistas/empresa/Configuracion.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
+        {
+            path: '/empresa/trabajadores/asociar',
+            name: 'EmpresaAsociarTrabajador',
+            component: () => import('../components/vistas/empresa/AsociarTrabajador.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
         // Agregar más rutas según necesites
         {
             path: '/:pathMatch(.*)*',

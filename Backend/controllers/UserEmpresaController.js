@@ -75,7 +75,7 @@ const createTrabajador = async (req, res) => {
 
 
 
-        res.status(500).json({ success: true, message: "Trabajador creado exitosamente" });
+        res.status(201).json({ success: true, message: "Trabajador creado exitosamente" });
     } catch (error) {
         console.error("Error creating trabajador:", error);
         res.status(500).json({ error: "Internal server error" });

@@ -451,6 +451,25 @@ class UsuarioEmpresaModel {
         return rows.length > 0 ? rows[0].empresa_id : null;
     }
     
+    static async obtenerUsuarioByID(usuario_empresa_id){
+        const query = `
+        SELECT
+            u.id,
+            u.nombre,
+            u.apellido_pat,
+            u.apellido_mat,
+            u.email,
+            u.rut,
+            u.rol,
+            u.estado,
+            ue.rol_en_empresa
+        FROM usuarios u
+        JOIN usuarios_empresas ue ON ue.usuario_id = u.id
+        WHERE ue.id = ?
+        `;
+        const [rows] = await db.execute(query, [usuario_empresa_id]);
+        return rows.length > 0 ? rows[0] : null;
+    }
 
 }
 
