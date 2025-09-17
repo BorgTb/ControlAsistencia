@@ -267,7 +267,7 @@
 </template>
 
 <script setup>
-import HeaderAdmin from '../../components/headerAdmin.vue';
+import HeaderAdmin from '../../components/headerEmpresa.vue';
 import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
 import ModalEnrolarTrabajador from '../../modals/ModalEnrolarTrabajador.vue';
 import { ref, onMounted, computed } from 'vue';

@@ -173,7 +173,7 @@ const handleSubmit = async () => {
           if (result.data.user.rol === 'trabajador') {
             router.push('/dashboard')
           } else if (result.data.user.rol === 'empleador') {
-            router.push('/administracion')
+            router.push('/empresa/dashboard')
           } else {
         // Rol desconocido, redirigir a una página por defecto o mostrar error
         errorMessage.value = 'Rol de usuario no reconocido'

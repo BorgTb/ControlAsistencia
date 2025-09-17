@@ -315,7 +315,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import AdminServices from '../../../services/EmpresaService.js';
+import EmpresaServices from '../../../services/EmpresaService.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
 const { obtenerTrabajadores, obtenerTurnos  } = useEmpresa();
@@ -361,7 +361,7 @@ const guardarTurno = async () => {
   try {
     // Crear nuevo turno usando el servicio
     console.log('Guardando turno:', formTurno);
-    const response = await AdminServices.createTurno(formTurno);
+    const response = await EmpresaServices.createTurno(formTurno);
     console.log('Turno creado:', response);
     
     // Limpiar el formulario

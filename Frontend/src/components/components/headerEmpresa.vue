@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
         <div class="flex items-center cursor-pointer" @click="home">
-          <h1 class="text-3xl font-bold text-gray-900">TeleMarcación - Administrador</h1>
+          <h1 class="text-3xl font-bold text-gray-900">TeleMarcación - empresa</h1>
         </div>
         
         <div class="flex items-center space-x-4">
@@ -124,7 +124,7 @@
         <div class="flex space-x-8 overflow-x-auto">
           <!-- Dashboard -->
           <router-link
-            to="/admin/dashboard"
+            to="/empresa/dashboard"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -136,7 +136,7 @@
 
           <!-- Gestión de Trabajadores -->
           <router-link
-            to="/admin/trabajadores"
+            to="/empresa/trabajadores"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -148,7 +148,7 @@
 
           <!-- Control de Turnos -->
           <router-link
-            to="/admin/turnos"
+            to="/empresa/turnos"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -160,7 +160,7 @@
 
           <!-- Marcaciones -->
           <router-link
-            to="/admin/marcaciones"
+            to="/empresa/marcaciones"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -172,7 +172,7 @@
 
           <!-- Reportes -->
           <router-link
-            to="/admin/reportes"
+            to="/empresa/reportes"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -186,7 +186,7 @@
 
           <!-- Configuración -->
           <router-link
-            to="/admin/configuracion"
+            to="/empresa/configuracion"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
           >
@@ -228,22 +228,22 @@ const closeDropdowns = () => {
 };
 
 const home = () => {
-  router.push('/admin/dashboard');
+  router.push('/empresa/dashboard');
   closeDropdowns();
 };
 
 const abrirConfiguracionSistema = () => {
-  router.push('/admin/configuracion');
+  router.push('/empresa/configuracion');
   closeDropdowns();
 };
 
 const abrirPerfil = () => {
-  router.push('/admin/perfil');
+  router.push('/empresa/perfil');
   closeDropdowns();
 };
 
 const abrirAyuda = () => {
-  router.push('/admin/ayuda');
+  router.push('/empresa/ayuda');
   closeDropdowns();
 };
 

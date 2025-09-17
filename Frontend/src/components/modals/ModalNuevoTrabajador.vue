@@ -262,7 +262,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import AdminServices from '../../services/EmpresaService.js'
+import EmpresaServices from '../../services/EmpresaService.js'
 
 // Props
 const props = defineProps({
@@ -436,7 +436,7 @@ const submitForm = async () => {
     
     // Simular éxito (puedes cambiar esto por una llamada real al servidor)
     console.log('Datos del usuario a enviar:', trabajador)
-    const response = await AdminServices.crearTrabajador(trabajador)
+    const response = await EmpresaServices.crearTrabajador(trabajador)
 
     console.log('Usuario registrado exitosamente:', response)
 

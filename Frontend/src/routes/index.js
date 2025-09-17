@@ -38,46 +38,46 @@ const router = createRouter({
         },
         {
             path: '/administracion',
-            name: 'Admin',
+            name: 'Empresa',
             component: () => import('../components/vistas/Administrador.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
-        // Rutas del Administrador
+        // Rutas de la Empresa
         {
-            path: '/admin/dashboard',
-            name: 'AdminDashboard',
+            path: '/empresa/dashboard',
+            name: 'EmpresaDashboard',
             component: () => import('../components/vistas/Administrador.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
-            path: '/admin/trabajadores',
-            name: 'AdminTrabajadores',
+            path: '/empresa/trabajadores',
+            name: 'EmpresaTrabajadores',
             component: () => import('../components/vistas/admin/GestionTrabajadores.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
-            path: '/admin/turnos',
-            name: 'AdminTurnos',
+            path: '/empresa/turnos',
+            name: 'EmpresaTurnos',
             component: () => import('../components/vistas/admin/ControlTurnos.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
-            path: '/admin/marcaciones',
-            name: 'AdminMarcaciones',
+            path: '/empresa/marcaciones',
+            name: 'EmpresaMarcaciones',
             component: () => import('../components/vistas/admin/GestionMarcaciones.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
-            path: '/admin/reportes',
-            name: 'AdminReportes',
+            path: '/empresa/reportes',
+            name: 'EmpresaReportes',
             component: () => import('../components/vistas/admin/Reportes.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
-            path: '/admin/configuracion',
-            name: 'AdminConfiguracion',
+            path: '/empresa/configuracion',
+            name: 'EmpresaConfiguracion',
             component: () => import('../components/vistas/admin/Configuracion.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
+            meta: { requiresAuth: true, requiresEmpresa: true }
         },
         // Agregar más rutas según necesites
         {
@@ -113,12 +113,13 @@ router.beforeEach((to, from, next) => {
         return
     }
     
-    // Verificar si la ruta requiere permisos de administrador
-    if (to.meta.requiresAdmin && authStore.isAuthenticated) {
-        // Verificar si el usuario tiene rol de administrador
-        if (!authStore.user?.esAdmin && !authStore.user?.rol?.includes('empleador')) {
-            // Redirigir al dashboard si no es admin
-            console.warn('Acceso denegado: Se requieren permisos de administrador')
+    // Verificar si la ruta requiere permisos de empresa
+    if (to.meta.requiresEmpresa && authStore.isAuthenticated) {
+        // Verificar si el usuario tiene rol de empresa
+        console.log('authStore.user:', authStore.user);
+        if (!authStore.user?.esEmpleador && !authStore.user?.rol?.includes('empleador')) {
+            // Redirigir al dashboard si no es empresa
+            console.warn('Acceso denegado: Se requieren permisos de empresa')
             next({ name: 'Dashboard' })
             return
         }
@@ -128,9 +129,9 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresUser && authStore.isAuthenticated) {
         // Verificar si el usuario tiene rol de trabajador/empleado
         if (!authStore.user?.esTrabajador && !authStore.user?.rol?.includes('trabajador')) {
-            // Redirigir a administración si no es trabajador
+            // Redirigir a empresa si no es trabajador
             console.warn('Acceso denegado: Se requieren permisos de trabajador')
-            next({ name: 'Admin' })
+            next({ name: 'Empresa' })
             return
         }
     }

@@ -199,7 +199,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import AdminServices from '../../services/EmpresaService.js'
+import EmpresaServices from '../../services/EmpresaService.js'
 
 // Props
 const props = defineProps({
@@ -331,7 +331,7 @@ const submitForm = async () => {
     }
 
     console.log('Datos de enrolamiento a enviar:', datosEnrolamiento)
-    const response = await AdminServices.enrolarTrabajador(datosEnrolamiento)
+    const response = await EmpresaServices.enrolarTrabajador(datosEnrolamiento)
 
     console.log('Trabajador enrolado exitosamente:', response)
 

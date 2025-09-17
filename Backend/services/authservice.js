@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import UserModel from '../model/UserModel.js'; // Import your user model
 import EmpresaModel from '../model/EmpresaModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import EmpresaEstModel from '../model/EmpresaEstModel.js';
 
 
 dotenv.config();
@@ -35,6 +36,11 @@ const verifyToken = (token) => {
     } catch (error) {
         throw error;
     }
+};
+
+const verificarEst = async (empresa_id) => {
+    const empresaEst = await EmpresaEstModel.findByEmpresaId(empresa_id);
+    return empresaEst ? true : false;
 };
 
 // Function to register a user (hash password)
@@ -100,6 +106,17 @@ const loginUser = async (email, password) => {
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
 
 
+
+
+
+    let est = false;
+
+    // si es empleador verificar si su empresa es est
+    if(user.rol === 'empleador'){
+        est = await verificarEst(usuarioEmpresas.empresa_id);
+    }
+
+
     // Return both token and user info (without password)
     return {
         token,
@@ -111,7 +128,8 @@ const loginUser = async (email, password) => {
             email: user.email,
             rol: user.rol,
             rut: usuarioEmpresas.empresa_rut,
-            estado: user.estado
+            estado: user.estado,
+            est: est
         }
     };
 };

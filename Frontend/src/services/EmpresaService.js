@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
 
 
 
-class AdminServices{
+class EmpresaServices{
 
   static async crearTrabajador(trabajadorData) {
     try {
@@ -196,5 +196,5 @@ class AdminServices{
   }
 }
 
-export default AdminServices;
+export default EmpresaServices;
 

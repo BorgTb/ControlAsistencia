@@ -395,7 +395,7 @@
 </template>
 
 <script setup>
-import HeaderAdmin from '../../components/headerAdmin.vue';
+import HeaderAdmin from '../../components/headerEmpresa.vue';
 import { ref, onMounted } from 'vue';
 
 // Estados reactivos
