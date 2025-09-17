@@ -147,6 +147,19 @@
             <span>Trabajadores</span>
           </router-link>
 
+          <!-- Gestión de Trabajadores -->
+          <router-link
+            to="/empresa/trabajadores/asociar"
+            class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
+            active-class="text-indigo-600 bg-white border-indigo-600"
+          >
+            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+            </svg>
+            <span>Asociar Trabajador</span>
+          </router-link>
+          
+
           <!-- Control de Turnos -->
           <router-link v-show="!esEst"
             to="/empresa/turnos"

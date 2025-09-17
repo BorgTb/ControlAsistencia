@@ -59,31 +59,31 @@ const router = createRouter({
         {
             path: '/empresa/trabajadores',
             name: 'EmpresaTrabajadores',
-            component: () => import('../components/vistas/admin/GestionTrabajadores.vue'),
+            component: () => import('../components/vistas/empresa/GestionTrabajadores.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
             path: '/empresa/turnos',
             name: 'EmpresaTurnos',
-            component: () => import('../components/vistas/admin/ControlTurnos.vue'),
+            component: () => import('../components/vistas/empresa/ControlTurnos.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
             path: '/empresa/marcaciones',
             name: 'EmpresaMarcaciones',
-            component: () => import('../components/vistas/admin/GestionMarcaciones.vue'),
+            component: () => import('../components/vistas/empresa/GestionMarcaciones.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
             path: '/empresa/reportes',
             name: 'EmpresaReportes',
-            component: () => import('../components/vistas/admin/Reportes.vue'),
+            component: () => import('../components/vistas/empresa/Reportes.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
             path: '/empresa/configuracion',
             name: 'EmpresaConfiguracion',
-            component: () => import('../components/vistas/admin/Configuracion.vue'),
+            component: () => import('../components/vistas/empresa/Configuracion.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         // Agregar más rutas según necesites
