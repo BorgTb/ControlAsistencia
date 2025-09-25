@@ -2,6 +2,7 @@ import { Console } from 'console';
 import MarcacionesModel from '../model/MarcacionesModel.js';
 import crypto from 'crypto';
 import UserModel from '../model/UserModel.js';
+import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 
 class MarcacionesService {
     async registrarMarcacion(usuario_id, tipo, geo_lat, geo_lon, ip_origen) {
@@ -9,6 +10,8 @@ class MarcacionesService {
             // Generar hash único para la marcación
             const hashData = `${usuario_id}-${tipo}-${Math.random()}-${Date.now()}`;
             const hash = crypto.createHash('sha256').update(hashData).digest('hex');
+            /* usuario_id es de la tabla usuario_empresa*/
+
             
             // Preparar datos para insertar (sin fecha y hora, la BD las manejará)
             const marcacionData = {
@@ -21,7 +24,14 @@ class MarcacionesService {
                 geo_lat: parseFloat(geo_lat),
                 geo_lon: parseFloat(geo_lon)
             };
+            // validar si el usuario que marca esta ligado a una est si es asi agregar mandante_id en la marcacion 
+            const asignaciones = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_id);
+            console.log('Asignaciones encontradas para el usuario:', asignaciones);
             
+            if (asignaciones && asignaciones.length > 0) {
+                marcacionData.mandante_id = asignaciones[0].usuaria_id; // Asumimos que tomamos el primero
+            }
+
             
 
             // Crear la marcación usando el modelo
@@ -354,6 +364,7 @@ class MarcacionesService {
             };
         }
     }
+
 }
 
 export default new MarcacionesService();

@@ -136,18 +136,18 @@ class EstAsignacionesModel {
         return rows;
     }
 
-    // Obtener asignaciones activas por usuario_empresa_id
+   // Obtener asignaciones activas por usuario_empresa_id
     static async getActiveByUsuarioEmpresaId(usuarioEmpresaId) {
         const query = `
             SELECT id, est_id, usuaria_id, usuario_empresa_id, fecha_inicio, fecha_fin 
             FROM est_asignaciones 
-            WHERE usuario_empresa_id = ? AND fecha_fin IS NULL 
+            WHERE usuario_empresa_id = ? 
+            AND (fecha_fin IS NULL OR fecha_fin >= CURDATE())  -- Solo asignaciones activas
             ORDER BY fecha_inicio DESC
         `;
         const [rows] = await db.execute(query, [usuarioEmpresaId]);
         return rows;
     }
-
     // Obtener asignaciones con información detallada de usuario y empresa
     static async getAllWithDetails() {
         const query = `
