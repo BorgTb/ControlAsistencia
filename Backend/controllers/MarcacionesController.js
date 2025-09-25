@@ -478,7 +478,7 @@ const obtenerMarcacionesPorEmpresa = async (req, res) => {
             });
         }
         
-        const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(rutEmpresa);
+        const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(req.user.empresa_id);
         console.log(result);
         if (!result.success) {
             return res.status(500).json(result);

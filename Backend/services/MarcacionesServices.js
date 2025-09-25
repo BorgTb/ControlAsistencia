@@ -249,9 +249,10 @@ class MarcacionesService {
         }
     }
 
-    async obtenerMarcacionesPorEmpresa(rutEmpresa) {
+    async obtenerMarcacionesPorEmpresa(id_empresa) {
         try {
-            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorEmpresaRut(rutEmpresa);
+
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorEmpresaId(id_empresa);
             // agrupar por usuario_id
             const marcacionesAgrupadas = marcaciones.reduce((acc, marcacion) => {
                 const usuarioId = marcacion.usuario_id;
