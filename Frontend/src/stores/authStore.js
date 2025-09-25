@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
+  // Detecta si el usuario tiene el rol 'admin'.
+  // Permite proteger rutas y vistas exclusivas para administradores.
+  const esAdmin = computed(() => user.value?.rol === 'admin' || user.value?.rol?.includes('admin'))
   // Estado
   const token = ref(null)
   const user = ref(null)
@@ -41,8 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoading,
-    esEmpleador,
-    esEst,
+  esEmpleador,
+  esEst,
+  esAdmin, // Indica si el usuario es administrador
     // Getters
     isAuthenticated,
     getToken,
