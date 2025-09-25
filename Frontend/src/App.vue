@@ -1,6 +1,6 @@
 <template>
   <Header v-if="showHeader" />
-  <HeaderEmpresa v-else v-if="route.path !== '/'"/>
+  <HeaderEmpresa v-else-if="route.path !== '/'"/> 
   <RouterView />
 </template>
 
@@ -11,8 +11,9 @@ import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const route = useRoute()
-const hiddenRoutes = ['/','/administracion','/empresa/turnos','/empresa/dashboard','/empresa/trabajadores','/empresa/turnos','/empresa/marcaciones','/empresa/reportes','/empresa/configuracion','/empresa/trabajadores/asociar']
+const hiddenRoutes = ['/','/empresa/turnos','/empresa/dashboard','/empresa/trabajadores','/empresa/turnos','/empresa/marcaciones','/empresa/reportes','/empresa/configuracion','/empresa/trabajadores/asociar','/administracion']
 const showHeader = computed(() => !hiddenRoutes.includes(route.path))
 </script>
 
 
+  

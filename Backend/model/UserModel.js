@@ -1,6 +1,14 @@
 import pool from '../config/dbconfig.js';
 
 class UserModel {
+    /**
+     * Obtiene todos los usuarios cuyo rol es 'admin'.
+     * Útil para paneles de gestión y auditoría de administradores.
+     */
+    static async findAllAdmins() {
+        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rol = "admin"');
+        return rows;
+    }
     static async findById(id) {
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
         return rows.length ? rows[0] : null;

@@ -55,8 +55,22 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+
+/**
+ * Middleware para proteger rutas exclusivas de administradores.
+ * Verifica que el usuario autenticado tenga el campo rol igual a 'admin'.
+ * Útil para restringir acceso a endpoints sensibles o de gestión.
+ */
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.rol === 'admin') {
+        return next();
+    }
+    return res.status(403).json({ success: false, message: 'Acceso solo para administradores.' });
+};
+
 const auth = {
     verifyToken,
+    isAdmin, // Middleware para proteger rutas de admin
 };
 
 export default auth;

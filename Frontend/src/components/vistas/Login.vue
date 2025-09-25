@@ -167,16 +167,22 @@ const handleSubmit = async () => {
     console.log('Resultado del login:', result)
     if (result.success) {
       successMessage.value = result.message
+      // Guardar usuario y token en el store antes de redirigir
+      if (result.data.token) authStore.setToken(result.data.token)
+      if (result.data.user) authStore.setUser(result.data.user)
       // Verificar el rol y redirigir según corresponda
       setTimeout(() => {
         if (result.data.user && result.data.user.rol) {
-          if (result.data.user.rol === 'trabajador') {
+          if (result.data.user.rol === 'admin') {
+            // Si el usuario es administrador, lo redirige al CRUD de empresa
+            router.push('/administrarempresa')
+          } else if (result.data.user.rol === 'trabajador') {
             router.push('/dashboard')
           } else if (result.data.user.rol === 'empleador') {
             router.push('/empresa/dashboard')
           } else {
-        // Rol desconocido, redirigir a una página por defecto o mostrar error
-        errorMessage.value = 'Rol de usuario no reconocido'
+            // Rol desconocido, redirigir a una página por defecto o mostrar error
+            errorMessage.value = 'Rol de usuario no reconocido'
           }
         } else {
           errorMessage.value = 'No se pudo determinar el rol del usuario'

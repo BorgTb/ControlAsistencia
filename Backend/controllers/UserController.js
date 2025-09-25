@@ -100,10 +100,44 @@ const createReporte = async (req, res) => {
 
 
 
+
+/**
+ * Crea un usuario administrador.
+ * Este endpoint permite registrar un nuevo usuario con el rol 'admin'.
+ * Es útil para gestionar el acceso administrativo desde el backend.
+ */
+const createAdmin = async (req, res) => {
+    try {
+        const { nombre, apellido_pat, apellido_mat, email, password, rut, estado } = req.body;
+        // El campo 'rol' se fuerza a 'admin' para asegurar el tipo de usuario
+        const data = { nombre, apellido_pat, apellido_mat, email, password, rol: 'admin', rut, estado };
+        const id = await UserModel.create(data);
+        res.status(201).json({ success: true, id });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al crear administrador', error });
+    }
+}
+
+/**
+ * Lista todos los usuarios con rol 'admin'.
+ * Este endpoint permite obtener todos los administradores registrados en el sistema.
+ * Útil para paneles de gestión y auditoría.
+ */
+const listAdmins = async (req, res) => {
+    try {
+        const admins = await UserModel.findAllAdmins();
+        res.status(200).json({ success: true, admins });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al listar administradores', error });
+    }
+}
+
 const UserController = {
     updateEmail,
     updatePassword,
-    createReporte
+    createReporte,
+    createAdmin,
+    listAdmins
 }
 
 
