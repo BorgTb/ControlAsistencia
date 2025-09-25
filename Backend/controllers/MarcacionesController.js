@@ -479,7 +479,7 @@ const obtenerMarcacionesPorEmpresa = async (req, res) => {
         }
         
         const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(rutEmpresa);
-        
+        console.log(result);
         if (!result.success) {
             return res.status(500).json(result);
         }
@@ -503,7 +503,7 @@ const obtenerMarcacionPorUserId = async (req, res) => {
         const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
         // se podria retornar por fecha igual en caso cuando existan muchas y mejoras a futuro
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id);
-        
+
         if (!result.success) {
             return res.status(500).json(result);
         }

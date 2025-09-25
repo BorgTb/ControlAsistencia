@@ -8,6 +8,7 @@ import EmpresaModel from "../model/EmpresaModel.js";
 import MarcacionesServices from "../services/MarcacionesServices.js";
 import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
+import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 
 
 
@@ -107,7 +108,27 @@ const obtenerTrabajadores = async (req, res) => {
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 
-        res.status(200).json({ success: true, data: trabajadores });
+        // trabajadores que son de una est
+        const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
+
+        console.log("trabajadoresDeEst:", trabajadoresDeEst);
+        console.log("trabajadores:", trabajadores);
+
+        // juntar ambos arrays  y a los trabajadores de est agregarle un campo est = true
+        const trabajadoresMap = new Map();
+
+        trabajadores.forEach(trabajador => {
+            trabajadoresMap.set(trabajador.id, { ...trabajador, esDeEst: false });
+        });
+        trabajadoresDeEst.forEach(trabajador => {
+            trabajadoresMap.set(trabajador.id, { ...trabajador, esDeEst: true });
+        }
+        );
+
+        const trabajadoresUnicos = Array.from(trabajadoresMap.values());
+        console.log("trabajadoresUnicos:", trabajadoresUnicos);
+
+        res.status(200).json({ success: true, data: trabajadoresUnicos });
     } catch (error) {
         console.error("Error fetching trabajadores:", error);
         res.status(500).json({ error: "Internal server error" });
@@ -118,11 +139,22 @@ const obtenerTurnos = async (req, res) => {
         const { rut } = req.params;
 
         const turnos = [];
-
         // obtener trabajadores
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByEmpresaRut(rut);
         // para cada trabajador obtener sus turnos e incluir información del trabajador
+
+        // agregar trabajadores est
+        const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(req.user.empresa_id);
         
+
+        // agregar trabajadores de est al array de trabajadores si no existen ya
+        for (const trabajadorEst of trabajadoresDeEst) {
+            if (!trabajadores.find(t => t.id === trabajadorEst.id)) {
+                trabajadores.push(trabajadorEst);
+            }
+        }
+
+
         for (const trabajador of trabajadores) {
             const trabajadorTurnos = await TurnosModel.getTurnosByUsuarioId(trabajador.id);
             const turnosConInfoTrabajador = trabajadorTurnos.map(turno => ({
