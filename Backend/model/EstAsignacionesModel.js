@@ -25,7 +25,7 @@ class EstAsignacionesModel {
         return rows[0];
     }
 
-    // Obtener asignaciones por usuario
+    // Obtener asignaciones por empresa usuaria
     static async getByUsuariaId(usuariaId) {
         const query = `
             SELECT id, est_id, usuaria_id, usuario_empresa_id, fecha_inicio, fecha_fin 
@@ -35,6 +35,29 @@ class EstAsignacionesModel {
         `;
         const [rows] = await db.execute(query, [usuariaId]);
         return rows;
+    }
+
+    static async getTrabajadoresByUsuariaId(usuariaId) {
+        const query = `
+            SELECT ue.id,
+                ue.usuario_id,
+                ue.empresa_id,
+                ue.rol_en_empresa,
+                ue.fecha_inicio,
+                ue.fecha_fin,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                u.email as usuario_email,
+                u.rut as usuario_rut,
+                u.estado as usuario_estado FROM est_asignaciones INNER JOIN usuarios_empresas as ue ON ue.id = est_asignaciones.usuario_empresa_id INNER JOIN usuarios as u ON u.id = ue.usuario_id
+                WHERE est_asignaciones.usuaria_id = ? AND ue.rol_en_empresa = 'trabajador'`;
+        const [rows] = await db.execute(query, [usuariaId]);
+        return rows;
+    }
+
+    static async getTrabajadoresByUsuariaRut(usuariaRut) {
+        const query = ``;
     }
 
     // Obtener asignaciones activas (sin fecha_fin)
@@ -113,18 +136,18 @@ class EstAsignacionesModel {
         return rows;
     }
 
-    // Obtener asignaciones activas por usuario_empresa_id
+   // Obtener asignaciones activas por usuario_empresa_id
     static async getActiveByUsuarioEmpresaId(usuarioEmpresaId) {
         const query = `
             SELECT id, est_id, usuaria_id, usuario_empresa_id, fecha_inicio, fecha_fin 
             FROM est_asignaciones 
-            WHERE usuario_empresa_id = ? AND fecha_fin IS NULL 
+            WHERE usuario_empresa_id = ? 
+            AND (fecha_fin IS NULL OR fecha_fin >= CURDATE())  -- Solo asignaciones activas
             ORDER BY fecha_inicio DESC
         `;
         const [rows] = await db.execute(query, [usuarioEmpresaId]);
         return rows;
     }
-
     // Obtener asignaciones con información detallada de usuario y empresa
     static async getAllWithDetails() {
         const query = `

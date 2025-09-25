@@ -63,15 +63,24 @@ function calcularDiferenciaHoras(hora1, hora2) {
 
 
 
-const registrarEntrada = async (req, res) => {
+// Función genérica para registrar marcaciones (entrada/salida)
+const registrarMarcacion = async (req, res) => {
     try {
-        const { geo_lat, geo_lon, location_quality, ip_cliente, domicilio_prestacion } = req.body;
+        const { geo_lat, geo_lon, location_quality, ip_cliente, domicilio_prestacion, tipo } = req.body;
         const usuario_id = req.user?.id;
         
+        // Validar tipo de marcación
+        if (!['entrada', 'salida'].includes(tipo)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tipo de marcación no válido. Debe ser "entrada" o "salida".'
+            });
+        }
+
         if (!usuario_id || !geo_lat || !geo_lon || !location_quality || !ip_cliente) {
             return res.status(400).json({
                 success: false,
-                message: 'Faltan datos requeridos para registrar la entrada.'
+                message: `Faltan datos requeridos para registrar la ${tipo}.`
             });
         }
 
@@ -86,78 +95,84 @@ const registrarEntrada = async (req, res) => {
         const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
 
-        if (!turno){
+        if (!turno) {
             return res.status(404).json({
                 success: false,
                 message: 'No se encontró un turno asociado al usuario.'
             });
         }
 
-        
-
-        //verificamos si la hora actual es mayor a la hora de salida
-        const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
-        
-        // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
-        if (turno.fin < turno.inicio) {
-            // Si es así, la hora actual debe ser mayor que turno.inicio
-            if (horaActual < turno.inicio) {
+        // Validación de horario solo para entrada
+        if (tipo === 'entrada') {
+            const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
+            
+            // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
+            if (turno.fin < turno.inicio) {
+                // Si es así, la hora actual debe ser mayor que turno.inicio
+                if (horaActual < turno.inicio) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'No se puede registrar la entrada fuera del horario del turno.'
+                    });
+                }
+            } else if (horaActual > turno.fin) {
                 return res.status(400).json({
                     success: false,
                     message: 'No se puede registrar la entrada fuera del horario del turno.'
                 });
             }
-        } else if (horaActual > turno.fin) {
-            return res.status(400).json({
-                success: false,
-                message: 'No se puede registrar la entrada fuera del horario del turno.'
-            });
         }
 
         const result = await MarcacionesService.registrarMarcacion(
-            usuarioEmpresa.id, 'entrada', geo_lat, geo_lon, ip_cliente
-        ); 
-        const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
-        
-
-        
-        // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
-        const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);
+            usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
+        );
 
         if (!result.success) {
             return res.status(500).json(result);
         }
-        
-        
-        let lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id,usuarioEmpresa.empresa_id); // este dato se puede usar para guardar el lugar mas cercano a la marcacion asociado a la empresa.
 
-        if (domicilio_prestacion) {
-            await MarcacionesService.agregarDomicilioPrestacion(result.data.id, domicilio_prestacion);
-            lugar = null; // si se agrega un domicilio de prestación, no es necesario enviar el lugar aproximado
-        }else{
-            MarcacionesService.agregarLugarMarcacion(result.data.id, lugar.lugar_id);
+        const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
+        if (!marcacion) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la marcación registrada.'
+            });
         }
 
-
-
-
-
-        // Procesar notificación de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa, lugar, domicilio_prestacion)
-            .catch(error => console.error('Error en notificación:', error));
-
-
-
+        // Calcular diferencia de tiempo con respecto al turno
+        const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+        const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
+        
         if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
             result.tarde = true;
             result.diferencia = diferencia.formato;
         }
 
+        // Lógica específica para entrada (lugar y domicilio)
+        let lugar = null;
+        if (tipo === 'entrada') {
+            lugar = await UsuarioEmpresaModel.obtenerEmpresaLugarAproximado(result.data.id, usuarioEmpresa.empresa_id);
+
+            if (domicilio_prestacion) {
+                await MarcacionesService.agregarDomicilioPrestacion(result.data.id, domicilio_prestacion);
+                lugar = null; // si se agrega un domicilio de prestación, no es necesario enviar el lugar aproximado
+            } else if (lugar && lugar.lugar_id) {
+                MarcacionesService.agregarLugarMarcacion(result.data.id, lugar.lugar_id);
+            }
+        }
+
+        // Procesar notificación de forma asíncrona (no bloquea la respuesta)
+        const notificationArgs = tipo === 'entrada' 
+            ? [usuario_id, result.data.id, usuarioEmpresa, lugar, domicilio_prestacion]
+            : [usuario_id, result.data.id, usuarioEmpresa];
+            
+        NotificacionService.procesarNotificacionMarcacion(...notificationArgs)
+            .catch(error => console.error(`Error en notificación de ${tipo}:`, error));
 
         return res.status(200).json(result);
         
     } catch (error) {
-        console.error('Error en registrarEntrada:', error);
+        console.error(`Error en registrar${tipo.charAt(0).toUpperCase() + tipo.slice(1)}:`, error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor'
@@ -165,80 +180,15 @@ const registrarEntrada = async (req, res) => {
     }
 };
 
+// Wrapper functions para mantener compatibilidad con las rutas existentes
+const registrarEntrada = async (req, res) => {
+    req.body.tipo = 'entrada';
+    return await registrarMarcacion(req, res);
+};
+
 const registrarSalida = async (req, res) => {
-    try {
-        const { geo_lat, geo_lon, location_quality, ip_cliente } = req.body;
-        const usuario_id = req.user?.id;
-
-        if (!usuario_id || !geo_lat || !geo_lon || !location_quality || !ip_cliente) {
-            return res.status(400).json({
-                success: false,
-                message: 'Faltan datos requeridos para registrar la salida.'
-            });
-        }
-        
-
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
-        if (!usuarioEmpresa) {
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró la información de la empresa del usuario.'
-            });
-        }
-
-        const result = await MarcacionesService.registrarMarcacion(
-            usuarioEmpresa.id, 
-            'salida', 
-            geo_lat, 
-            geo_lon, 
-            ip_cliente
-        );
-
-
-        const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
-        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-
-        if (!turno){
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró un turno asociado al usuario.'
-            });
-        }
-
-        const marcacion = await MarcacionesService.obtenerMarcacionPorId(result.data.id);
-        // comparar turno.inicio con marcacion.hora ambos en formato str hh:mm:ss y ver la diferencia de tiempo
-        const diferencia = calcularDiferenciaHoras(turno.inicio, marcacion.data.hora);
-        
-        if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
-            result.tarde = true;
-            result.diferencia = diferencia.formato;
-        }
-
-        if (!marcacion) {
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró la marcación registrada.'
-            });
-        }
-        
-
-        if (!result.success) {
-            return res.status(500).json(result);
-        }
-
-        // Procesar notificación de salida de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id, usuarioEmpresa)
-            .catch(error => console.error('Error en notificación de salida:', error));
-
-        return res.status(200).json(result);
-        
-    } catch (error) {
-        console.error('Error en registrarSalida:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
+    req.body.tipo = 'salida';
+    return await registrarMarcacion(req, res);
 };
 
 const registrarColacion = async (req, res) => {
@@ -478,8 +428,8 @@ const obtenerMarcacionesPorEmpresa = async (req, res) => {
             });
         }
         
-        const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(rutEmpresa);
-        
+        const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(req.user.empresa_id);
+        console.log(result);
         if (!result.success) {
             return res.status(500).json(result);
         }
@@ -503,7 +453,7 @@ const obtenerMarcacionPorUserId = async (req, res) => {
         const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
         // se podria retornar por fecha igual en caso cuando existan muchas y mejoras a futuro
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id);
-        
+
         if (!result.success) {
             return res.status(500).json(result);
         }

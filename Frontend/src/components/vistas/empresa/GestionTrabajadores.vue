@@ -197,7 +197,7 @@
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(trabajador.ultimo_acceso) }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td v-if="!trabajador.esDeEst" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
                       <button @click="editarTrabajador(trabajador)" class="text-indigo-600 hover:text-indigo-900">Editar</button>
                     </div>
