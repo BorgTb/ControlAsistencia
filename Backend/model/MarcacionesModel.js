@@ -176,7 +176,7 @@ class Marcaciones {
         return rows;
     }
     async obtenerMarcacionesPorEmpresaId(empresa_id) {
-        const query = `SELECT marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
+        const query = `SELECT marcaciones.id as marcacion_id ,marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
 usuarios.nombre,usuarios.apellido_pat,usuarios.apellido_mat,usuarios.rut,usuarios.id as usuario_id,
 usuarios_empresas.rol_en_empresa,
 empresa.empresa_id

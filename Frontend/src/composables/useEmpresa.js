@@ -79,6 +79,17 @@ export function useEmpresa() {
     }
   };
 
+  const modificarMarcacion = async (marcacionId, datosMarcacion) => {
+    try {
+      console.log('datos marcacion', datosMarcacion)
+      const response = await EmpresaServices.modificarMarcacion(marcacionId, datosMarcacion);
+      return response;
+    } catch (error) {
+      console.error("Error al modificar marcación:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -86,6 +97,7 @@ export function useEmpresa() {
     obtenerMarcacionesPorEmpresa,
     obtenerReportesMarcaciones,
     aprobarReporte,
-    rechazarReporte
+    rechazarReporte,
+    modificarMarcacion
   };
 }

@@ -353,7 +353,9 @@
                       <button v-if="marcacion.modificada" 
                               class="text-purple-600 hover:text-purple-900">Historial</button>
                       <button v-else 
-                              class="text-yellow-600 hover:text-yellow-900">Modificar</button>
+                              class="text-yellow-600 hover:text-yellow-900"
+                              @click="abrirModalModificar(marcacion)"
+                              >Modificar</button>
                     </div>
                   </td>
                 </tr>
@@ -624,6 +626,145 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Modificar Marcación -->
+    <div v-if="mostrarModalModificar" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Header del Modal -->
+          <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Modificar Marcación</h3>
+            <button @click="cerrarModalModificar" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Contenido del Modal -->
+          <div v-if="marcacionSeleccionada" class="mt-6 space-y-6">
+            <!-- Información del Trabajador -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-900 mb-2">Información del Trabajador</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-sm text-gray-600">Nombre:</span>
+                  <p class="text-sm font-medium text-gray-900">{{ marcacionSeleccionada.nombreTrabajador }}</p>
+                </div>
+                <div>
+                  <span class="text-sm text-gray-600">RUT:</span>
+                  <p class="text-sm font-medium text-gray-900">{{ marcacionSeleccionada.rut }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario de Modificación -->
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-900 mb-4">Datos de la Marcación</h4>
+              <form @submit.prevent="guardarModificacion" class="space-y-4">
+                <!-- Fecha -->
+                <div>
+                  <label for="fechaModificacion" class="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha
+                  </label>
+                  <input
+                    id="fechaModificacion"
+                    type="date"
+                    v-model="formularioModificacion.fecha"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  />
+                </div>
+
+                <!-- Hora -->
+                <div>
+                  <label for="horaModificacion" class="block text-sm font-medium text-gray-700 mb-1">
+                    Hora
+                  </label>
+                  <input
+                    id="horaModificacion"
+                    type="time"
+                    v-model="formularioModificacion.hora"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    step="1"
+                    required
+                  />
+                </div>
+
+                <!-- Tipo de Marcación -->
+                <div>
+                  <label for="tipoModificacion" class="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Marcación
+                  </label>
+                  <select
+                    id="tipoModificacion"
+                    v-model="formularioModificacion.tipo"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="entrada">Entrada</option>
+                    <option value="salida">Salida</option>
+                    <option value="colacion">Colación</option>
+                    <option value="descanso">Descanso</option>
+                  </select>
+                </div>
+
+                <!-- Motivo de la Modificación -->
+                <div>
+                  <label for="motivoModificacion" class="block text-sm font-medium text-gray-700 mb-1">
+                    Motivo de la Modificación
+                  </label>
+                  <textarea
+                    id="motivoModificacion"
+                    v-model="formularioModificacion.motivo"
+                    rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Describe el motivo de la modificación..."
+                    required
+                  ></textarea>
+                </div>
+              </form>
+            </div>
+
+            <!-- Información Original -->
+            <div class="bg-yellow-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-900 mb-2">Información Original</h4>
+              <div class="grid grid-cols-3 gap-4">
+                <div>
+                  <span class="text-sm text-gray-600">Fecha:</span>
+                  <p class="text-sm font-medium text-gray-900">{{ marcacionSeleccionada.fecha }}</p>
+                </div>
+                <div>
+                  <span class="text-sm text-gray-600">Hora:</span>
+                  <p class="text-sm font-medium text-gray-900">{{ marcacionSeleccionada.hora }}</p>
+                </div>
+                <div>
+                  <span class="text-sm text-gray-600">Tipo:</span>
+                  <p class="text-sm font-medium text-gray-900">{{ marcacionSeleccionada.tipo }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones del Modal -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              <button
+                @click="guardarModificacion"
+                :disabled="procesandoModificacion"
+                class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200"
+              >
+                <span v-if="procesandoModificacion">Procesando...</span>
+                <span v-else>Enviar solicitud de modificación</span>
+              </button>
+              
+              <button @click="cerrarModalModificar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -635,7 +776,7 @@ import { useAuth } from '../../../composables/useAuth.js';
 const { esEst } = useAuth();
 
 // Composables
-const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones, aprobarReporte, rechazarReporte} = useEmpresa();
+const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones, aprobarReporte, rechazarReporte, modificarMarcacion} = useEmpresa();
 
 // Estados reactivos
 const marcaciones = ref([]);
@@ -700,6 +841,17 @@ const filtros = ref({
 // Variables para el modal de detalles
 const mostrarModalDetalles = ref(false);
 const solicitudSeleccionada = ref(null);
+
+// Variables para el modal de modificación
+const mostrarModalModificar = ref(false);
+const marcacionSeleccionada = ref(null);
+const procesandoModificacion = ref(false);
+const formularioModificacion = ref({
+  fecha: '',
+  hora: '',
+  tipo: '',
+  motivo: ''
+});
 
 // Función para obtener las iniciales del nombre
 const obtenerIniciales = (nombre, apellido) => {
@@ -808,7 +960,7 @@ const cargarMarcaciones = async () => {
           // Procesar cada marcación del usuario
           marcacionesUsuario.forEach((marcacion, index) => {
             const marcacionTransformada = {
-              id: `${usuarioId}_${index}`, // ID único combinando usuario_id e índice
+              id: marcacion.marcacion_id, // ID único combinando usuario_id e índice
               nombreTrabajador: `${marcacion.nombre} ${marcacion.apellido}`,
               rut: marcacion.rut,
               iniciales: obtenerIniciales(marcacion.nombre, marcacion.apellido),
@@ -912,6 +1064,76 @@ const cerrarModalDetalles = () => {
   solicitudSeleccionada.value = null;
 };
 
+// Funciones para el modal de modificación
+const abrirModalModificar = (marcacion) => {
+  marcacionSeleccionada.value = marcacion;
+  
+  // Llenar el formulario con los datos actuales
+  formularioModificacion.value = {
+    fecha: new Date(marcacion.fechaOriginal).toISOString().split('T')[0],
+    hora: marcacion.hora,
+    tipo: marcacion.tipoOriginal,
+    motivo: ''
+  };
+  
+  mostrarModalModificar.value = true;
+};
+
+const cerrarModalModificar = () => {
+  mostrarModalModificar.value = false;
+  marcacionSeleccionada.value = null;
+  formularioModificacion.value = {
+    fecha: '',
+    hora: '',
+    tipo: '',
+    motivo: ''
+  };
+};
+
+const guardarModificacion = async () => {
+  try {
+    procesandoModificacion.value = true;
+    
+    // Validar que todos los campos estén llenos
+    if (!formularioModificacion.value.fecha || !formularioModificacion.value.hora || 
+        !formularioModificacion.value.tipo || !formularioModificacion.value.motivo) {
+      alert('Por favor, complete todos los campos');
+      return;
+    }
+    
+    // Preparar los datos para enviar al backend
+    const datosModificacion = {
+      fecha: formularioModificacion.value.fecha,
+      hora: formularioModificacion.value.hora,
+      tipo: formularioModificacion.value.tipo,
+      motivo: formularioModificacion.value.motivo,
+      usuario_id: marcacionSeleccionada.value.usuario_id
+    };
+    
+    console.log(marcacionSeleccionada.value)
+    // Llamar a la función del composable
+    const response = await modificarMarcacion(marcacionSeleccionada.value.id, datosModificacion);
+    
+    if (response && response.success) {
+      alert('Marcación modificada exitosamente');
+      
+      // Recargar las marcaciones para ver los cambios
+      await cargarMarcaciones();
+      
+      // Cerrar el modal
+      cerrarModalModificar();
+    } else {
+      alert('Error al modificar la marcación: ' + (response?.message || 'Error desconocido'));
+    }
+    
+  } catch (error) {
+    console.error('Error al modificar marcación:', error);
+    alert('Error al modificar la marcación');
+  } finally {
+    procesandoModificacion.value = false;
+  }
+};
+
 // Funciones para aprobar y rechazar solicitudes
 const aprobarSolicitud = async (solicitud) => {
   try {
@@ -993,7 +1215,7 @@ const cargarSolicitudes = async () => {
             tipoDescripcion = tipoSolicitud === 'agregar' ? 'Agregar Marcación con Hora Específica' : 'Corrección de Hora';
             break;
           case 'marcacion_faltante':
-            tipoDescripción = 'Agregar Marcación Faltante';
+            tipoDescripcion = 'Agregar Marcación Faltante';
             tipoSolicitud = 'agregar'; // Forzar tipo agregar para marcaciones faltantes
             break;
           default:

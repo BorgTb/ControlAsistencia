@@ -198,6 +198,15 @@ class EmpresaServices{
       throw error
     }
   }
+
+  static async modificarMarcacion(marcacionId, datosMarcacion) {
+    try {
+      const response = await apiClient.put(`/marcaciones/userEmpresa/modificar/${marcacionId}`, datosMarcacion)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
 export default EmpresaServices;
