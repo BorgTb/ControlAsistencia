@@ -63,25 +63,35 @@
           <p v-if="errors.descripcion" class="text-xs text-red-600 mt-1">{{ errors.descripcion }}</p>
         </div>
 
-        <!-- Datos correctos (opcional) -->
+        <!-- Datos correctos (condicional) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Datos correctos (opcional)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Datos correctos {{ formData.tipoProblema === 'hora_incorrecta' ? '*' : '(opcional)' }}
+          </label>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs text-gray-600 mb-1">Fecha correcta</label>
+              <label class="block text-xs text-gray-600 mb-1">
+                Fecha correcta {{ formData.tipoProblema === 'hora_incorrecta' ? '*' : '' }}
+              </label>
               <input 
                 type="date" 
                 v-model="formData.fechaCorrecta"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                :required="formData.tipoProblema === 'hora_incorrecta'"
               />
+              <p v-if="errors.fechaCorrecta" class="text-xs text-red-600 mt-1">{{ errors.fechaCorrecta }}</p>
             </div>
             <div>
-              <label class="block text-xs text-gray-600 mb-1">Hora correcta</label>
+              <label class="block text-xs text-gray-600 mb-1">
+                Hora correcta {{ formData.tipoProblema === 'hora_incorrecta' ? '*' : '' }}
+              </label>
               <input 
                 type="time" 
                 v-model="formData.horaCorrecta"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                :required="formData.tipoProblema === 'hora_incorrecta'"
               />
+              <p v-if="errors.horaCorrecta" class="text-xs text-red-600 mt-1">{{ errors.horaCorrecta }}</p>
             </div>
           </div>
         </div>
@@ -180,8 +190,16 @@ const errorGeneral = ref('')
 
 // Computed para validación del formulario
 const isFormValid = computed(() => {
-  return formData.value.tipoProblema.trim() !== '' && 
-         formData.value.descripcion.trim() !== ''
+  const basicFieldsValid = formData.value.tipoProblema.trim() !== '' && 
+                          formData.value.descripcion.trim() !== ''
+  
+  if (formData.value.tipoProblema === 'hora_incorrecta') {
+    return basicFieldsValid && 
+           formData.value.fechaCorrecta.trim() !== '' &&
+           formData.value.horaCorrecta.trim() !== ''
+  }
+  
+  return basicFieldsValid
 })
 
 // Métodos
@@ -198,6 +216,17 @@ const validarFormulario = () => {
   
   if (formData.value.descripcion.trim().length < 10) {
     errors.value.descripcion = 'La descripción debe tener al menos 10 caracteres'
+  }
+  
+  // Solo validar fecha y hora correcta si el problema es "hora_incorrecta"
+  if (formData.value.tipoProblema === 'hora_incorrecta') {
+    if (!formData.value.fechaCorrecta.trim()) {
+      errors.value.fechaCorrecta = 'La fecha correcta es requerida para problemas de hora incorrecta'
+    }
+    
+    if (!formData.value.horaCorrecta.trim()) {
+      errors.value.horaCorrecta = 'La hora correcta es requerida para problemas de hora incorrecta'
+    }
   }
   
   return Object.keys(errors.value).length === 0

@@ -342,7 +342,8 @@
                     <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
                     <div class="flex flex-wrap gap-2 mt-1">
                       <p class="text-xs text-gray-500">Tipo: {{ solicitud.tipo }}</p>
-                      <p  v-if="solicitud.tipo === 'modificar'" class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
+                      <p v-if="solicitud.tipo === 'modificar'" class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
+                      <p v-if="solicitud.tipo === 'agregar' && solicitud.tipoMarcacionCorrecta" class="text-xs text-gray-500">Marcación solicitada: {{ capitalizarTipo(solicitud.tipoMarcacionCorrecta) }}</p>
                       <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
                         Hora solicitada: {{ solicitud.horaNueva }}
                       </p>
@@ -488,8 +489,8 @@
                 <div>
                   <label class="block text-sm font-medium text-gray-700">Tipo de Marcación Solicitada</label>
                   <span class="inline-flex mt-1 px-2 py-1 text-xs font-semibold rounded-full"
-                        :class="obtenerClaseTipo(solicitudSeleccionada.tipoMarcacion)">
-                    {{ capitalizarTipo(solicitudSeleccionada.tipoMarcacion) }}
+                        :class="obtenerClaseTipo(solicitudSeleccionada.tipoMarcacionCorrecta || solicitudSeleccionada.tipoMarcacion)">
+                    {{ capitalizarTipo(solicitudSeleccionada.tipoMarcacionCorrecta || solicitudSeleccionada.tipoMarcacion) }}
                   </span>
                 </div>
                 <div v-if="solicitudSeleccionada.horaNueva">
@@ -512,6 +513,10 @@
                     <div class="text-sm text-blue-700">
                       <p class="font-medium">Solicitud de Nueva Marcación</p>
                       <p>Se solicita agregar una marcación que no fue registrada en el sistema.</p>
+                      <p v-if="solicitudSeleccionada.tipoMarcacionCorrecta" class="mt-1">
+                        <span class="font-medium">Tipo solicitado:</span> 
+                        {{ capitalizarTipo(solicitudSeleccionada.tipoMarcacionCorrecta) }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -944,6 +949,7 @@ const cargarSolicitudes = async () => {
           horaOriginal: reporte.horaOriginal,
           horaNueva: reporte.hora_correcta,
           tipoMarcacion: reporte.tipoMarcacion,
+          tipoMarcacionCorrecta: reporte.tipo_marcacion_correcta, // Nuevo campo
           marcacion_id: reporte.marcacion_id,
           usuario_id: reporte.usuario_id,
           fecha_correcta: reporte.fecha_correcta,
