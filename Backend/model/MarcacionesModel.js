@@ -2,6 +2,7 @@ import pool from '../config/dbconfig.js';
 
 class Marcaciones {
     async createMarcacion(data) {
+        console.log("data en model marcaciones:",data);
         const query = `
             INSERT INTO marcaciones (
             usuario_empresa_id,
@@ -24,6 +25,30 @@ class Marcaciones {
             data.ip_origen,
             data.geo_lat,
             data.geo_lon
+        ];
+        const [result] = await pool.execute(query, values);
+        return result;
+    }
+
+    async insertarMarcacionManual(data) {
+        const query = `
+            INSERT INTO marcaciones (
+            usuario_empresa_id,
+            mandante_id,
+            fecha,
+            hora,
+            tipo,
+            hash
+            )
+                VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            data.usuario_empresa_id,
+            data.mandante_id || null,
+            data.fecha,
+            data.hora,
+            data.tipo,
+            data.hash,
         ];
         const [result] = await pool.execute(query, values);
         return result;

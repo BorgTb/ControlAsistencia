@@ -5,6 +5,65 @@ import UserModel from '../model/UserModel.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 
 class MarcacionesService {
+    // Función auxiliar para normalizar valores undefined/null
+    normalizeValue(value, parseAsFloat = false) {
+        if (value === undefined || value === null || value === '') {
+            return null;
+        }
+        
+        if (parseAsFloat) {
+            const parsed = parseFloat(value);
+            return isNaN(parsed) ? null : parsed;
+        }
+        
+        return value;
+    }
+
+    async insertarMarcacionManual(usuario_empresa_id, tipo, fecha, hora) {
+        try {
+
+
+
+            // validar si el usuario que marca esta ligado a una est si es asi agregar mandante_id en la marcacion 
+            const asignaciones = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_empresa_id);
+            console.log('Asignaciones encontradas para el usuario:', asignaciones);
+
+            // Validar y normalizar datos
+            const marcacionData = {
+                usuario_empresa_id: usuario_empresa_id,
+                mandante_id: asignaciones.length > 0 ? asignaciones[0].mandante_id : null,
+                fecha: fecha,
+                hora: hora,
+                tipo: tipo,
+                hash: crypto.createHash('sha256').
+                    update(`${usuario_empresa_id}-${tipo}-${Math.random()}-${Date.now()}`).
+                    digest('hex'),
+            };
+            // Crear la marcación usando el modelo
+            const result = await MarcacionesModel.insertarMarcacionManual(marcacionData);
+            return {
+                success: true,
+                message: `Marcación ${tipo} insertada correctamente`,
+                data: {
+                    id: result.insertId,
+                    tipo: tipo,
+                    hash: marcacionData.hash,
+                }
+            };
+        } catch (error) {
+            console.error('Error al insertar marcación manual:', error);
+            return {
+                success: false,
+                message: 'Error interno del servidor al insertar la marcación',
+                error: error.message
+            };
+        }
+    }
+
+
+
+
+
     async registrarMarcacion(usuario_id, tipo, geo_lat, geo_lon, ip_origen) {
         try {
             // Generar hash único para la marcación
@@ -12,18 +71,19 @@ class MarcacionesService {
             const hash = crypto.createHash('sha256').update(hashData).digest('hex');
             /* usuario_id es de la tabla usuario_empresa*/
 
-            
             // Preparar datos para insertar (sin fecha y hora, la BD las manejará)
+            // Usar función auxiliar para normalizar valores
             const marcacionData = {
                 usuario_id,
                 fecha: null, // La BD asignará CURRENT_DATE
                 hora: null,  // La BD asignará CURRENT_TIME
                 tipo,
                 hash,
-                ip_origen,
-                geo_lat: parseFloat(geo_lat),
-                geo_lon: parseFloat(geo_lon)
+                ip_origen: this.normalizeValue(ip_origen),
+                geo_lat: this.normalizeValue(geo_lat, true),
+                geo_lon: this.normalizeValue(geo_lon, true)
             };
+            
             // validar si el usuario que marca esta ligado a una est si es asi agregar mandante_id en la marcacion 
             const asignaciones = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_id);
             console.log('Asignaciones encontradas para el usuario:', asignaciones);

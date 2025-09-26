@@ -234,11 +234,9 @@ const obtenerReportesMarcaciones = async (req, res) => {
             )
         ).then(reportesArrays => reportesArrays.flat());
         
-        console.log("reportes:", reportes);
-        console.log("reportesTrabajadoresDeEst:", reportesTrabajadoresDeEst);
-        // unir ambos arrays de reportes
+       // unir ambos arrays de reportes
         reportes.push(...reportesTrabajadoresDeEst);
-        console.log("reportes totales:", reportes);
+
         // agregar info del trabajador a cada reporte
         // para cada reporte, incluir info de la marcacion
         for (let reporte of reportes) {   
@@ -284,27 +282,30 @@ const aprobarCambioMarcacion = async (req, res) => {
         console.log("reporte a aprobar:", reporte);
         // actualizar marcacion
         //await ReportesModel.aprobar(reporteId);
-        
-
-       /*
-
-       
-        if (reporte.fecha_correcta){
-            await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
+        if (reporte.tipo === 'modificar') {
+            if (reporte.fecha_correcta){
+                await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
+            }
+            if (reporte.hora_correcta){
+                await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
+            }
+            await ReporteMarcacionesModel.aprobar(reporteId);
+        } else if (reporte.tipo === 'agregar') {
+            // crear nueva marcacion
+            const nuevaMarcacion = await MarcacionesServices.insertarMarcacionManual(
+                reporte.usuario_id,
+                reporte.tipo_marcacion_correcta,
+                reporte.fecha_correcta,
+                reporte.hora_correcta);
+            console.log("nueva marcacion creada:", nuevaMarcacion);
         }
+                
 
-        if (reporte.hora_correcta){
-            await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
-        }
-
-        ReporteMarcacionesModel.aprobar(reporteId);
+        await ReporteMarcacionesModel.aprobar(reporteId);
 
         const reporteActualizado = await ReportesModel.findById(reporteId);
 
-        console.log("reportes actualizado:",reporteActualizado);
-        */
-
-        res.status(500).json({ success: false, message: "Reporte en desarrollo", data: null });
+        res.status(200).json({ success: true, message: "Reporte aprobado", data: reporteActualizado });
     } catch (error) {
         console.error("Error aprobando reporte de marcación:", error);
         res.status(500).json({ success: false, message: "Error interno del servidor" });
