@@ -9,6 +9,9 @@
             <p class="text-gray-600 mt-2">Registro completo de todas tus marcaciones de asistencia</p>
           </div>
           <div class="flex space-x-3">
+            <button @click="abrirModalAgregarMarcacion" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
+                Solicitar Marcación
+            </button>
             <button @click="exportarHistorial" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
               Exportar CSV
             </button>
@@ -261,6 +264,13 @@
       @confirm="manejarEnvioReporte" 
       @cancel="cerrarModalReporte" 
     />
+    
+    <!-- Modal de Solicitud de Marcación -->
+    <AgregarMarcacionModal 
+      v-if="showAgregarModal" 
+      @confirm="manejarSolicitudMarcacion" 
+      @cancel="cerrarModalAgregarMarcacion" 
+    />
   </div>
 </template>
 
@@ -268,7 +278,9 @@
 import { ref, computed, onMounted } from 'vue'
 import AsistenciaService from '../../services/AsistenciaService.js'
 import ReporteModal from '../modals/ReporteModal.vue'
+import AgregarMarcacionModal from '../modals/AgregarMarcacionModal.vue'
 import { useReportes } from '../../composables/useReportes.js'
+import { useMarcaciones } from '../../composables/useMarcaciones.js'
 
 // Estados reactivos
 const marcaciones = ref([])
@@ -283,6 +295,14 @@ const {
   cerrarModalReporte, 
   enviarReporte 
 } = useReportes()
+
+// Composable de marcaciones
+const { 
+  showAgregarModal, 
+  abrirModalAgregarMarcacion, 
+  cerrarModalAgregarMarcacion, 
+  solicitarMarcacion 
+} = useMarcaciones()
 
 // Filtros
 const filtros = ref({
@@ -515,6 +535,24 @@ const manejarEnvioReporte = async (reporteData) => {
     // Mostrar mensaje de error
     console.error('Error enviando reporte:', result.error)
     alert('Error al enviar el reporte: ' + result.error)
+  }
+}
+
+// Manejador del modal de solicitud de marcación
+const manejarSolicitudMarcacion = async (solicitudData) => {
+  const result = await solicitarMarcacion(solicitudData)
+  
+  if (result.success) {
+    // Mostrar mensaje de éxito
+    console.log('Solicitud de marcación enviada exitosamente:', result.message)
+    alert('Solicitud enviada correctamente. Será revisada por el equipo de supervisión.')
+    
+    // Opcional: Recargar el historial si se quiere mostrar solicitudes pendientes
+    // await cargarHistorial()
+  } else {
+    // Mostrar mensaje de error
+    console.error('Error enviando solicitud:', result.error)
+    alert('Error al enviar la solicitud: ' + result.error)
   }
 }
 

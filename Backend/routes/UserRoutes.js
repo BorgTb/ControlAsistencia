@@ -11,6 +11,7 @@ const router = express.Router();
 router.put('/email', AuthService.verifyToken, UserController.updateEmail);
 router.put('/password', AuthService.verifyToken, UserController.updatePassword);
 router.post('/reportes/', AuthService.verifyToken, UserController.createReporte);
+router.post('/reportes/solicitud', AuthService.verifyToken, UserController.createSolicitudMarcacion);
 
 /**
  * Rutas exclusivas para administradores

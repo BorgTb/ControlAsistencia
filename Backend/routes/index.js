@@ -3,7 +3,6 @@ import MarcacionesRoutes from "./MarcacionesRoutes.js";
 import UserRoutes from "./UserRoutes.js";
 import EmpresasRoutes from "./EmpresasRoutes.js";
 import AdminRoutes from "./AdminRoutes.js";
-import ReportesRoutes from "./ReportesRoutes.js";
 import TestRoutes from "./TestRoutes.js";
 import UserEmpresaRoutes from "./UserEmpresa.js";
 
@@ -12,7 +11,6 @@ const router = {
     marcaciones: MarcacionesRoutes,
     users: UserRoutes,
     userEmpresa: UserEmpresaRoutes,
-    reportes: ReportesRoutes,
     admin: AdminRoutes,
     empresas: EmpresasRoutes,
     test: TestRoutes

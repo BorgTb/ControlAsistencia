@@ -101,6 +101,60 @@ const createReporte = async (req, res) => {
 
 
 
+const createSolicitudMarcacion = async (req, res) => {
+    const solicitudData = req.body;
+    const user = req.user;
+
+    try {
+        // Aquí iría la lógica para guardar la solicitud de marcación en la base de datos
+        console.log(solicitudData);
+
+
+        /*
+            {
+                tipo: 'entrada',
+                fecha: '2025-09-25',
+                hora: '21:18',
+                motivo: 'olvido_marcar',
+                descripcion: '11111111111111111111111111',
+                geo_lat: -35.4578,
+                geo_lon: -71.6751,
+                estado: 'pendiente',
+                fecha_solicitud: '2025-09-26T00:56:14.631Z'
+            }
+        */
+        
+        const nuevoReporte = {
+            marcacion_id: null, // No aplica en solicitudes de marcación
+            usuario_id: await UsuarioEmpresaModel.obtenerEmpresaIdByUsuarioId(user.id),
+            tipo_problema: solicitudData.motivo,
+            descripcion: solicitudData.descripcion,
+            fecha_correcta: solicitudData.fecha,
+            hora_correcta: solicitudData.hora,
+            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
+        };
+
+        // Guardar el reporte en la base de datos
+        const reporteGuardado = await ReportesModel.create(nuevoReporte);
+
+        res.status(201).json({
+            success: true,
+            message: 'Solicitud de marcación creada correctamente',
+            data: reporteGuardado
+        });
+    } catch (error) {
+        console.error('Error al crear la solicitud de marcación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al enviar la solicitud de marcación'
+        });
+    }
+}
+
+
+
+
+
 /**
  * Crea un usuario administrador.
  * Este endpoint permite registrar un nuevo usuario con el rol 'admin'.
@@ -137,7 +191,8 @@ const UserController = {
     updatePassword,
     createReporte,
     createAdmin,
-    listAdmins
+    listAdmins,
+    createSolicitudMarcacion
 }
 
 

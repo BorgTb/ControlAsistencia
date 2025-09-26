@@ -139,6 +139,45 @@ class ReportesService {
       }
     }
   }
+
+  /**
+   * Envía una solicitud de marcación
+   * @param {Object} solicitudData - Datos de la solicitud de marcación
+   * @returns {Promise<Object>} Respuesta del servidor
+   */
+  async enviarSolicitudMarcacion(solicitudData) {
+    try {
+      console.log('=== REPORTES SERVICE - SOLICITUD MARCACIÓN ===')
+      console.log('Datos de la solicitud:', JSON.stringify(solicitudData, null, 2))
+      console.log('=============================================')
+
+      const response = await apiClient.post('/user/reportes/solicitud', {
+        tipo: solicitudData.tipo,
+        fecha: solicitudData.fecha,
+        hora: solicitudData.hora,
+        motivo: solicitudData.motivo,
+        descripcion: solicitudData.descripcion,
+        geo_lat: solicitudData.geo_lat,
+        geo_lon: solicitudData.geo_lon,
+        estado: solicitudData.estado || 'pendiente',
+        fecha_solicitud: solicitudData.fecha_solicitud || new Date().toISOString()
+      })
+      
+      return {
+        success: true,
+        data: response.data,
+        message: response.data.message || 'Solicitud de marcación enviada correctamente'
+      }
+    } catch (error) {
+      console.error('Error enviando solicitud de marcación:', error)
+      
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al enviar solicitud de marcación',
+        status: error.response?.status
+      }
+    }
+  }
 }
 
 // Exportar una instancia del servicio
