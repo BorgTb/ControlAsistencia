@@ -424,6 +424,114 @@ class MailService {
 
         return await this.enviarCorreo(usuario.email, asunto, contenidoHTML);
     }
+    async enviarNotificacionModificacionMarcacion(usuarioEmpresa, marcacionOriginal, data) {
+        /**
+         * @params {object} usuarioEmpresa - Objeto con los datos del usuario y empresa
+         * @params {object} marcacionOriginal - Objeto con los datos de la marcación original
+         * @params {object} data - Objeto con los nuevos datos de la marcación
+         * @params {string} reporteId - ID del reporte para generar los enlaces de acción
+         */
+        
+        const nombreCompleto = `${usuarioEmpresa.usuario_nombre} ${usuarioEmpresa.usuario_apellido_pat} ${usuarioEmpresa.usuario_apellido_mat}`;
+        const rutFormateado = usuarioEmpresa.usuario_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + usuarioEmpresa.usuario_rut.slice(-1);
+        
+        // Generar enlaces de acción
+        const enlaceAceptar = `${process.env.FRONTEND_URL}/responder-modificacion?token=&action=accept`;
+        const enlaceRechazar = `${process.env.FRONTEND_URL}/responder-modificacion?token=&action=reject`;
+        
+        const asunto = 'Solicitud de Modificación de Marcación - Acción Requerida';
+        
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Solicitud de Modificación de Marcación</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 20px; background-color: #f9f9f9; }
+                    .modificacion-info { background-color: #fff3e0; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
+                    .original-info { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
+                    .nueva-info { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50; }
+                    .warning { background-color: #ffecb3; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFC107; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+                    .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+                    .actions { text-align: center; margin: 30px 0; }
+                    .button { display: inline-block; padding: 15px 30px; margin: 10px; text-decoration: none; border-radius: 5px; font-weight: bold; color: white; }
+                    .button-accept { background-color: #4CAF50; }
+                    .button-accept:hover { background-color: #45a049; }
+                    .button-reject { background-color: #f44336; }
+                    .button-reject:hover { background-color: #da190b; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Solicitud de Modificación de Marcación</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Estimado ${nombreCompleto},</h2>
+                        <p>Se ha realizado una solicitud de modificación para una de sus marcaciones. <strong>Tiene 48 horas para aceptar o rechazar esta modificación.</strong></p>
+                        
+                        <div class="empresa-info">
+                            <h3>Información de la empresa:</h3>
+                            <p><strong>Empresa:</strong> ${usuarioEmpresa.empresa_nombre}</p>
+                            <p><strong>RUT Empresa:</strong> ${usuarioEmpresa.empresa_rut}</p>
+                        </div>
+
+                        <div class="original-info">
+                            <h3>📋 Datos originales de la marcación:</h3>
+                            <p><strong>Fecha:</strong> ${new Date(marcacionOriginal.fecha).toLocaleDateString('es-CL')}</p>
+                            <p><strong>Hora:</strong> ${marcacionOriginal.hora}</p>
+                            <p><strong>Tipo:</strong> ${marcacionOriginal.tipo}</p>
+                            <p><strong>Hash:</strong> ${marcacionOriginal.hash}</p>
+                        </div>
+                        
+                        <div class="nueva-info">
+                            <h3>✏️ Datos propuestos para la modificación:</h3>
+                            <p><strong>Nueva Fecha:</strong> ${new Date(data.fecha).toLocaleDateString('es-CL')}</p>
+                            <p><strong>Nueva Hora:</strong> ${data.hora}</p>
+                            <p><strong>Nuevo Tipo:</strong> ${data.tipo}</p>
+                            ${data.motivo ? `<p><strong>Motivo de la modificación:</strong> ${data.motivo}</p>` : ''}
+                        </div>
+                        
+                        <div class="modificacion-info">
+                            <h3>Información del trabajador:</h3>
+                            <p><strong>Nombre:</strong> ${nombreCompleto}</p>
+                            <p><strong>RUT:</strong> ${rutFormateado}</p>
+                            <p><strong>Email:</strong> ${usuarioEmpresa.usuario_email}</p>
+                            <p><strong>Rol en empresa:</strong> ${usuarioEmpresa.rol_en_empresa}</p>
+                        </div>
+                        
+                        <div class="actions">
+                            <h3>Seleccione una opción:</h3>
+                            <a href="${enlaceAceptar}" class="button button-accept">✅ ACEPTAR MODIFICACIÓN</a>
+                            <a href="${enlaceRechazar}" class="button button-reject">❌ RECHAZAR MODIFICACIÓN</a>
+                        </div>
+                        
+                        <div class="warning">
+                            <h3>⚠️ IMPORTANTE:</h3>
+                            <p><strong>Plazo para respuesta:</strong> 48 horas desde la recepción de este correo.</p>
+                            <p><strong>Acción automática:</strong> Si no se recibe respuesta dentro del plazo establecido, el sistema aceptará automáticamente la modificación.</p>
+                            <p><strong>Enlaces activos:</strong> Los enlaces de arriba son seguros y lo dirigirán al sistema para confirmar su decisión.</p>
+                        </div>
+                        
+                        <p>Si tiene alguna duda sobre esta modificación o necesita más información, contacte inmediatamente con el administrador del sistema.</p>
+                        
+                        <p><strong>Nota:</strong> Este es un correo de notificación automático. Si considera que esta solicitud es errónea o fraudulenta, reporte inmediatamente la situación.</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        return await this.enviarCorreo(usuarioEmpresa.usuario_email, asunto, contenidoHTML);
+    }
 
     // Método auxiliar para convertir HTML a texto plano
     htmlToText(html) {

@@ -138,6 +138,34 @@ class NotificacionService {
         }
     }
 
+    async procesarNotificacionModificacionMarcacion(usuario, marcacionOriginal, datosModificados) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+            // Enviar notificación
+            const estado = await MailService.enviarNotificacionModificacionMarcacion(
+                usuario,
+                marcacionOriginal,
+                datosModificados
+            );
+            return estado;
+        } catch (error) {
+            console.error('Error al procesar notificación de modificación de marcación:', error);
+            return {
+                success: false,
+                message: 'Error al procesar notificación de modificación de marcación',
+                error: error.message
+            };
+        }
+    }
+
 
 
 }

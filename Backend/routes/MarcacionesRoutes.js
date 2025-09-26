@@ -19,6 +19,7 @@ router.get('/:id', AuthService.verifyToken, MarcacionesController.obtenerMarcaci
 router.get('/userEmpresa/todas', AuthService.verifyToken, MarcacionesController.obtenerTodasLasMarcaciones);
 router.get('/userEmpresa/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorFecha );
 router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
+router.put('/userEmpresa/modificar/:id', AuthService.verifyToken, MarcacionesController.modificarMarcacionPorId);
 
 
 export default router;

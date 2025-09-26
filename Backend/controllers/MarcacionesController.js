@@ -469,6 +469,55 @@ const obtenerMarcacionPorUserId = async (req, res) => {
     }
 };
 
+const modificarMarcacionPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fecha, hora, tipo, motivo, usuario_id } = req.body;
+
+        // Validar datos requeridos
+        if (!fecha || !hora || !tipo || !motivo || !usuario_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan datos requeridos: fecha, hora, tipo, motivo y usuario_id son obligatorios'
+            });
+        }
+
+        // Obtener la marcación original antes de modificarla
+        const marcacionOriginal = await MarcacionesService.obtenerMarcacionPorId(id);
+        if (!marcacionOriginal || !marcacionOriginal.success) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marcación no encontrada'
+            });
+        }
+
+        // Enviar notificación por correo de forma asíncrona
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        console.log('usuarioEmpresa', usuarioEmpresa);
+        console.log(marcacionOriginal);
+        console.log(req.body);
+
+        NotificacionService.procesarNotificacionModificacionMarcacion(
+            usuarioEmpresa,marcacionOriginal.data, req.body
+        ).catch(error => console.error('Error en notificación de modificación de marcación:', error));
+
+
+
+        return res.status(501).json({
+            success: true,
+            message: 'En desarrollo',
+        });
+
+    } catch (error) {
+        console.error('Error en modificarMarcacionPorId:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+}
+        
+
 const MarcacionesController = {
     registrarEntrada,
     registrarSalida,
@@ -479,7 +528,8 @@ const MarcacionesController = {
     obtenerTodasLasMarcaciones,
     obtenerMarcacionesPorFecha,
     obtenerMarcacionesPorEmpresa,
-    obtenerMarcacionPorUserId
+    obtenerMarcacionPorUserId,
+    modificarMarcacionPorId
 }
 
 export default MarcacionesController;
