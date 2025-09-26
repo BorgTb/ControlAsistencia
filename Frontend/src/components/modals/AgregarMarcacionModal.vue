@@ -36,13 +36,13 @@
               :key="tipo.value"
               class="relative flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200"
               :class="{
-                'border-indigo-500 bg-indigo-50': formData.tipo === tipo.value,
-                'border-gray-300': formData.tipo !== tipo.value
+                'border-indigo-500 bg-indigo-50': formData.tipo_marcacion_correcta === tipo.value,
+                'border-gray-300': formData.tipo_marcacion_correcta !== tipo.value
               }"
             >
               <input 
                 type="radio" 
-                v-model="formData.tipo" 
+                v-model="formData.tipo_marcacion_correcta" 
                 :value="tipo.value"
                 class="sr-only"
               />
@@ -51,7 +51,7 @@
                 <span class="text-sm font-medium text-gray-900">{{ tipo.label }}</span>
               </div>
               <div 
-                v-if="formData.tipo === tipo.value" 
+                v-if="formData.tipo_marcacion_correcta === tipo.value" 
                 class="absolute top-1 right-1 text-indigo-600"
               >
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -260,7 +260,7 @@ const {
 
 // Estado del formulario
 const formData = ref({
-  tipo: '',
+  tipo_marcacion_correcta: '',
   fecha: '',
   hora: '',
   motivo: '',
@@ -284,7 +284,7 @@ const fechaMaxima = getFechaMaxima()
 
 // Computed para validación del formulario
 const isFormValid = computed(() => {
-  return formData.value.tipo.trim() !== '' && 
+  return formData.value.tipo_marcacion_correcta.trim() !== '' && 
          formData.value.fecha.trim() !== '' &&
          formData.value.hora.trim() !== '' &&
          formData.value.motivo.trim() !== '' &&
@@ -343,7 +343,7 @@ const enviarSolicitud = async () => {
   
   try {
     const solicitudData = {
-      tipo: formData.value.tipo,
+      tipo_marcacion_correcta: formData.value.tipo_marcacion_correcta,
       fecha: formData.value.fecha,
       hora: formData.value.hora,
       motivo: formData.value.motivo,

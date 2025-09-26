@@ -4,10 +4,10 @@ class ReportesModel {
     
     // Crear un nuevo reporte de marcación
     static async create(data) {
-        const { marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta } = data;
+        const { marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta } = data;
         const [result] = await pool.query(
-            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, ?, "PENDIENTE", CURRENT_TIMESTAMP)',
-            [marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null]
+            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "PENDIENTE", CURRENT_TIMESTAMP)',
+            [marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null, tipo_marcacion_correcta || null]
         );
         return result.insertId;
     }
@@ -66,6 +66,15 @@ class ReportesModel {
         const [rows] = await pool.query(
             'SELECT * FROM reportes_marcaciones WHERE tipo = ? ORDER BY fecha_reporte DESC',
             [tipo]
+        );
+        return rows;
+    }
+
+    // Obtener reportes por tipo de marcación correcta
+    static async findByTipoMarcacionCorrecta(tipo_marcacion_correcta) {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE tipo_marcacion_correcta = ? ORDER BY fecha_reporte DESC',
+            [tipo_marcacion_correcta]
         );
         return rows;
     }
@@ -148,6 +157,7 @@ class ReportesModel {
                 rm.descripcion,
                 rm.fecha_correcta,
                 rm.hora_correcta,
+                rm.tipo_marcacion_correcta,
                 rm.estado,
                 rm.fecha_reporte,
                 u.nombre as usuario_nombre,
@@ -231,6 +241,7 @@ class ReportesModel {
                 rm.descripcion,
                 rm.fecha_correcta,
                 rm.hora_correcta,
+                rm.tipo_marcacion_correcta,
                 rm.estado,
                 rm.fecha_reporte,
                 u.nombre as usuario_nombre,
@@ -261,6 +272,11 @@ class ReportesModel {
         if (filtros.tipo) {
             query += ' AND rm.tipo = ?';
             params.push(filtros.tipo);
+        }
+        
+        if (filtros.tipo_marcacion_correcta) {
+            query += ' AND rm.tipo_marcacion_correcta = ?';
+            params.push(filtros.tipo_marcacion_correcta);
         }
         
         if (filtros.fecha_desde) {
@@ -325,6 +341,20 @@ class ReportesModel {
         return rows;
     }
 
+    // Contar reportes por tipo de marcación correcta
+    static async countByTipoMarcacionCorrecta() {
+        const [rows] = await pool.query(`
+            SELECT 
+                tipo_marcacion_correcta,
+                COUNT(*) as total
+            FROM reportes_marcaciones 
+            WHERE tipo_marcacion_correcta IS NOT NULL
+            GROUP BY tipo_marcacion_correcta
+            ORDER BY total DESC
+        `);
+        return rows;
+    }
+
     // Contar reportes por estado
     static async countByEstado() {
         const [rows] = await pool.query(`
@@ -345,9 +375,10 @@ class ReportesModel {
                 estado,
                 tipo,
                 tipo_problema,
+                tipo_marcacion_correcta,
                 COUNT(*) as total
             FROM reportes_marcaciones 
-            GROUP BY estado, tipo, tipo_problema
+            GROUP BY estado, tipo, tipo_problema, tipo_marcacion_correcta
             ORDER BY estado, total DESC
         `);
         return rows;
@@ -362,6 +393,7 @@ class ReportesModel {
                 COUNT(DISTINCT marcacion_id) as marcaciones_reportadas,
                 COUNT(DISTINCT tipo) as tipos_distintos,
                 COUNT(DISTINCT tipo_problema) as tipos_problemas_distintos,
+                COUNT(DISTINCT tipo_marcacion_correcta) as tipos_marcacion_correcta_distintos,
                 SUM(CASE WHEN estado = 'PENDIENTE' THEN 1 ELSE 0 END) as pendientes,
                 SUM(CASE WHEN estado = 'APROBADA' THEN 1 ELSE 0 END) as aprobadas,
                 SUM(CASE WHEN estado = 'RECHAZADA' THEN 1 ELSE 0 END) as rechazadas,
@@ -379,6 +411,7 @@ class ReportesModel {
                 COUNT(*) as total_reportes,
                 COUNT(DISTINCT tipo) as tipos_distintos,
                 COUNT(DISTINCT tipo_problema) as tipos_problemas,
+                COUNT(DISTINCT tipo_marcacion_correcta) as tipos_marcacion_correcta_distintos,
                 MIN(fecha_reporte) as primer_reporte,
                 MAX(fecha_reporte) as ultimo_reporte
             FROM reportes_marcaciones

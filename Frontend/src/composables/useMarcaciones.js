@@ -82,8 +82,8 @@ export function useMarcaciones() {
     const errores = {}
     
     // Validar campos requeridos
-    if (!solicitudData.tipo || solicitudData.tipo.trim() === '') {
-      errores.tipo = 'El tipo de marcación es requerido'
+    if (!solicitudData.tipo_marcacion_correcta || solicitudData.tipo_marcacion_correcta.trim() === '') {
+      errores.tipo_marcacion_correcta = 'El tipo de marcación es requerido'
     }
     
     if (!solicitudData.fecha || solicitudData.fecha.trim() === '') {

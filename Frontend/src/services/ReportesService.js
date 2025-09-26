@@ -163,7 +163,8 @@ class ReportesService {
         geo_lon: solicitudData.geo_lon,
         estado: solicitudData.estado || 'pendiente',
         fecha_solicitud: solicitudData.fecha_solicitud || new Date().toISOString(),
-        tipo: solicitudData.tipo || null
+        tipo: solicitudData.tipo || null,
+        tipo_marcacion_correcta: solicitudData.tipo_marcacion_correcta || null
       })
       
       return {

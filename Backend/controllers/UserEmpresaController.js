@@ -265,6 +265,10 @@ const aprobarCambioMarcacion = async (req, res) => {
         // actualizar marcacion
         //await ReportesModel.aprobar(reporteId);
 
+
+        //verificar el tipo de reporte, agregar o modificar la marcacion segun corresponda
+        
+       
         if (reporte.fecha_correcta){
             await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
         }

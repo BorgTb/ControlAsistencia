@@ -47,6 +47,9 @@
           <p v-if="errors.tipoProblema" class="text-xs text-red-600 mt-1">{{ errors.tipoProblema }}</p>
         </div>
 
+
+        
+
         <!-- Descripción del problema -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Descripción del problema *</label>

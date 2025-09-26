@@ -81,7 +81,7 @@ const createReporte = async (req, res) => {
             fecha_correcta: reporteData.fecha_correcta,
             hora_correcta: reporteData.hora_correcta,
             fecha_creacion: DateTime.now().setZone('America/Santiago').toISO(),
-            tipo: reporteData.tipo // 'modificar' para reportes de marcación
+            tipo: reporteData.tipo // 'modificar' para reportes de marcación,
         };
 
         // Guardar el reporte en la base de datos
@@ -134,7 +134,8 @@ const createSolicitudMarcacion = async (req, res) => {
             fecha_correcta: solicitudData.fecha,
             hora_correcta: solicitudData.hora,
             fecha_creacion: DateTime.now().setZone('America/Santiago').toISO(),
-            tipo: solicitudData.tipo // 'agregar' para solicitudes de marcación
+            tipo: solicitudData.tipo, // 'agregar' para solicitudes de marcación,
+            tipo_marcacion_correcta: solicitudData.tipo_marcacion_correcta || null,
         };
 
         // Guardar el reporte en la base de datos

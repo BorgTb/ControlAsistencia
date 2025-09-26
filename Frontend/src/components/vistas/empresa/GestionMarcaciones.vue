@@ -342,7 +342,7 @@
                     <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
                     <div class="flex flex-wrap gap-2 mt-1">
                       <p class="text-xs text-gray-500">Tipo: {{ solicitud.tipo }}</p>
-                      <p class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
+                      <p  v-if="solicitud.tipo === 'modificar'" class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
                       <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
                         Hora solicitada: {{ solicitud.horaNueva }}
                       </p>
@@ -441,9 +441,9 @@
               <p class="text-sm text-gray-700 leading-relaxed">{{ solicitudSeleccionada.descripcion }}</p>
             </div>
 
-            <!-- Información de la Marcación -->
-            <div class="bg-green-50 p-4 rounded-lg">
-              <h4 class="font-medium text-gray-900 mb-3">Información de la Marcación</h4>
+            <!-- Información de la Marcación - Solo para MODIFICACIONES -->
+            <div v-if="solicitudSeleccionada.tipo === 'modificar'" class="bg-green-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Información de la Marcación Existente</h4>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700">ID Marcación</label>
@@ -458,20 +458,63 @@
                 </div>
                 <div v-if="solicitudSeleccionada.horaOriginal">
                   <label class="block text-sm font-medium text-gray-700">Hora Original</label>
-                  <p class="mt-1 text-sm text-gray-900">{{ solicitudSeleccionada.horaOriginal }}</p>
+                  <p class="mt-1 text-sm text-red-600">{{ solicitudSeleccionada.horaOriginal }}</p>
                 </div>
               </div>
               
-              <!-- Hora Solicitada (si existe) -->
-              <div v-if="solicitudSeleccionada.horaNueva" class="mt-4">
-                <label class="block text-sm font-medium text-gray-700">Hora Solicitada</label>
-                <p class="mt-1 text-sm text-green-600 font-medium">{{ solicitudSeleccionada.horaNueva }}</p>
-              </div>
+              <!-- Cambios Solicitados para Modificaciones -->
+              <div class="mt-4 pt-4 border-t border-green-200">
+                <h5 class="font-medium text-gray-900 mb-3 text-sm">Cambios Solicitados</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <!-- Hora Solicitada (si existe) -->
+                  <div v-if="solicitudSeleccionada.horaNueva">
+                    <label class="block text-sm font-medium text-gray-700">Nueva Hora Solicitada</label>
+                    <p class="mt-1 text-sm text-green-600 font-medium">{{ solicitudSeleccionada.horaNueva }}</p>
+                  </div>
 
-              <!-- Fecha Correcta (si existe) -->
-              <div v-if="solicitudSeleccionada.fecha_correcta" class="mt-4">
-                <label class="block text-sm font-medium text-gray-700">Fecha Correcta Solicitada</label>
-                <p class="mt-1 text-sm text-green-600 font-medium">{{ new Date(solicitudSeleccionada.fecha_correcta).toLocaleDateString('es-CL') }}</p>
+                  <!-- Fecha Correcta (si existe) -->
+                  <div v-if="solicitudSeleccionada.fecha_correcta">
+                    <label class="block text-sm font-medium text-gray-700">Nueva Fecha Solicitada</label>
+                    <p class="mt-1 text-sm text-green-600 font-medium">{{ new Date(solicitudSeleccionada.fecha_correcta).toLocaleDateString('es-CL') }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información de Nueva Marcación - Solo para AGREGAR -->
+            <div v-else-if="solicitudSeleccionada.tipo === 'agregar'" class="bg-blue-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-900 mb-3">Información de la Nueva Marcación Solicitada</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Tipo de Marcación Solicitada</label>
+                  <span class="inline-flex mt-1 px-2 py-1 text-xs font-semibold rounded-full"
+                        :class="obtenerClaseTipo(solicitudSeleccionada.tipoMarcacion)">
+                    {{ capitalizarTipo(solicitudSeleccionada.tipoMarcacion) }}
+                  </span>
+                </div>
+                <div v-if="solicitudSeleccionada.horaNueva">
+                  <label class="block text-sm font-medium text-gray-700">Hora Solicitada</label>
+                  <p class="mt-1 text-sm text-blue-600 font-medium">{{ solicitudSeleccionada.horaNueva }}</p>
+                </div>
+                <div v-if="solicitudSeleccionada.fecha_correcta">
+                  <label class="block text-sm font-medium text-gray-700">Fecha Solicitada</label>
+                  <p class="mt-1 text-sm text-blue-600 font-medium">{{ new Date(solicitudSeleccionada.fecha_correcta).toLocaleDateString('es-CL') }}</p>
+                </div>
+              </div>
+              
+              <!-- Información adicional para marcaciones nuevas -->
+              <div class="mt-4 pt-4 border-t border-blue-200">
+                <div class="bg-blue-100 p-3 rounded-md">
+                  <div class="flex">
+                    <svg class="w-5 h-5 text-blue-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    <div class="text-sm text-blue-700">
+                      <p class="font-medium">Solicitud de Nueva Marcación</p>
+                      <p>Se solicita agregar una marcación que no fue registrada en el sistema.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -860,21 +903,31 @@ const cargarSolicitudes = async () => {
     if (response && Array.isArray(response)) {
       // Transformar los datos del servidor al formato esperado
       const todasLasSolicitudes = response.map(reporte => {
-        // Determinar el tipo de descripción basado en el tipo_problema
+        // Determinar el tipo de solicitud basándose en el campo 'tipo' del backend
+        let tipoSolicitud = 'modificar'; // Por defecto
         let tipoDescripcion = '';
         
+        // Si el campo 'tipo' existe, usarlo para determinar el tipo de solicitud
+        if (reporte.tipo === 'agregar' || reporte.tipo_problema === 'marcacion_faltante') {
+          tipoSolicitud = 'agregar';
+        } else if (reporte.tipo === 'modificar' || reporte.marcacion_id) {
+          tipoSolicitud = 'modificar';
+        }
+        
+        // Determinar la descripción basado en el tipo_problema y tipo de solicitud
         switch (reporte.tipo_problema) {
           case 'ubicacion_incorrecta':
-            tipoDescripcion = 'Corrección de Ubicación';
+            tipoDescripcion = tipoSolicitud === 'agregar' ? 'Agregar Marcación con Ubicación' : 'Corrección de Ubicación';
             break;
           case 'hora_incorrecta':
-            tipoDescripcion = 'Corrección de Hora';
+            tipoDescripcion = tipoSolicitud === 'agregar' ? 'Agregar Marcación con Hora Específica' : 'Corrección de Hora';
             break;
           case 'marcacion_faltante':
-            tipoDescripcion = 'Agregar Marcación';
+            tipoDescripcion = 'Agregar Marcación Faltante';
+            tipoSolicitud = 'agregar'; // Forzar tipo agregar para marcaciones faltantes
             break;
           default:
-            tipoDescripcion = 'Corrección de Marcación';
+            tipoDescripcion = tipoSolicitud === 'agregar' ? 'Agregar Nueva Marcación' : 'Corrección de Marcación';
         }
         
         // Formatear fecha
@@ -883,7 +936,7 @@ const cargarSolicitudes = async () => {
         return {
           id: reporte.id,
           nombreTrabajador: reporte.nombreTrabajador,
-          tipo: reporte.tipo,
+          tipo: tipoSolicitud, // Usar el tipo determinado
           tipoDescripcion: tipoDescripcion,
           descripcion: reporte.descripcion,
           motivo: reporte.tipo_problema.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
