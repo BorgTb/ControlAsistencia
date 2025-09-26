@@ -133,7 +133,7 @@ class ReportesModel {
     // Cambiar estado de un reporte
     static async cambiarEstado(id, estado) {
         // Validar que el estado sea válido
-        const estadosValidos = ['APROBADA', 'PENDIENTE', 'RECHAZADA', ''];
+        const estadosValidos = ['APROBADA', 'PENDIENTE', 'RECHAZADA', 'POR CONFIRMAR'];
         if (!estadosValidos.includes(estado)) {
             throw new Error('Estado no válido');
         }

@@ -301,7 +301,7 @@ const aprobarCambioMarcacion = async (req, res) => {
         }
                 
 
-        await ReporteMarcacionesModel.aprobar(reporteId);
+        await ReporteMarcacionesModel.cambiarEstado(reporteId, 'POR CONFIRMAR');
 
         const reporteActualizado = await ReportesModel.findById(reporteId);
 

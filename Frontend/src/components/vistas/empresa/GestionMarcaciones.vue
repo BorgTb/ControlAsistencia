@@ -157,7 +157,101 @@
       </div>
 
       <!-- Solicitudes Pendientes -->
-      
+      <div class="px-4 py-6 sm:px-0">
+        <div class="bg-white rounded-lg shadow mb-6">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación y Confirmación</h3>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
+              <div 
+                v-for="solicitud in solicitudesPendientes" 
+                :key="solicitud.id"
+                class="flex items-center justify-between p-4 border rounded-lg"
+                :class="{
+                  'border-yellow-200 bg-yellow-50': solicitud.estado === 'PENDIENTE',
+                  'border-blue-200 bg-blue-50': solicitud.estado === 'POR CONFIRMAR'
+                }"
+              >
+                <div class="flex items-center space-x-4">
+                  <div class="flex-shrink-0">
+                    <svg v-if="solicitud.tipo === 'modificacion'" class="h-8 w-8"
+                         :class="{
+                           'text-yellow-500': solicitud.estado === 'PENDIENTE',
+                           'text-blue-500': solicitud.estado === 'POR CONFIRMAR'
+                         }" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <svg v-else class="h-8 w-8"
+                         :class="{
+                           'text-yellow-500': solicitud.estado === 'PENDIENTE',
+                           'text-blue-500': solicitud.estado === 'POR CONFIRMAR'
+                         }" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="flex items-center space-x-2">
+                      <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
+                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                            :class="obtenerClaseEstado(solicitud.estado)">
+                        {{ formatearEstado(solicitud.estado) }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                      <p class="text-xs text-gray-500">Tipo: {{ solicitud.tipo }}</p>
+                      <p v-if="solicitud.tipo === 'modificar'" class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
+                      <p v-if="solicitud.tipo === 'agregar' && solicitud.tipoMarcacionCorrecta" class="text-xs text-gray-500">Marcación solicitada: {{ capitalizarTipo(solicitud.tipoMarcacionCorrecta) }}</p>
+                      <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
+                        Hora solicitada: {{ solicitud.horaNueva }}
+                      </p>
+                    </div>
+                    <!-- Mensaje informativo para estado POR CONFIRMAR -->
+                    <div v-if="solicitud.estado === 'POR CONFIRMAR'" class="mt-2 p-2 bg-blue-100 rounded-md">
+                      <p class="text-xs text-blue-700">
+                        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        Los cambios han sido aprobados. Esperando confirmación del trabajador.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <!-- Acciones para estado PENDIENTE -->
+                  <template v-if="solicitud.estado === 'PENDIENTE'">
+                    <button @click="aprobarSolicitud(solicitud)" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      Aprobar
+                    </button>
+                    <button @click="rechazarSolicitud(solicitud)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      Rechazar
+                    </button>
+                  </template>
+                  
+                  <!-- Acciones para estado POR CONFIRMAR -->
+                  <template v-else-if="solicitud.estado === 'POR CONFIRMAR'">
+                    <button class="bg-blue-100 text-blue-700 px-4 py-2 rounded-md text-sm font-medium cursor-not-allowed" disabled>
+                      Esperando Confirmación
+                    </button>
+                  </template>
+                  
+                  <button @click="abrirModalDetalles(solicitud)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+                    Ver Detalles
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Mensaje cuando no hay solicitudes -->
+            <div v-else class="text-center py-8">
+              <p class="text-gray-500">No hay solicitudes pendientes de aprobación o confirmación</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Tabla de Marcaciones -->
       <div class="px-4 py-6 sm:px-0">
@@ -302,9 +396,9 @@
                       <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">2</button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</button>
+                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">1</button>
+                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">2</button>
+                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">3</button>
                   <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                     <span class="sr-only">Siguiente</span>
                     <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -316,62 +410,6 @@
             </div>
           </div>
         </div>
-        <div class="px-4 py-6 sm:px-0">
-        <div class="bg-white rounded-lg shadow mb-6">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación</h3>
-          </div>
-          <div class="p-6">
-            <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
-              <div 
-                v-for="solicitud in solicitudesPendientes" 
-                :key="solicitud.id"
-                class="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg"
-              >
-                <div class="flex items-center space-x-4">
-                  <div class="flex-shrink-0">
-                    <svg v-if="solicitud.tipo === 'modificacion'" class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                    <svg v-else class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
-                    <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
-                    <div class="flex flex-wrap gap-2 mt-1">
-                      <p class="text-xs text-gray-500">Tipo: {{ solicitud.tipo }}</p>
-                      <p v-if="solicitud.tipo === 'modificar'" class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
-                      <p v-if="solicitud.tipo === 'agregar' && solicitud.tipoMarcacionCorrecta" class="text-xs text-gray-500">Marcación solicitada: {{ capitalizarTipo(solicitud.tipoMarcacionCorrecta) }}</p>
-                      <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
-                        Hora solicitada: {{ solicitud.horaNueva }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div class="flex space-x-2">
-                  <button @click="aprobarSolicitud(solicitud)" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Aprobar
-                  </button>
-                  <button @click="rechazarSolicitud(solicitud)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                    Rechazar
-                  </button>
-                  <button @click="abrirModalDetalles(solicitud)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
-                    Ver Detalles
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Mensaje cuando no hay solicitudes -->
-            <div v-else class="text-center py-8">
-              <p class="text-gray-500">No hay solicitudes pendientes de aprobación</p>
-
-            </div>
-          </div>
-        </div>
-      </div>
       </div>
     </main>
 
@@ -541,12 +579,37 @@
                 </button>
               </template>
               
-              <!-- Mensaje para solicitudes ya procesadas -->
+              <!-- Mensaje para estado POR CONFIRMAR -->
+              <template v-else-if="solicitudSeleccionada.estado === 'POR CONFIRMAR'">
+                <div class="flex-1 text-center py-3">
+                  <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="flex items-center justify-center">
+                      <svg class="w-6 h-6 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                      </svg>
+                      <div class="text-left">
+                        <p class="text-sm font-medium text-blue-800">Solicitud Aprobada</p>
+                        <p class="text-sm text-blue-600">
+                          Los cambios han sido aprobados y están esperando confirmación del trabajador.
+                        </p>
+                        <p class="text-xs text-blue-500 mt-1">
+                          Una vez confirmado por el trabajador, los cambios serán aplicados automáticamente.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              
+              <!-- Mensaje para solicitudes ya procesadas (APROBADA/RECHAZADA) -->
               <template v-else>
                 <div class="flex-1 text-center py-3">
                   <p class="text-sm text-gray-600">
                     Esta solicitud ya ha sido 
-                    <span :class="{ 'text-green-600 font-medium': solicitudSeleccionada.estado === 'APROBADA', 'text-red-600 font-medium': solicitudSeleccionada.estado === 'RECHAZADA' }">
+                    <span :class="{ 
+                      'text-green-600 font-medium': solicitudSeleccionada.estado === 'APROBADA', 
+                      'text-red-600 font-medium': solicitudSeleccionada.estado === 'RECHAZADA' 
+                    }">
                       {{ formatearEstado(solicitudSeleccionada.estado).toLowerCase() }}
                     </span>
                   </p>
@@ -692,7 +755,8 @@ const obtenerClaseEstado = (estado) => {
   const clases = {
     'PENDIENTE': 'bg-yellow-100 text-yellow-800',
     'APROBADA': 'bg-green-100 text-green-800',
-    'RECHAZADA': 'bg-red-100 text-red-800'
+    'RECHAZADA': 'bg-red-100 text-red-800',
+    'POR CONFIRMAR': 'bg-blue-100 text-blue-800'
   };
   return clases[estado] || 'bg-gray-100 text-gray-800';
 };
@@ -702,7 +766,8 @@ const formatearEstado = (estado) => {
   const estados = {
     'PENDIENTE': 'Pendiente',
     'APROBADA': 'Aprobada',
-    'RECHAZADA': 'Rechazada'
+    'RECHAZADA': 'Rechazada',
+    'POR CONFIRMAR': 'Por Confirmar'
   };
   return estados[estado] || estado;
 };
@@ -928,7 +993,7 @@ const cargarSolicitudes = async () => {
             tipoDescripcion = tipoSolicitud === 'agregar' ? 'Agregar Marcación con Hora Específica' : 'Corrección de Hora';
             break;
           case 'marcacion_faltante':
-            tipoDescripcion = 'Agregar Marcación Faltante';
+            tipoDescripción = 'Agregar Marcación Faltante';
             tipoSolicitud = 'agregar'; // Forzar tipo agregar para marcaciones faltantes
             break;
           default:
@@ -957,9 +1022,9 @@ const cargarSolicitudes = async () => {
         };
       });
       
-      // Filtrar solo las solicitudes con estado 'PENDIENTE'
+      // Filtrar solicitudes con estado 'PENDIENTE' y 'POR CONFIRMAR'
       solicitudesPendientes.value = todasLasSolicitudes.filter(solicitud => 
-        solicitud.estado === 'PENDIENTE'
+        solicitud.estado === 'PENDIENTE' || solicitud.estado === 'POR CONFIRMAR'
       );
     } else {
       solicitudesPendientes.value = [];
