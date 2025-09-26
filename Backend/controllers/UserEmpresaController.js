@@ -9,6 +9,7 @@ import MarcacionesServices from "../services/MarcacionesServices.js";
 import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
+import NotificacionService from "../services/NotificacionService.js";
 
 
 
@@ -275,36 +276,67 @@ const aprobarCambioMarcacion = async (req, res) => {
         const { reporteId } = req.params;
         // obtener reporte
         let reporte = await ReporteMarcacionesModel.findById(reporteId);
+        console.log("reporte a aprobar:", reporte);
         if (!reporte) {
             return res.status(404).json({ success: false, message: "Reporte no encontrado" });
         }
-
-        console.log("reporte a aprobar:", reporte);
+        const datosCambios = {
+            tipo: reporte.tipo,
+        };
         // actualizar marcacion
         //await ReportesModel.aprobar(reporteId);
         if (reporte.tipo === 'modificar') {
+
+            // obtener marcacion original
+            const marcacionOriginal = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
+
+            // agregar datos de la marcacion original al objeto datosCambios
+            datosCambios.marcacionOriginal = marcacionOriginal.data;
+
             if (reporte.fecha_correcta){
-                await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
+                //await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
+                datosCambios.fechaModificada = marcacionOriginal.data.fecha;
             }
             if (reporte.hora_correcta){
-                await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
+               // await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
+                datosCambios.horaModificada = marcacionOriginal.data.hora;
             }
-            await ReporteMarcacionesModel.aprobar(reporteId);
+
+            //await ReporteMarcacionesModel.aprobar(reporteId);
         } else if (reporte.tipo === 'agregar') {
             // crear nueva marcacion
-            const nuevaMarcacion = await MarcacionesServices.insertarMarcacionManual(
-                reporte.usuario_id,
-                reporte.tipo_marcacion_correcta,
-                reporte.fecha_correcta,
-                reporte.hora_correcta);
-            console.log("nueva marcacion creada:", nuevaMarcacion);
+                //await MarcacionesServices.insertarMarcacionManual(reporte.usuario_id,reporte.tipo_marcacion_correcta,reporte.fecha_correcta,reporte.hora_correcta);
+                
+                
+
+                datosCambios.fechaNueva = reporte.fecha_correcta;
+                datosCambios.horaNueva = reporte.hora_correcta;
+                datosCambios.tipoNueva = reporte.tipo_marcacion_correcta;
+
         }
                 
 
         await ReporteMarcacionesModel.cambiarEstado(reporteId, 'POR CONFIRMAR');
-
         const reporteActualizado = await ReportesModel.findById(reporteId);
 
+
+        // enviar notificacion al usuario que hizo el reporte de que va a cambiar su marcacion o se creo una nueva
+        console.log("datosCambios:", datosCambios);
+
+
+        if (reporte.tipo === 'modificar') {
+            NotificacionService.enviarNotificacionConfirmacionModificacionMarcacion(reporte, datosCambios, datosCambios.marcacionOriginal);
+        } else if (reporte.tipo === 'agregar') {
+            // agregar informacion del usuario a datosCambios
+            const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
+            datosCambios.usuario = usuario;
+
+
+
+            NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, datosCambios);
+        }
+
+        
         res.status(200).json({ success: true, message: "Reporte aprobado", data: reporteActualizado });
     } catch (error) {
         console.error("Error aprobando reporte de marcación:", error);

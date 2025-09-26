@@ -89,6 +89,57 @@ class NotificacionService {
         }
     }
 
+    async enviarNotificacionConfirmacionModificacionMarcacion(reporte, data) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+
+            // Enviar notificación
+            const estado = await MailService.enviarNotificacionConfirmacionModificacionMarcacion(reporte, data);
+        } catch (error) {
+            console.error('Error al enviar notificación de confirmación de modificación de marcación:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de confirmación de modificación de marcación',
+                error: error.message
+            };
+        }
+    }
+
+    async enviarNotificacionConfirmacionNuevaMarcacion(reporte, data) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+
+            // Enviar notificación
+            console.log("Enviando notificacion de nueva marcacion:", reporte, data);
+            const estado = await MailService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, data);
+        } catch (error) {
+            console.error('Error al enviar notificación de confirmación de nueva marcación:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de confirmación de nueva marcación',
+                error: error.message
+            };
+        }
+    }
+
+
+
 }
 
 export default new NotificacionService();

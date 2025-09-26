@@ -286,6 +286,145 @@ class MailService {
         return await this.enviarCorreo(email, asunto, contenidoHTML);
     }
 
+    async enviarNotificacionConfirmacionModificacionMarcacion(reporte, data) {
+        /**
+         * @params {object} reporte - Objeto con los datos del reporte
+         * @params {object} data - Objeto con los datos de los cambios realizados
+         */
+        
+        const { marcacionOriginal, fechaModificada, horaModificada } = data;
+        const nombreCompleto = `${marcacionOriginal.nombre} ${marcacionOriginal.apellido_pat} ${marcacionOriginal.apellido_mat}`;
+        
+        const asunto = 'Confirmación de Modificación de Marcación - Acción Requerida';
+        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${reporte.token || reporte.id}`;
+        
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Confirmación de Modificación de Marcación</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #FF5722; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 20px; background-color: #f9f9f9; }
+                    .modificacion-info { background-color: #fff3e0; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF5722; }
+                    .button { display: inline-block; padding: 15px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
+                    .button:hover { background-color: #45a049; }
+                    .warning { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Confirmación de Modificación</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Estimado ${nombreCompleto},</h2>
+                        <p>Se ha realizado una modificación en su marcación y tiene <strong>48 horas</strong> para aprobar este cambio.</p>
+                        
+                        <div class="modificacion-info">
+                            <h3>Detalles de la modificación:</h3>
+                            <p><strong>Marcación Original:</strong></p>
+                            <p>• Fecha: ${new Date(marcacionOriginal.fecha).toLocaleDateString('es-CL')}</p>
+                            <p>• Hora: ${marcacionOriginal.hora}</p>
+                            <p>• Tipo: ${marcacionOriginal.tipo}</p>
+                            
+                            <p><strong>Datos Modificados:</strong></p>
+                            <p>• Nueva Fecha: ${new Date(fechaModificada).toLocaleDateString('es-CL')}</p>
+                            <p>• Nueva Hora: ${horaModificada}</p>
+                        </div>
+                        
+                        <div class="warning">
+                            <p><strong>⚠️ Importante:</strong> Si no aprueba este cambio dentro de 48 horas, la modificación será aceptado automáticamente.</p>
+                        </div>
+                        
+                        <p>Para confirmar la modificación, haga clic en el siguiente botón:</p>
+                        <a href="${enlaceAprobacion}" class="button">Aprobar Cambio</a>
+                        
+                        <p>Si no realizó esta solicitud o no está de acuerdo con la modificación, puede ignorar este correo.</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        return await this.enviarCorreo(marcacionOriginal.email, asunto, contenidoHTML);
+    }
+
+    async enviarNotificacionConfirmacionNuevaMarcacion(reporte, data) {
+        /**
+         * @params {object} reporte - Objeto con los datos del reporte
+         * @params {object} data - Objeto con los datos de la nueva marcación
+         */
+        
+        const { fechaNueva, horaNueva, tipoNueva, usuario } = data;
+        const nombreCompleto = `${usuario.nombre} ${usuario.apellido_pat} ${usuario.apellido_mat}`;
+        
+        const asunto = 'Confirmación de Nueva Marcación - Acción Requerida';
+        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${reporte.token || reporte.id}`;
+        
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Confirmación de Nueva Marcación</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 20px; background-color: #f9f9f9; }
+                    .marcacion-info { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50; }
+                    .button { display: inline-block; padding: 15px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
+                    .button:hover { background-color: #45a049; }
+                    .warning { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Confirmación de Nueva Marcación</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Estimado ${nombreCompleto},</h2>
+                        <p>Se ha creado una nueva marcación en su registro y tiene <strong>48 horas</strong> para aprobar este registro.</p>
+                        
+                        <div class="marcacion-info">
+                            <h3>Detalles de la nueva marcación:</h3>
+                            <p><strong>Fecha:</strong> ${new Date(fechaNueva).toLocaleDateString('es-CL')}</p>
+                            <p><strong>Hora:</strong> ${horaNueva}</p>
+                            <p><strong>Tipo:</strong> ${tipoNueva}</p>
+                            <p><strong>Trabajador:</strong> ${nombreCompleto}</p>
+                            <p><strong>RUT:</strong> ${usuario.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}-${usuario.rut.slice(-1)}</p>
+                        </div>
+                        
+                        <div class="warning">
+                            <p><strong>⚠️ Importante:</strong> Si no aprueba esta marcación dentro de 48 horas, el registro será aceptado automáticamente.</p>
+                        </div>
+                        
+                        <p>Para confirmar la nueva marcación, haga clic en el siguiente botón:</p>
+                        <a href="${enlaceAprobacion}" class="button">Aprobar Marcación</a>
+                        
+                        <p>Si no está de acuerdo con esta marcación o considera que es un error, puede ignorar este correo.</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        return await this.enviarCorreo(usuario.email, asunto, contenidoHTML);
+    }
+
     // Método auxiliar para convertir HTML a texto plano
     htmlToText(html) {
         return html
