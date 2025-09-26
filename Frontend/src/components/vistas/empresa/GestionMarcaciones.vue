@@ -869,7 +869,7 @@ const aprobarSolicitud = async (solicitud) => {
     }
   } catch (error) {
     console.error('Error al aprobar solicitud:', error);
-    alert('Error al aprobar la solicitud');
+    alert('Error al aprobar la solicitud', error);
   }
 };
 

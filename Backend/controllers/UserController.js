@@ -75,7 +75,7 @@ const createReporte = async (req, res) => {
         console.log(reporteData);   
         const nuevoReporte = {
             marcacion_id: reporteData.marcacion_id,
-            usuario_id: await UsuarioEmpresaModel.obtenerEmpresaIdByUsuarioId(user.id),
+            usuario_id: await UsuarioEmpresaModel.obtenerIdByUsuarioId(user.id),
             tipo_problema: reporteData.tipo_problema,
             descripcion: reporteData.descripcion,
             fecha_correcta: reporteData.fecha_correcta,
@@ -128,7 +128,7 @@ const createSolicitudMarcacion = async (req, res) => {
         
         const nuevoReporte = {
             marcacion_id: null, // No aplica en solicitudes de marcación
-            usuario_id: await UsuarioEmpresaModel.obtenerEmpresaIdByUsuarioId(user.id),
+            usuario_id: await UsuarioEmpresaModel.obtenerIdByUsuarioId(user.id),
             tipo_problema: solicitudData.motivo,
             descripcion: solicitudData.descripcion,
             fecha_correcta: solicitudData.fecha,

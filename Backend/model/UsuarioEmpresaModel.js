@@ -440,15 +440,15 @@ class UsuarioEmpresaModel {
         return rows.length > 0 ? rows[0] : null;
     }
 
-    static async obtenerEmpresaIdByUsuarioId(usuario_id) {
+    static async obtenerIdByUsuarioId(usuario_id) {
         const query = `
         SELECT 
-            empresa_id
+            id
         FROM usuarios_empresas
         WHERE usuario_id = ?
         `;
         const [rows] = await db.execute(query, [usuario_id]);
-        return rows.length > 0 ? rows[0].empresa_id : null;
+        return rows.length > 0 ? rows[0].id : null;
     }
     
     static async obtenerUsuarioByID(usuario_empresa_id){

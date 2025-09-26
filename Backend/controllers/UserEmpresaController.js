@@ -221,7 +221,25 @@ const obtenerReportesMarcaciones = async (req, res) => {
     try {
         const { rut } = req.params;
         const empresa = await EmpresaModel.getEmpresaByRut(rut);
-        const reportes = await ReporteMarcacionesModel.findByEmpresaId(empresa.empresa_id);
+        const reportes = await ReporteMarcacionesModel.findByEmpresaId(req.user.empresa_id);
+        // obtener trabajadores de la empresa que son de una empresa EST 
+        const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(req.user.empresa_id);
+
+
+        // para cada trabajador de est obtener sus reportes
+        //
+        const reportesTrabajadoresDeEst = await Promise.all(
+            trabajadoresDeEst.map(trabajador => 
+            ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
+            )
+        ).then(reportesArrays => reportesArrays.flat());
+        
+        console.log("reportes:", reportes);
+        console.log("reportesTrabajadoresDeEst:", reportesTrabajadoresDeEst);
+        // unir ambos arrays de reportes
+        reportes.push(...reportesTrabajadoresDeEst);
+        console.log("reportes totales:", reportes);
+        // agregar info del trabajador a cada reporte
         // para cada reporte, incluir info de la marcacion
         for (let reporte of reportes) {   
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
@@ -230,12 +248,13 @@ const obtenerReportesMarcaciones = async (req, res) => {
                 console.log("No se encontró la marcación para el reporte:", reporte);
                 continue; // saltar si no se encuentra la marcación
             }
-
-
             reporte.nombreTrabajador = marcacion.data.nombre;
             reporte.horaOriginal = marcacion.data.hora;
             reporte.tipoMarcacion = marcacion.data.tipo;
         }
+        // cargar reportes que corresponden a trabajadores de una est
+
+        
 
 
     res.status(200).json({
@@ -262,12 +281,13 @@ const aprobarCambioMarcacion = async (req, res) => {
             return res.status(404).json({ success: false, message: "Reporte no encontrado" });
         }
 
+        console.log("reporte a aprobar:", reporte);
         // actualizar marcacion
         //await ReportesModel.aprobar(reporteId);
-
-
-        //verificar el tipo de reporte, agregar o modificar la marcacion segun corresponda
         
+
+       /*
+
        
         if (reporte.fecha_correcta){
             await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
@@ -282,9 +302,9 @@ const aprobarCambioMarcacion = async (req, res) => {
         const reporteActualizado = await ReportesModel.findById(reporteId);
 
         console.log("reportes actualizado:",reporteActualizado);
+        */
 
-
-        res.status(200).json({ success: true, message: "Reporte aprobado y marcación actualizada", data: reporteActualizado });
+        res.status(500).json({ success: false, message: "Reporte en desarrollo", data: null });
     } catch (error) {
         console.error("Error aprobando reporte de marcación:", error);
         res.status(500).json({ success: false, message: "Error interno del servidor" });
