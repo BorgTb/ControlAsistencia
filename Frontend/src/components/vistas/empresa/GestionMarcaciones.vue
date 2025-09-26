@@ -341,7 +341,7 @@
                     <h4 class="font-medium text-gray-900">{{ solicitud.nombreTrabajador }} - {{ solicitud.tipoDescripcion }}</h4>
                     <p class="text-sm text-gray-600">{{ solicitud.descripcion }}</p>
                     <div class="flex flex-wrap gap-2 mt-1">
-                      <p class="text-xs text-gray-500">Tipo: {{ solicitud.motivo }}</p>
+                      <p class="text-xs text-gray-500">Tipo: {{ solicitud.tipo }}</p>
                       <p class="text-xs text-gray-500">Marcación: {{ capitalizarTipo(solicitud.tipoMarcacion) }}</p>
                       <p v-if="solicitud.horaNueva" class="text-xs text-gray-500">
                         Hora solicitada: {{ solicitud.horaNueva }}
@@ -862,7 +862,6 @@ const cargarSolicitudes = async () => {
       const todasLasSolicitudes = response.map(reporte => {
         // Determinar el tipo de descripción basado en el tipo_problema
         let tipoDescripcion = '';
-        let tipo = 'modificacion';
         
         switch (reporte.tipo_problema) {
           case 'ubicacion_incorrecta':
@@ -873,7 +872,6 @@ const cargarSolicitudes = async () => {
             break;
           case 'marcacion_faltante':
             tipoDescripcion = 'Agregar Marcación';
-            tipo = 'agregada';
             break;
           default:
             tipoDescripcion = 'Corrección de Marcación';
@@ -881,11 +879,11 @@ const cargarSolicitudes = async () => {
         
         // Formatear fecha
         const fechaReporte = new Date(reporte.fecha_reporte).toLocaleDateString('es-CL');
-        
+      
         return {
           id: reporte.id,
           nombreTrabajador: reporte.nombreTrabajador,
-          tipo: tipo,
+          tipo: reporte.tipo,
           tipoDescripcion: tipoDescripcion,
           descripcion: reporte.descripcion,
           motivo: reporte.tipo_problema.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -896,7 +894,7 @@ const cargarSolicitudes = async () => {
           marcacion_id: reporte.marcacion_id,
           usuario_id: reporte.usuario_id,
           fecha_correcta: reporte.fecha_correcta,
-          estado: reporte.estado || 'PENDIENTE'
+          estado: reporte.estado || 'PENDIENTE',
         };
       });
       
