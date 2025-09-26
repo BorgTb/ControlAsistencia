@@ -72,6 +72,7 @@ const createReporte = async (req, res) => {
     const user = req.user;
     try {
         // Aquí iría la lógica para guardar el reporte en la base de datos
+        console.log(reporteData);   
         const nuevoReporte = {
             marcacion_id: reporteData.marcacion_id,
             usuario_id: await UsuarioEmpresaModel.obtenerEmpresaIdByUsuarioId(user.id),
@@ -79,7 +80,8 @@ const createReporte = async (req, res) => {
             descripcion: reporteData.descripcion,
             fecha_correcta: reporteData.fecha_correcta,
             hora_correcta: reporteData.hora_correcta,
-            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
+            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO(),
+            tipo: reporteData.tipo // 'modificar' para reportes de marcación
         };
 
         // Guardar el reporte en la base de datos
@@ -131,7 +133,8 @@ const createSolicitudMarcacion = async (req, res) => {
             descripcion: solicitudData.descripcion,
             fecha_correcta: solicitudData.fecha,
             hora_correcta: solicitudData.hora,
-            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO()
+            fecha_creacion: DateTime.now().setZone('America/Santiago').toISO(),
+            tipo: solicitudData.tipo // 'agregar' para solicitudes de marcación
         };
 
         // Guardar el reporte en la base de datos

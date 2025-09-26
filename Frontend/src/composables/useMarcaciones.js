@@ -35,6 +35,7 @@ export function useMarcaciones() {
     isLoading.value = true
     error.value = ''
     
+    solicitudData.tipo = 'agregar';
     // Mostrar los datos que se van a enviar
     console.log('=== DATOS DE LA SOLICITUD DE MARCACIÓN ===')
     console.log('Datos de la solicitud:', solicitudData)
@@ -222,7 +223,6 @@ export function useMarcaciones() {
       { value: 'urgencia_familiar', label: 'Emergencia familiar', descripcion: 'Situación familiar urgente' },
       { value: 'problema_salud', label: 'Problema de salud', descripcion: 'Motivo médico o de salud' },
       { value: 'transporte', label: 'Problema de transporte', descripcion: 'Retraso o problema de movilización' },
-      { value: 'error_ubicacion', label: 'Error de ubicación', descripcion: 'Problemas con GPS o ubicación' },
       { value: 'otro', label: 'Otro motivo', descripcion: 'Especificar en los comentarios' }
     ]
   }

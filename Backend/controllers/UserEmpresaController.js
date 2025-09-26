@@ -225,6 +225,13 @@ const obtenerReportesMarcaciones = async (req, res) => {
         // para cada reporte, incluir info de la marcacion
         for (let reporte of reportes) {   
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
+
+            if (!marcacion || !marcacion.data) {
+                console.log("No se encontró la marcación para el reporte:", reporte);
+                continue; // saltar si no se encuentra la marcación
+            }
+
+
             reporte.nombreTrabajador = marcacion.data.nombre;
             reporte.horaOriginal = marcacion.data.hora;
             reporte.tipoMarcacion = marcacion.data.tipo;

@@ -4,10 +4,10 @@ class ReportesModel {
     
     // Crear un nuevo reporte de marcación
     static async create(data) {
-        const { marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta, hora_correcta } = data;
+        const { marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta } = data;
         const [result] = await pool.query(
-            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta, hora_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, "PENDIENTE", CURRENT_TIMESTAMP)',
-            [marcacion_id, usuario_id, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null]
+            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, ?, "PENDIENTE", CURRENT_TIMESTAMP)',
+            [marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null]
         );
         return result.insertId;
     }
@@ -57,6 +57,15 @@ class ReportesModel {
         const [rows] = await pool.query(
             'SELECT * FROM reportes_marcaciones WHERE tipo_problema = ? ORDER BY fecha_reporte DESC',
             [tipo_problema]
+        );
+        return rows;
+    }
+
+    // Obtener reportes por tipo
+    static async findByTipo(tipo) {
+        const [rows] = await pool.query(
+            'SELECT * FROM reportes_marcaciones WHERE tipo = ? ORDER BY fecha_reporte DESC',
+            [tipo]
         );
         return rows;
     }
@@ -134,6 +143,7 @@ class ReportesModel {
                 rm.id,
                 rm.marcacion_id,
                 rm.usuario_id,
+                rm.tipo,
                 rm.tipo_problema,
                 rm.descripcion,
                 rm.fecha_correcta,
@@ -216,6 +226,7 @@ class ReportesModel {
                 rm.id,
                 rm.marcacion_id,
                 rm.usuario_id,
+                rm.tipo,
                 rm.tipo_problema,
                 rm.descripcion,
                 rm.fecha_correcta,
@@ -245,6 +256,11 @@ class ReportesModel {
         if (filtros.tipo_problema) {
             query += ' AND rm.tipo_problema = ?';
             params.push(filtros.tipo_problema);
+        }
+        
+        if (filtros.tipo) {
+            query += ' AND rm.tipo = ?';
+            params.push(filtros.tipo);
         }
         
         if (filtros.fecha_desde) {
@@ -296,6 +312,19 @@ class ReportesModel {
         return rows;
     }
 
+    // Contar reportes por tipo
+    static async countByTipo() {
+        const [rows] = await pool.query(`
+            SELECT 
+                tipo,
+                COUNT(*) as total
+            FROM reportes_marcaciones 
+            GROUP BY tipo
+            ORDER BY total DESC
+        `);
+        return rows;
+    }
+
     // Contar reportes por estado
     static async countByEstado() {
         const [rows] = await pool.query(`
@@ -314,10 +343,11 @@ class ReportesModel {
         const [rows] = await pool.query(`
             SELECT 
                 estado,
+                tipo,
                 tipo_problema,
                 COUNT(*) as total
             FROM reportes_marcaciones 
-            GROUP BY estado, tipo_problema
+            GROUP BY estado, tipo, tipo_problema
             ORDER BY estado, total DESC
         `);
         return rows;
@@ -330,6 +360,7 @@ class ReportesModel {
                 COUNT(*) as total_reportes,
                 COUNT(DISTINCT usuario_id) as usuarios_reportantes,
                 COUNT(DISTINCT marcacion_id) as marcaciones_reportadas,
+                COUNT(DISTINCT tipo) as tipos_distintos,
                 COUNT(DISTINCT tipo_problema) as tipos_problemas_distintos,
                 SUM(CASE WHEN estado = 'PENDIENTE' THEN 1 ELSE 0 END) as pendientes,
                 SUM(CASE WHEN estado = 'APROBADA' THEN 1 ELSE 0 END) as aprobadas,
@@ -346,6 +377,7 @@ class ReportesModel {
         const [rows] = await pool.query(`
             SELECT 
                 COUNT(*) as total_reportes,
+                COUNT(DISTINCT tipo) as tipos_distintos,
                 COUNT(DISTINCT tipo_problema) as tipos_problemas,
                 MIN(fecha_reporte) as primer_reporte,
                 MAX(fecha_reporte) as ultimo_reporte

@@ -110,7 +110,8 @@ class ReportesService {
           tipo_problema: reporteData.tipo_problema,
           descripcion: reporteData.descripcion,
           fecha_correcta: reporteData.fecha_correcta || null,
-          hora_correcta: reporteData.hora_correcta || null
+          hora_correcta: reporteData.hora_correcta || null,
+          tipo: reporteData.tipo || null
         })
         console.log('==================================')
 
@@ -120,7 +121,8 @@ class ReportesService {
           tipo_problema: reporteData.tipo_problema,
           descripcion: reporteData.descripcion,
           fecha_correcta: reporteData.fecha_correcta || null,
-          hora_correcta: reporteData.hora_correcta || null
+          hora_correcta: reporteData.hora_correcta || null,
+          tipo: reporteData.tipo || null
         })
         
         return {
@@ -160,7 +162,8 @@ class ReportesService {
         geo_lat: solicitudData.geo_lat,
         geo_lon: solicitudData.geo_lon,
         estado: solicitudData.estado || 'pendiente',
-        fecha_solicitud: solicitudData.fecha_solicitud || new Date().toISOString()
+        fecha_solicitud: solicitudData.fecha_solicitud || new Date().toISOString(),
+        tipo: solicitudData.tipo || null
       })
       
       return {

@@ -39,6 +39,8 @@ export function useReportes() {
     isLoading.value = true
     error.value = ''
     
+    reporteData.tipo = 'modificar';
+
     // Mostrar los datos que se van a enviar
     console.log('=== DATOS DEL REPORTE A ENVIAR ===')
     console.log('Marcación seleccionada:', marcacionSeleccionada.value)

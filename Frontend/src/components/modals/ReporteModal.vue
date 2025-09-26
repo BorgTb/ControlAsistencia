@@ -42,9 +42,6 @@
             <option value="hora_incorrecta">Hora incorrecta</option>
             <option value="tipo_incorrecto">Tipo de marcación incorrecto</option>
             <option value="ubicacion_incorrecta">Ubicación incorrecta</option>
-            <option value="marcacion_duplicada">Marcación duplicada</option>
-            <option value="marcacion_faltante">Marcación faltante</option>
-            <option value="error_sistema">Error del sistema</option>
             <option value="otro">Otro</option>
           </select>
           <p v-if="errors.tipoProblema" class="text-xs text-red-600 mt-1">{{ errors.tipoProblema }}</p>
