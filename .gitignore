@@ -111,3 +111,7 @@ Desktop.ini
 backend/logs/
 Frontend/logs/
 FiscalizacionFront/logs/
+
+Backend/dashboard-alertas.ps1
+
+Backend/test-completo-alertas.ps1

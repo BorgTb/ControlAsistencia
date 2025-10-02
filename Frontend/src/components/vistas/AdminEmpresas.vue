@@ -212,17 +212,41 @@
       <form @submit.prevent="unirTrabajador" class="flex flex-col gap-4">
         <div>
           <label class="empresa-label">Buscar por RUT</label>
-          <input v-model="rutBusqueda" class="input w-full px-2 py-1 mt-1" placeholder="RUT del trabajador" />
-          <button type="button" @click="buscarPorRut" class="btn-primary mt-2 px-4 py-1 rounded">Buscar</button>
+          <div class="flex gap-2 mt-1">
+            <input 
+              v-model="rutBusqueda" 
+              @keyup.enter="buscarPorRut"
+              class="input flex-1 px-2 py-1" 
+              placeholder="Ej: 12345678-9 o 12345678K" 
+              maxlength="12"
+            />
+            <button 
+              type="button" 
+              @click="buscarPorRut" 
+              :disabled="!rutBusqueda || rutBusqueda.trim() === ''"
+              class="btn-primary px-4 py-1 rounded transition-all duration-200"
+              :class="{ 'opacity-50 cursor-not-allowed': !rutBusqueda || rutBusqueda.trim() === '' }"
+            >
+              🔍 Buscar
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Presiona Enter o haz clic en Buscar para encontrar el usuario</p>
         </div>
         <div>
           <label class="empresa-label">O seleccionar usuario</label>
-          <select v-model="usuarioSeleccionado" class="select w-full px-2 py-1 mt-1">
+          <select 
+            v-model="usuarioSeleccionado" 
+            class="select w-full px-2 py-1 mt-1"
+            :class="{ 'border-green-500 bg-green-50': usuarioSeleccionado && unirError && unirError.startsWith('✅') }"
+          >
             <option value="">Seleccione un usuario</option>
             <option v-for="usuario in listaUsuarios" :key="usuario.id" :value="usuario.id">
               {{ usuario.nombre }} {{ usuario.apellido_pat }} ({{ usuario.rut }})
             </option>
           </select>
+          <p v-if="usuarioSeleccionado" class="text-xs text-green-600 mt-1">
+            ✓ Usuario seleccionado
+          </p>
         </div>
         <div>
           <label class="empresa-label">Empresa</label>
@@ -403,33 +427,172 @@ function exportToExcel() {
 }
 
 // --- Unir trabajador ---
-function openUnirTrabajadorModal() {
+async function openUnirTrabajadorModal() {
   showUnirTrabajadorModal.value = true
   unirError.value = null
   rutBusqueda.value = ''
   usuarioSeleccionado.value = ''
   empresaSeleccionada.value = ''
   listaUsuarios.value = []
-  // Aquí deberías llamar a tu API de usuarios
+  
+  // Cargar la lista de usuarios desde el backend
+  // Se utiliza el servicio AdminServices para mantener consistencia con el token JWT
+  try {
+    console.log('Cargando usuarios para el modal...')
+    unirError.value = 'Cargando usuarios...' // Mostrar feedback visual
+    
+    const response = await AdminServices.obtenerUsuarios()
+    console.log('Respuesta completa:', response)
+    
+    // Mapear los usuarios para el select, priorizando trabajadores sin empresa
+    const usuarios = response.users || response.data || response || []
+    listaUsuarios.value = usuarios
+    
+    console.log('Usuarios cargados:', listaUsuarios.value.length)
+    
+    if (listaUsuarios.value.length === 0) {
+      unirError.value = 'No se encontraron usuarios disponibles'
+    } else {
+      unirError.value = null // Limpiar error si todo está bien
+    }
+    
+  } catch (error) {
+    console.error('Error al cargar usuarios:', error)
+    if (error.response?.status === 401) {
+      unirError.value = 'Error de autenticación. Por favor, inicie sesión nuevamente.'
+    } else if (error.response?.status === 403) {
+      unirError.value = 'No tiene permisos para ver los usuarios.'
+    } else if (error.code === 'ECONNREFUSED') {
+      unirError.value = 'No se puede conectar al servidor.'
+    } else {
+      unirError.value = `Error al cargar usuarios: ${error.response?.data?.message || error.message}`
+    }
+    listaUsuarios.value = []
+  }
 }
 function closeUnirTrabajadorModal() { showUnirTrabajadorModal.value = false }
 
+/**
+ * Busca un usuario por RUT y lo selecciona automáticamente si lo encuentra
+ * Normaliza el RUT ingresado y busca coincidencias en la lista de usuarios cargados
+ */
+function buscarPorRut() {
+  // Validar que se haya ingresado un RUT
+  if (!rutBusqueda.value || rutBusqueda.value.trim() === '') {
+    unirError.value = 'Por favor, ingrese un RUT para buscar'
+    return
+  }
+
+  // Limpiar errores previos
+  unirError.value = null
+  
+  // Normalizar el RUT ingresado (quitar puntos, guiones y espacios, convertir a mayúsculas)
+  const rutIngresado = rutBusqueda.value.replace(/[.\-\s]/g, '').toUpperCase().trim()
+  
+  console.log('Buscando usuario con RUT:', rutIngresado)
+  console.log('Lista de usuarios disponibles:', listaUsuarios.value.length)
+  
+  // Buscar el usuario en la lista cargada
+  const usuarioEncontrado = listaUsuarios.value.find(usuario => {
+    if (!usuario.rut) return false
+    
+    // Normalizar el RUT del usuario de la misma manera
+    const rutUsuario = usuario.rut.toString().replace(/[.\-\s]/g, '').toUpperCase().trim()
+    
+    console.log(`Comparando: ${rutIngresado} === ${rutUsuario}`)
+    return rutIngresado === rutUsuario
+  })
+
+  if (usuarioEncontrado) {
+    // Usuario encontrado - seleccionarlo automáticamente
+    usuarioSeleccionado.value = usuarioEncontrado.id.toString()
+    
+    // Mostrar mensaje de éxito temporal
+    unirError.value = `✅ Usuario encontrado: ${usuarioEncontrado.nombre} ${usuarioEncontrado.apellido_pat}`
+    
+    // Limpiar el mensaje después de 3 segundos
+    setTimeout(() => {
+      if (unirError.value && unirError.value.startsWith('✅')) {
+        unirError.value = null
+      }
+    }, 3000)
+    
+    console.log('Usuario encontrado y seleccionado:', usuarioEncontrado)
+    
+    // Limpiar el campo de búsqueda
+    rutBusqueda.value = ''
+    
+  } else {
+    // Usuario no encontrado
+    unirError.value = `❌ No se encontró ningún usuario con RUT: ${rutBusqueda.value}`
+    usuarioSeleccionado.value = ''
+    
+    console.log('Usuario no encontrado para RUT:', rutIngresado)
+    console.log('RUTs disponibles:', listaUsuarios.value.map(u => u.rut))
+    
+    // Limpiar el mensaje de error después de 5 segundos
+    setTimeout(() => {
+      if (unirError.value && unirError.value.startsWith('❌')) {
+        unirError.value = null
+      }
+    }, 5000)
+  }
+}
+
 async function unirTrabajador() {
+  // Validar que se haya seleccionado usuario y empresa
   if (!usuarioSeleccionado.value || !empresaSeleccionada.value) {
     unirError.value = 'Debe seleccionar usuario y empresa'
     return
   }
+  
   try {
-    await axios.post('http://localhost:3000/api/usuarios_empresas', {
-      usuario_id: usuarioSeleccionado.value,
-      empresa_id: empresaSeleccionada.value,
-      rol_en_empresa: 'trabajador'
-    })
+    console.log('Iniciando unión trabajador-empresa...')
+    console.log('Usuario ID:', usuarioSeleccionado.value)
+    console.log('Empresa ID:', empresaSeleccionada.value)
+    
+    // Mostrar feedback visual de que se está procesando
+    unirError.value = 'Uniendo trabajador a empresa...'
+    
+    // Usar el apiClient configurado correctamente con el token JWT
+    const datosUnion = {
+      usuario_id: parseInt(usuarioSeleccionado.value),
+      empresa_id: parseInt(empresaSeleccionada.value),
+      rol_en_empresa: 'trabajador',
+      fecha_inicio: new Date().toISOString().split('T')[0] // Fecha actual YYYY-MM-DD
+    }
+    
+    console.log('Datos a enviar:', datosUnion)
+    
+    const response = await AdminServices.unirTrabajadorEmpresa(datosUnion)
+    console.log('Respuesta del servidor:', response)
+    
+    // Mostrar mensaje de éxito
     unirError.value = null
+    alert('¡Trabajador unido exitosamente a la empresa!')
+    
+    // Cerrar modal y actualizar datos
     closeUnirTrabajadorModal()
     await fetchEmpresas()
-  } catch {
-    unirError.value = 'Error al unir trabajador a empresa'
+    
+  } catch (error) {
+    console.error('Error completo:', error)
+    console.error('Respuesta del error:', error.response?.data)
+    
+    // Mostrar mensaje de error específico basado en el tipo de error
+    if (error.response?.status === 400) {
+      unirError.value = error.response.data.message || 'Datos inválidos para la unión'
+    } else if (error.response?.status === 401) {
+      unirError.value = 'Error de autenticación. Por favor, inicie sesión nuevamente.'
+    } else if (error.response?.status === 403) {
+      unirError.value = 'No tiene permisos para realizar esta operación.'
+    } else if (error.response?.status === 404) {
+      unirError.value = 'Usuario o empresa no encontrada.'
+    } else if (error.code === 'ECONNREFUSED') {
+      unirError.value = 'No se puede conectar al servidor.'
+    } else {
+      unirError.value = `Error: ${error.response?.data?.message || error.message || 'Error desconocido al unir trabajador'}`
+    }
   }
 }
 

@@ -110,6 +110,37 @@ class AdminServices{
       throw error
     }
   }
+
+  /**
+   * Obtiene todos los usuarios del sistema
+   * Utilizado para listar usuarios en modales de asignación
+   * @returns {Promise} Lista de usuarios
+   */
+  static async obtenerUsuarios() {
+    try {
+      const response = await apiClient.get('/user/usuarios')
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Une un trabajador a una empresa
+   * Crea una relación en la tabla usuarios_empresas
+   * @param {Object} datosUnion - Datos de la unión {usuario_id, empresa_id, rol_en_empresa, fecha_inicio}
+   * @returns {Promise} Respuesta del servidor
+   */
+  static async unirTrabajadorEmpresa(datosUnion) {
+    try {
+      const response = await apiClient.post('/user/usuarios-empresas', datosUnion)
+      return response.data
+    } catch (error) {
+      console.error('Error al unir trabajador a empresa:', error)
+      throw error
+    }
+  }
 }
 
 export default AdminServices;

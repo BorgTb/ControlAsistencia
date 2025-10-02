@@ -30,6 +30,8 @@ app.use('/api/admin', router.admin);
 app.use('/api/reportes', router.reportes);
 app.use('/api/userEmpresa', router.userEmpresa);
 app.use('/api/test/alertas', router.test);
+app.use('/api/auditoria', router.auditoria);
+app.use('/api/estadisticas', router.estadisticas);
 
 
 

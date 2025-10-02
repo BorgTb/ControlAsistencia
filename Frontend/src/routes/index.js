@@ -33,10 +33,36 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresAdmin: true }
         },
         {
+            // Ruta para la gestión de usuarios y sus permisos del sistema
+            // Permite a los administradores crear, editar, eliminar usuarios y asignar roles/permisos específicos
+            path: '/usuarios-permisos',
+            name: 'UsuariosPermisos',
+            component: () => import('../components/vistas/UsuariosPermisos.vue'), // Lazy loading para optimizar rendimiento
+            meta: { requiresAuth: true, requiresAdmin: true } // Solo administradores autenticados pueden acceder
+        },
+        {
+            // Ruta para visualizar estadísticas y métricas del sistema de asistencia
+            // Muestra reportes gráficos, tendencias de asistencia, datos agregados por empresa/usuario
+            path: '/estadisticas',
+            name: 'Estadisticas',
+            component: () => import('../components/vistas/Estadisticas.vue'), // Carga dinámica del componente
+            meta: { requiresAuth: true, requiresAdmin: true } // Acceso restringido a administradores únicamente
+        },
+        {
+            // Ruta para herramientas de fiscalización y auditoría del sistema
+            // Permite revisar logs, auditar marcaciones, detectar irregularidades en asistencia
+            path: '/fiscalizacion',
+            name: 'Fiscalizacion',
+            component: () => import('../components/vistas/Fiscalizacion.vue'), // Importación lazy para mejor performance
+            meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores con permisos de auditoría
+        },
+        {
+            // Dashboard principal del sistema - panel de control centralizado
+            // Muestra resumen general, métricas clave, accesos rápidos a funciones principales
             path: '/dashboard',
             name: 'Dashboard',
             component: () => import('../components/vistas/Dashboard.vue'), // Necesitarás crear este componente
-            meta: { requiresAuth: true, requiresUser: true }
+            meta: { requiresAuth: true, requiresUser: true } // Accesible para todos los usuarios autenticados (no solo admins)
         },
         {
             path: '/configuracion',

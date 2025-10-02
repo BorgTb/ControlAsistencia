@@ -6,6 +6,8 @@ import AdminRoutes from "./AdminRoutes.js";
 import ReportesRoutes from "./ReportesRoutes.js";
 import TestRoutes from "./TestRoutes.js";
 import UserEmpresaRoutes from "./UserEmpresa.js";
+import AuditoriaRoutes from "./AuditoriaRoutes.js";
+import EstadisticasRoutes from "./EstadisticasRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -15,7 +17,9 @@ const router = {
     reportes: ReportesRoutes,
     admin: AdminRoutes,
     empresas: EmpresasRoutes,
-    test: TestRoutes
+    test: TestRoutes,
+    auditoria: AuditoriaRoutes,
+    estadisticas: EstadisticasRoutes
 }
 
 export default router;

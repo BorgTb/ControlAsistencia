@@ -1,8 +1,37 @@
+/**
+ * Actualiza el rol de un usuario por su id.
+ * Permite cambiar el campo rol desde el frontend de forma segura.
+ */
+export const updateRol = async (req, res) => {
+    const { id } = req.params;
+    const { rol } = req.body;
+    try {
+        await UserModel.update(id, { rol });
+        res.status(200).json({ success: true, message: 'Rol actualizado correctamente' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al actualizar rol', error });
+    }
+};
+/**
+ * Actualiza el estado de un usuario por su id.
+ * Permite cambiar el campo estado desde el frontend.
+ */
+const updateEstado = async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body;
+    try {
+        await UserModel.update(id, { estado });
+        res.status(200).json({ success: true, message: 'Estado actualizado correctamente' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al actualizar estado', error });
+    }
+};
 import UserModel from '../model/UserModel.js';
 import authservice from '../services/authservice.js';
 import {DateTime} from 'luxon';
 import ReportesModel from '../model/ReportesModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+
 
 
 const updateEmail = async (req, res) => {
@@ -132,13 +161,243 @@ const listAdmins = async (req, res) => {
     }
 }
 
+
+/**
+ * Lista todos los usuarios.
+ * Endpoint público para obtener todos los usuarios registrados.
+ */
+const listAllUsers = async (req, res) => {
+    try {
+        const users = await UserModel.findAll();
+        res.status(200).json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al listar usuarios', error });
+    }
+};
+
+// Crear nuevo usuario (solo para admins)
+const createUser = async (req, res) => {
+    try {
+        const { nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado = 1 } = req.body;
+        
+        // Validaciones básicas
+        if (!nombre || !email || !password || !rol || !rut) {
+            return res.status(400).json({
+                success: false,
+                message: 'Campos requeridos: nombre, email, password, rol, rut'
+            });
+        }
+
+        // Verificar si ya existe un usuario con este email o RUT
+        const existingUserByEmail = await UserModel.findByEmail(email);
+        if (existingUserByEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un usuario con este email'
+            });
+        }
+
+        const existingUserByRut = await UserModel.findByRut(rut);
+        if (existingUserByRut) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un usuario con este RUT'
+            });
+        }
+
+        // Crear usuario usando AuthService para hash de password
+        const newUser = await authservice.registerUser(
+            email, 
+            password, 
+            nombre, 
+            apellido_pat, 
+            apellido_mat, 
+            rol, 
+            rut, 
+            estado
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Usuario creado exitosamente',
+            user: {
+                id: newUser.id,
+                nombre: newUser.nombre,
+                apellido_pat: newUser.apellido_pat,
+                apellido_mat: newUser.apellido_mat,
+                email: newUser.email,
+                rol: newUser.rol,
+                rut: newUser.rut,
+                estado: newUser.estado
+            }
+        });
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+// Eliminar usuario (solo para admins)
+const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUser = req.user; // Usuario autenticado que hace la petición
+
+        // Prevenir que un admin se elimine a sí mismo
+        if (currentUser.id == id) {
+            return res.status(400).json({
+                success: false,
+                message: 'No puedes eliminar tu propia cuenta'
+            });
+        }
+
+        // Verificar que el usuario existe
+        const userToDelete = await UserModel.findById(id);
+        if (!userToDelete) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Eliminar usuario
+        await UserModel.delete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Usuario eliminado exitosamente'
+        });
+
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Obtiene todas las empresas disponibles para asignar a trabajadores
+ * Utilizado en el modal de unión trabajador-empresa
+ */
+const getAllEmpresas = async (req, res) => {
+    try {
+        // Importar el modelo de empresas dinámicamente para evitar dependencias circulares
+        const { default: EmpresaModel } = await import('../model/EmpresaModel.js');
+        
+        const empresas = await EmpresaModel.getAllEmpresas();
+        
+        res.status(200).json(empresas);
+    } catch (error) {
+        console.error('Error obteniendo empresas:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener empresas',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Obtiene todas las relaciones usuario-empresa existentes
+ * Permite determinar qué usuarios ya tienen empresa asignada
+ */
+const getUsuariosEmpresas = async (req, res) => {
+    try {
+        const relaciones = await UsuarioEmpresaModel.getAllUsuariosEmpresas();
+        
+        res.status(200).json(relaciones);
+    } catch (error) {
+        console.error('Error obteniendo relaciones usuario-empresa:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener relaciones usuario-empresa',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Crea una nueva relación usuario-empresa
+ * Se ejecuta cuando se une un trabajador a una empresa desde el frontend
+ */
+const createUsuarioEmpresa = async (req, res) => {
+    try {
+        const { usuario_id, empresa_id, rol_en_empresa, fecha_inicio } = req.body;
+        
+        // Validación de datos requeridos
+        if (!usuario_id || !empresa_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'usuario_id y empresa_id son requeridos'
+            });
+        }
+
+        // Verificar que el usuario existe
+        const usuario = await UserModel.findById(usuario_id);
+        if (!usuario) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar si el usuario ya tiene una empresa asignada
+        const relacionExistente = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        if (relacionExistente) {
+            return res.status(400).json({
+                success: false,
+                message: 'El usuario ya tiene una empresa asignada'
+            });
+        }
+
+        // Crear la relación usuario-empresa
+        const datosRelacion = {
+            usuario_id,
+            empresa_id,
+            rol_en_empresa: rol_en_empresa || usuario.rol, // Usar el rol del usuario si no se especifica
+            fecha_inicio: fecha_inicio || new Date().toISOString().split('T')[0]
+        };
+
+        const nuevaRelacion = await UsuarioEmpresaModel.createUsuarioEmpresa(datosRelacion);
+        
+        res.status(201).json({
+            success: true,
+            data: nuevaRelacion,
+            message: 'Usuario asignado a empresa exitosamente'
+        });
+        
+    } catch (error) {
+        console.error('Error creando relación usuario-empresa:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al asignar usuario a empresa',
+            error: error.message
+        });
+    }
+};
+
 const UserController = {
     updateEmail,
     updatePassword,
     createReporte,
     createAdmin,
-    listAdmins
+    listAdmins,
+    listAllUsers,
+    updateEstado,
+    updateRol, // Se agrega para edición de rol desde rutas
+    createUser, // Nuevo endpoint para crear usuarios
+    deleteUser, // Nuevo endpoint para eliminar usuarios
+    getAllEmpresas, // Obtener empresas para modal de unión
+    getUsuariosEmpresas, // Obtener relaciones usuario-empresa
+    createUsuarioEmpresa // Crear relación usuario-empresa
 }
-
 
 export default UserController;

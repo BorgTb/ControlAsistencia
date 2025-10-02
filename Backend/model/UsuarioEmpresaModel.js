@@ -471,6 +471,28 @@ class UsuarioEmpresaModel {
         return rows.length > 0 ? rows[0] : null;
     }
 
+    /**
+     * Obtiene todas las relaciones usuario-empresa de forma simplificada
+     * Utilizado para determinar qué usuarios tienen empresa asignada
+     * @returns {Array} Array con objetos {usuario_id, empresa_id}
+     */
+    static async getAllUsuariosEmpresas() {
+        const query = `
+            SELECT 
+                usuario_id,
+                empresa_id,
+                rol_en_empresa,
+                fecha_inicio,
+                fecha_fin
+            FROM usuarios_empresas
+            WHERE fecha_fin IS NULL OR fecha_fin > CURDATE()
+            ORDER BY usuario_id
+        `;
+        
+        const [rows] = await db.execute(query);
+        return rows;
+    }
+
 }
 
 export default UsuarioEmpresaModel;
