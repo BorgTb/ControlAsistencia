@@ -455,7 +455,7 @@ const UserController = {
     deleteUser, // Nuevo endpoint para eliminar usuarios
     getAllEmpresas, // Obtener empresas para modal de unión
     getUsuariosEmpresas, // Obtener relaciones usuario-empresa
-    createUsuarioEmpresa // Crear relación usuario-empresa
+    createUsuarioEmpresa, // Crear relación usuario-empresa
     listAdmins,
     createSolicitudMarcacion
 }

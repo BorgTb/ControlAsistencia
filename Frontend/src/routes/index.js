@@ -144,53 +144,99 @@ const router = createRouter({
 // Guard de navegación global
 router.beforeEach((to, from, next) => {
     // Inicializar el store dentro del guard para evitar ReferenceError de inicialización.
-    // Esto asegura que el store esté disponible en el contexto de Vue.
     const authStore = useAuthStore()
-    // Verificar si la ruta /administrarempresa es accedida por un usuario que no es admin
-    if (to.path === '/administrarempresa' && authStore.isAuthenticated && !authStore.esAdmin) {
-        // Redirigir según el rol del usuario
-        if (authStore.user?.rol === 'trabajador') {
-            next({ name: 'Dashboard' })
-        } else if (authStore.user?.rol === 'empleador') {
+    
+    // Definir rutas por rol
+    const adminRoutes = [
+        '/administrarempresa',
+        '/RolAdministracion', 
+        '/usuarios-permisos',
+        '/estadisticas',
+        '/fiscalizacion'
+    ]
+    
+    const empleadorRoutes = [
+        '/administracion',
+        '/empresa/dashboard',
+        '/empresa/trabajadores',
+        '/empresa/turnos',
+        '/empresa/marcaciones',
+        '/empresa/reportes',
+        '/empresa/configuracion',
+        '/empresa/trabajadores/asociar'
+    ]
+    
+    const trabajadorRoutes = [
+        '/dashboard',
+        '/configuracion',
+        '/historial'
+    ]
+    
+    const guestRoutes = [
+        '/'
+    ]
+    
+    // Verificar si la ruta es solo para invitados (usuarios no autenticados)
+    if (to.meta.requiresGuest && authStore.isAuthenticated) {
+        // Redirigir según el rol del usuario autenticado
+        if (authStore.user?.rol === 'admin' || authStore.user?.esAdmin) {
+            next({ name: 'AdminEmpresas' })
+        } else if (authStore.user?.rol === 'empleador' || authStore.user?.esEmpleador) {
             next({ name: 'EmpresaDashboard' })
+        } else if (authStore.user?.rol === 'trabajador' || authStore.user?.esTrabajador) {
+            next({ name: 'Dashboard' })
         } else {
             next({ name: 'Login' })
         }
         return
     }
+    
     // Verificar si la ruta requiere autenticación
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        // Redirigir al login si no está autenticado
         next({ name: 'Login' })
         return
     }
-    // Verificar si la ruta es solo para invitados (usuarios no autenticados)
-    if (to.meta.requiresGuest && authStore.isAuthenticated) {
-        // Redirigir al dashboard si ya está autenticado
-        next({ name: 'Dashboard' })
-        return
-    }
-    // Verificar si la ruta requiere permisos de empresa
-    if (to.meta.requiresEmpresa && authStore.isAuthenticated) {
-        // Verificar si el usuario tiene rol de empresa
-        console.log('authStore.user:', authStore.user);
-        if (!authStore.user?.esEmpleador && !authStore.user?.rol?.includes('empleador')) {
-            // Redirigir al dashboard si no es empresa
-            console.warn('Acceso denegado: Se requieren permisos de empresa')
-            next({ name: 'Dashboard' })
+    
+    // Si el usuario está autenticado, verificar permisos por rol
+    if (authStore.isAuthenticated) {
+        const userRole = authStore.user?.rol
+        const currentPath = to.path
+        
+        // Verificar acceso para ADMIN
+        if (userRole === 'admin' || authStore.user?.esAdmin) {
+            // Admin solo puede acceder a rutas de admin
+            if (!adminRoutes.includes(currentPath)) {
+                console.warn('Acceso denegado: Admin intentando acceder a ruta no autorizada')
+                next({ name: 'AdminEmpresas' })
+                return
+            }
+        }
+        // Verificar acceso para EMPLEADOR
+        else if (userRole === 'empleador' || authStore.user?.esEmpleador) {
+            // Empleador solo puede acceder a rutas de empresa
+            if (!empleadorRoutes.includes(currentPath)) {
+                console.warn('Acceso denegado: Empleador intentando acceder a ruta no autorizada')
+                next({ name: 'EmpresaDashboard' })
+                return
+            }
+        }
+        // Verificar acceso para TRABAJADOR
+        else if (userRole === 'trabajador' || authStore.user?.esTrabajador) {
+            // Trabajador solo puede acceder a rutas de trabajador
+            if (!trabajadorRoutes.includes(currentPath)) {
+                console.warn('Acceso denegado: Trabajador intentando acceder a ruta no autorizada')
+                next({ name: 'Dashboard' })
+                return
+            }
+        }
+        // Si no tiene rol válido, redirigir al login
+        else {
+            console.warn('Usuario sin rol válido')
+            next({ name: 'Login' })
             return
         }
     }
-    // Verificar si la ruta requiere permisos de usuario/trabajador
-    if (to.meta.requiresUser && authStore.isAuthenticated) {
-        // Verificar si el usuario tiene rol de trabajador/empleado
-        if (!authStore.user?.esTrabajador && !authStore.user?.rol?.includes('trabajador')) {
-            // Redirigir a empresa si no es trabajador
-            console.warn('Acceso denegado: Se requieren permisos de trabajador')
-            next({ name: 'Empresa' })
-            return
-        }
-    }
+    
     next()
 })
 
