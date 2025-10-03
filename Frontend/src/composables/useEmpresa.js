@@ -50,6 +50,12 @@ export function useEmpresa() {
   };
 
   const obtenerReportesMarcaciones = async () => {
+
+    if( user.value.est){
+      return []; // Retorna un array vacío si el usuario no es una empresa
+    }
+
+
     try {
       const response = await EmpresaServices.obtenerReportesMarcaciones(user.value.rut);
       return response.data;

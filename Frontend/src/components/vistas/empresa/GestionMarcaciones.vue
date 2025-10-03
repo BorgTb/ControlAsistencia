@@ -157,7 +157,7 @@
       </div>
 
       <!-- Solicitudes Pendientes -->
-      <div class="px-4 py-6 sm:px-0">
+      <div class="px-4 py-6 sm:px-0" v-if="!esEst">
         <div class="bg-white rounded-lg shadow mb-6">
           <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación y Confirmación</h3>
@@ -282,7 +282,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Origen</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" v-if="!esEst">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -348,7 +348,7 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {{ marcacion.ip_origen || 'No disponible' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" v-if="!esEst">
                     <div class="flex justify-end space-x-2">
                       <button v-if="marcacion.modificada" 
                               class="text-purple-600 hover:text-purple-900">Historial</button>
@@ -1189,8 +1189,6 @@ const rechazarSolicitud = async (solicitud) => {
 const cargarSolicitudes = async () => {
   try {
     const response = await obtenerReportesMarcaciones();
-    console.log('Respuesta de solicitudes pendientes:', response);
-    
     // Verificar si hay datos en la respuesta
     if (response && Array.isArray(response)) {
       // Transformar los datos del servidor al formato esperado
