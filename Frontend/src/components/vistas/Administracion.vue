@@ -1,5 +1,3 @@
-
-
 <template>
   <!-- Navbar tipo tabs moderno igual a AdminEmpresas.vue -->
   <div class="w-full bg-gray-50 border-b border-gray-200">
@@ -32,45 +30,544 @@
           </router-link>
         </li>
         <li>
-          <a
-            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none cursor-not-allowed opacity-70"
-            :class="$route.path === '/usuarios-permisos' ? 'text-amber-600 border-b-2 border-amber-400 bg-white' : 'text-gray-500'"
-            @click.prevent
-            tabindex="-1"
+          <router-link
+            to="/usuarios-permisos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/usuarios-permisos' ? 'text-amber-600 border-b-2 border-amber-400 bg-white' : 'text-gray-500 hover:text-amber-600'"
+            exact
           >
             <svg class="w-4 h-4 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87v-2a4 4 0 00-3-3.87m6 5.87a4 4 0 00-3-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a4 4 0 100-8 4 4 0 000 8z" />
             </svg>
             Usuarios y permisos
-          </a>
+          </router-link>
         </li>
         <li>
-          <a
-            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none cursor-not-allowed opacity-70"
-            :class="$route.path === '/fiscalizacion' ? 'text-green-600 border-b-2 border-green-400 bg-white' : 'text-gray-500'"
-            @click.prevent
-            tabindex="-1"
+          <router-link
+            to="/fiscalizacion"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/fiscalizacion' ? 'text-green-600 border-b-2 border-green-400 bg-white' : 'text-gray-500 hover:text-green-600'"
+            exact
           >
             <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Fiscalización
-          </a>
+          </router-link>
         </li>
         <li>
-          <a
-            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none cursor-not-allowed opacity-70"
-            :class="$route.path === '/estadisticas' ? 'text-fuchsia-600 border-b-2 border-fuchsia-400 bg-white' : 'text-gray-500'"
-            @click.prevent
-            tabindex="-1"
+          <router-link
+            to="/estadisticas"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/estadisticas' ? 'text-fuchsia-600 border-b-2 border-fuchsia-400 bg-white' : 'text-gray-500 hover:text-fuchsia-600'"
+            exact
           >
             <svg class="w-4 h-4 mr-1 text-fuchsia-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19V6m4 13V10m4 9V4M7 19v-4M3 19v-2" />
             </svg>
             Estadísticas
-          </a>
+          </router-link>
         </li>
       </ul>
     </nav>
   </div>
+  <div class="p-6 shadow-lg rounded-2xl bg-white mt-8">
+  <div class="w-full max-w-[1800px] mx-auto bg-white rounded-2xl shadow-lg p-8 lg:p-12 mt-8 lg:mt-14 px-4">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Usuarios en el sistema</h2>
+        <button
+          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition text-base font-medium"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nuevo Usuario
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <!-- La tabla ahora abarca casi todo el ancho de la página, pero mantiene márgenes laterales en blanco para un diseño limpio -->
+        <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white">
+          <thead class="sticky top-0 z-10 shadow-sm">
+            <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
+              <th class="p-4 font-semibold text-left rounded-tl-2xl">ID</th>
+              <th class="p-4 font-semibold text-left">Nombre</th>
+              <th class="p-4 font-semibold text-left">Apellido Paterno</th>
+              <th class="p-4 font-semibold text-left">Apellido Materno</th>
+              <th class="p-4 font-semibold text-left">Email</th>
+              <th class="p-4 font-semibold text-left">Rol</th>
+              <th class="p-4 font-semibold text-left">RUT</th>
+              <th class="p-4 font-semibold text-left">Estado</th>
+              <th class="p-4 font-semibold text-left">Creado</th>
+              <th class="p-4 font-semibold text-center rounded-tr-2xl">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-if="usuarios.length > 0">
+              <tr
+                v-for="u in usuarios"
+                :key="u.id"
+                class="hover:bg-blue-100 transition border-b border-gray-200"
+              >
+                <td class="p-4">{{ u.id }}</td>
+                <td class="p-4">{{ u.nombre }}</td>
+                <td class="p-4">{{ u.apellido_pat }}</td>
+                <td class="p-4">{{ u.apellido_mat }}</td>
+                <td class="p-4">{{ u.email }}</td>
+                <td class="p-4">
+                  <!-- Solo muestra el select y botones si el usuario está en modo edición -->
+                  <template v-if="usuarioEditando === u.id">
+                    <select
+                      v-model="rolEditTemp"
+                      class="border rounded px-2 py-1 bg-white text-gray-700"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="trabajador">Trabajador</option>
+                      <option value="supervisor">Supervisor</option>
+                    </select>
+                  </template>
+                  <template v-else>
+                    {{ u.rol }}
+                  </template>
+                </td>
+                <td class="p-4">{{ u.rut }}</td>
+                <td class="p-4">
+                  <template v-if="usuarioEditando === u.id">
+                    <div class="flex gap-2 items-center">
+                      <select
+                        v-model="estadoEditTemp"
+                        class="border rounded px-2 py-1 bg-white text-gray-700"
+                      >
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                      </select>
+                      <button
+                        class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                        @click="confirmarCambios(u.id)"
+                      >Guardar</button>
+                      <button
+                        class="px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                        @click="cancelarEdicionEstado()"
+                      >Cancelar</button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    {{ u.estado === 1 ? 'Activo' : 'Inactivo' }}
+                  </template>
+                </td>
+                <td class="p-4">{{ formatearFecha(u.created_at) }}</td>
+                <td class="p-4 flex justify-center gap-3">
+                  <!-- Botón para activar modo edición del usuario -->
+                  <button
+                    class="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-200 transition"
+                    title="Editar"
+                    @click="iniciarEdicionEstado(u)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l-4 4v4h4l10-10-4-4-10 10z"/>
+                    </svg>
+                    <span class="hidden sm:inline">Editar</span>
+                  </button>
+                  
+                  <!-- Botón para unir trabajador a empresa -->
+                  <!-- Solo se muestra para usuarios con rol "trabajador" que no tengan empresa asignada -->
+                  <button
+                    v-if="u.rol === 'trabajador' && !tieneEmpresaAsignada(u.id)"
+                    class="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg border border-green-200 hover:bg-green-200 transition"
+                    title="Unir a empresa"
+                    @click="abrirModalUnirEmpresa(u)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    <span class="hidden sm:inline">Unir</span>
+                  </button>
+                </td>
+              </tr>
+            </template>
+            <tr v-else>
+              <td colspan="5" class="py-8 text-center text-gray-400 text-lg">No hay usuarios registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para unir trabajador a empresa -->
+  <!-- Este modal permite asignar un trabajador sin empresa a una empresa existente -->
+  <!-- Se activa solo para usuarios con rol "trabajador" que no tengan empresa asignada -->
+  <div v-if="mostrarModalUnirEmpresa" class="fixed inset-0 flex items-center justify-center z-50" @click.self="cerrarModalUnirEmpresa">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Unir trabajador a empresa</h3>
+        <button @click="cerrarModalUnirEmpresa" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Información del trabajador seleccionado -->
+      <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+        <p class="text-sm text-gray-700">
+          <span class="font-medium">Trabajador:</span> {{ usuarioSeleccionado?.nombre }} {{ usuarioSeleccionado?.apellido_pat }}
+        </p>
+        <p class="text-sm text-gray-700">
+          <span class="font-medium">RUT:</span> {{ usuarioSeleccionado?.rut }}
+        </p>
+        <p class="text-sm text-gray-700">
+          <span class="font-medium">Email:</span> {{ usuarioSeleccionado?.email }}
+        </p>
+      </div>
+
+      <!-- Selector de empresa -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Empresa</label>
+        <select 
+          v-model="empresaSeleccionada" 
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :disabled="cargandoEmpresas"
+        >
+          <option value="">Seleccione una empresa</option>
+          <option v-for="empresa in empresasDisponibles" :key="empresa.id" :value="empresa.id">
+            {{ empresa.nombre }} ({{ empresa.rut }})
+          </option>
+        </select>
+        <p v-if="cargandoEmpresas" class="text-sm text-gray-500 mt-1">Cargando empresas...</p>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex justify-end gap-3">
+        <button 
+          @click="cerrarModalUnirEmpresa"
+          class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+        <button 
+          @click="unirTrabajadorAEmpresa"
+          :disabled="!empresaSeleccionada || cargandoUnion"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ cargandoUnion ? 'Uniendo...' : 'Unir' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
+
+
+<script setup>
+
+import { ref, onMounted } from "vue";
+import axios from "axios";
+
+// ========== VARIABLES REACTIVAS ==========
+const usuarios = ref([]);
+
+// Variables para edición de usuarios
+// Variable para guardar el id del usuario que está en modo edición
+// Si es null, ningún usuario está siendo editado
+const usuarioEditando = ref(null);
+const estadoEditTemp = ref(null);
+const rolEditTemp = ref(null);
+
+// Variables para modal de unir trabajador a empresa
+// Controla la visibilidad del modal de unión trabajador-empresa
+const mostrarModalUnirEmpresa = ref(false);
+// Almacena la información del usuario seleccionado para unir a empresa
+const usuarioSeleccionado = ref(null);
+// Lista de empresas disponibles para asignar al trabajador
+const empresasDisponibles = ref([]);
+// ID de la empresa seleccionada en el modal
+const empresaSeleccionada = ref('');
+// Estado de carga para mostrar feedback visual al usuario
+const cargandoEmpresas = ref(false);
+const cargandoUnion = ref(false);
+// Cache de relaciones usuario-empresa para optimizar rendimiento
+// Evita hacer múltiples consultas al backend para verificar asignaciones
+const relacionesUsuarioEmpresa = ref([]);
+
+// ========== FUNCIONES DE EDICIÓN DE USUARIOS ==========
+
+/**
+ * Inicia el modo de edición para un usuario específico
+ * Permite editar el rol y estado del usuario inline en la tabla
+ * @param {Object} u - Objeto usuario con sus propiedades
+ */
+function iniciarEdicionEstado(u) {
+  usuarioEditando.value = u.id;
+  estadoEditTemp.value = String(u.estado);
+  rolEditTemp.value = u.rol; // Inicializa el select de rol con el valor actual
+  // Si agregas más campos editables, inicialízalos aquí con el valor actual de la base de datos
+}
+
+/**
+ * Cancela la edición actual y restaura el estado original
+ * Limpia todas las variables temporales de edición
+ */
+function cancelarEdicionEstado() {
+  usuarioEditando.value = null;
+  estadoEditTemp.value = null;
+  rolEditTemp.value = null;
+}
+
+/**
+ * Confirma y guarda los cambios realizados al usuario
+ * Actualiza tanto el estado como el rol del usuario en el backend
+ * @param {number} id - ID del usuario a actualizar
+ */
+async function confirmarCambios(id) {
+  try {
+    // Se obtiene el token JWT para autenticación
+    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStorage.token;
+    
+    // Actualizar estado del usuario en el backend
+    await axios.put(`/api/user/usuarios/${id}/estado`, { estado: estadoEditTemp.value }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    // Actualizar rol del usuario en el backend
+    await axios.put(`/api/user/usuarios/${id}/rol`, { rol: rolEditTemp.value }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    // Actualizar la UI local para reflejar los cambios inmediatamente
+    // Esto evita tener que recargar toda la lista de usuarios
+    const usuario = usuarios.value.find(u => u.id === id);
+    if (usuario) {
+      usuario.estado = Number(estadoEditTemp.value);
+      usuario.rol = rolEditTemp.value;
+    }
+    
+    // Limpiar estado de edición
+    usuarioEditando.value = null;
+    estadoEditTemp.value = null;
+    rolEditTemp.value = null;
+    
+    console.log('Usuario actualizado correctamente');
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    alert('Error al actualizar los datos del usuario');
+  }
+}
+
+// ========== FUNCIONES DE UNIÓN TRABAJADOR-EMPRESA ==========
+
+/**
+ * Verifica si un usuario ya tiene una empresa asignada
+ * Utiliza el cache de relaciones para evitar consultas repetidas
+ * @param {number} usuarioId - ID del usuario a verificar
+ * @returns {boolean} true si el usuario ya tiene empresa asignada
+ */
+function tieneEmpresaAsignada(usuarioId) {
+  return relacionesUsuarioEmpresa.value.some(relacion => relacion.usuario_id === usuarioId);
+}
+
+/**
+ * Abre el modal para unir un trabajador a una empresa
+ * Carga las empresas disponibles y inicializa el estado del modal
+ * @param {Object} usuario - Objeto usuario a asignar a empresa
+ */
+async function abrirModalUnirEmpresa(usuario) {
+  usuarioSeleccionado.value = usuario;
+  mostrarModalUnirEmpresa.value = true;
+  empresaSeleccionada.value = '';
+  
+  // Cargar empresas disponibles desde el backend
+  await cargarEmpresasDisponibles();
+}
+
+/**
+ * Cierra el modal de unión y limpia el estado
+ * Resetea todas las variables relacionadas con el modal
+ */
+function cerrarModalUnirEmpresa() {
+  mostrarModalUnirEmpresa.value = false;
+  usuarioSeleccionado.value = null;
+  empresaSeleccionada.value = '';
+  empresasDisponibles.value = [];
+}
+
+/**
+ * Carga la lista de empresas disponibles desde el backend
+ * Las empresas se obtienen de la tabla 'empresas' del sistema
+ */
+async function cargarEmpresasDisponibles() {
+  try {
+    cargandoEmpresas.value = true;
+    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStorage.token;
+
+    // Realizar petición al backend para obtener empresas
+    const response = await axios.get('/api/user/empresas', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    empresasDisponibles.value = response.data || [];
+    console.log('Empresas cargadas:', empresasDisponibles.value);
+  } catch (error) {
+    console.error('Error al cargar empresas:', error);
+    alert('Error al cargar las empresas disponibles');
+    empresasDisponibles.value = [];
+  } finally {
+    cargandoEmpresas.value = false;
+  }
+}
+
+/**
+ * Ejecuta la unión del trabajador seleccionado con la empresa elegida
+ * Crea una nueva relación en la tabla usuarios_empresas
+ */
+async function unirTrabajadorAEmpresa() {
+  if (!usuarioSeleccionado.value || !empresaSeleccionada.value) {
+    alert('Por favor seleccione una empresa');
+    return;
+  }
+
+  try {
+    cargandoUnion.value = true;
+    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStorage.token;
+
+    // Datos a enviar al backend para crear la relación usuario-empresa
+    const datosUnion = {
+      usuario_id: usuarioSeleccionado.value.id,
+      empresa_id: empresaSeleccionada.value,
+      rol_en_empresa: usuarioSeleccionado.value.rol, // Usar el rol actual del usuario
+      fecha_inicio: new Date().toISOString().split('T')[0] // Fecha actual en formato YYYY-MM-DD
+    };
+
+    // Enviar petición al backend para crear la relación
+    const response = await axios.post('/api/user/usuarios-empresas', datosUnion, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // Actualizar el cache local de relaciones usuario-empresa
+    // Esto asegura que el botón "Unir" desaparezca inmediatamente
+    relacionesUsuarioEmpresa.value.push({
+      usuario_id: usuarioSeleccionado.value.id,
+      empresa_id: empresaSeleccionada.value
+    });
+
+    // Mostrar mensaje de éxito
+    alert(`Trabajador ${usuarioSeleccionado.value.nombre} ${usuarioSeleccionado.value.apellido_pat} unido exitosamente a la empresa`);
+    
+    // Cerrar el modal
+    cerrarModalUnirEmpresa();
+    
+    console.log('Trabajador unido a empresa exitosamente:', response.data);
+  } catch (error) {
+    console.error('Error al unir trabajador a empresa:', error);
+    alert('Error al unir el trabajador a la empresa');
+  } finally {
+    cargandoUnion.value = false;
+  }
+}
+
+/**
+ * Carga las relaciones existentes entre usuarios y empresas
+ * Utilizado para determinar qué usuarios ya tienen empresa asignada
+ */
+async function cargarRelacionesUsuarioEmpresa() {
+  try {
+    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStorage.token;
+
+    const response = await axios.get('/api/user/usuarios-empresas', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    relacionesUsuarioEmpresa.value = response.data || [];
+    console.log('Relaciones usuario-empresa cargadas:', relacionesUsuarioEmpresa.value);
+  } catch (error) {
+    console.error('Error al cargar relaciones usuario-empresa:', error);
+    relacionesUsuarioEmpresa.value = [];
+  }
+}
+
+// ========== FUNCIONES AUXILIARES ==========
+
+/**
+ * Formatea una fecha UTC a formato legible en zona horaria de Chile (UTC-3)
+ * Convierte fechas como "2025-08-25T22:13:36.000Z" a "25/08/2025 19:13"
+ * @param {string} fechaUTC - Fecha en formato ISO 8601 UTC
+ * @returns {string} Fecha formateada para Chile
+ */
+function formatearFecha(fechaUTC) {
+  if (!fechaUTC) return 'Sin fecha';
+  
+  try {
+    // Crear objeto Date desde la fecha UTC
+    const fecha = new Date(fechaUTC);
+    
+    // Verificar que es una fecha válida
+    if (isNaN(fecha.getTime())) {
+      return 'Fecha inválida';
+    }
+    
+    // Formatear para zona horaria de Chile (UTC-3)
+    const opcionesFormato = {
+      timeZone: 'America/Santiago', // Zona horaria de Chile
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false // Formato 24 horas
+    };
+    
+    // Obtener partes de la fecha por separado para control total del formato
+    const partes = new Intl.DateTimeFormat('es-CL', opcionesFormato).formatToParts(fecha);
+    
+    // Extraer valores
+    const dia = partes.find(p => p.type === 'day').value;
+    const mes = partes.find(p => p.type === 'month').value;
+    const año = partes.find(p => p.type === 'year').value;
+    const hora = partes.find(p => p.type === 'hour').value;
+    const minuto = partes.find(p => p.type === 'minute').value;
+    
+    // Formatear como dd/mm/yyyy hh:mm
+    return `${dia}/${mes}/${año} ${hora}:${minuto}`;
+    
+  } catch (error) {
+    console.error('Error al formatear fecha:', error);
+    return 'Error de formato';
+  }
+}
+
+// ========== INICIALIZACIÓN DEL COMPONENTE ==========
+
+/**
+ * Hook que se ejecuta cuando el componente se monta
+ * Carga todos los datos necesarios para el funcionamiento de la vista
+ */
+onMounted(async () => {
+  try {
+    // Se obtiene el token JWT desde el objeto 'auth-storage' en localStorage,
+    // ya que el token está guardado como parte de un JSON y no como string plano.
+    // Esto asegura que el header Authorization se envíe correctamente y el backend lo reconozca.
+    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    const token = authStorage.token;
+    
+    // Cargar usuarios del sistema
+    const response = await axios.get("/api/user/usuarios", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    // Depuración: muestra en consola la respuesta del backend para verificar que llegan los usuarios correctamente
+    console.log('Respuesta usuarios:', response.data);
+    usuarios.value = response.data.users || [];
+
+    // Cargar relaciones usuario-empresa para mostrar/ocultar botón "Unir"
+    await cargarRelacionesUsuarioEmpresa();
+    
+  } catch (error) {
+    console.error('Error al cargar datos iniciales:', error);
+    usuarios.value = [];
+  }
+});
+</script>

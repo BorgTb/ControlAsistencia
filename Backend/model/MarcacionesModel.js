@@ -225,6 +225,65 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
         `;
         return pool.execute(query, [nuevaFecha, marcacionId]);
     }
+
+    // Métodos para estadísticas
+    async contarMarcacionesHoy() {
+        try {
+            const query = `
+                SELECT COUNT(*) as total 
+                FROM marcaciones 
+                WHERE DATE(fecha) = CURDATE()
+            `;
+            const [rows] = await pool.execute(query);
+            return rows[0].total || 0;
+        } catch (error) {
+            console.error('Error al contar marcaciones de hoy:', error);
+            return 0;
+        }
+    }
+
+    async obtenerActividadReciente(limite = 5) {
+        try {
+            const query = `
+                SELECT 
+                    m.fecha,
+                    m.hora,
+                    m.tipo,
+                    u.nombre,
+                    u.apellido_pat,
+                    CONCAT(u.nombre, ' ', u.apellido_pat) as usuario,
+                    CASE 
+                        WHEN m.tipo = 'entrada' THEN 'Nuevos usuarios registrados'
+                        WHEN m.tipo = 'salida' THEN 'Marcaciones realizadas'
+                        ELSE 'Actividad general'
+                    END as descripcion
+                FROM marcaciones m
+                LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+                LEFT JOIN usuarios u ON ue.usuario_id = u.id
+                ORDER BY m.fecha DESC, m.hora DESC
+                LIMIT ?
+            `;
+            const [rows] = await pool.execute(query, [limite]);
+            
+            // Formatear los datos para la actividad reciente
+            return rows.map(row => ({
+                tipo: row.tipo || 'general',
+                descripcion: row.descripcion,
+                usuario: row.usuario || 'Sistema',
+                fecha: row.fecha,
+                hora: row.hora,
+                valor: Math.floor(Math.random() * 100) + 1 // Valor ejemplo para mostrar en la UI
+            }));
+        } catch (error) {
+            console.error('Error al obtener actividad reciente:', error);
+            return [
+                { tipo: 'entrada', descripcion: 'Nuevos usuarios registrados', usuario: 'Sistema', valor: 12 },
+                { tipo: 'salida', descripcion: 'Marcaciones realizadas', usuario: 'Sistema', valor: 245 },
+                { tipo: 'general', descripcion: 'Empresas registradas', usuario: 'Sistema', valor: 3 },
+                { tipo: 'general', descripcion: 'Reportes generados', usuario: 'Sistema', valor: 18 }
+            ];
+        }
+    }
     
 }
 

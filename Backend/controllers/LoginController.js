@@ -67,7 +67,26 @@ const login = async (req, res) => {
             });
         }
         
-        const loginResult = await AuthService.loginUser(email, password);
+        // Obtener IP del usuario
+        const ip_address = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 
+                          (req.connection.socket ? req.connection.socket.remoteAddress : null) || 
+                          req.headers['x-forwarded-for'] || 'unknown';
+        
+        console.log('🔐 Intento de login:', {
+            email: email,
+            ip_address: ip_address,
+            user_agent: req.headers['user-agent'],
+            fecha: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
+        });
+        
+        const loginResult = await AuthService.loginUser(email, password, ip_address);
+        
+        console.log('✅ Login exitoso para usuario:', {
+            id: loginResult.user.id,
+            nombre: loginResult.user.nombre,
+            rol: loginResult.user.rol,
+            ip_address: ip_address
+        });
         
         res.status(200).json({
             success: true,
@@ -77,7 +96,12 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        if (error.message === 'User not found' || error.message === 'Invalid password' || error.message === 'Worker is not valid') {
+        // Manejo de errores específicos de autenticación
+        // Estos errores se devuelven como "Invalid credentials" por seguridad
+        // para no revelar información específica sobre la cuenta del usuario
+        if (error.message === 'User not found' || 
+            error.message === 'Invalid password' || 
+            error.message === 'User account is inactive') {
             return res.status(401).json({ 
                 success: false, 
                 message: 'Invalid credentials' 

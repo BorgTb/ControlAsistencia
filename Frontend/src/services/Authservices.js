@@ -108,8 +108,34 @@ class AuthService {
     try {
       authStore.setLoading(true)
       
-      // Opcional: llamar al endpoint de logout en el backend
-      await apiClient.post('/auth/logout')
+      // Obtener datos del usuario antes de limpiar
+      const userData = authStore.getUser // Cambiar de getUserData a getUser
+      console.log('🔍 Datos del usuario para logout:', userData)
+      
+      // Cerrar sesión en auditoría antes del logout tradicional
+      if (userData && userData.id) {
+        try {
+          console.log('📤 Enviando petición de cierre de sesión para usuario ID:', userData.id)
+          const response = await apiClient.post('/auditoria/logout', {
+            usuario_id: userData.id
+          })
+          console.log('✅ Respuesta del cierre de sesión:', response.data)
+        } catch (auditoriaError) {
+          console.error('⚠️ Error al cerrar sesión en auditoría:', auditoriaError)
+          console.error('⚠️ Detalles del error:', auditoriaError.response?.data)
+          // No fallar el logout por esto
+        }
+      } else {
+        console.warn('⚠️ No se encontraron datos del usuario para cerrar sesión en auditoría')
+      }
+      
+      // Llamar al endpoint de logout tradicional en el backend
+      try {
+        await apiClient.post('/auth/logout')
+      } catch (authError) {
+        console.warn('⚠️ Error en logout del auth:', authError)
+        // Continuar con el logout local
+      }
       
       // Limpiar el store
       authStore.clearAuth()
