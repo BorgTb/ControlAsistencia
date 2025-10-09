@@ -72,365 +72,375 @@
     </nav>
   </div>
 
-  <!-- Contenido Principal -->
+  <!-- Contenido Principal: Historial de Cambios del Sistema -->
   <div class="p-6 shadow-lg rounded-2xl bg-white mt-8">
     <div class="w-full max-w-[1800px] mx-auto bg-white rounded-2xl shadow-lg p-8 lg:p-12 mt-8 lg:mt-14 px-4">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-8">
+      
+      <!-- Header con título y controles -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-2">Fiscalización</h2>
-          <p class="text-gray-600">Gestión de procesos de fiscalización y control de cumplimiento</p>
+          <h2 class="text-2xl font-bold text-gray-800">Historial de Cambios del Sistema</h2>
+          <p class="text-gray-600 text-sm mt-1">Seguimiento de actividades y modificaciones realizadas</p>
         </div>
-        <button
-          @click="mostrarModalNuevoProcesoFiscalizacion = true"
-          class="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-base font-medium"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-          Nuevo Proceso
-        </button>
-      </div>
-
-      <!-- Grid de Funcionalidades -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         
-        <!-- Procesos Activos -->
-        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
-          <div class="flex items-center mb-4">
-            <div class="p-3 bg-green-500 rounded-lg">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <h3 class="text-lg font-semibold text-green-800">Procesos Activos</h3>
-              <p class="text-green-600 text-sm">{{ procesosActivos }} en curso</p>
-            </div>
-          </div>
-          <p class="text-gray-700 text-sm mb-4">
-            Procesos de fiscalización en estado activo o en progreso
-          </p>
-          <button class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition text-sm font-medium">
-            Ver Procesos
-          </button>
-        </div>
-
-        <!-- Empresas Fiscalizadas -->
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
-          <div class="flex items-center mb-4">
-            <div class="p-3 bg-blue-500 rounded-lg">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <h3 class="text-lg font-semibold text-blue-800">Empresas</h3>
-              <p class="text-blue-600 text-sm">{{ empresasFiscalizadas }} fiscalizadas</p>
-            </div>
-          </div>
-          <p class="text-gray-700 text-sm mb-4">
-            Empresas que han sido objeto de procesos de fiscalización
-          </p>
-          <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition text-sm font-medium">
-            Ver Empresas
-          </button>
-        </div>
-
-        <!-- Informes Generados -->
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
-          <div class="flex items-center mb-4">
-            <div class="p-3 bg-purple-500 rounded-lg">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-3.87-.75M3 12a9 9 0 019-9m-9 9a9 9 0 009 9m-9-9H9m-9 0h9"/>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <h3 class="text-lg font-semibold text-purple-800">Informes</h3>
-              <p class="text-purple-600 text-sm">{{ informesGenerados }} completados</p>
-            </div>
-          </div>
-          <p class="text-gray-700 text-sm mb-4">
-            Informes de fiscalización generados y completados
-          </p>
-          <button class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition text-sm font-medium">
-            Ver Informes
+        <!-- Controles de filtros y acciones -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <select 
+            v-model="filtros.estado"
+            @change="actualizarFiltros({ estado: filtros.estado })"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          >
+            <option value="">Todos los estados</option>
+            <option value="activo">Sesiones Activas</option>
+            <option value="cerrado">Sesiones Cerradas</option>
+            <option value="expirado">Sesiones Expiradas</option>
+          </select>
+          
+          <select 
+            v-model="filtros.limite"
+            @change="actualizarFiltros({ limite: parseInt(filtros.limite) })"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          >
+            <option value="25">25 registros</option>
+            <option value="50">50 registros</option>
+            <option value="100">100 registros</option>
+            <option value="200">200 registros</option>
+          </select>
+          
+          <button
+            @click="cargarRegistros(filtros.limite)"
+            :disabled="loading"
+            class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-sm font-medium disabled:opacity-50"
+          >
+            <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <svg v-else class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ loading ? 'Cargando...' : 'Actualizar' }}
           </button>
         </div>
       </div>
 
-      <!-- Tabla de Procesos de Fiscalización -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <h3 class="text-lg font-semibold text-gray-800">Procesos de Fiscalización Recientes</h3>
+      <!-- Estadísticas rápidas -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="p-2 bg-green-500 rounded-lg">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-green-600">Total Registros</p>
+              <p class="text-2xl font-bold text-green-900">{{ estadisticasCalculadas.total }}</p>
+            </div>
+          </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiscalizador</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Inicio</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="proceso in procesosFiscalizacion" :key="proceso.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                      <div class="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-blue-600 flex items-center justify-center">
-                        <span class="text-sm font-medium text-white">{{ proceso.empresa.substring(0, 2).toUpperCase() }}</span>
-                      </div>
-                    </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">{{ proceso.empresa }}</div>
-                      <div class="text-sm text-gray-500">RUT: {{ proceso.rut }}</div>
-                    </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="p-2 bg-blue-500 rounded-lg">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-blue-600">Sesiones Activas</p>
+              <p class="text-2xl font-bold text-blue-900">{{ estadisticasCalculadas.activos }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="p-2 bg-gray-500 rounded-lg">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Sesiones Cerradas</p>
+              <p class="text-2xl font-bold text-gray-900">{{ estadisticasCalculadas.cerrados }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="p-2 bg-purple-500 rounded-lg">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-purple-600">% Activas</p>
+              <p class="text-2xl font-bold text-purple-900">{{ estadisticasCalculadas.porcentajeActivos }}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscador de usuarios -->
+      <div class="mb-4">
+        <div class="relative">
+          <input
+            v-model="filtros.usuario"
+            type="text"
+            placeholder="Buscar por nombre o email..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          >
+          <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Mensaje de error -->
+      <div v-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div class="flex">
+          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div class="ml-3">
+            <p class="text-sm text-red-800">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de registros de auditoría -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white">
+          <thead class="sticky top-0 z-10 shadow-sm">
+            <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
+              <th class="p-4 font-semibold text-left rounded-tl-2xl">Usuario</th>
+              <th class="p-4 font-semibold text-left">Email</th>
+              <th class="p-4 font-semibold text-left">Rol</th>
+              <th class="p-4 font-semibold text-left">Estado Usuario</th>
+              <th class="p-4 font-semibold text-center rounded-tr-2xl">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Mostrar registros si existen -->
+            <template v-if="registros.length > 0">
+              <tr
+                v-for="registro in registros"
+                :key="registro.id"
+                class="hover:bg-green-50 transition border-b border-gray-200"
+              >
+                <td class="p-4">
+                  <div class="font-medium text-gray-900">
+                    {{ registro.nombre }} {{ registro.apellido_pat }} {{ registro.apellido_mat }}
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ proceso.fiscalizador }}</div>
-                  <div class="text-sm text-gray-500">{{ proceso.emailFiscalizador }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {{ proceso.tipo }}
+                <td class="p-4 text-gray-600">{{ registro.email }}</td>
+                <td class="p-4">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    {{ registro.rol }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getEstadoBadgeClass(proceso.estado)" 
-                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ proceso.estado }}
+                <!-- Estado del usuario: activo (1) o inactivo (0) -->
+                <td class="p-4">
+                  <span 
+                    class="px-2 py-1 text-xs font-medium rounded-full"
+                    :class="registro.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                  >
+                    {{ registro.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatearFecha(proceso.fechaInicio) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-green-600 hover:text-green-900 mr-3">Ver</button>
-                  <button class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
-                  <button class="text-red-600 hover:text-red-900">Finalizar</button>
+                <td class="p-4 text-center">
+                  <div class="flex gap-2 justify-center">
+                    <!-- Botón para ver cambios realizados por el usuario -->
+                    <button
+                      @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
+                      class="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-200 transition text-xs"
+                      title="Ver cambios realizados por este usuario"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                      </svg>
+                      Ver Cambios
+                    </button>
+                    
+                    <!-- Botón para cerrar sesión activa (solo si tiene sesión activa) -->
+                    <button
+                      v-if="registro.estado === 'activo'"
+                      @click="manejarCierreSesion(registro.usuario_id, registro.id)"
+                      class="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-lg border border-red-200 hover:bg-red-200 transition text-xs"
+                      title="Cerrar sesión activa"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                      </svg>
+                      Cerrar
+                    </button>
+                  </div>
                 </td>
               </tr>
-            </tbody>
-          </table>
-        </div>
+            </template>
+            
+            <!-- Mensaje cuando no hay registros -->
+            <tr v-else-if="!loading">
+              <td colspan="5" class="py-8 text-center text-gray-400 text-lg">
+                <div class="flex flex-col items-center">
+                  <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                  </svg>
+                  No hay registros de auditoría disponibles
+                </div>
+              </td>
+            </tr>
+            
+            <!-- Indicador de carga -->
+            <tr v-else>
+              <td colspan="5" class="py-8 text-center">
+                <div class="flex items-center justify-center">
+                  <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  <span class="ml-2 text-gray-600">Cargando registros...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- Modal para nuevo proceso de fiscalización -->
-  <div v-if="mostrarModalNuevoProcesoFiscalizacion" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="cerrarModalNuevoProcesoFiscalizacion">
-    <div class="relative top-20 mx-auto p-5 border max-w-2xl w-full shadow-lg rounded-md bg-white">
-      <div class="mt-3">
-        <!-- Header del modal -->
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-medium text-gray-900">Nuevo Proceso de Fiscalización</h3>
-          <button @click="cerrarModalNuevoProcesoFiscalizacion" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Formulario -->
-        <form @submit.prevent="crearProcesoFiscalizacion" class="space-y-4">
-          <!-- Empresa -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Empresa *</label>
-            <select 
-              v-model="nuevoProceso.empresaId"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">Selecciona una empresa</option>
-              <option value="1">Empresa ABC Ltda.</option>
-              <option value="2">Constructora XYZ S.A.</option>
-              <option value="3">Servicios DEF SpA</option>
-            </select>
-          </div>
-          
-          <!-- Tipo de Fiscalización -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Fiscalización *</label>
-            <select 
-              v-model="nuevoProceso.tipo"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">Selecciona el tipo</option>
-              <option value="Rutinaria">Rutinaria</option>
-              <option value="Por denuncia">Por denuncia</option>
-              <option value="Seguimiento">Seguimiento</option>
-              <option value="Especial">Especial</option>
-            </select>
-          </div>
-          
-          <!-- Fiscalizador -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Fiscalizador Asignado *</label>
-            <select 
-              v-model="nuevoProceso.fiscalizadorId"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">Selecciona un fiscalizador</option>
-              <option value="1">María González</option>
-              <option value="2">Carlos Rodríguez</option>
-              <option value="3">Ana López</option>
-            </select>
-          </div>
-          
-          <!-- Descripción -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea 
-              v-model="nuevoProceso.descripcion"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Describe el motivo y alcance de la fiscalización"
-            ></textarea>
-          </div>
-          
-          <!-- Botones -->
-          <div class="flex justify-end space-x-3 pt-4">
-            <button 
-              type="button"
-              @click="cerrarModalNuevoProcesoFiscalizacion"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 border border-gray-300 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit"
-              :disabled="cargandoCreacion"
-              class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
-            >
-              {{ cargandoCreacion ? 'Creando...' : 'Crear Proceso' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  <!-- Modal de cambios de usuario -->
+  <ModalCambiosUsuario
+    :mostrar="mostrarModalCambios"
+    :usuario-id="usuarioSeleccionado.id"
+    :usuario-nombre="usuarioSeleccionado.nombre"
+    :usuario-rol="usuarioSeleccionado.rol"
+    @cerrar="cerrarModalCambios"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
+// Importaciones necesarias para el componente de auditoría
+import { onMounted, ref } from 'vue'
+import { useAuditoria } from '../../composables/useAuditoria.js'
+import { useNotification } from '../../composables/useNotification.js'
+import ModalCambiosUsuario from '../modals/ModalCambiosUsuario.vue'
 
-// Estados reactivos
-const procesosActivos = ref(8);
-const empresasFiscalizadas = ref(25);
-const informesGenerados = ref(42);
-const procesosFiscalizacion = ref([]);
-const mostrarModalNuevoProcesoFiscalizacion = ref(false);
-const cargandoCreacion = ref(false);
+// ========== COMPOSABLE DE AUDITORÍA ==========
+// Utiliza el composable personalizado para gestionar datos de auditoría
+const {
+  // Estados reactivos
+  registros,                    // Lista de registros de auditoría filtrados
+  estadisticasCalculadas,       // Estadísticas calculadas (total, activos, cerrados, etc.)
+  loading,                      // Indicador de carga
+  error,                        // Mensaje de error si existe
+  filtros,                      // Filtros aplicables (límite, usuario, estado, etc.)
+  
+  // Métodos principales
+  cargarRegistros,              // Carga registros desde el servidor
+  cargarEstadisticas,           // Carga estadísticas del sistema
+  cerrarSesionUsuario,          // Cierra sesión de un usuario específico
+  actualizarFiltros,            // Actualiza filtros y recarga datos
+  
+  // Utilidades de formato
+  formatearFecha,               // Formatea fechas a zona horaria de Chile
+  formatearDuracion,            // Formatea duración de sesiones (min/horas)
+  obtenerColorEstado            // Obtiene clases CSS según estado de sesión
+} = useAuditoria()
 
-// Estado para el formulario de nuevo proceso
-const nuevoProceso = ref({
-  empresaId: '',
-  tipo: '',
-  fiscalizadorId: '',
-  descripcion: ''
-});
+// ========== COMPOSABLE DE NOTIFICACIONES ==========
+const { showSuccess, showError } = useNotification()
 
-// Funciones auxiliares
-const getEstadoBadgeClass = (estado) => {
-  const classes = {
-    'En Progreso': 'bg-yellow-100 text-yellow-800',
-    'Completado': 'bg-green-100 text-green-800',
-    'Pendiente': 'bg-gray-100 text-gray-800',
-    'Suspendido': 'bg-red-100 text-red-800'
-  };
-  return classes[estado] || 'bg-gray-100 text-gray-800';
-};
+// ========== ESTADO PARA MODAL DE CAMBIOS ==========
+// Variables reactivas para controlar el modal de cambios de usuario
+const mostrarModalCambios = ref(false)
+const usuarioSeleccionado = ref({
+  id: null,
+  nombre: '',
+  rol: ''
+})
 
-const formatearFecha = (fecha) => {
-  return new Date(fecha).toLocaleDateString('es-CL');
-};
+// ========== FUNCIONES DEL COMPONENTE ==========
 
-// Funciones para gestión de procesos
-const cerrarModalNuevoProcesoFiscalizacion = () => {
-  mostrarModalNuevoProcesoFiscalizacion.value = false;
-  // Limpiar formulario
-  nuevoProceso.value = {
-    empresaId: '',
-    tipo: '',
-    fiscalizadorId: '',
-    descripcion: ''
-  };
-};
-
-const crearProcesoFiscalizacion = async () => {
-  try {
-    cargandoCreacion.value = true;
+/**
+ * Maneja el cierre de sesión de un usuario específico
+ * Muestra confirmación antes de proceder con el cierre
+ * @param {number} usuarioId - ID del usuario
+ * @param {number} sesionId - ID de la sesión a cerrar
+ */
+const manejarCierreSesion = async (usuarioId, sesionId) => {
+  // Solicitar confirmación antes de cerrar la sesión
+  const confirmar = confirm('¿Está seguro de que desea cerrar esta sesión?')
+  
+  if (confirmar) {
+    const resultado = await cerrarSesionUsuario(usuarioId, sesionId)
     
-    // Aquí iría la llamada al API
-    console.log('Creando proceso de fiscalización:', nuevoProceso.value);
-    
-    // Simular creación exitosa
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    cerrarModalNuevoProcesoFiscalizacion();
-    alert('Proceso de fiscalización creado exitosamente');
-    
-    // Recargar datos
-    cargarProcesosFiscalizacion();
-    
-  } catch (error) {
-    console.error('Error al crear proceso:', error);
-    alert('Error al crear el proceso. Por favor, intenta nuevamente.');
-  } finally {
-    cargandoCreacion.value = false;
+    if (resultado) {
+      // Mostrar mensaje de éxito con notificación personalizada
+      showSuccess('Sesión cerrada exitosamente')
+    } else {
+      // Mostrar mensaje de error con notificación personalizada
+      showError('Error al cerrar la sesión')
+    }
   }
-};
+}
 
-const cargarProcesosFiscalizacion = async () => {
-  try {
-    // Simular datos de ejemplo
-    procesosFiscalizacion.value = [
-      {
-        id: 1,
-        empresa: 'Empresa ABC Ltda.',
-        rut: '12.345.678-9',
-        fiscalizador: 'María González',
-        emailFiscalizador: 'maria.gonzalez@fiscalizacion.cl',
-        tipo: 'Rutinaria',
-        estado: 'En Progreso',
-        fechaInicio: '2024-10-01'
-      },
-      {
-        id: 2,
-        empresa: 'Constructora XYZ S.A.',
-        rut: '98.765.432-1',
-        fiscalizador: 'Carlos Rodríguez',
-        emailFiscalizador: 'carlos.rodriguez@fiscalizacion.cl',
-        tipo: 'Por denuncia',
-        estado: 'Completado',
-        fechaInicio: '2024-09-28'
-      },
-      {
-        id: 3,
-        empresa: 'Servicios DEF SpA',
-        rut: '11.222.333-4',
-        fiscalizador: 'Ana López',
-        emailFiscalizador: 'ana.lopez@fiscalizacion.cl',
-        tipo: 'Seguimiento',
-        estado: 'Pendiente',
-        fechaInicio: '2024-10-03'
-      }
-    ];
-  } catch (error) {
-    console.error('Error al cargar procesos:', error);
+/**
+ * Abre el modal de cambios para mostrar el historial de un usuario específico
+ * Permite ver todas las acciones realizadas por el usuario seleccionado
+ * @param {number} usuarioId - ID del usuario
+ * @param {string} nombre - Nombre del usuario
+ * @param {string} apellido - Apellido del usuario
+ * @param {string} rol - Rol del usuario
+ */
+const abrirModalCambios = (usuarioId, nombre, apellido, rol) => {
+  // Configurar datos del usuario seleccionado
+  usuarioSeleccionado.value = {
+    id: usuarioId,
+    nombre: `${nombre} ${apellido}`,
+    rol: rol
   }
-};
+  
+  // Mostrar el modal de cambios
+  mostrarModalCambios.value = true
+  
+  console.log('🔍 Abriendo modal de cambios para usuario:', usuarioSeleccionado.value)
+}
 
-// Cargar datos al montar el componente
-onMounted(() => {
-  cargarProcesosFiscalizacion();
-});
+/**
+ * Cierra el modal de cambios de usuario
+ * Limpia los datos del usuario seleccionado
+ */
+const cerrarModalCambios = () => {
+  mostrarModalCambios.value = false
+  usuarioSeleccionado.value = {
+    id: null,
+    nombre: '',
+    rol: ''
+  }
+}
+
+// ========== INICIALIZACIÓN DEL COMPONENTE ==========
+
+/**
+ * Hook que se ejecuta cuando el componente se monta
+ * Carga los datos iniciales de auditoría del sistema
+ */
+onMounted(async () => {
+  try {
+    console.log('🔍 Cargando datos de auditoría del sistema...')
+    
+    // Cargar registros de auditoría (por defecto los últimos 50)
+    await cargarRegistros()
+    
+    // Cargar estadísticas adicionales del sistema
+    await cargarEstadisticas()
+    
+    console.log('✅ Datos de auditoría cargados correctamente')
+  } catch (err) {
+    console.error('❌ Error al cargar datos iniciales de auditoría:', err)
+  }
+})
 </script>

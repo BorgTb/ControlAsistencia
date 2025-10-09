@@ -7,15 +7,16 @@ import EmpresaController from '../controllers/EmpresasController.js';
 const router = express.Router();
 
 
-// Se agrega la ruta POST para crear empresas desde el frontend (CRUD)
-router.post('/', AuthService.verifyToken, EmpresaController.createEmpresa);
+// RUTAS RESTRINGIDAS SOLO PARA ADMINISTRADORES
+// Solo admins pueden crear, editar y eliminar empresas
+router.post('/', AuthService.verifyToken, AuthService.isAdmin, EmpresaController.createEmpresa);
+router.delete('/:id', AuthService.verifyToken, AuthService.isAdmin, EmpresaController.deleteEmpresa);
+router.put('/:id', AuthService.verifyToken, AuthService.isAdmin, EmpresaController.updateEmpresa);
 
-// Se agrega la ruta DELETE para eliminar empresas desde el frontend (CRUD)
-// Esto permite que el botón de borrar en AdminEmpresas funcione correctamente
-router.delete('/:id', AuthService.verifyToken, EmpresaController.deleteEmpresa);
+// RUTAS DISPONIBLES PARA TODOS LOS USUARIOS AUTENTICADOS
+// Empleadores y admins pueden ver las empresas
 router.get('/activas', AuthService.verifyToken, EmpresaController.getEmpresasActivas);
 router.get('/buscar', AuthService.verifyToken, EmpresaController.buscarEmpresasPorNombre);
-router.put('/:id', AuthService.verifyToken, EmpresaController.updateEmpresa);
 router.get('/:id', AuthService.verifyToken, EmpresaController.getEmpresaById);
 router.get('/', AuthService.verifyToken, EmpresaController.getAllEmpresas);
 

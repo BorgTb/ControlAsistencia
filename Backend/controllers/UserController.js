@@ -1,3 +1,10 @@
+import UserModel from '../model/UserModel.js';
+import authservice from '../services/authservice.js';
+import {DateTime} from 'luxon';
+import ReportesModel from '../model/ReportesModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import AuditoriaModel from '../model/AuditoriaModel.js';
+
 /**
  * Actualiza el rol de un usuario por su id.
  * Permite cambiar el campo rol desde el frontend de forma segura.
@@ -6,7 +13,48 @@ export const updateRol = async (req, res) => {
     const { id } = req.params;
     const { rol } = req.body;
     try {
+        // Obtener datos anteriores del usuario
+        let datosAnteriores = null;
+        try {
+            const usuarioAnterior = await UserModel.findById(id);
+            datosAnteriores = { rol: usuarioAnterior?.rol };
+        } catch (error) {
+            console.warn('No se pudieron obtener datos anteriores del usuario');
+        }
+
+        // Actualizar el rol
         await UserModel.update(id, { rol });
+        
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                // Traducir roles al español para la descripción
+                const traducirRol = (rol) => {
+                    switch (rol) {
+                        case 'admin': return 'Administrador'
+                        case 'empleador': return 'Empleador'
+                        case 'trabajador': return 'Trabajador'
+                        case 'fiscalizador': return 'Fiscalizador'
+                        default: return rol
+                    }
+                }
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'cambiar_rol',
+                    tabla_afectada: 'usuarios',
+                    registro_id: id,
+                    descripcion: `Rol de usuario cambiado de "${traducirRol(datosAnteriores?.rol || 'Sin rol')}" a "${traducirRol(rol)}"`,
+                    datos_anteriores: datosAnteriores ? JSON.stringify(datosAnteriores) : null,
+                    datos_nuevos: JSON.stringify({ rol }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de rol registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        }
+        
         res.status(200).json({ success: true, message: 'Rol actualizado correctamente' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error al actualizar rol', error });
@@ -20,19 +68,45 @@ const updateEstado = async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
     try {
+        // Obtener datos anteriores del usuario
+        let datosAnteriores = null;
+        try {
+            const usuarioAnterior = await UserModel.findById(id);
+            datosAnteriores = { estado: usuarioAnterior?.estado };
+        } catch (error) {
+            console.warn('No se pudieron obtener datos anteriores del usuario');
+        }
+
+        // Actualizar el estado
         await UserModel.update(id, { estado });
+        
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                const estadoTexto = estado ? 'Activo' : 'Inactivo';
+                const estadoAnterior = datosAnteriores?.estado ? 'Activo' : 'Inactivo';
+                
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'cambiar_estado',
+                    tabla_afectada: 'usuarios',
+                    registro_id: id,
+                    descripcion: `Estado de usuario cambiado de "${estadoAnterior}" a "${estadoTexto}"`,
+                    datos_anteriores: datosAnteriores ? JSON.stringify(datosAnteriores) : null,
+                    datos_nuevos: JSON.stringify({ estado }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de estado registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        }
+        
         res.status(200).json({ success: true, message: 'Estado actualizado correctamente' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error al actualizar estado', error });
     }
 };
-import UserModel from '../model/UserModel.js';
-import authservice from '../services/authservice.js';
-import {DateTime} from 'luxon';
-import ReportesModel from '../model/ReportesModel.js';
-import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
-
-
 
 const updateEmail = async (req, res) => {
     const { newEmail, password } = req.body; // nuevos datos
@@ -275,6 +349,61 @@ const createUser = async (req, res) => {
             estado
         );
 
+        // Debug: Verificar información del usuario
+        console.log('🔍 Debug usuario en createUser:', {
+            hasReqUser: !!req.user,
+            userId: req.user?.id,
+            userRol: req.user?.rol,
+            userEmail: req.user?.email,
+            newUserId: newUser?.id
+        });
+
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                console.log('🔄 Intentando registrar creación de usuario en auditoría para usuario:', req.user.id);
+                
+                // Traducir rol al español
+                const traducirRol = (rol) => {
+                    switch (rol) {
+                        case 'admin': return 'Administrador'
+                        case 'empleador': return 'Empleador'
+                        case 'trabajador': return 'Trabajador'
+                        case 'fiscalizador': return 'Fiscalizador'
+                        default: return rol
+                    }
+                }
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'crear_usuario',
+                    tabla_afectada: 'usuarios',
+                    registro_id: newUser.id,
+                    descripcion: `Usuario creado: ${nombre} ${apellido_pat || ''} (${email}) - Rol: ${traducirRol(rol)}`,
+                    datos_anteriores: null,
+                    datos_nuevos: JSON.stringify({
+                        nombre,
+                        apellido_pat,
+                        apellido_mat,
+                        email,
+                        rol,
+                        rut,
+                        estado
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de creación de usuario registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        } else {
+            console.warn('⚠️ No se pudo registrar creación de usuario en auditoría:', {
+                hasReqUser: !!req.user,
+                userId: req.user?.id,
+                reason: !req.user ? 'req.user no existe' : 'req.user.id no existe'
+            });
+        }
+
         res.status(201).json({
             success: true,
             message: 'Usuario creado exitosamente',
@@ -292,6 +421,120 @@ const createUser = async (req, res) => {
 
     } catch (error) {
         console.error('Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+// Crear trabajador (solo para empleadores - permisos limitados)
+const createTrabajador = async (req, res) => {
+    try {
+        const { nombre, apellido_pat, apellido_mat, email, password, rut, estado = 1 } = req.body;
+        
+        // Forzar rol como trabajador - los empleadores solo pueden crear trabajadores
+        const rol = 'trabajador';
+        
+        // Validaciones básicas
+        if (!nombre || !email || !password || !rut) {
+            return res.status(400).json({
+                success: false,
+                message: 'Campos requeridos: nombre, email, password, rut'
+            });
+        }
+
+        // Verificar si ya existe un usuario con este email o RUT
+        const existingUserByEmail = await UserModel.findByEmail(email);
+        if (existingUserByEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un usuario con este email'
+            });
+        }
+
+        const existingUserByRut = await UserModel.findByRut(rut);
+        if (existingUserByRut) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un usuario con este RUT'
+            });
+        }
+
+        // Crear trabajador usando AuthService para hash de password
+        const newUser = await authservice.registerUser(
+            email, 
+            password, 
+            nombre, 
+            apellido_pat, 
+            apellido_mat, 
+            rol, 
+            rut, 
+            estado
+        );
+
+        // Debug: Verificar información del usuario empleador que crea el trabajador
+        console.log('🔍 Debug empleador creando trabajador:', {
+            hasReqUser: !!req.user,
+            empleadorId: req.user?.id,
+            empleadorRol: req.user?.rol,
+            empleadorEmail: req.user?.email,
+            newTrabajadorId: newUser?.id
+        });
+
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                console.log('🔄 Registrando creación de trabajador por empleador:', req.user.id);
+                
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'crear_trabajador',
+                    tabla_afectada: 'usuarios',
+                    registro_id: newUser.id,
+                    descripcion: `Trabajador creado: ${nombre} ${apellido_pat || ''} (${email}) por empleador`,
+                    datos_anteriores: null,
+                    datos_nuevos: JSON.stringify({
+                        nombre,
+                        apellido_pat,
+                        apellido_mat,
+                        email,
+                        rol,
+                        rut,
+                        estado
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de creación de trabajador registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        } else {
+            console.warn('⚠️ No se pudo registrar creación de trabajador en auditoría:', {
+                hasReqUser: !!req.user,
+                userId: req.user?.id,
+                reason: !req.user ? 'req.user no existe' : 'req.user.id no existe'
+            });
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Trabajador creado exitosamente',
+            user: {
+                id: newUser.id,
+                nombre: newUser.nombre,
+                apellido_pat: newUser.apellido_pat,
+                apellido_mat: newUser.apellido_mat,
+                email: newUser.email,
+                rol: newUser.rol,
+                rut: newUser.rut,
+                estado: newUser.estado
+            }
+        });
+
+    } catch (error) {
+        console.error('Error creating trabajador:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -326,6 +569,44 @@ const deleteUser = async (req, res) => {
         // Eliminar usuario
         await UserModel.delete(id);
 
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                // Traducir rol al español
+                const traducirRol = (rol) => {
+                    switch (rol) {
+                        case 'admin': return 'Administrador'
+                        case 'empleador': return 'Empleador'
+                        case 'trabajador': return 'Trabajador'
+                        case 'fiscalizador': return 'Fiscalizador'
+                        default: return rol
+                    }
+                }
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'eliminar_usuario',
+                    tabla_afectada: 'usuarios',
+                    registro_id: id,
+                    descripcion: `Usuario eliminado: ${userToDelete.nombre} ${userToDelete.apellido_pat || ''} (${userToDelete.email}) - Rol: ${traducirRol(userToDelete.rol)}`,
+                    datos_anteriores: JSON.stringify({
+                        nombre: userToDelete.nombre,
+                        apellido_pat: userToDelete.apellido_pat,
+                        apellido_mat: userToDelete.apellido_mat,
+                        email: userToDelete.email,
+                        rol: userToDelete.rol,
+                        rut: userToDelete.rut,
+                        estado: userToDelete.estado
+                    }),
+                    datos_nuevos: null,
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de eliminación de usuario registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: 'Usuario eliminado exitosamente'
@@ -333,10 +614,26 @@ const deleteUser = async (req, res) => {
 
     } catch (error) {
         console.error('Error deleting user:', error);
-        res.status(500).json({
+        
+        // Manejar errores específicos
+        let errorMessage = 'Error interno del servidor';
+        let statusCode = 500;
+
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            errorMessage = 'No se puede eliminar el usuario porque tiene datos relacionados (turnos, marcaciones, etc.)';
+            statusCode = 409; // Conflict
+        } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            errorMessage = 'Usuario no encontrado';
+            statusCode = 404;
+        } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+            errorMessage = 'Error en la estructura de datos';
+            statusCode = 400;
+        }
+
+        res.status(statusCode).json({
             success: false,
-            message: 'Error interno del servidor',
-            error: error.message
+            message: errorMessage,
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
@@ -426,6 +723,51 @@ const createUsuarioEmpresa = async (req, res) => {
 
         const nuevaRelacion = await UsuarioEmpresaModel.createUsuarioEmpresa(datosRelacion);
         
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                // Obtener nombre de la empresa para la descripción
+                let nombreEmpresa = 'Empresa desconocida';
+                try {
+                    const { default: EmpresaModel } = await import('../model/EmpresaModel.js');
+                    const empresa = await EmpresaModel.getEmpresaById(empresa_id);
+                    nombreEmpresa = empresa?.emp_nombre || `Empresa ID: ${empresa_id}`;
+                } catch (empresaError) {
+                    console.warn('No se pudo obtener información de la empresa');
+                }
+
+                // Traducir rol al español
+                const traducirRol = (rol) => {
+                    switch (rol) {
+                        case 'admin': return 'Administrador'
+                        case 'empleador': return 'Empleador'
+                        case 'trabajador': return 'Trabajador'
+                        case 'fiscalizador': return 'Fiscalizador'
+                        default: return rol
+                    }
+                }
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'asignar_trabajador',
+                    tabla_afectada: 'usuario_empresa',
+                    registro_id: nuevaRelacion.id || usuario_id,
+                    descripcion: `Trabajador asignado: ${usuario.nombre} ${usuario.apellido_pat || ''} a empresa "${nombreEmpresa}" como ${traducirRol(rol_en_empresa || usuario.rol)}`,
+                    datos_anteriores: null,
+                    datos_nuevos: JSON.stringify({
+                        usuario_id,
+                        empresa_id,
+                        rol_en_empresa: rol_en_empresa || usuario.rol,
+                        fecha_inicio: datosRelacion.fecha_inicio
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de asignación de trabajador registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        }
+        
         res.status(201).json({
             success: true,
             data: nuevaRelacion,
@@ -452,6 +794,7 @@ const UserController = {
     updateEstado,
     updateRol, // Se agrega para edición de rol desde rutas
     createUser, // Nuevo endpoint para crear usuarios
+    createTrabajador, // Nuevo endpoint para que empleadores creen trabajadores
     deleteUser, // Nuevo endpoint para eliminar usuarios
     getAllEmpresas, // Obtener empresas para modal de unión
     getUsuariosEmpresas, // Obtener relaciones usuario-empresa

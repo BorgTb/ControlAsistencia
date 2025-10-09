@@ -47,4 +47,12 @@ router.post('/logout', AuditoriaController.cerrarSesionUsuario);
 // POST /api/auditoria/cerrar-expiradas
 router.post('/cerrar-expiradas', AuditoriaController.cerrarSesionesExpiradas);
 
+// Ruta para obtener cambios específicos de un usuario
+// GET /api/auditoria/cambios/:usuario_id?limite=50
+router.get('/cambios/:usuario_id', AuditoriaController.obtenerCambiosUsuario);
+
+// Ruta para registrar un nuevo cambio en el sistema
+// POST /api/auditoria/registrar-cambio
+router.post('/registrar-cambio', AuditoriaController.registrarCambio);
+
 export default router;

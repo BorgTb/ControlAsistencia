@@ -27,6 +27,15 @@ const verifyToken = (req, res, next) => {
         // Verificar el token usando el AuthService
         const decoded = AuthService.verifyToken(token);
         
+
+        // Debug: Log información del usuario decodificado, para borrar usuarios en caso de tener cosas conectadas
+        console.log('🔍 Usuario decodificado del token:', {
+            id: decoded.id,
+            email: decoded.email,
+            rol: decoded.rol,
+            hasId: !!decoded.id
+        });
+        
         // Agregar la información del usuario al objeto request
         req.user = decoded;
         

@@ -55,7 +55,70 @@ class UserModel {
     }
 
     static async delete(id) {
-        await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
+        const connection = await pool.getConnection();
+        try {
+            console.log(`🗑️ Iniciando eliminación en cascada para usuario ${id}`);
+            
+            // Iniciar transacción para garantizar consistencia
+            await connection.beginTransaction();
+            
+            // 1. Primero, obtener todos los usuarios_empresas_id relacionados
+            const [usuariosEmpresas] = await connection.query(
+                'SELECT id FROM usuarios_empresas WHERE usuario_id = ?', 
+                [id]
+            );
+            console.log(`📋 Encontrados ${usuariosEmpresas.length} registros usuario-empresa`);
+            
+            // 2. Eliminar turnos asociados al usuario (a través de usuarios_empresas)
+            if (usuariosEmpresas.length > 0) {
+                const usuarioEmpresaIds = usuariosEmpresas.map(ue => ue.id);
+                await connection.query(
+                    `DELETE FROM turnos WHERE usuario_id IN (${usuarioEmpresaIds.map(() => '?').join(',')})`,
+                    usuarioEmpresaIds
+                );
+                console.log('✅ Turnos del usuario eliminados');
+                
+                // 3. Eliminar marcaciones del usuario
+                await connection.query(
+                    `DELETE FROM marcaciones WHERE usuario_empresa_id IN (${usuarioEmpresaIds.map(() => '?').join(',')})`,
+                    usuarioEmpresaIds
+                );
+                console.log('✅ Marcaciones del usuario eliminadas');
+            }
+            
+            // 4. Eliminar relaciones usuario-empresa
+            await connection.query('DELETE FROM usuarios_empresas WHERE usuario_id = ?', [id]);
+            console.log('✅ Relaciones usuario-empresa eliminadas');
+            
+            // 5. Eliminar registros de auditoría relacionados (opcional, o mantener para histórico)
+            // Comentado para mantener el histórico de auditoría
+            // await connection.query('DELETE FROM auditoria_cambios WHERE usuario_id = ?', [id]);
+            // await connection.query('DELETE FROM auditoria_sesiones WHERE usuario_id = ?', [id]);
+            
+            // 6. Finalmente eliminar el usuario
+            const [result] = await connection.query('DELETE FROM usuarios WHERE id = ?', [id]);
+            
+            if (result.affectedRows === 0) {
+                throw new Error('Usuario no encontrado o ya eliminado');
+            }
+            
+            console.log('✅ Usuario eliminado de la tabla usuarios');
+            
+            // Confirmar transacción
+            await connection.commit();
+            console.log('✅ Eliminación completa exitosa');
+            
+            return { success: true, message: 'Usuario eliminado exitosamente' };
+            
+        } catch (error) {
+            // Revertir transacción en caso de error
+            await connection.rollback();
+            console.error('❌ Error en eliminación, transacción revertida:', error);
+            throw error;
+        } finally {
+            // Liberar conexión
+            connection.release();
+        }
     }
 
     // Métodos para estadísticas

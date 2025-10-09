@@ -33,6 +33,9 @@ router.get('/admins', AuthService.verifyToken, AuthService.isAdmin, UserControll
 router.post('/usuarios', AuthService.verifyToken, AuthService.isAdmin, UserController.createUser);   // Crear usuario
 router.delete('/usuarios/:id', AuthService.verifyToken, AuthService.isAdmin, UserController.deleteUser); // Eliminar usuario
 
+// Nueva ruta para que empleadores puedan crear trabajadores
+router.post('/trabajadores', AuthService.verifyToken, UserController.createTrabajador);   // Empleadores pueden crear trabajadores
+
 // Rutas para gestión de relaciones usuario-empresa
 // Permite obtener todas las empresas disponibles para asignar a trabajadores
 router.get('/empresas', AuthService.verifyToken, AuthService.isAdmin, UserController.getAllEmpresas);

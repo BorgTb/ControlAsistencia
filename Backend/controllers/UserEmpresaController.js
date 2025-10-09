@@ -10,6 +10,7 @@ import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
+import AuditoriaModel from "../model/AuditoriaModel.js";
 
 
 
@@ -63,7 +64,41 @@ const createTrabajador = async (req, res) => {
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
-
+        // Registrar el cambio en auditoría
+        if (req.user && req.user.id) {
+            try {
+                console.log('🔄 Registrando creación de trabajador por empleador (UserEmpresaController):', req.user.id);
+                
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'crear_trabajador_empresa',
+                    tabla_afectada: 'usuarios',
+                    registro_id: newUser.id,
+                    descripcion: `Trabajador creado en empresa: ${userData.nombre} ${userData.apellido_pat || ''} (${userData.email}) - Empresa: ${empresa.emp_nombre || 'Sin nombre'}`,
+                    datos_anteriores: null,
+                    datos_nuevos: JSON.stringify({
+                        nombre: userData.nombre,
+                        apellido_pat: userData.apellido_pat,
+                        apellido_mat: userData.apellido_mat,
+                        email: userData.email,
+                        rol: userData.rol,
+                        rut: userData.rut,
+                        estado: userData.estado,
+                        empresa_id: empresa.empresa_id
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de creación de trabajador registrado en auditoría (UserEmpresaController)');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+            }
+        } else {
+            console.warn('⚠️ No se pudo registrar creación de trabajador en auditoría (UserEmpresaController):', {
+                hasReqUser: !!req.user,
+                userId: req.user?.id,
+                reason: !req.user ? 'req.user no existe' : 'req.user.id no existe'
+            });
+        }
 
         if (userData.sistemaExcepcional && userData.sistemaExcepcional === true) {
             // crear resolucion para este usuario empresa
@@ -88,17 +123,311 @@ const createTurno = async (req, res) => {
     try {
         const turnoData = req.body;
 
-        // verificar si existe ya un turno 
-        const existingTurno = await TurnosModel.obtenerTurnoPorUsuarioYDia(turnoData.usuario_id, turnoData.dia);
-        if (existingTurno) {
-            return res.status(400).json({ success: false, message: "Ya existe un turno para este trabajador en la fecha seleccionada" });
+        // Validar campos requeridos - evita errores de base de datos
+        if (!turnoData.usuario_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "El ID del usuario es requerido" 
+            });
+        }
+        if (!turnoData.tipo) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "El tipo de turno es requerido" 
+            });
+        }
+        if (!turnoData.dia) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "El día es requerido" 
+            });
+        }
+        if (!turnoData.inicio || !turnoData.fin) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Las horas de inicio y fin son requeridas" 
+            });
         }
 
+        // Verificar si ya existe un turno para este usuario en este día - evita duplicados
+        const existingTurno = await TurnosModel.obtenerTurnoPorUsuarioYDia(turnoData.usuario_id, turnoData.dia);
+        if (existingTurno) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Ya existe un turno para este trabajador en el día seleccionado" 
+            });
+        }
+
+        // Crear el turno con los datos validados
         const newTurno = await TurnosModel.createTurno(turnoData);
-        res.status(201).json({ success: true, message: "Turno creado exitosamente" });
+
+        // Registrar la asociación de turno en auditoría - permite seguimiento de cambios de empleador
+        if (req.user && req.user.id) {
+            try {
+                // Obtener información del trabajador para el registro de auditoría
+                const trabajador = await UserModel.findById(turnoData.usuario_id);
+                const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
+                
+                // Traducir día al español para mejor legibilidad
+                const diasEspanol = {
+                    'lunes': 'Lunes',
+                    'martes': 'Martes', 
+                    'miercoles': 'Miércoles',
+                    'jueves': 'Jueves',
+                    'viernes': 'Viernes',
+                    'sabado': 'Sábado',
+                    'domingo': 'Domingo'
+                };
+                const diaEspanol = diasEspanol[turnoData.dia.toLowerCase()] || turnoData.dia;
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'asignar_turno_trabajador',
+                    tabla_afectada: 'turnos',
+                    registro_id: newTurno,
+                    descripcion: `Turno asignado a trabajador: ${nombreTrabajador} - ${turnoData.tipo} (${diaEspanol} ${turnoData.inicio}-${turnoData.fin})`,
+                    datos_anteriores: null,
+                    datos_nuevos: JSON.stringify({
+                        usuario_id: turnoData.usuario_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo: turnoData.tipo,
+                        dia: turnoData.dia,
+                        inicio: turnoData.inicio,
+                        fin: turnoData.fin,
+                        colacion_inicio: turnoData.colacion_inicio,
+                        colacion_fin: turnoData.colacion_fin
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Asignación de turno registrada en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar asignación de turno en auditoría:', auditError);
+            }
+        }
+
+        res.status(201).json({ 
+            success: true, 
+            message: "Turno creado exitosamente",
+            data: { id: newTurno }
+        });
     } catch (error) {
         console.error("Error creating turno:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
+// Eliminar turno por ID - permite borrar turnos asignados específicos
+const deleteTurno = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validar que el ID del turno sea válido
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de turno inválido" 
+            });
+        }
+
+        // Verificar que el turno existe antes de eliminarlo
+        const turnoExistente = await TurnosModel.getTurnoById(id);
+        if (!turnoExistente) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Turno no encontrado" 
+            });
+        }
+
+        // Eliminar el turno de la base de datos
+        const turnoEliminado = await TurnosModel.deleteTurno(id);
+        
+        if (turnoEliminado === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "No se pudo eliminar el turno" 
+            });
+        }
+
+        // Registrar la eliminación de turno en auditoría - permite seguimiento de cambios de empleador
+        if (req.user && req.user.id && turnoExistente) {
+            try {
+                // Obtener información del trabajador para el registro de auditoría
+                const trabajador = await UserModel.findById(turnoExistente.usuario_id);
+                const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
+                
+                // Traducir día al español para mejor legibilidad
+                const diasEspanol = {
+                    'lunes': 'Lunes',
+                    'martes': 'Martes', 
+                    'miercoles': 'Miércoles',
+                    'jueves': 'Jueves',
+                    'viernes': 'Viernes',
+                    'sabado': 'Sábado',
+                    'domingo': 'Domingo'
+                };
+                const diaEspanol = diasEspanol[turnoExistente.dia?.toLowerCase()] || turnoExistente.dia;
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'eliminar_turno_trabajador',
+                    tabla_afectada: 'turnos',
+                    registro_id: id,
+                    descripcion: `Turno eliminado de trabajador: ${nombreTrabajador} - ${turnoExistente.tipo} (${diaEspanol} ${turnoExistente.inicio}-${turnoExistente.fin})`,
+                    datos_anteriores: JSON.stringify({
+                        usuario_id: turnoExistente.usuario_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo: turnoExistente.tipo,
+                        dia: turnoExistente.dia,
+                        inicio: turnoExistente.inicio,
+                        fin: turnoExistente.fin,
+                        colacion_inicio: turnoExistente.colacion_inicio,
+                        colacion_fin: turnoExistente.colacion_fin
+                    }),
+                    datos_nuevos: null,
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Eliminación de turno registrada en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar eliminación de turno en auditoría:', auditError);
+            }
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Turno eliminado exitosamente" 
+        });
+    } catch (error) {
+        console.error("Error deleting turno:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
+// Guardar configuración del sistema empresarial - permite personalizar ajustes
+const guardarConfiguracion = async (req, res) => {
+    try {
+        const configuracionData = req.body;
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+        // Validar que el usuario tenga permisos para modificar configuración
+        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "No tiene permisos para modificar la configuración del sistema" 
+            });
+        }
+
+        // Obtener empresa del usuario
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresa) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Empresa no encontrada" 
+            });
+        }
+
+        // Por ahora simularemos el guardado - aquí se implementaría el guardado real en BD
+        console.log('Guardando configuración para empresa:', empresa.empresa_id);
+        console.log('Configuración recibida:', configuracionData);
+
+        // Registrar el cambio en auditoría - permite seguimiento de configuraciones
+        if (USR_PETICION.id) {
+            try {
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: USR_PETICION.id,
+                    accion: 'modificar_configuracion_sistema',
+                    tabla_afectada: 'configuracion_empresa',
+                    registro_id: empresa.empresa_id,
+                    descripcion: `Configuración del sistema actualizada - Empresa: ${empresa.emp_nombre || 'Sin nombre'}`,
+                    datos_anteriores: null, // Aquí se podría obtener la configuración anterior
+                    datos_nuevos: JSON.stringify(configuracionData),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Cambio de configuración registrado en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar cambio de configuración en auditoría:', auditError);
+            }
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Configuración guardada exitosamente",
+            data: { empresa_id: empresa.empresa_id }
+        });
+    } catch (error) {
+        console.error("Error saving configuration:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
+// Obtener configuración actual del sistema empresarial
+const obtenerConfiguracion = async (req, res) => {
+    try {
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+        // Obtener empresa del usuario
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresa) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Empresa no encontrada" 
+            });
+        }
+
+        // Por ahora retornamos configuración por defecto - aquí se obtendría de la BD
+        const configuracionDefecto = {
+            general: {
+                emp_nombre: empresa.emp_nombre || 'TeleMedios S.A.',
+                emp_rut: empresa.emp_rut || '76.123.456-7',
+                direccion: 'Av. Providencia 1234, Santiago, Chile',
+                zona_horaria: 'America/Santiago',
+                idioma: 'español',
+                formato_fecha: 'DD/MM/YYYY'
+            },
+            marcaciones: {
+                tolerancia_entrada: 15,
+                tolerancia_salida: 10,
+                ubicacion_requerida: true,
+                marcacion_remota: false,
+                consentimiento_trabajador: 'siempre',
+                tiempo_limite_modificacion: 24
+            },
+            turnos: {
+                turno_manana: { activo: true, inicio: '09:00', fin: '17:00', descanso: 60 },
+                turno_tarde: { activo: false, inicio: '14:00', fin: '22:00', descanso: 45 }
+            },
+            notificaciones: {
+                email_tardanzas: true,
+                email_ausencias: true,
+                email_incidentes: false,
+                servidor_smtp: 'smtp.empresa.com',
+                puerto_smtp: 587,
+                email_envio: 'sistema@empresa.com'
+            }
+        };
+
+        res.status(200).json({ 
+            success: true, 
+            data: configuracionDefecto
+        });
+    } catch (error) {
+        console.error("Error getting configuration:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
     }
 };
 
@@ -370,7 +699,10 @@ const AdminController = {
     obtenerTrabajadores,
     enrolarTrabajador,
     createTurno,
+    deleteTurno, // agregar método de eliminación
     obtenerTurnos,
+    guardarConfiguracion, // nueva funcionalidad de configuración
+    obtenerConfiguracion, // obtener configuración actual
     obtenerReportesMarcaciones,
     aprobarCambioMarcacion,
     rechazarCambioMarcacion

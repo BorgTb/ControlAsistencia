@@ -72,9 +72,13 @@ class AuditoriaController {
     // Registrar cierre de sesión manual
     static async registrarCierreSesion(req, res) {
         try {
-            const { usuario_id, sesion_id } = req.body;
+            const { usuario_id, sesion_id, usuarioId, sesionId } = req.body;
             
-            const resultado = await AuditoriaModel.registrarCierreSesion(usuario_id, sesion_id);
+            // Compatibilidad con ambos formatos de nombres
+            const userId = usuario_id || usuarioId;
+            const sessionId = sesion_id || sesionId;
+            
+            const resultado = await AuditoriaModel.registrarCierreSesion(userId, sessionId);
             
             if (resultado) {
                 res.status(200).json({
@@ -150,6 +154,98 @@ class AuditoriaController {
             });
         } catch (error) {
             console.error('Error al cerrar sesiones expiradas:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
+
+    // Obtener cambios específicos realizados por un usuario
+    static async obtenerCambiosUsuario(req, res) {
+        try {
+            const { usuario_id } = req.params;
+            const limite = req.query.limite || 50;
+            
+            console.log('📋 Obteniendo cambios para usuario:', { usuario_id, limite });
+            
+            // Validar que el usuario_id sea un número válido
+            const usuarioIdNumero = parseInt(usuario_id);
+            if (isNaN(usuarioIdNumero)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID de usuario inválido'
+                });
+            }
+            
+            // Obtener cambios del modelo
+            const cambios = await AuditoriaModel.obtenerCambiosPorUsuario(
+                usuarioIdNumero, 
+                parseInt(limite)
+            );
+            
+            res.status(200).json({
+                success: true,
+                message: 'Cambios del usuario obtenidos exitosamente',
+                cambios: cambios,
+                total: cambios.length
+            });
+            
+        } catch (error) {
+            console.error('❌ Error al obtener cambios del usuario:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
+
+    // Registrar un nuevo cambio en el sistema  
+    static async registrarCambio(req, res) {
+        try {
+            const { 
+                usuario_id, 
+                accion, 
+                tabla_afectada, 
+                registro_id, 
+                descripcion, 
+                datos_anteriores, 
+                datos_nuevos,
+                ip_address 
+            } = req.body;
+            
+            console.log('📝 Registrando nuevo cambio:', { usuario_id, accion, tabla_afectada });
+            
+            // Validar campos requeridos
+            if (!usuario_id || !accion || !tabla_afectada || !descripcion) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Campos requeridos: usuario_id, accion, tabla_afectada, descripcion'
+                });
+            }
+            
+            // Registrar el cambio
+            const cambioId = await AuditoriaModel.registrarCambio({
+                usuario_id,
+                accion,
+                tabla_afectada,
+                registro_id,
+                descripcion,
+                datos_anteriores,
+                datos_nuevos,
+                ip_address
+            });
+            
+            res.status(201).json({
+                success: true,
+                message: 'Cambio registrado exitosamente',
+                cambio_id: cambioId
+            });
+            
+        } catch (error) {
+            console.error('❌ Error al registrar cambio:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',

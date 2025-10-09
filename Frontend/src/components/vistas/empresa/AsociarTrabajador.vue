@@ -63,7 +63,7 @@
                                 type="text"
                                 id="rolEmpresa"
                                 v-model="formData.rolEmpresa"
-                                placeholder="Ej: Trabajador, Supervisor, Jefe de Área, etc."
+                                placeholder="Ej: Trabajador, Empleador, Jefe de Área, etc."
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 required
                             />

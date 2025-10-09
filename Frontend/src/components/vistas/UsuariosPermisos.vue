@@ -73,8 +73,8 @@
   </div>
 
   <!-- Contenido Principal -->
-  <div class="p-6 shadow-lg rounded-2xl bg-white mt-8">
-    <div class="w-full max-w-[1800px] mx-auto bg-white rounded-2xl shadow-lg p-8 lg:p-12 mt-8 lg:mt-14 px-4">
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto p-6">
       <!-- Header -->
       <div class="flex justify-between items-center mb-8">
         <div>
@@ -109,7 +109,7 @@
             </div>
           </div>
           <p class="text-gray-700 text-sm mb-4">
-            Administra los roles del sistema: Admin, Trabajador, Supervisor, Empleador
+            Administra los roles del sistema: Admin, Trabajador, Empleador
           </p>
           <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition text-sm font-medium">
             Gestionar Roles
@@ -170,71 +170,94 @@
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h3 class="text-lg font-semibold text-gray-800">Usuarios y sus Roles</h3>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol Actual</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permisos</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="usuario in usuariosConPermisos" :key="usuario.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span class="text-sm font-medium text-gray-700">{{ usuario.iniciales }}</span>
+        
+        <!-- Campo de búsqueda -->
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex gap-3 items-center">
+            <div class="flex-1 relative">
+              <input
+                v-model="busquedaUsuarios"
+                type="text"
+                placeholder="Buscar por nombre, apellido, email, rol o estado..."
+                class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+              <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <div class="text-sm text-gray-500">
+              {{ usuariosFiltrados.length }} de {{ usuariosConPermisos.length }} usuarios
+            </div>
+          </div>
+        </div>
+        
+        <div class="h-80 overflow-auto border-t border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol Actual</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permisos</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="usuario in usuariosFiltrados" :key="usuario.id" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span class="text-sm font-medium text-gray-700">{{ usuario.iniciales }}</span>
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">{{ usuario.nombre }} {{ usuario.apellido_pat }}</div>
+                        <div class="text-sm text-gray-500">{{ usuario.email }}</div>
+                      </div>
                     </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">{{ usuario.nombre }} {{ usuario.apellido_pat }}</div>
-                      <div class="text-sm text-gray-500">{{ usuario.email }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span :class="getRolBadgeClass(usuario.rol)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                      {{ usuario.rol }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ getPermisosCount(usuario.rol) }} permisos
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span :class="usuario.estado === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
+                          class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                      {{ usuario.estado === 1 ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ formatearFecha(usuario.updated_at) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button 
+                      @click="confirmarEliminacion(usuario)"
+                      class="text-red-600 hover:text-red-900 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+                <!-- Fila para cuando no hay usuarios -->
+                <tr v-if="usuariosFiltrados.length === 0">
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                      <svg class="h-12 w-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                      </svg>
+                      <p>{{ busquedaUsuarios ? 'No se encontraron usuarios que coincidan con la búsqueda.' : 'No hay usuarios registrados' }}</p>
+                      <p v-if="!busquedaUsuarios" class="text-sm text-gray-400">Crea el primer usuario haciendo clic en "Nuevo Usuario"</p>
                     </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getRolBadgeClass(usuario.rol)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ usuario.rol }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ getPermisosCount(usuario.rol) }} permisos
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="usuario.estado === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
-                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ usuario.estado === 1 ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatearFecha(usuario.updated_at) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button 
-                    @click="confirmarEliminacion(usuario)"
-                    class="text-red-600 hover:text-red-900 transition-colors"
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-              <!-- Fila para cuando no hay usuarios -->
-              <tr v-if="usuariosConPermisos.length === 0">
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                  <div class="flex flex-col items-center">
-                    <svg class="h-12 w-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                    </svg>
-                    <p>No hay usuarios registrados</p>
-                    <p class="text-sm text-gray-400">Crea el primer usuario haciendo clic en "Nuevo Usuario"</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -444,69 +467,71 @@
       </div>
 
       <!-- Tabla de registros de auditoría -->
-      <div class="flex-1 overflow-auto p-6">
-        <div class="overflow-x-auto">
-          <table class="min-w-full table-auto">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inicio de Sesión</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cierre de Sesión</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Activo</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="registro in registrosAuditoria" :key="registro.id" class="hover:bg-gray-50">
-                <td class="px-4 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-8 w-8">
-                      <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span class="text-sm font-medium text-gray-700">
-                          {{ registro.nombre?.charAt(0) }}{{ registro.apellido_pat?.charAt(0) }}
-                        </span>
+      <div class="flex-1 overflow-hidden p-6">
+        <div class="h-96 overflow-auto border border-gray-200 rounded-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full table-auto">
+              <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inicio de Sesión</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cierre de Sesión</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Activo</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="registro in registrosAuditoria" :key="registro.id" class="hover:bg-gray-50">
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-8 w-8">
+                        <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                          <span class="text-sm font-medium text-gray-700">
+                            {{ registro.nombre?.charAt(0) }}{{ registro.apellido_pat?.charAt(0) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="ml-3">
+                        <div class="text-sm font-medium text-gray-900">
+                          {{ registro.nombre }} {{ registro.apellido_pat }}
+                        </div>
+                        <div class="text-sm text-gray-500">{{ registro.email }}</div>
                       </div>
                     </div>
-                    <div class="ml-3">
-                      <div class="text-sm font-medium text-gray-900">
-                        {{ registro.nombre }} {{ registro.apellido_pat }}
-                      </div>
-                      <div class="text-sm text-gray-500">{{ registro.email }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getRolBadgeClassAuditoria(registro.rol)">
-                    {{ registro.rol }}
-                  </span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ formatearFechaHora(registro.fecha_inicio) }}
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ registro.fecha_cierre ? formatearFechaHora(registro.fecha_cierre) : '-' }}
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ registro.duracion_sesion }}
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getEstadoBadgeClass(registro.estado)">
-                    {{ registro.estado }}
-                  </span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ registro.ip_address || 'N/A' }}
-                </td>
-              </tr>
-              <tr v-if="registrosAuditoria.length === 0">
-                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                  No hay registros de auditoría disponibles
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getRolBadgeClassAuditoria(registro.rol)">
+                      {{ registro.rol }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ formatearFechaHora(registro.fecha_inicio) }}
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ registro.fecha_cierre ? formatearFechaHora(registro.fecha_cierre) : '-' }}
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ registro.duracion_sesion }}
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getEstadoBadgeClass(registro.estado)">
+                      {{ registro.estado }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ registro.ip_address || 'N/A' }}
+                  </td>
+                </tr>
+                <tr v-if="registrosAuditoria.length === 0">
+                  <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                    No hay registros de auditoría disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -707,6 +732,34 @@ const usuariosConPermisos = ref([]);
 const rolesCount = ref(4); // Admin, Trabajador, Fiscalizador, Empleador
 const permisosCount = ref(12);
 const alertasCount = ref(3);
+
+// Variables para filtrado de usuarios
+const busquedaUsuarios = ref('');
+
+// Computed property para filtrar usuarios automáticamente
+const usuariosFiltrados = computed(() => {
+  if (!busquedaUsuarios.value.trim()) {
+    return usuariosConPermisos.value;
+  }
+
+  const textoBusqueda = busquedaUsuarios.value.toLowerCase().trim();
+  
+  return usuariosConPermisos.value.filter(usuario => {
+    const nombre = (usuario.nombre || '').toLowerCase();
+    const apellidoPat = (usuario.apellido_pat || '').toLowerCase();
+    const apellidoMat = (usuario.apellido_mat || '').toLowerCase();
+    const email = (usuario.email || '').toLowerCase();
+    const rol = (usuario.rol || '').toLowerCase();
+    const estado = usuario.estado === 1 ? 'activo' : 'inactivo';
+    
+    return nombre.includes(textoBusqueda) ||
+           apellidoPat.includes(textoBusqueda) ||
+           apellidoMat.includes(textoBusqueda) ||
+           email.includes(textoBusqueda) ||
+           rol.includes(textoBusqueda) ||
+           estado.includes(textoBusqueda);
+  });
+});
 
 // Estados para modales
 const mostrarModalCrearUsuario = ref(false);

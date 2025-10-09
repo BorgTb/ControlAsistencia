@@ -91,6 +91,7 @@ class AuditoriaModel {
                     u.apellido_pat,
                     u.apellido_mat,
                     u.email,
+                    u.activo,
                     a.rol as rol_en_sesion,
                     u.rol as rol_actual,
                     a.fecha_inicio,
@@ -141,6 +142,7 @@ class AuditoriaModel {
                     u.apellido_pat,
                     u.apellido_mat,
                     u.email,
+                    u.activo,
                     a.rol as rol_en_sesion,
                     u.rol as rol_actual,
                     a.fecha_inicio,
@@ -261,6 +263,177 @@ class AuditoriaModel {
         } catch (error) {
             console.error('Error al contar sesiones activas:', error);
             return 0;
+        }
+    }
+
+    // ========== MÉTODOS PARA AUDITORÍA DE CAMBIOS ==========
+
+    // Registrar un cambio específico realizado por un usuario
+    static async registrarCambio(datosDelCambio) {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+            
+            const {
+                usuario_id,
+                accion,
+                tabla_afectada,
+                registro_id = null,
+                descripcion,
+                datos_anteriores = null,
+                datos_nuevos = null,
+                ip_address = null
+            } = datosDelCambio;
+
+            console.log('📝 Registrando cambio en BD:', { usuario_id, accion, tabla_afectada });
+
+            const query = `
+                INSERT INTO auditoria_cambios (
+                    usuario_id, 
+                    accion, 
+                    tabla_afectada, 
+                    registro_id, 
+                    descripcion, 
+                    datos_anteriores, 
+                    datos_nuevos, 
+                    ip_address,
+                    fecha_cambio
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            `;
+
+            // Convertir datos a JSON si no son string
+            const datosAnterioresJson = datos_anteriores ? 
+                (typeof datos_anteriores === 'string' ? datos_anteriores : JSON.stringify(datos_anteriores)) : null;
+            const datosNuevosJson = datos_nuevos ? 
+                (typeof datos_nuevos === 'string' ? datos_nuevos : JSON.stringify(datos_nuevos)) : null;
+
+            const [result] = await pool.execute(query, [
+                usuario_id,
+                accion,
+                tabla_afectada,
+                registro_id,
+                descripcion,
+                datosAnterioresJson,
+                datosNuevosJson,
+                ip_address
+            ]);
+
+            console.log('✅ Cambio registrado con ID:', result.insertId);
+            return result.insertId;
+
+        } catch (error) {
+            console.error('❌ Error al registrar cambio:', error);
+            throw error;
+        }
+    }
+
+    // Obtener cambios realizados por un usuario específico
+    static async obtenerCambiosPorUsuario(usuario_id, limite = 50) {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+            
+            // Validar y limitar parámetros
+            const usuarioIdNumero = parseInt(usuario_id);
+            const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 50, 200));
+
+            console.log('🔍 Buscando cambios para usuario:', { usuarioIdNumero, limiteNumero });
+
+            const query = `
+                SELECT 
+                    ac.id,
+                    ac.usuario_id,
+                    ac.accion,
+                    ac.tabla_afectada,
+                    ac.registro_id,
+                    ac.descripcion,
+                    ac.datos_anteriores,
+                    ac.datos_nuevos,
+                    ac.fecha_cambio,
+                    ac.ip_address,
+                    u.nombre,
+                    u.apellido_pat,
+                    u.apellido_mat,
+                    u.email,
+                    u.rol
+                FROM auditoria_cambios ac
+                INNER JOIN usuarios u ON ac.usuario_id = u.id
+                WHERE ac.usuario_id = ?
+                ORDER BY ac.fecha_cambio DESC
+                LIMIT ${limiteNumero}
+            `;
+
+            const [rows] = await pool.execute(query, [usuarioIdNumero]);
+
+            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}`);
+            return rows;
+
+        } catch (error) {
+            console.error('❌ Error al obtener cambios por usuario:', error);
+            throw error;
+        }
+    }
+
+    // Obtener estadísticas de cambios del sistema
+    static async obtenerEstadisticasCambios() {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+
+            const query = `
+                SELECT 
+                    COUNT(*) as total_cambios,
+                    COUNT(CASE WHEN accion LIKE '%empresa%' THEN 1 END) as cambios_empresas,
+                    COUNT(CASE WHEN accion LIKE '%trabajador%' THEN 1 END) as cambios_trabajadores,
+                    COUNT(CASE WHEN accion LIKE '%rol%' OR accion LIKE '%perfil%' THEN 1 END) as cambios_sistema,
+                    COUNT(DISTINCT usuario_id) as usuarios_activos,
+                    DATE(fecha_cambio) as fecha
+                FROM auditoria_cambios 
+                WHERE fecha_cambio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY DATE(fecha_cambio)
+                ORDER BY fecha DESC
+                LIMIT 30
+            `;
+
+            const [rows] = await pool.execute(query);
+            return rows;
+
+        } catch (error) {
+            console.error('❌ Error al obtener estadísticas de cambios:', error);
+            throw error;
+        }
+    }
+
+    // Obtener los últimos cambios del sistema (para dashboard)
+    static async obtenerUltimosCambios(limite = 10) {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+
+            const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 10, 50));
+
+            const query = `
+                SELECT 
+                    ac.id,
+                    ac.accion,
+                    ac.tabla_afectada,
+                    ac.descripcion,
+                    ac.fecha_cambio,
+                    u.nombre,
+                    u.apellido_pat,
+                    u.rol
+                FROM auditoria_cambios ac
+                INNER JOIN usuarios u ON ac.usuario_id = u.id
+                ORDER BY ac.fecha_cambio DESC
+                LIMIT ${limiteNumero}
+            `;
+
+            const [rows] = await pool.execute(query);
+            return rows;
+
+        } catch (error) {
+            console.error('❌ Error al obtener últimos cambios:', error);
+            throw error;
         }
     }
 }

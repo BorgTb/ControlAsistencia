@@ -10,6 +10,7 @@ router.post('/trabajador',AuthService.verifyToken, AdminController.createTrabaja
 router.get('/trabajador/:rut',AuthService.verifyToken, AdminController.obtenerTrabajadores);
 router.post('/enrolar-trabajador',AuthService.verifyToken, AdminController.enrolarTrabajador);
 router.post('/turnos',AuthService.verifyToken, AdminController.createTurno);
+router.delete('/turnos/:id',AuthService.verifyToken, AdminController.deleteTurno); // nueva ruta para eliminar
 router.get('/turnos/:rut',AuthService.verifyToken, AdminController.obtenerTurnos);
 
 

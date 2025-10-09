@@ -71,40 +71,53 @@
       </ul>
     </nav>
   </div>
-  <div class="p-6 shadow-lg rounded-2xl bg-white mt-8">
-  <div class="w-full max-w-[1800px] mx-auto bg-white rounded-2xl shadow-lg p-8 lg:p-12 mt-8 lg:mt-14 px-4">
+  
+  <!-- Contenido Principal -->
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-gray-800">Usuarios en el sistema</h2>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition text-base font-medium"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Nuevo Usuario
-        </button>
       </div>
-      <div class="overflow-x-auto">
-        <!-- La tabla ahora abarca casi todo el ancho de la página, pero mantiene márgenes laterales en blanco para un diseño limpio -->
-        <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white">
-          <thead class="sticky top-0 z-10 shadow-sm">
-            <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
-              <th class="p-4 font-semibold text-left rounded-tl-2xl">ID</th>
-              <th class="p-4 font-semibold text-left">Nombre</th>
-              <th class="p-4 font-semibold text-left">Apellido Paterno</th>
-              <th class="p-4 font-semibold text-left">Apellido Materno</th>
-              <th class="p-4 font-semibold text-left">Email</th>
-              <th class="p-4 font-semibold text-left">Rol</th>
-              <th class="p-4 font-semibold text-left">RUT</th>
-              <th class="p-4 font-semibold text-left">Estado</th>
-              <th class="p-4 font-semibold text-left">Creado</th>
-              <th class="p-4 font-semibold text-center rounded-tr-2xl">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-if="usuarios.length > 0">
+      
+      <!-- Campo de búsqueda -->
+      <div class="mb-4 flex gap-3 items-center">
+        <div class="flex-1 relative">
+          <input
+            v-model="busquedaTexto"
+            type="text"
+            placeholder="Buscar por nombre, apellido, email, rol, RUT o estado..."
+            class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+          <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <div class="text-sm text-gray-500">
+          {{ usuariosFiltrados.length }} de {{ usuarios.length }} usuarios
+        </div>
+      </div>
+      <div class="h-96 overflow-auto border border-gray-200 rounded-lg">
+        <div class="overflow-x-auto">
+          <!-- La tabla ahora abarca casi todo el ancho de la página, pero mantiene márgenes laterales en blanco para un diseño limpio -->
+          <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white">
+            <thead class="sticky top-0 z-10 shadow-sm">
+              <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
+                <th class="p-4 font-semibold text-left rounded-tl-2xl">ID</th>
+                <th class="p-4 font-semibold text-left">Nombre</th>
+                <th class="p-4 font-semibold text-left">Apellido Paterno</th>
+                <th class="p-4 font-semibold text-left">Apellido Materno</th>
+                <th class="p-4 font-semibold text-left">Email</th>
+                <th class="p-4 font-semibold text-left">Rol</th>
+                <th class="p-4 font-semibold text-left">RUT</th>
+                <th class="p-4 font-semibold text-left">Estado</th>
+                <th class="p-4 font-semibold text-left">Creado</th>
+                <th class="p-4 font-semibold text-center rounded-tr-2xl">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+            <template v-if="usuariosFiltrados.length > 0">
               <tr
-                v-for="u in usuarios"
+                v-for="u in usuariosFiltrados"
                 :key="u.id"
                 class="hover:bg-blue-100 transition border-b border-gray-200"
               >
@@ -122,7 +135,7 @@
                     >
                       <option value="admin">Admin</option>
                       <option value="trabajador">Trabajador</option>
-                      <option value="supervisor">Supervisor</option>
+                      <option value="empleador">Empleador</option>
                     </select>
                   </template>
                   <template v-else>
@@ -185,10 +198,13 @@
               </tr>
             </template>
             <tr v-else>
-              <td colspan="5" class="py-8 text-center text-gray-400 text-lg">No hay usuarios registrados.</td>
+              <td colspan="10" class="py-8 text-center text-gray-400 text-lg">
+                {{ busquedaTexto ? 'No se encontraron usuarios que coincidan con la búsqueda.' : 'No hay usuarios registrados.' }}
+              </td>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   </div>
@@ -259,11 +275,45 @@
 
 <script setup>
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { useNotification } from "../../composables/useNotification.js";
 import axios from "axios";
 
 // ========== VARIABLES REACTIVAS ==========
 const usuarios = ref([]);
+
+// Variables para filtrado de usuarios
+const busquedaTexto = ref('');
+
+// Computed property para filtrar usuarios automáticamente
+const usuariosFiltrados = computed(() => {
+  if (!busquedaTexto.value.trim()) {
+    return usuarios.value;
+  }
+
+  const textoBusqueda = busquedaTexto.value.toLowerCase().trim();
+  
+  return usuarios.value.filter(usuario => {
+    const nombre = (usuario.nombre || '').toLowerCase();
+    const apellidoPat = (usuario.apellido_pat || '').toLowerCase();
+    const apellidoMat = (usuario.apellido_mat || '').toLowerCase();
+    const email = (usuario.email || '').toLowerCase();
+    const rol = (usuario.rol || '').toLowerCase();
+    const rut = (usuario.rut || '').toString().toLowerCase();
+    const estado = usuario.estado === 1 ? 'activo' : 'inactivo';
+    
+    return nombre.includes(textoBusqueda) ||
+           apellidoPat.includes(textoBusqueda) ||
+           apellidoMat.includes(textoBusqueda) ||
+           email.includes(textoBusqueda) ||
+           rol.includes(textoBusqueda) ||
+           rut.includes(textoBusqueda) ||
+           estado.includes(textoBusqueda);
+  });
+});
+
+// ========== COMPOSABLES ==========
+const { showSuccess, showError } = useNotification();
 
 // Variables para edición de usuarios
 // Variable para guardar el id del usuario que está en modo edición
@@ -356,7 +406,7 @@ async function confirmarCambios(id) {
 // ========== FUNCIONES DE UNIÓN TRABAJADOR-EMPRESA ==========
 
 /**
- * Verifica si un usuario ya tiene una empresa asignada
+ * Verifica si un usuario específico ya tiene una empresa asignada
  * Utiliza el cache de relaciones para evitar consultas repetidas
  * @param {number} usuarioId - ID del usuario a verificar
  * @returns {boolean} true si el usuario ya tiene empresa asignada
@@ -535,6 +585,17 @@ function formatearFecha(fechaUTC) {
     console.error('Error al formatear fecha:', error);
     return 'Error de formato';
   }
+}
+
+// ========== FUNCIONES DE FILTRADO ==========
+
+/**
+ * Función que se ejecuta al hacer clic en el botón de buscar
+ * Como usamos computed, no necesita hacer nada especial
+ */
+function buscarUsuarios() {
+  // El filtrado es automático gracias a la computed property
+  console.log(`Buscando: "${busquedaTexto.value}"`);
 }
 
 // ========== INICIALIZACIÓN DEL COMPONENTE ==========

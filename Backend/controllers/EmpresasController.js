@@ -1,10 +1,45 @@
+import EmpresaModel from "../model/EmpresaModel.js";
+import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
+import AuditoriaModel from "../model/AuditoriaModel.js";
+
 // Controlador para eliminar una empresa (CRUD)
 // Se agrega para permitir el borrado real desde el frontend usando la tabla empresa
 const deleteEmpresa = async (req, res) => {
   try {
     const empresaId = req.params.id;
+    
+    // Obtener los datos de la empresa antes de eliminarla
+    let datosAnteriores = null;
+    try {
+      const empresaAnterior = await EmpresaModel.getEmpresaById(empresaId);
+      datosAnteriores = empresaAnterior;
+    } catch (error) {
+      console.warn('No se pudieron obtener datos de la empresa a eliminar');
+    }
+    
     // Llamar al modelo para eliminar la empresa en la base de datos real
     const empresaEliminada = await EmpresaModel.deleteEmpresa(empresaId);
+    
+    // Registrar el cambio en auditoría
+    if (req.user && req.user.id && datosAnteriores) {
+      try {
+        await AuditoriaModel.registrarCambio({
+          usuario_id: req.user.id,
+          accion: 'eliminar_empresa',
+          tabla_afectada: 'empresas',
+          registro_id: empresaId,
+          descripcion: `Empresa eliminada: ${datosAnteriores.emp_nombre || 'Sin nombre'} (RUT: ${datosAnteriores.emp_rut || 'Sin RUT'})`,
+          datos_anteriores: JSON.stringify(datosAnteriores),
+          datos_nuevos: null,
+          ip_address: req.ip || req.connection.remoteAddress
+        });
+        console.log('✅ Cambio de eliminación de empresa registrado en auditoría');
+      } catch (auditError) {
+        console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+        // No fallar la operación principal por un error de auditoría
+      }
+    }
+    
     res.status(200).json({
       success: true,
       data: empresaEliminada,
@@ -30,8 +65,45 @@ const createEmpresa = async (req, res) => {
         message: 'Nombre y RUT son obligatorios'
       });
     }
+    
     // Llamar al modelo para crear la empresa en la base de datos real
     const nuevaEmpresa = await EmpresaModel.createEmpresa(empresaData);
+    
+    // Debug: Verificar información del usuario
+    console.log('🔍 Debug usuario en createEmpresa:', {
+      hasReqUser: !!req.user,
+      userId: req.user?.id,
+      userRol: req.user?.rol,
+      userEmail: req.user?.email
+    });
+    
+    // Registrar el cambio en auditoría
+    if (req.user && req.user.id) {
+      try {
+        console.log('🔄 Intentando registrar cambio en auditoría para usuario:', req.user.id);
+        await AuditoriaModel.registrarCambio({
+          usuario_id: req.user.id,
+          accion: 'crear_empresa',
+          tabla_afectada: 'empresas',
+          registro_id: nuevaEmpresa.id,
+          descripcion: `Empresa creada: ${empresaData.emp_nombre} (RUT: ${empresaData.emp_rut})`,
+          datos_anteriores: null,
+          datos_nuevos: JSON.stringify(empresaData),
+          ip_address: req.ip || req.connection.remoteAddress
+        });
+        console.log('✅ Cambio de creación de empresa registrado en auditoría');
+      } catch (auditError) {
+        console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+        // No fallar la operación principal por un error de auditoría
+      }
+    } else {
+      console.warn('⚠️ No se pudo registrar en auditoría:', {
+        hasReqUser: !!req.user,
+        userId: req.user?.id,
+        reason: !req.user ? 'req.user no existe' : 'req.user.id no existe'
+      });
+    }
+    
     res.status(201).json({
       success: true,
       data: nuevaEmpresa,
@@ -48,9 +120,15 @@ const createEmpresa = async (req, res) => {
 // Se conecta este método con el modelo real para actualizar empresas en la base de datos.
 // Así, cuando el frontend edita una empresa, el cambio se guarda realmente y no solo en un mock.
 const updateEmpresa = async (req, res) => {
+  console.log('🔥 === INICIO updateEmpresa ===');
+  console.log('📊 Request params:', req.params);
+  console.log('📊 Request body:', req.body);
+  console.log('👤 Request user:', req.user);
+  
   try {
     const empresaId = req.params.id;
     const empresaData = req.body;
+    
     // Validación básica (puedes mejorarla según tus reglas de negocio)
     if (!empresaData.emp_nombre || !empresaData.emp_rut) {
       return res.status(400).json({
@@ -58,14 +136,100 @@ const updateEmpresa = async (req, res) => {
         message: 'Nombre y RUT son obligatorios'
       });
     }
+    
+    // Obtener los datos anteriores de la empresa antes de actualizar
+    let datosAnteriores = null;
+    try {
+      const empresaAnterior = await EmpresaModel.getEmpresaById(empresaId);
+      datosAnteriores = empresaAnterior;
+    } catch (error) {
+      console.warn('No se pudieron obtener datos anteriores de la empresa');
+    }
+    
     // Llamar al modelo para actualizar la empresa en la base de datos
     const empresaActualizada = await EmpresaModel.updateEmpresa(empresaId, empresaData);
+    
     if (!empresaActualizada) {
       return res.status(404).json({
         success: false,
         message: 'Empresa no encontrada'
       });
     }
+    
+    // Debug: Verificar información del usuario
+    console.log('🔍 Debug usuario en updateEmpresa:', {
+      hasReqUser: !!req.user,
+      userId: req.user?.id,
+      userRol: req.user?.rol,
+      userEmail: req.user?.email,
+      empresaId: empresaId,
+      empresaData: empresaData
+    });
+    
+    // Mostrar también las cabeceras para debug
+    console.log('🔍 Headers de la petición:', {
+      authorization: req.headers.authorization,
+      contentType: req.headers['content-type']
+    });
+    
+    // Registrar el cambio en auditoría
+    if (req.user && req.user.id) {
+      try {
+        console.log('🔄 Intentando registrar cambio de actualización en auditoría para usuario:', req.user.id);
+        
+        // Crear descripción más detallada comparando campos
+        let descripcionDetallada = `Empresa actualizada: ${empresaData.emp_nombre} (RUT: ${empresaData.emp_rut})`;
+        let cambiosRealizados = [];
+        
+        if (datosAnteriores) {
+          // Comparar campos específicos para crear descripción detallada
+          if (datosAnteriores.emp_nombre !== empresaData.emp_nombre) {
+            cambiosRealizados.push(`Nombre: "${datosAnteriores.emp_nombre}" → "${empresaData.emp_nombre}"`);
+          }
+          if (datosAnteriores.emp_rut !== empresaData.emp_rut) {
+            cambiosRealizados.push(`RUT: "${datosAnteriores.emp_rut}" → "${empresaData.emp_rut}"`);
+          }
+          if (datosAnteriores.emp_telefono !== empresaData.emp_telefono) {
+            cambiosRealizados.push(`Teléfono: "${datosAnteriores.emp_telefono || 'Sin teléfono'}" → "${empresaData.emp_telefono || 'Sin teléfono'}"`);
+          }
+          if (datosAnteriores.emp_descripcion !== empresaData.emp_descripcion) {
+            cambiosRealizados.push(`Descripción: "${datosAnteriores.emp_descripcion || 'Sin descripción'}" → "${empresaData.emp_descripcion || 'Sin descripción'}"`);
+          }
+          if (Number(datosAnteriores.estado) !== Number(empresaData.estado)) {
+            const estadoAnterior = Number(datosAnteriores.estado) === 1 ? 'Activa' : 'Inactiva';
+            const estadoNuevo = Number(empresaData.estado) === 1 ? 'Activa' : 'Inactiva';
+            cambiosRealizados.push(`Estado: "${estadoAnterior}" → "${estadoNuevo}"`);
+          }
+          
+          if (cambiosRealizados.length > 0) {
+            descripcionDetallada += ` - Cambios: ${cambiosRealizados.join(', ')}`;
+          }
+        }
+        
+        await AuditoriaModel.registrarCambio({
+          usuario_id: req.user.id,
+          accion: 'editar_empresa',
+          tabla_afectada: 'empresas',
+          registro_id: empresaId,
+          descripcion: descripcionDetallada,
+          datos_anteriores: datosAnteriores ? JSON.stringify(datosAnteriores) : null,
+          datos_nuevos: JSON.stringify(empresaData),
+          ip_address: req.ip || req.connection.remoteAddress
+        });
+        console.log('✅ Cambio de actualización de empresa registrado en auditoría');
+        console.log('📝 Descripción registrada:', descripcionDetallada);
+      } catch (auditError) {
+        console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
+        // No fallar la operación principal por un error de auditoría
+      }
+    } else {
+      console.warn('⚠️ No se pudo registrar actualización en auditoría:', {
+        hasReqUser: !!req.user,
+        userId: req.user?.id,
+        reason: !req.user ? 'req.user no existe' : 'req.user.id no existe'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       data: empresaActualizada,
@@ -79,8 +243,6 @@ const updateEmpresa = async (req, res) => {
     });
   }
 };
-import EmpresaModel from "../model/EmpresaModel.js";
-import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
 
 
 // Mock data para simular la base de datos de empresas

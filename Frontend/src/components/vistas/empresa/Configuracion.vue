@@ -12,13 +12,24 @@
             <p class="text-gray-600 mt-2">Administre las reglas y configuraciones del sistema de control</p>
           </div>
           <div class="flex space-x-3">
-            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button 
+              @click="guardarCambios"
+              :disabled="guardando"
+              class="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+            >
+              <svg v-if="guardando" class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
-              <span>Guardar Cambios</span>
+              <span>{{ guardando ? 'Guardando...' : 'Guardar Cambios' }}</span>
             </button>
-            <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
+            <button 
+              @click="exportarConfig"
+              :disabled="guardando"
+              class="bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+            >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
               </svg>
@@ -67,17 +78,29 @@
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Empresa</label>
-                    <input type="text" value="TeleMedios S.A." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="text" 
+                      v-model="configuracion.general.emp_nombre"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
-                    <input type="text" value="76.123.456-7" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="text" 
+                      v-model="configuracion.general.emp_rut"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                    <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">Av. Providencia 1234, Santiago, Chile</textarea>
+                    <textarea 
+                      rows="3" 
+                      v-model="configuracion.general.direccion"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    ></textarea>
                   </div>
                 </div>
 
@@ -87,7 +110,10 @@
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Zona Horaria</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <select 
+                      v-model="configuracion.general.zona_horaria"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    >
                       <option value="America/Santiago">América/Santiago (UTC-3)</option>
                       <option value="America/Buenos_Aires">América/Buenos_Aires (UTC-3)</option>
                     </select>
@@ -398,12 +424,98 @@
 import HeaderAdmin from '../../components/headerEmpresa.vue';
 import { ref, onMounted, computed } from 'vue';
 import { useAuth } from '../../../composables/useAuth.js';
-
+import EmpresaServices from '../../../services/EmpresaService.js';
 
 const { esEst } = useAuth();
 
 // Estados reactivos
 const activeTab = ref('general');
+const guardando = ref(false);
+
+// Configuración general - datos reactivos para la empresa
+const configuracion = ref({
+  general: {
+    emp_nombre: 'TeleMedios S.A.',
+    emp_rut: '76.123.456-7',
+    direccion: 'Av. Providencia 1234, Santiago, Chile',
+    zona_horaria: 'America/Santiago',
+    idioma: 'español',
+    formato_fecha: 'DD/MM/YYYY'
+  },
+  marcaciones: {
+    tolerancia_entrada: 15,
+    tolerancia_salida: 10,
+    ubicacion_requerida: true,
+    marcacion_remota: false,
+    consentimiento_trabajador: 'siempre',
+    tiempo_limite_modificacion: 24
+  },
+  turnos: {
+    turno_manana: {
+      activo: true,
+      inicio: '09:00',
+      fin: '17:00',
+      descanso: 60
+    },
+    turno_tarde: {
+      activo: false,
+      inicio: '14:00',
+      fin: '22:00',
+      descanso: 45
+    }
+  },
+  notificaciones: {
+    email_tardanzas: true,
+    email_ausencias: true,
+    email_incidentes: false,
+    servidor_smtp: 'smtp.empresa.com',
+    puerto_smtp: 587,
+    email_envio: 'sistema@empresa.com'
+  }
+});
+
+// Función para guardar cambios con auditoría
+const guardarCambios = async () => {
+  try {
+    guardando.value = true;
+    
+    // Llamar al servicio para guardar configuración en el backend
+    console.log('Guardando configuración:', configuracion.value);
+    const response = await EmpresaServices.guardarConfiguracion(configuracion.value);
+    
+    if (response.success) {
+      console.log('✅ Configuración del sistema actualizada y registrada en auditoría');
+    } else {
+      throw new Error(response.message || 'Error al guardar configuración');
+    }
+    
+  } catch (error) {
+    console.error('Error al guardar configuración:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Error al guardar la configuración';
+    alert(`Error: ${errorMessage}`);
+  } finally {
+    guardando.value = false;
+  }
+};
+
+// Función para exportar configuración
+const exportarConfig = () => {
+  try {
+    const configData = JSON.stringify(configuracion.value, null, 2);
+    const blob = new Blob([configData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `configuracion-sistema-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log('📄 Configuración exportada exitosamente');
+  } catch (error) {
+    console.error('Error al exportar configuración:', error);
+    alert('Error al exportar la configuración');
+  }
+};
 
 // Iconos para las tabs
 const ConfigIcon = {
