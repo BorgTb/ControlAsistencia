@@ -3,6 +3,7 @@ import UserModel from '../model/UserModel.js';
 import MarcacionesService from './MarcacionesServices.js';
 import ResolucionModel from '../model/usuarios_empresas_resoluciones.js';
 import EmpresaModel from '../model/EmpresaModel.js';
+
 import {DateTime} from 'luxon';
 
 class NotificacionService {

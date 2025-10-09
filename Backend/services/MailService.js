@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import AuthService from './authservice.js';
+
 dotenv.config();
 
 class MailService {
@@ -296,8 +298,10 @@ class MailService {
         const nombreCompleto = `${marcacionOriginal.nombre} ${marcacionOriginal.apellido_pat} ${marcacionOriginal.apellido_mat}`;
         
         const asunto = 'Confirmación de Modificación de Marcación - Acción Requerida';
-        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${reporte.token || reporte.id}`;
-        
+
+        const token = AuthService.generarTokenAceptacionCambios(reporte.id);
+        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${token}`;
+
         const contenidoHTML = `
             <!DOCTYPE html>
             <html>
@@ -367,8 +371,9 @@ class MailService {
         const nombreCompleto = `${usuario.nombre} ${usuario.apellido_pat} ${usuario.apellido_mat}`;
         
         const asunto = 'Confirmación de Nueva Marcación - Acción Requerida';
-        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${reporte.token || reporte.id}`;
-        
+        const token = AuthService.generarTokenAceptacionCambios(reporte.id);
+        const enlaceAprobacion = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${token}`;
+
         const contenidoHTML = `
             <!DOCTYPE html>
             <html>

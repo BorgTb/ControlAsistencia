@@ -516,7 +516,48 @@ const modificarMarcacionPorId = async (req, res) => {
         });
     }
 }
+
+const aceptarModificacionMarcacion = async (req, res) => {
+    try {
+        const { id } = req.params;
         
+        console.log('Aceptar modificacion de marcacion id:', id);
+
+        res.status(501).json({
+            success: true,
+            message: 'En desarrollo',
+        });
+
+
+        // Obtener la marcación original antes de modificarla
+    } catch (error) {
+        console.error('Error en aceptarModificacionMarcacion:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+}
+
+const rechazarModificacionMarcacion = async (req, res) => { 
+    try {
+        const { id } = req.params;
+
+        console.log("rechazarModificacionMarcacion id:", id);
+
+        res.status(501).json({
+            success: true,
+            message: 'En desarrollo',
+        });
+        // Obtener la marcación original antes de modificarla
+    } catch (error) {
+        console.error('Error en rechazarModificacionMarcacion:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+}
 
 const MarcacionesController = {
     registrarEntrada,
@@ -529,7 +570,9 @@ const MarcacionesController = {
     obtenerMarcacionesPorFecha,
     obtenerMarcacionesPorEmpresa,
     obtenerMarcacionPorUserId,
-    modificarMarcacionPorId
+    modificarMarcacionPorId,
+    aceptarModificacionMarcacion,
+    rechazarModificacionMarcacion
 }
 
 export default MarcacionesController;

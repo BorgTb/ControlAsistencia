@@ -648,20 +648,12 @@ const aprobarCambioMarcacion = async (req, res) => {
         await ReporteMarcacionesModel.cambiarEstado(reporteId, 'POR CONFIRMAR');
         const reporteActualizado = await ReportesModel.findById(reporteId);
 
-
-        // enviar notificacion al usuario que hizo el reporte de que va a cambiar su marcacion o se creo una nueva
-        console.log("datosCambios:", datosCambios);
-
-
         if (reporte.tipo === 'modificar') {
             NotificacionService.enviarNotificacionConfirmacionModificacionMarcacion(reporte, datosCambios, datosCambios.marcacionOriginal);
         } else if (reporte.tipo === 'agregar') {
             // agregar informacion del usuario a datosCambios
             const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
             datosCambios.usuario = usuario;
-
-
-
             NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, datosCambios);
         }
 

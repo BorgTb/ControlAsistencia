@@ -125,6 +125,12 @@ const router = createRouter({
             component: () => import('../components/vistas/empresa/AsociarTrabajador.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
+        {
+            path: '/aprobar-modificacion',
+            name: 'AprobarModificacion',
+            component: () => import('../components/vistas/Solicitudes/ModificacionMaracacion.vue'),
+        },
+        // Ruta comodín para manejar rutas no definidas (404)
         // Agregar más rutas según necesites
         {
             path: '/:pathMatch(.*)*',
@@ -173,7 +179,8 @@ router.beforeEach((to, from, next) => {
     ]
     
     const guestRoutes = [
-        '/'
+        '/',
+        '/aprobar-modificacion'
     ]
     
     // Verificar si la ruta es solo para invitados (usuarios no autenticados)

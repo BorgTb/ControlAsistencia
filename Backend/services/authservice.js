@@ -49,6 +49,12 @@ const verificarEst = async (empresa_id) => {
     return empresaEst ? true : false;
 };
 
+const generarTokenAceptacionCambios = (id) => {
+    const payload = { id: id };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '48h' });
+};
+
+
 // Function to register a user (hash password)
 const registerUser = async (email, password, nombre, apellido_pat, apellido_mat, rol = 'trabajador', rut, estado = 1) => {
     // Check if user already exists
@@ -268,6 +274,8 @@ const AuthService = {
     generateAccessCode,
     generateTemporaryCode,
     generateTokenForFiscalizador,
+    verificarEst,
+    generarTokenAceptacionCambios
 };
 
 // Export an object containing the functions

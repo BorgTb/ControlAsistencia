@@ -22,4 +22,9 @@ router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, Marcacio
 router.put('/userEmpresa/modificar/:id', AuthService.verifyToken, MarcacionesController.modificarMarcacionPorId);
 
 
+// Rutas para la aceptacion de modificaciones para userEmpresa
+router.put('/modificar/aceptar/:id', MarcacionesController.aceptarModificacionMarcacion);
+router.put('/modificar/rechazar/:id', AuthService.verifyToken, MarcacionesController.rechazarModificacionMarcacion);
+
+
 export default router;
