@@ -688,9 +688,28 @@ const rechazarCambioMarcacion = async (req, res) => {
 
 const historialSolicitudes = async (req, res) => {
     try {
+        const historial = await ReporteMarcacionesModel.findByEmpresaId(req.user.empresa_id);
 
-        
-        res.status(501).json({ success: false, message: "Funcionalidad no implementada aún" });
+        // agregar los reportes de los trabajadores de est que estnan en esta empresa
+        const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(req.user.empresa_id);
+        const reportesTrabajadoresDeEst = await Promise.all(
+            trabajadoresDeEst.map(trabajador =>
+            ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
+            )
+        ).then(reportesArrays => reportesArrays.flat());
+        historial.push(...reportesTrabajadoresDeEst);
+        //agregar info del trabajador a cada reporte
+        for (let reporte of historial) {
+            const ue = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
+            if (ue) {
+                reporte.nombreTrabajador = ue.nombre;
+                reporte.apellido_pat = ue.apellido_pat;
+                reporte.apellido_mat = ue.apellido_mat;
+            }
+        }
+
+        console.log("historial:", historial);
+        res.status(200).json({ success: true, data: historial });
     }
     catch (error) {
         console.error("Error obteniendo historial de solicitudes:", error);
@@ -746,7 +765,8 @@ const AdminController = {
     aprobarCambioMarcacion,
     rechazarCambioMarcacion,
     configurarToleranciaHorarias,
-    obtenerConfiguracionTolerancias
+    obtenerConfiguracionTolerancias,
+    historialSolicitudes
 };
 
 

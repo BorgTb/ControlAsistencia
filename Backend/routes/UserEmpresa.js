@@ -25,4 +25,7 @@ router.get('/configuracion/marcaciones',AuthService.verifyToken, UserEmpresaCont
 router.post('/est/asociar',AuthService.verifyToken, EstController.asociarTrabajadorEmpresa);
 router.get('/est/asociaciones',AuthService.verifyToken, EstController.obtenerAsociacionesUsuarioEmpresa);
 
+
+router.get('/historial-solicitudes',AuthService.verifyToken, UserEmpresaController.historialSolicitudes);
+
 export default router;

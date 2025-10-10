@@ -237,6 +237,17 @@ class EmpresaServices{
       throw error
     }
   }
+
+  static async obtenerHistorialSolicitudes() {
+    try {
+      const response = await apiClient.get('/userEmpresa/historial-solicitudes')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+  
+
 }
 
 export default EmpresaServices;
