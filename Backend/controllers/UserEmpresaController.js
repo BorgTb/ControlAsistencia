@@ -686,6 +686,20 @@ const rechazarCambioMarcacion = async (req, res) => {
 };
 
 
+const historialSolicitudes = async (req, res) => {
+    try {
+
+        
+        res.status(501).json({ success: false, message: "Funcionalidad no implementada aún" });
+    }
+    catch (error) {
+        console.error("Error obteniendo historial de solicitudes:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+};
+
+
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,

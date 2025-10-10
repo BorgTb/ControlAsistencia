@@ -163,7 +163,18 @@
       <div class="px-4 py-6 sm:px-0" v-if="!esEst">
         <div class="bg-white rounded-lg shadow mb-6">
           <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación y Confirmación</h3>
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg font-medium text-gray-900">Solicitudes Pendientes de Aprobación y Confirmación</h3>
+              <button 
+                @click="irAHistorialSolicitudes"
+                class="flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium transition-colors duration-200"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Historial</span>
+              </button>
+            </div>
           </div>
           <div class="p-6">
             <div class="space-y-4" v-if="solicitudesPendientes.length > 0">
@@ -780,10 +791,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 import { useAuth } from '../../../composables/useAuth.js';
 import AgregarMarcacionEmpleadorModal from '../../modals/AgregarMarcacionEmpleadorModal.vue';
 
+const router = useRouter();
 const { esEst, esEmpleador } = useAuth();
 
 // Composables
@@ -1306,6 +1319,11 @@ const cargarSolicitudes = async () => {
   }
 };
 
+
+// Función para ir al historial de solicitudes
+const irAHistorialSolicitudes = () => {
+  router.push('/empresa/historial-solicitudes');
+};
 
 
 onMounted(() => {

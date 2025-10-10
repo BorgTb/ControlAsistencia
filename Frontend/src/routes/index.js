@@ -130,6 +130,12 @@ const router = createRouter({
             name: 'AprobarModificacion',
             component: () => import('../components/vistas/Solicitudes/ModificacionMaracacion.vue'),
         },
+        {
+            path: '/empresa/historial-solicitudes',
+            name: 'HistorialSolicitudes',
+            component: () => import('../components/vistas/empresa/HistorialSolicitudes.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
         // Ruta comodín para manejar rutas no definidas (404)
         // Agregar más rutas según necesites
         {
@@ -169,7 +175,8 @@ router.beforeEach((to, from, next) => {
         '/empresa/marcaciones',
         '/empresa/reportes',
         '/empresa/configuracion',
-        '/empresa/trabajadores/asociar'
+        '/empresa/trabajadores/asociar',
+        '/empresa/historial-solicitudes'
     ]
     
     const trabajadorRoutes = [
