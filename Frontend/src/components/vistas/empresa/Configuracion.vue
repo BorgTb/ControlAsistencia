@@ -139,69 +139,6 @@
               </div>
             </div>
 
-            <!-- Reglamento Interno -->
-            <div v-show="activeTab === 'reglamento' && !esEst">
-              <h3 class="text-lg font-medium text-gray-900 mb-6">Reglamento Interno de Orden, Higiene y Seguridad</h3>
-              
-              <div class="space-y-6">
-                <!-- Reglas de Uso -->
-                <div class="bg-gray-50 p-6 rounded-lg">
-                  <h4 class="font-medium text-gray-900 mb-4">Reglas de Uso del Sistema</h4>
-                  
-                  <div class="space-y-4">
-                    <div class="flex items-start space-x-3">
-                      <input type="checkbox" checked class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">Uso obligatorio de métodos de identificación</p>
-                        <p class="text-sm text-gray-500">Los trabajadores deben usar los métodos asignados para registrar su asistencia</p>
-                      </div>
-                    </div>
-                    
-                    <div class="flex items-start space-x-3">
-                      <input type="checkbox" checked class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">Prohibición de compartir credenciales</p>
-                        <p class="text-sm text-gray-500">Está prohibido compartir tarjetas, claves o datos biométricos con otros trabajadores</p>
-                      </div>
-                    </div>
-                    
-                    <div class="flex items-start space-x-3">
-                      <input type="checkbox" checked class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">Responsabilidad por el uso correcto</p>
-                        <p class="text-sm text-gray-500">Cada trabajador es responsable del uso correcto de su método de identificación</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sanciones -->
-                <div class="bg-red-50 p-6 rounded-lg">
-                  <h4 class="font-medium text-gray-900 mb-4">Sanciones por Incumplimiento</h4>
-                  
-                  <div class="space-y-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Uso indebido del sistema</label>
-                      <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="amonestacion">Amonestación verbal</option>
-                        <option value="amonestacion_escrita">Amonestación escrita</option>
-                        <option value="suspension">Suspensión</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Compartir credenciales</label>
-                      <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="amonestacion_escrita">Amonestación escrita</option>
-                        <option value="suspension">Suspensión</option>
-                        <option value="despido">Despido</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Marcaciones -->
             <div v-show="activeTab === 'marcaciones' && !esEst">
               <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Marcaciones</h3>
@@ -225,128 +162,6 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo mínimo entre marcaciones (minutos)</label>
                     <input type="number" value="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
                   </div>
-                </div>
-
-                <!-- Métodos de Identificación -->
-                <div class="space-y-4">
-                  <h4 class="font-medium text-gray-900">Métodos de Identificación</h4>
-                  
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-3">
-                        <input type="checkbox" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-sm font-medium text-gray-900">Biometría (Huella dactilar)</span>
-                      </div>
-                      <span class="text-sm text-gray-500">Primario</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-3">
-                        <input type="checkbox" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-sm font-medium text-gray-900">Tarjeta RFID</span>
-                      </div>
-                      <span class="text-sm text-gray-500">Secundario</span>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-3">
-                        <input type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-sm font-medium text-gray-900">Código PIN</span>
-                      </div>
-                      <span class="text-sm text-gray-500">Backup</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Configuración de Modificaciones -->
-              <div class="mt-8 bg-yellow-50 p-6 rounded-lg">
-                <h4 class="font-medium text-gray-900 mb-4">Modificaciones de Marcaciones</h4>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Requiere consentimiento del trabajador</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                      <option value="siempre">Siempre</option>
-                      <option value="solo_correcciones">Solo correcciones</option>
-                      <option value="nunca">Nunca</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo límite para modificar (horas)</label>
-                    <input type="number" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Turnos -->
-            <div v-show="activeTab === 'turnos' && !esEst">
-              <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Turnos</h3>
-              
-              <div class="space-y-6">
-                <!-- Turnos Disponibles -->
-                <div>
-                  <h4 class="font-medium text-gray-900 mb-4">Turnos Disponibles</h4>
-                  
-                  <div class="space-y-4">
-                    <!-- Turno Mañana -->
-                    <div class="border border-gray-200 rounded-lg p-4">
-                      <div class="flex items-center justify-between mb-3">
-                        <h5 class="font-medium text-gray-900">Turno Mañana</h5>
-                        <div class="flex space-x-2">
-                          <button class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</button>
-                          <button class="text-red-600 hover:text-red-900 text-sm">Eliminar</button>
-                        </div>
-                      </div>
-                      
-                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Hora de entrada</label>
-                          <input type="time" value="08:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Hora de salida</label>
-                          <input type="time" value="16:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Descanso (minutos)</label>
-                          <input type="number" value="60" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Turno Tarde -->
-                    <div class="border border-gray-200 rounded-lg p-4">
-                      <div class="flex items-center justify-between mb-3">
-                        <h5 class="font-medium text-gray-900">Turno Tarde</h5>
-                        <div class="flex space-x-2">
-                          <button class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</button>
-                          <button class="text-red-600 hover:text-red-900 text-sm">Eliminar</button>
-                        </div>
-                      </div>
-                      
-                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Hora de entrada</label>
-                          <input type="time" value="14:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Hora de salida</label>
-                          <input type="time" value="22:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Descanso (minutos)</label>
-                          <input type="number" value="45" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200">
-                    Agregar Nuevo Turno
-                  </button>
                 </div>
               </div>
             </div>
@@ -541,16 +356,9 @@ const BellIcon = {
 const tabs = computed(() => {
   const baseTabs = [
     { id: 'general', name: 'General', icon: ConfigIcon },
+    { id: 'marcaciones', name: 'Marcaciones', icon: CheckIcon },
     { id: 'notificaciones', name: 'Notificaciones', icon: BellIcon }
   ];
-  
-  if (!esEst.value) {
-    baseTabs.splice(1, 0, 
-      { id: 'reglamento', name: 'Reglamento', icon: DocumentIcon },
-      { id: 'marcaciones', name: 'Marcaciones', icon: CheckIcon },
-      { id: 'turnos', name: 'Turnos', icon: ClockIcon }
-    );
-  }
   
   return baseTabs;
 });
