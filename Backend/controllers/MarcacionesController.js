@@ -5,6 +5,7 @@ import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import {DateTime} from 'luxon'
 import AuthService from '../services/authservice.js';
 import ReporteMarcionesModel from '../model/ReportesModel.js';
+import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 
 
 
@@ -105,11 +106,11 @@ const registrarMarcacion = async (req, res) => {
                 message: 'No se encontró un turno asociado al usuario.'
             });
         }
-
+        
+        
+        const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
         // Validación de horario solo para entrada
-        if (tipo === 'entrada') {
-            const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
-            
+        if (tipo === 'entrada') {    
             // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
             if (turno.fin < turno.inicio) {
                 // Si es así, la hora actual debe ser mayor que turno.inicio
@@ -126,6 +127,30 @@ const registrarMarcacion = async (req, res) => {
                 });
             }
         }
+        // validar tolerancia 
+
+        if (['entrada', 'salida'].includes(tipo)) {
+            console.log("Validando tolerancia para tipo:", tipo);
+            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const diferencia = calcularDiferenciaHoras(horaReferencia, horaActual);
+            if (diferencia.totalSegundos > 0) {
+                const minutosDiferencia = Math.floor(diferencia.totalSegundos / 60);
+                const toleranciaResult = await ConfigToleranciaModel.validarTolerancia(usuarioEmpresa.empresa_id, tipo, minutosDiferencia);
+                if (!toleranciaResult.valido) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `No se puede registrar la ${tipo} fuera de la tolerancia permitida. ${toleranciaResult.mensaje}`
+                    });
+                }
+                console.log(`Marcación de ${tipo} dentro de tolerancia:`, toleranciaResult);
+            } else {
+                console.log(`Marcación de ${tipo} a tiempo o anticipada. Diferencia:`, diferencia.formato);
+            }  
+        }
+        // Validar tiempo mínimo entre marcaciones
+
+
+        
 
         const result = await MarcacionesService.registrarMarcacion(
             usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
