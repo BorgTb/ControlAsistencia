@@ -52,7 +52,7 @@
           </div>
 
           <!-- Lista de trabajadores -->
-          <div v-else-if="trabajadoresFiltrados.length > 0" class="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
+          <div v-else-if="trabajadoresFiltrados.length > 0 && !formData.trabajadorSeleccionado" class="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
             <div 
               v-for="trabajador in trabajadoresFiltrados" 
               :key="trabajador.id"
@@ -65,7 +65,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                   <div class="flex-shrink-0">
-                    <div :class="obtenerColorAvatar()" class="h-10 w-10 rounded-full flex items-center justify-center">
+                    <div :class="obtenerColorAvatar(trabajador.id)" class="h-10 w-10 rounded-full flex items-center justify-center">
                       <span class="text-sm font-medium text-white">
                         {{ obtenerIniciales(trabajador.usuario_nombre, trabajador.usuario_apellido_pat) }}
                       </span>
@@ -88,7 +88,7 @@
           </div>
 
           <!-- Sin resultados -->
-          <div v-else-if="busquedaTrabajador && trabajadoresFiltrados.length === 0" class="p-4 text-center text-sm text-gray-500 border border-gray-200 rounded-md">
+          <div v-else-if="busquedaTrabajador && trabajadoresFiltrados.length === 0 && !formData.trabajadorSeleccionado" class="p-4 text-center text-sm text-gray-500 border border-gray-200 rounded-md">
             No se encontraron trabajadores
           </div>
 
@@ -363,7 +363,7 @@ const obtenerIniciales = (nombre, apellido) => {
   return primerNombre + primerApellido
 }
 
-const obtenerColorAvatar = () => {
+const obtenerColorAvatar = (id) => {
   const colores = [
     'bg-indigo-500',
     'bg-purple-500', 
@@ -374,7 +374,9 @@ const obtenerColorAvatar = () => {
     'bg-pink-500',
     'bg-gray-500'
   ]
-  return colores[Math.floor(Math.random() * colores.length)]
+  // Usar el ID del trabajador para generar un color consistente
+  const index = id ? id % colores.length : 0
+  return colores[index]
 }
 
 // Métodos de formulario
