@@ -28,7 +28,7 @@
       <div v-else-if="solicitud" class="space-y-6">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">Solicitud de Modificación de Marcación</h1>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">Solicitud de {{ solicitud.tipo === 'agregar' ? 'Adición' : 'Modificación' }} de Marcación</h1>
           <p class="text-gray-600">Revisa los detalles y toma una decisión sobre esta solicitud.</p>
         </div>
 
@@ -38,37 +38,74 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">Empleado</label>
-              <p class="text-base font-semibold text-gray-900">{{ solicitud.empleado }}</p>
+              <p class="text-base font-semibold text-gray-900">
+                {{ solicitud.user_nombre }} {{ solicitud.user_apellido_pat }} {{ solicitud.user_apellido_mat }}
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">RUT</label>
+              <p class="text-base font-semibold text-gray-900">{{ solicitud.user_rut }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+              <p class="text-base font-semibold text-gray-900">{{ solicitud.user_email }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Empresa</label>
+              <p class="text-base font-semibold text-gray-900">{{ solicitud.user_empresa }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">Fecha</label>
-              <p class="text-base font-semibold text-gray-900">{{ solicitud.fecha }}</p>
+              <p class="text-base font-semibold text-gray-900">{{ formatearFecha(solicitud.fecha_correcta) }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">Tipo</label>
-              <p class="text-base font-semibold text-gray-900">{{ solicitud.tipo || 'Modificación' }}</p>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Tipo de Problema</label>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                    :class="solicitud.tipo_problema === 'olvido_marcar' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'">
+                {{ solicitud.tipo_problema === 'olvido_marcar' ? 'Olvidó Marcar' : 'Hora Incorrecta' }}
+              </span>
             </div>
           </div>
         </div>
 
         <!-- Cambios Solicitados -->
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Cambios Solicitados</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            {{ solicitud.tipo === 'agregar' ? 'Marcación a Agregar' : 'Cambios Solicitados' }}
+          </h2>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <!-- Tipo: AGREGAR (olvido_marcar) -->
+          <div v-if="solicitud.tipo === 'agregar'" class="max-w-md mx-auto">
+            <div class="bg-green-50 rounded-lg p-6 border-2 border-green-400">
+              <h3 class="text-center font-semibold text-green-800 mb-4">Nueva Marcación</h3>
+              <div class="space-y-3">
+                <div class="bg-white rounded-lg p-4">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
+                  <p class="text-xl font-bold text-gray-900">{{ formatearFecha(solicitud.fecha_correcta) }}</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Hora</label>
+                  <p class="text-2xl font-bold text-green-900">{{ solicitud.hora_correcta }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tipo: MODIFICAR (hora_incorrecta) -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <!-- Marcación Actual -->
             <div class="space-y-4">
               <h3 class="text-center font-semibold text-gray-700 mb-3">Marcación Actual</h3>
               <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label class="block text-xs font-medium text-gray-600 mb-1">Hora Entrada</label>
-                <p class="text-2xl font-bold text-gray-900">
-                  {{ solicitud.horaEntradaActual || 'No registrada' }}
+                <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Original</label>
+                <p class="text-lg font-bold text-gray-900">
+                  {{ formatearFecha(solicitud.fecha_original) }}
                 </p>
               </div>
               <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label class="block text-xs font-medium text-gray-600 mb-1">Hora Salida</label>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Hora Original</label>
                 <p class="text-2xl font-bold text-gray-900">
-                  {{ solicitud.horaSalidaActual || 'No registrada' }}
+                  {{ solicitud.hora_original || 'No registrada' }}
                 </p>
               </div>
             </div>
@@ -82,28 +119,20 @@
 
             <!-- Marcación Solicitada -->
             <div class="space-y-4">
-              <h3 class="text-center font-semibold text-gray-700 mb-3">Marcación Solicitada</h3>
+              <h3 class="text-center font-semibold text-gray-700 mb-3">Marcación Correcta</h3>
               <div class="bg-green-50 rounded-lg p-4 border-2 border-green-400">
-                <label class="block text-xs font-medium text-green-700 mb-1">Hora Entrada</label>
-                <p class="text-2xl font-bold text-green-900">
-                  {{ solicitud.horaEntradaSolicitada }}
+                <label class="block text-xs font-medium text-green-700 mb-1">Fecha Correcta</label>
+                <p class="text-lg font-bold text-green-900">
+                  {{ formatearFecha(solicitud.fecha_correcta) }}
                 </p>
               </div>
               <div class="bg-green-50 rounded-lg p-4 border-2 border-green-400">
-                <label class="block text-xs font-medium text-green-700 mb-1">Hora Salida</label>
+                <label class="block text-xs font-medium text-green-700 mb-1">Hora Correcta</label>
                 <p class="text-2xl font-bold text-green-900">
-                  {{ solicitud.horaSalidaSolicitada }}
+                  {{ solicitud.hora_correcta }}
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Motivo -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-3">Motivo de la Solicitud</h2>
-          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-gray-800 leading-relaxed">{{ solicitud.motivo }}</p>
           </div>
         </div>
 
@@ -152,7 +181,7 @@
               Cancelar
             </button>
             <button 
-              @click="rechazarSolicitud"
+              @click="manejarRechazo"
               :disabled="procesando || !motivoRechazo.trim()"
               class="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -171,103 +200,92 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSolicitudes } from '../../../composables/useSolicitudes'
 
-export default {
-  name: 'ModificacionMarcacion',
-  setup() {
-    const route = useRoute()
+const route = useRoute()
+
+// Usar el composable de solicitudes
+const {
+  loading,
+  error,
+  solicitud,
+  procesando,
+  procesado,
+  mensajeProcesado,
+  cargarSolicitud,
+  aceptarSolicitud,
+  rechazarSolicitud
+} = useSolicitudes()
+
+// Estado local del componente
+const mostrarRechazo = ref(false)
+const motivoRechazo = ref('')
+const token = ref('')
+
+// Función para formatear fechas
+const formatearFecha = (fecha) => {
+  if (!fecha) return 'N/A'
+  const date = new Date(fecha)
+  const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Santiago' }
+  return date.toLocaleDateString('es-CL', opciones)
+}
+
+// Obtener token de la URL e inicializar
+const inicializar = async () => {
+  token.value = route.query.token || ''
     
-    // Usar el composable de solicitudes
-    const {
-      loading,
-      error,
-      solicitud,
-      procesando,
-      procesado,
-      mensajeProcesado,
-      cargarSolicitud,
-      aceptarSolicitud,
-      rechazarSolicitud
-    } = useSolicitudes()
+  if (!token.value) {
+    error.value = 'Token no proporcionado en la URL'
+    return
+  }
 
-    // Estado local del componente
-    const mostrarRechazo = ref(false)
-    const motivoRechazo = ref('')
-    const token = ref('')
+  await cargarSolicitud(token.value)
+}
 
-    // Obtener token de la URL e inicializar
-    const inicializar = async () => {
-      token.value = route.query.token || ''
-        
-      if (!token.value) {
-        error.value = 'Token no proporcionado en la URL'
-        return
-      }
+// Mostrar formulario de rechazo
+const mostrarFormularioRechazo = () => {
+  mostrarRechazo.value = true
+  motivoRechazo.value = ''
+}
 
-      await cargarSolicitud(token.value)
-    }
-
-    // Mostrar formulario de rechazo
-    const mostrarFormularioRechazo = () => {
-      mostrarRechazo.value = true
-      motivoRechazo.value = ''
-    }
-
-    // Confirmar aceptación
-    const confirmarAceptar = () => {
-      if (confirm('¿Está seguro de aceptar esta solicitud de modificación?')) {
-        manejarAceptar()
-      }
-    }
-
-    // Manejar aceptación de solicitud
-    const manejarAceptar = async () => {
-      try {
-        await aceptarSolicitud(token.value)
-      } catch (err) {
-        alert('Error al procesar la solicitud. Por favor, intenta nuevamente.')
-      }
-    }
-
-    // Manejar rechazo de solicitud
-    const manejarRechazo = async () => {
-      if (!motivoRechazo.value.trim()) {
-        alert('Debe ingresar un motivo para el rechazo')
-        return
-      }
-
-      try {
-        await rechazarSolicitud(token.value, motivoRechazo.value)
-        mostrarRechazo.value = false
-      } catch (err) {
-        alert('Error al procesar la solicitud. Por favor, intenta nuevamente.')
-      }
-    }
-
-    // Inicializar al montar
-    onMounted(() => {
-      inicializar()
-    })
-
-    return {
-      loading,
-      error,
-      solicitud,
-      procesando,
-      procesado,
-      mensajeProcesado,
-      mostrarRechazo,
-      motivoRechazo,
-      mostrarFormularioRechazo,
-      confirmarAceptar,
-      rechazarSolicitud: manejarRechazo
-    }
+// Confirmar aceptación
+const confirmarAceptar = () => {
+  if (confirm('¿Está seguro de aceptar esta solicitud de modificación?')) {
+    manejarAceptar()
   }
 }
+
+// Manejar aceptación de solicitud
+const manejarAceptar = async () => {
+  try {
+    await aceptarSolicitud(token.value)
+  } catch (err) {
+    alert('Error al procesar la solicitud. Por favor, intenta nuevamente.')
+  }
+}
+
+// Manejar rechazo de solicitud
+const manejarRechazo = async () => {
+  if (!motivoRechazo.value.trim()) {
+    alert('Debe ingresar un motivo para el rechazo')
+    return
+  }
+
+  try {
+    await rechazarSolicitud(token.value, motivoRechazo.value)
+    mostrarRechazo.value = false
+  } catch (err) {
+    alert('Error al procesar la solicitud. Por favor, intenta nuevamente.')
+  }
+}
+
+// Inicializar al montar
+onMounted(() => {
+  inicializar()
+})
 </script>
 
 <style scoped>

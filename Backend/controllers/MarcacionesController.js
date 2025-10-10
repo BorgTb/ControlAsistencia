@@ -3,6 +3,8 @@ import NotificacionService from '../services/NotificacionService.js';
 import TurnosModel from '../model/TurnosModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import {DateTime} from 'luxon'
+import AuthService from '../services/authservice.js';
+import ReporteMarcionesModel from '../model/ReportesModel.js';
 
 
 function calcularDiferenciaHoras(hora1, hora2) {
@@ -517,6 +519,56 @@ const modificarMarcacionPorId = async (req, res) => {
     }
 }
 
+
+const obtenerReporteMarcacionId = async (req,res) => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'El token es requerido'
+            });
+        }
+
+
+        const { id } = AuthService.verifyToken(token);
+        const reporte = await ReporteMarcionesModel.findById(id);
+        const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaById(reporte.usuario_id);
+
+
+        const infoData = {
+            reporte_id: reporte.id,
+            tipo_problema : reporte.tipo_problema,
+            fecha_correcta : reporte.fecha_correcta ? reporte.fecha_correcta : null,
+            hora_correcta : reporte.hora_correcta ? reporte.hora_correcta : null,
+            tipo : reporte.tipo,
+            user_nombre : userSolicitante.usuario_nombre,
+            user_apellido_pat: userSolicitante.usuario_apellido_pat,
+            user_apellido_mat: userSolicitante.usuario_apellido_mat,
+            user_email : userSolicitante.usuario_nombre,
+            user_rut : userSolicitante.usuario_rut,
+            user_empresa : userSolicitante.empresa_nombre,
+            user_empresa_rut : userSolicitante.empresa_rut,
+        }
+
+        if (reporte.tipo === 'modificar') {
+            const marcacionOriginal = await MarcacionesService.obtenerMarcacionPorId(reporte.marcacion_id);
+            infoData.hora_original = marcacionOriginal.data.hora;
+            infoData.fecha_original = marcacionOriginal.data.fecha;
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: infoData,
+            message: 'Reporte obtenido correctamente'
+        });
+    }catch (error) {
+        console.error('Error en obtenerReporteMarcacionId:', error);
+        throw new Error('Error interno del servidor');
+    }
+}
+
 const aceptarModificacionMarcacion = async (req, res) => {
     try {
         const { id } = req.params;
@@ -572,7 +624,8 @@ const MarcacionesController = {
     obtenerMarcacionPorUserId,
     modificarMarcacionPorId,
     aceptarModificacionMarcacion,
-    rechazarModificacionMarcacion
+    rechazarModificacionMarcacion,
+    obtenerReporteMarcacionId
 }
 
 export default MarcacionesController;

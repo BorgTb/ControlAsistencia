@@ -2,8 +2,18 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// Crear una instancia separada de axios SIN interceptores para peticiones públicas
+const publicApiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000
+});
+
 /**
  * Servicio para manejar solicitudes de modificación de marcaciones
+ * IMPORTANTE: Este servicio usa peticiones públicas (sin autenticación JWT)
  */
 class SolicitudesService {
   /**
@@ -13,10 +23,10 @@ class SolicitudesService {
    */
   async obtenerSolicitudPorToken(token) {
     try {
-      const response = await axios.get(`${API_URL}/solicitudes/modificacion`, {
+      const response = await publicApiClient.get('/marcaciones/solicitud-modificar', {
         params: { token }
       });
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Error al obtener solicitud:', error);
       throw new Error(error.response?.data?.message || 'Error al cargar la solicitud');
@@ -30,7 +40,7 @@ class SolicitudesService {
    */
   async aceptarSolicitud(token) {
     try {
-      const response = await axios.post(`${API_URL}/solicitudes/modificacion/aceptar`, {
+      const response = await publicApiClient.post('/marcaciones/modificar/aceptar', {
         token
       });
       return response.data;
@@ -48,7 +58,7 @@ class SolicitudesService {
    */
   async rechazarSolicitud(token, motivo) {
     try {
-      const response = await axios.post(`${API_URL}/solicitudes/modificacion/rechazar`, {
+      const response = await publicApiClient.post('/marcaciones/modificar/rechazar', {
         token,
         motivo
       });

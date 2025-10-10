@@ -78,7 +78,7 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
-            WHERE ue.usuario_id = ?
+            WHERE ue.id = ?
         `;
         
         const [rows] = await db.execute(query, [id]);

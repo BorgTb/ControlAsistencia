@@ -30,6 +30,8 @@ export const useSolicitudes = () => {
       const data = await SolicitudesService.obtenerSolicitudPorToken(token);
       solicitud.value = data;
 
+      console.log(data);
+
       // Verificar si ya fue procesada
       if (data.procesada) {
         procesado.value = true;
