@@ -55,11 +55,11 @@
           <div v-else-if="trabajadoresFiltrados.length > 0" class="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
             <div 
               v-for="trabajador in trabajadoresFiltrados" 
-              :key="trabajador.usuario_id"
+              :key="trabajador.id"
               @click="seleccionarTrabajador(trabajador)"
               class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-200"
               :class="{
-                'bg-indigo-50 hover:bg-indigo-100': formData.trabajadorSeleccionado?.usuario_id === trabajador.usuario_id
+                'bg-indigo-50 hover:bg-indigo-100': formData.trabajadorSeleccionado?.id === trabajador.id
               }"
             >
               <div class="flex items-center justify-between">
@@ -78,7 +78,7 @@
                     <p class="text-xs text-gray-500">RUT: {{ trabajador.usuario_rut }}</p>
                   </div>
                 </div>
-                <div v-if="formData.trabajadorSeleccionado?.usuario_id === trabajador.usuario_id">
+                <div v-if="formData.trabajadorSeleccionado?.id === trabajador.id">
                   <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                   </svg>
@@ -424,7 +424,7 @@ const agregarMarcacion = async () => {
   
   try {
     const marcacionData = {
-      usuario_id: formData.value.trabajadorSeleccionado.usuario_id,
+      usuario_id: formData.value.trabajadorSeleccionado.id,
       tipo: formData.value.tipo,
       fecha: formData.value.fecha,
       hora: formData.value.hora,

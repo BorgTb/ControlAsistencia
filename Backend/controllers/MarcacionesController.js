@@ -8,6 +8,7 @@ import ReporteMarcionesModel from '../model/ReportesModel.js';
 
 
 
+
 function calcularDiferenciaHoras(hora1, hora2) {
     // Función auxiliar para convertir hh:mm:ss a segundos totales
     function horaASegundos(horaStr) {
@@ -660,13 +661,58 @@ const rechazarModificacionMarcacion = async (req, res) => {
 
         console.log("rechazarModificacionMarcacion id:", id);
 
-        res.status(501).json({
+        return res.status(501).json({
             success: true,
             message: 'En desarrollo',
         });
         // Obtener la marcación original antes de modificarla
     } catch (error) {
         console.error('Error en rechazarModificacionMarcacion:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+}
+
+const agregarMarcacionManual = async (req, res) => {
+    try {
+        const { usuario_id, tipo, fecha, hora, motivo } = req.body;
+        // Validar datos requeridos
+        if (!usuario_id || !tipo || !fecha || !hora || !motivo) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan datos requeridos: usuario_id, tipo, fecha, hora y motivo son obligatorios'
+            });
+        }
+
+        console.log(usuario_id);
+
+
+        // Se genera una solicitud en la base de datos y se envia un correo para que el trabajador la acepte
+       const id = await ReporteMarcionesModel.createPorConfirmar({
+            marcacion_id: null,
+            usuario_id: usuario_id,
+            tipo: 'agregar',
+            fecha_correcta: fecha,
+            hora_correcta: hora,
+            descripcion: motivo,
+            tipo_problema: "Adición de Marcación",
+            tipo_marcacion_correcta: tipo
+        });
+
+
+        const reporte = await ReporteMarcionesModel.findById(id);
+        const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
+        await NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, {tipo: 'agregar', fechaNueva: fecha, horaNueva: hora, tipoNueva: tipo, usuario: usuario});
+        
+        return res.status(501).json({
+            success: true,
+            message: 'En desarrollo',
+        });
+        
+    } catch (error) {
+        console.error('Error en agregarMarcacionManual:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor'
@@ -688,7 +734,8 @@ const MarcacionesController = {
     modificarMarcacionPorId,
     aceptarModificacionMarcacion,
     rechazarModificacionMarcacion,
-    obtenerReporteMarcacionId
+    obtenerReporteMarcacionId,
+    agregarMarcacionManual
 }
 
 export default MarcacionesController;

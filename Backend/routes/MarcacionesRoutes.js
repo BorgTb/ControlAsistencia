@@ -34,6 +34,7 @@ router.get('/userEmpresa/todas', AuthService.verifyToken, MarcacionesController.
 router.get('/userEmpresa/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorFecha );
 router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
 router.put('/userEmpresa/modificar/:id', AuthService.verifyToken, MarcacionesController.modificarMarcacionPorId);
+router.post('/userEmpresa/agregar', AuthService.verifyToken, MarcacionesController.agregarMarcacionManual);
 
 // Esta ruta debe estar al final para evitar conflictos con otras rutas
 router.get('/:id', AuthService.verifyToken, MarcacionesController.obtenerMarcacionPorUserId);
