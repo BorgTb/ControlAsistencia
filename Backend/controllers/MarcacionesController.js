@@ -7,6 +7,7 @@ import AuthService from '../services/authservice.js';
 import ReporteMarcionesModel from '../model/ReportesModel.js';
 
 
+
 function calcularDiferenciaHoras(hora1, hora2) {
     // Función auxiliar para convertir hh:mm:ss a segundos totales
     function horaASegundos(horaStr) {
@@ -495,12 +496,22 @@ const modificarMarcacionPorId = async (req, res) => {
 
         // Enviar notificación por correo de forma asíncrona
         const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
-        console.log('usuarioEmpresa', usuarioEmpresa);
-        console.log(marcacionOriginal);
-        console.log(req.body);
+        
+        //marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta
+
+        const newReporteId = await ReporteMarcionesModel.createPorConfirmar({
+            marcacion_id: marcacionOriginal.data.id,
+            usuario_id: usuarioEmpresa.id,
+            tipo: 'modificar',
+            tipo_problema: "Modificación de Marcación",
+            descripcion: motivo,
+            fecha_correcta: fecha,
+            hora_correcta: hora,
+            tipo_marcacion_correcta: tipo
+        });
 
         NotificacionService.procesarNotificacionModificacionMarcacion(
-            usuarioEmpresa,marcacionOriginal.data, req.body
+            usuarioEmpresa,marcacionOriginal.data, req.body, newReporteId
         ).catch(error => console.error('Error en notificación de modificación de marcación:', error));
 
 
@@ -531,9 +542,13 @@ const obtenerReporteMarcacionId = async (req,res) => {
             });
         }
 
+        console.log("obtenerReporteMarcacionId token:", token);
+
 
         const { id } = AuthService.verifyToken(token);
+        console.log("obtenerReporteMarcacionId id:", id);
         const reporte = await ReporteMarcionesModel.findById(id);
+        
         const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(reporte.usuario_id);
 
         if (!reporte) {

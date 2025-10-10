@@ -12,6 +12,16 @@ class ReportesModel {
         return result.insertId;
     }
 
+    // crear nuevo reporte de marcacion con estado "POR CONFIRMAR"
+    static async createPorConfirmar(data) {
+        const { marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta } = data;
+        const [result] = await pool.query(
+            'INSERT INTO reportes_marcaciones (marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta, estado, fecha_reporte) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "POR CONFIRMAR", CURRENT_TIMESTAMP)',
+            [marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta || null, hora_correcta || null, tipo_marcacion_correcta || null]
+        );
+        return result.insertId;
+    }   
+
     // Obtener reporte por ID
     static async findById(id) {
         const [rows] = await pool.query('SELECT * FROM reportes_marcaciones WHERE id = ?', [id]);

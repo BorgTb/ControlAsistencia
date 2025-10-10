@@ -582,20 +582,21 @@ class MailService {
 
         return await this.enviarCorreo(usuario.email, asunto, contenidoHTML);
     }
-    async enviarNotificacionModificacionMarcacion(usuarioEmpresa, marcacionOriginal, data) {
+
+    async enviarNotificacionModificacionMarcacion(usuarioEmpresa, marcacionOriginal, data, reporteId) {
         /**
          * @params {object} usuarioEmpresa - Objeto con los datos del usuario y empresa
          * @params {object} marcacionOriginal - Objeto con los datos de la marcación original
          * @params {object} data - Objeto con los nuevos datos de la marcación
-         * @params {string} reporteId - ID del reporte para generar los enlaces de acción
+         * @params {string} reporteId - ID del reporte para generar el enlace de acción
          */
         
         const nombreCompleto = `${usuarioEmpresa.usuario_nombre} ${usuarioEmpresa.usuario_apellido_pat} ${usuarioEmpresa.usuario_apellido_mat}`;
         const rutFormateado = usuarioEmpresa.usuario_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + usuarioEmpresa.usuario_rut.slice(-1);
         
-        // Generar enlaces de acción
-        const enlaceAceptar = `${process.env.FRONTEND_URL}/responder-modificacion?token=&action=accept`;
-        const enlaceRechazar = `${process.env.FRONTEND_URL}/responder-modificacion?token=&action=reject`;
+        // Generar token y enlace de respuesta
+        const token = AuthService.generarTokenAceptacionCambios(reporteId);
+        const enlaceRespuesta = `${process.env.FRONTEND_URL}/aprobar-modificacion?token=${token}`;
         
         const asunto = 'Solicitud de Modificación de Marcación - Acción Requerida';
         
@@ -613,15 +614,11 @@ class MailService {
                     .modificacion-info { background-color: #fff3e0; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
                     .original-info { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
                     .nueva-info { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50; }
-                    .warning { background-color: #ffecb3; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFC107; }
+                    .button { display: inline-block; padding: 15px 30px; background-color: #FF9800; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
+                    .button:hover { background-color: #f57c00; }
+                    .warning { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
                     .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
                     .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
-                    .actions { text-align: center; margin: 30px 0; }
-                    .button { display: inline-block; padding: 15px 30px; margin: 10px; text-decoration: none; border-radius: 5px; font-weight: bold; color: white; }
-                    .button-accept { background-color: #4CAF50; }
-                    .button-accept:hover { background-color: #45a049; }
-                    .button-reject { background-color: #f44336; }
-                    .button-reject:hover { background-color: #da190b; }
                 </style>
             </head>
             <body>
@@ -631,7 +628,7 @@ class MailService {
                     </div>
                     <div class="content">
                         <h2>Estimado ${nombreCompleto},</h2>
-                        <p>Se ha realizado una solicitud de modificación para una de sus marcaciones. <strong>Tiene 48 horas para aceptar o rechazar esta modificación.</strong></p>
+                        <p>Se ha realizado una solicitud de modificación para una de sus marcaciones y tiene <strong>48 horas</strong> para responder a esta solicitud.</p>
                         
                         <div class="empresa-info">
                             <h3>Información de la empresa:</h3>
@@ -663,22 +660,14 @@ class MailService {
                             <p><strong>Rol en empresa:</strong> ${usuarioEmpresa.rol_en_empresa}</p>
                         </div>
                         
-                        <div class="actions">
-                            <h3>Seleccione una opción:</h3>
-                            <a href="${enlaceAceptar}" class="button button-accept">✅ ACEPTAR MODIFICACIÓN</a>
-                            <a href="${enlaceRechazar}" class="button button-reject">❌ RECHAZAR MODIFICACIÓN</a>
-                        </div>
-                        
                         <div class="warning">
-                            <h3>⚠️ IMPORTANTE:</h3>
-                            <p><strong>Plazo para respuesta:</strong> 48 horas desde la recepción de este correo.</p>
-                            <p><strong>Acción automática:</strong> Si no se recibe respuesta dentro del plazo establecido, el sistema aceptará automáticamente la modificación.</p>
-                            <p><strong>Enlaces activos:</strong> Los enlaces de arriba son seguros y lo dirigirán al sistema para confirmar su decisión.</p>
+                            <p><strong>⚠️ Importante:</strong> Si no responde a esta solicitud dentro de 48 horas, la modificación será aceptada automáticamente.</p>
                         </div>
                         
-                        <p>Si tiene alguna duda sobre esta modificación o necesita más información, contacte inmediatamente con el administrador del sistema.</p>
+                        <p>Para revisar y responder a esta solicitud, haga clic en el siguiente enlace:</p>
+                        <a href="${enlaceRespuesta}" class="button">Revisar Modificación</a>
                         
-                        <p><strong>Nota:</strong> Este es un correo de notificación automático. Si considera que esta solicitud es errónea o fraudulenta, reporte inmediatamente la situación.</p>
+                        <p>Si tiene alguna duda sobre esta modificación o considera que es un error, puede contactar con el administrador del sistema.</p>
                     </div>
                     <div class="footer">
                         <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>

@@ -162,7 +162,7 @@ class NotificacionService {
         }
     }
 
-    async procesarNotificacionModificacionMarcacion(usuario, marcacionOriginal, datosModificados) {
+    async procesarNotificacionModificacionMarcacion(usuario, marcacionOriginal, datosModificados, nuevoReporteId) {
         try {
             // Verificar conexión de correo
             const conexionValida = await MailService.verificarConexion();
@@ -177,7 +177,8 @@ class NotificacionService {
             const estado = await MailService.enviarNotificacionModificacionMarcacion(
                 usuario,
                 marcacionOriginal,
-                datosModificados
+                datosModificados,
+                nuevoReporteId
             );
             return estado;
         } catch (error) {
