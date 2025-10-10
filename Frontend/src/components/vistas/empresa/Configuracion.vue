@@ -6,36 +6,9 @@
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <!-- Header de la página -->
       <div class="px-4 py-6 sm:px-0">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
-            <p class="text-gray-600 mt-2">Administre las reglas y configuraciones del sistema de control</p>
-          </div>
-          <div class="flex space-x-3">
-            <button 
-              @click="guardarCambios"
-              :disabled="guardando"
-              class="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
-            >
-              <svg v-if="guardando" class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <span>{{ guardando ? 'Guardando...' : 'Guardar Cambios' }}</span>
-            </button>
-            <button 
-              @click="exportarConfig"
-              :disabled="guardando"
-              class="bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-              </svg>
-              <span>Exportar Config</span>
-            </button>
-          </div>
+        <div class="mb-6">
+          <h1 class="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
+          <p class="text-gray-600 mt-2">Administre las reglas y configuraciones del sistema de control</p>
         </div>
       </div>
 
@@ -69,79 +42,71 @@
             
             <!-- General -->
             <div v-show="activeTab === 'general'">
-              <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración General</h3>
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-medium text-gray-900">Configuración General</h3>
+                <button 
+                  v-if="cambiosGeneral"
+                  @click="guardarGeneral"
+                  :disabled="guardandoGeneral"
+                  class="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <svg v-if="guardandoGeneral" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>{{ guardandoGeneral ? 'Guardando...' : 'Guardar Cambios' }}</span>
+                </button>
+              </div>
               
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Información de la Empresa -->
-                <div class="space-y-4">
-                  <h4 class="font-medium text-gray-900">Información de la Empresa</h4>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Empresa</label>
-                    <input 
-                      type="text" 
-                      v-model="configuracion.general.emp_nombre"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
-                    <input 
-                      type="text" 
-                      v-model="configuracion.general.emp_rut"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                    <textarea 
-                      rows="3" 
-                      v-model="configuracion.general.direccion"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    ></textarea>
-                  </div>
+              <div class="space-y-4">
+                <h4 class="font-medium text-gray-900">Información de la Empresa</h4>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Empresa</label>
+                  <input 
+                    type="text" 
+                    v-model="configuracion.general.emp_nombre"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                  />
                 </div>
-
-                <!-- Configuración del Sistema -->
-                <div class="space-y-4">
-                  <h4 class="font-medium text-gray-900">Configuración del Sistema</h4>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Zona Horaria</label>
-                    <select 
-                      v-model="configuracion.general.zona_horaria"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="America/Santiago">América/Santiago (UTC-3)</option>
-                      <option value="America/Buenos_Aires">América/Buenos_Aires (UTC-3)</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Idioma del Sistema</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                      <option value="es">Español</option>
-                      <option value="en">English</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Formato de Fecha</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    </select>
-                  </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
+                  <input 
+                    type="text" 
+                    v-model="configuracion.general.emp_rut"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                  <textarea 
+                    rows="3" 
+                    v-model="configuracion.general.direccion"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  ></textarea>
                 </div>
               </div>
             </div>
 
             <!-- Marcaciones -->
             <div v-show="activeTab === 'marcaciones' && !esEst">
-              <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Marcaciones</h3>
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-medium text-gray-900">Configuración de Marcaciones</h3>
+                <button 
+                  v-if="cambiosMarcaciones"
+                  @click="guardarMarcaciones"
+                  :disabled="guardandoMarcaciones"
+                  class="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <svg v-if="guardandoMarcaciones" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>{{ guardandoMarcaciones ? 'Guardando...' : 'Guardar Cambios' }}</span>
+                </button>
+              </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Tolerancias -->
@@ -150,17 +115,29 @@
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tolerancia de entrada (minutos)</label>
-                    <input type="number" value="15" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="number" 
+                      v-model="configuracion.marcaciones.tolerancia_entrada"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tolerancia de salida (minutos)</label>
-                    <input type="number" value="10" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="number" 
+                      v-model="configuracion.marcaciones.tolerancia_salida"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo mínimo entre marcaciones (minutos)</label>
-                    <input type="number" value="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="number" 
+                      v-model="configuracion.marcaciones.tiempo_min_entre_marcaciones"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                 </div>
               </div>
@@ -168,7 +145,21 @@
 
             <!-- Notificaciones -->
             <div v-show="activeTab === 'notificaciones'">
-              <h3 class="text-lg font-medium text-gray-900 mb-6">Configuración de Notificaciones</h3>
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-medium text-gray-900">Configuración de Notificaciones</h3>
+                <button 
+                  v-if="cambiosNotificaciones"
+                  @click="guardarNotificaciones"
+                  :disabled="guardandoNotificaciones"
+                  class="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <svg v-if="guardandoNotificaciones" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>{{ guardandoNotificaciones ? 'Guardando...' : 'Guardar Cambios' }}</span>
+                </button>
+              </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Email -->
@@ -177,17 +168,29 @@
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Servidor SMTP</label>
-                    <input type="text" value="smtp.empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="text" 
+                      v-model="configuracion.notificaciones.servidor_smtp"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Puerto</label>
-                    <input type="number" value="587" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="number" 
+                      v-model="configuracion.notificaciones.puerto_smtp"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Email de envío</label>
-                    <input type="email" value="sistema@empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                    <input 
+                      type="email" 
+                      v-model="configuracion.notificaciones.email_envio"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                    />
                   </div>
                 </div>
 
@@ -198,28 +201,44 @@
                   <div class="space-y-3">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center space-x-3">
-                        <input type="checkbox" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input 
+                          type="checkbox" 
+                          v-model="configuracion.notificaciones.reporte_diario"
+                          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" 
+                        />
                         <span class="text-sm font-medium text-gray-900">Reporte diario de marcaciones</span>
                       </div>
                     </div>
                     
                     <div class="flex items-center justify-between">
                       <div class="flex items-center space-x-3">
-                        <input type="checkbox" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input 
+                          type="checkbox" 
+                          v-model="configuracion.notificaciones.alerta_fiscalizador"
+                          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" 
+                        />
                         <span class="text-sm font-medium text-gray-900">Alerta de acceso de fiscalizador</span>
                       </div>
                     </div>
                     
                     <div class="flex items-center justify-between">
                       <div class="flex items-center space-x-3">
-                        <input type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input 
+                          type="checkbox" 
+                          v-model="configuracion.notificaciones.email_tardanzas"
+                          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" 
+                        />
                         <span class="text-sm font-medium text-gray-900">Notificación de tardanzas</span>
                       </div>
                     </div>
                     
                     <div class="flex items-center justify-between">
                       <div class="flex items-center space-x-3">
-                        <input type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input 
+                          type="checkbox" 
+                          v-model="configuracion.notificaciones.email_incidentes"
+                          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" 
+                        />
                         <span class="text-sm font-medium text-gray-900">Alertas de incidentes técnicos</span>
                       </div>
                     </div>
@@ -245,39 +264,23 @@ const { esEst } = useAuth();
 
 // Estados reactivos
 const activeTab = ref('general');
-const guardando = ref(false);
+
+// Estados de guardado por sección
+const guardandoGeneral = ref(false);
+const guardandoMarcaciones = ref(false);
+const guardandoNotificaciones = ref(false);
 
 // Configuración general - datos reactivos para la empresa
 const configuracion = ref({
   general: {
     emp_nombre: 'TeleMedios S.A.',
     emp_rut: '76.123.456-7',
-    direccion: 'Av. Providencia 1234, Santiago, Chile',
-    zona_horaria: 'America/Santiago',
-    idioma: 'español',
-    formato_fecha: 'DD/MM/YYYY'
+    direccion: 'Av. Providencia 1234, Santiago, Chile'
   },
   marcaciones: {
     tolerancia_entrada: 15,
     tolerancia_salida: 10,
-    ubicacion_requerida: true,
-    marcacion_remota: false,
-    consentimiento_trabajador: 'siempre',
-    tiempo_limite_modificacion: 24
-  },
-  turnos: {
-    turno_manana: {
-      activo: true,
-      inicio: '09:00',
-      fin: '17:00',
-      descanso: 60
-    },
-    turno_tarde: {
-      activo: false,
-      inicio: '14:00',
-      fin: '22:00',
-      descanso: 45
-    }
+    tiempo_min_entre_marcaciones: 5,
   },
   notificaciones: {
     email_tardanzas: true,
@@ -285,52 +288,109 @@ const configuracion = ref({
     email_incidentes: false,
     servidor_smtp: 'smtp.empresa.com',
     puerto_smtp: 587,
-    email_envio: 'sistema@empresa.com'
+    email_envio: 'sistema@empresa.com',
+    reporte_diario: true,
+    alerta_fiscalizador: true
   }
 });
 
-// Función para guardar cambios con auditoría
-const guardarCambios = async () => {
+// Configuración original para detectar cambios
+const configuracionOriginal = ref({});
+
+// Detectar cambios por sección
+const cambiosGeneral = computed(() => {
+  return JSON.stringify(configuracion.value.general) !== JSON.stringify(configuracionOriginal.value.general);
+});
+
+const cambiosMarcaciones = computed(() => {
+  return JSON.stringify(configuracion.value.marcaciones) !== JSON.stringify(configuracionOriginal.value.marcaciones);
+});
+
+const cambiosNotificaciones = computed(() => {
+  return JSON.stringify(configuracion.value.notificaciones) !== JSON.stringify(configuracionOriginal.value.notificaciones);
+});
+
+// Función para guardar configuración general
+const guardarGeneral = async () => {
   try {
-    guardando.value = true;
+    guardandoGeneral.value = true;
     
-    // Llamar al servicio para guardar configuración en el backend
-    console.log('Guardando configuración:', configuracion.value);
-    const response = await EmpresaServices.guardarConfiguracion(configuracion.value);
+    // Aquí harás la llamada al backend para guardar configuración general
+    console.log('Guardando configuración general:', configuracion.value.general);
+    // const response = await EmpresaServices.guardarConfiguracionGeneral(configuracion.value.general);
     
-    if (response.success) {
-      console.log('✅ Configuración del sistema actualizada y registrada en auditoría');
-    } else {
-      throw new Error(response.message || 'Error al guardar configuración');
-    }
+    
+
+    // Actualizar configuración original después de guardar
+    configuracionOriginal.value.general = JSON.parse(JSON.stringify(configuracion.value.general));
     
   } catch (error) {
-    console.error('Error al guardar configuración:', error);
-    const errorMessage = error.response?.data?.message || error.message || 'Error al guardar la configuración';
-    alert(`Error: ${errorMessage}`);
+    console.error('Error al guardar configuración general:', error);
+    alert('Error al guardar la configuración general');
   } finally {
-    guardando.value = false;
+    guardandoGeneral.value = false;
   }
 };
 
-// Función para exportar configuración
-const exportarConfig = () => {
+// Función para guardar configuración de marcaciones
+const guardarMarcaciones = async () => {
   try {
-    const configData = JSON.stringify(configuracion.value, null, 2);
-    const blob = new Blob([configData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `configuracion-sistema-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    guardandoMarcaciones.value = true;
     
-    console.log('📄 Configuración exportada exitosamente');
+    // Aquí harás la llamada al backend para guardar configuración de marcaciones
+    console.log('Guardando configuración de marcaciones:', configuracion.value.marcaciones);
+    // const response = await EmpresaServices.guardarConfiguracionMarcaciones(configuracion.value.marcaciones);
+    
+    EmpresaServices.guardarConfiguracion(configuracion.value.marcaciones);
+    
+    // Actualizar configuración original después de guardar
+    configuracionOriginal.value.marcaciones = JSON.parse(JSON.stringify(configuracion.value.marcaciones));
+    
+    alert('Configuración de marcaciones guardada exitosamente');
+    
   } catch (error) {
-    console.error('Error al exportar configuración:', error);
-    alert('Error al exportar la configuración');
+    console.error('Error al guardar configuración de marcaciones:', error);
+    alert('Error al guardar la configuración de marcaciones');
+  } finally {
+    guardandoMarcaciones.value = false;
   }
 };
+
+// Función para guardar configuración de notificaciones
+const guardarNotificaciones = async () => {
+  try {
+    guardandoNotificaciones.value = true;
+    
+    // Aquí harás la llamada al backend para guardar configuración de notificaciones
+    console.log('Guardando configuración de notificaciones:', configuracion.value.notificaciones);
+    // const response = await EmpresaServices.guardarConfiguracionNotificaciones(configuracion.value.notificaciones);
+    
+    // Simular delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Actualizar configuración original después de guardar
+    configuracionOriginal.value.notificaciones = JSON.parse(JSON.stringify(configuracion.value.notificaciones));
+    
+    alert('Configuración de notificaciones guardada exitosamente');
+    
+  } catch (error) {
+    console.error('Error al guardar configuración de notificaciones:', error);
+    alert('Error al guardar la configuración de notificaciones');
+  } finally {
+    guardandoNotificaciones.value = false;
+  }
+};
+
+const obtenerConfiguracionMarcaciones = async () => {
+  try {
+    const response = await EmpresaServices.obtenerConfiguracionMarcaciones();
+    configuracion.value.marcaciones = response.data;
+  } catch (error) {
+    console.error('Error al obtener configuración de marcaciones:', error);
+    alert('Error al cargar la configuración de marcaciones');
+  }
+};
+
 
 // Iconos para las tabs
 const ConfigIcon = {
@@ -363,7 +423,19 @@ const tabs = computed(() => {
   return baseTabs;
 });
 
-onMounted(() => {
-  console.log('Vista Configuración cargada');
+onMounted( async () => {
+  await obtenerConfiguracionMarcaciones();
 });
 </script>
+
+<style scoped>
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+</style>

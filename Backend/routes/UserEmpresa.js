@@ -18,8 +18,9 @@ router.post('/reportes/aprobar/:reporteId',AuthService.verifyToken, UserEmpresaC
 router.post('/reportes/rechazar/:reporteId',AuthService.verifyToken, UserEmpresaController.rechazarCambioMarcacion);
 
 // Rutas para configuración del sistema empresarial
-router.post('/configuracion',AuthService.verifyToken, UserEmpresaController.guardarConfiguracion); // Guardar configuración
+router.post('/configuracion/marcaciones',AuthService.verifyToken, UserEmpresaController.configurarToleranciaHorarias); // Guardar configuración
 router.get('/configuracion',AuthService.verifyToken, UserEmpresaController.obtenerConfiguracion); // Obtener configuración
+router.get('/configuracion/marcaciones',AuthService.verifyToken, UserEmpresaController.obtenerConfiguracionTolerancias);
 
 router.post('/est/asociar',AuthService.verifyToken, EstController.asociarTrabajadorEmpresa);
 router.get('/est/asociaciones',AuthService.verifyToken, EstController.obtenerAsociacionesUsuarioEmpresa);

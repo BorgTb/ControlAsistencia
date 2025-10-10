@@ -216,6 +216,27 @@ class EmpresaServices{
       throw error
     }
   }
+
+  static async guardarConfiguracion(data) {
+    console.log("Guardando configuración:", data);
+
+    try {
+      const response = await apiClient.post('/userEmpresa/configuracion/marcaciones', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async obtenerConfiguracionMarcaciones() {
+    try {
+      const response = await apiClient.get('/userEmpresa/configuracion/marcaciones')
+      return response.data
+    }
+    catch (error) {
+      throw error
+    }
+  }
 }
 
 export default EmpresaServices;

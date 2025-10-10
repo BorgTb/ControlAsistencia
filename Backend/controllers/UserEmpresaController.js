@@ -11,7 +11,7 @@ import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
-
+import  ConfigToleranciaModel from "../model/ConfigTolerancias.js";
 
 
 
@@ -699,6 +699,39 @@ const historialSolicitudes = async (req, res) => {
 };
 
 
+const configurarToleranciaHorarias = async (req, res) => {
+    try {
+        const USR_PETICION = req.user; // usuario que genera la consulta
+        const { tolerancia_entrada, tolerancia_salida, tiempo_min_entre_marcaciones } = req.body;
+        const empresa_id = USR_PETICION.empresa_id;
+
+
+        await ConfigToleranciaModel.createOrUpdate(
+            empresa_id,
+            { tolerancia_entrada, tolerancia_salida, tiempo_min_entre_marcaciones }
+        )
+
+        res.status(201).json({ success: true, message: "Tolerancias configuradas exitosamente" });
+    } catch (error) {
+        console.error("Error configurando tolerancias:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+}
+
+
+const obtenerConfiguracionTolerancias = async (req, res) => {
+    try {
+        const USR_PETICION = req.user; // usuario que genera la consulta
+        const empresa_id = USR_PETICION.empresa_id;
+        const config = await ConfigToleranciaModel.findByEmpresaId(empresa_id);
+        res.status(200).json({ success: true, data: config });
+    } catch (error) {
+        console.error("Error obteniendo configuración de tolerancias:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+}
+
+
 
 const AdminController = {
     createTrabajador,
@@ -711,7 +744,9 @@ const AdminController = {
     obtenerConfiguracion, // obtener configuración actual
     obtenerReportesMarcaciones,
     aprobarCambioMarcacion,
-    rechazarCambioMarcacion
+    rechazarCambioMarcacion,
+    configurarToleranciaHorarias,
+    obtenerConfiguracionTolerancias
 };
 
 

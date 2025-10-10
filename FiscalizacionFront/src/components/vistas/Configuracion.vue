@@ -7,7 +7,7 @@
       <div class="px-4 py-6 sm:px-0">
         <!-- Page Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
+          <h1 class="text-3xl font-bold text-gray-900">Configuración del Sasdadsdistema</h1>
           <p class="mt-2 text-gray-600">Ajustes y parámetros del sistema de fiscalización</p>
         </div>
 
