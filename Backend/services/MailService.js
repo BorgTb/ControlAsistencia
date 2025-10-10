@@ -147,13 +147,14 @@ class MailService {
 
 
     
-    async enviarNotificacionMarcacion(usuario, marcacion, empresa, lugar, domicilio_prestacion) {
+    async enviarNotificacionMarcacion(usuario, marcacion, empresa, lugar, domicilio_prestacion, empresa_est) {
         /**
         @params {object} usuario - Objeto con los datos del usuario
         @params {object} marcacion - Objeto con los datos de la marcación
         @params {object} empresa - Objeto con los datos de la empresa
         @params {object} lugar - Objeto con los datos del lugar (puede ser null)
         @params {string|null} domicilio_prestacion - Dirección de prestación (puede ser null)
+        @params {object|null} empresa_est - Objeto con los datos de la empresa establecimiento (puede ser null)
         */
 
         // Formatear RUT empresa con puntos y guion
@@ -188,6 +189,22 @@ class MailService {
             `;
         }
 
+        // Si empresa_est no es null, agregar bloque HTML de empresa establecimiento
+        let empresaEstHTML = '';
+        if (empresa_est) {
+            const rutEmpresaEstFormateado = empresa_est.emp_rut
+                ? empresa_est.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa_est.emp_rut.slice(-1)
+                : '';
+            
+            empresaEstHTML = `
+                <div class="empresa-est-info" style="background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                    <h3>Información de la empresa a la que se prestan servicios:</h3>
+                    <p><strong>Nombre:</strong> ${empresa_est.emp_nombre}</p>
+                    <p><strong>RUT:</strong> ${rutEmpresaEstFormateado}</p>
+                </div>
+            `;
+        }
+
         const asunto = `Marcación de ${marcacion.data.tipo} registrada`;
 
         const contenidoHTML = `
@@ -203,6 +220,7 @@ class MailService {
             .content { padding: 20px; background-color: #f9f9f9; }
             .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
             .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+            .empresa-est-info { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50; }
             .lugar-info { background-color: #fffde7; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFEB3B; }
             .domicilio-prestacion { background-color: #f1f8e9; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #8BC34A; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
@@ -234,6 +252,7 @@ class MailService {
                 <p><strong>Nombre:</strong> ${empresa.emp_nombre}</p>
                 <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
             </div>
+            ${empresaEstHTML}
             ${lugarHTML}
             ${domicilioPrestacionHTML}
             <p>Si no fuiste tú quien realizó esta marcación, contacta inmediatamente con el administrador.</p>
@@ -247,6 +266,140 @@ class MailService {
         `;
 
         return await this.enviarCorreo(usuario.email, asunto, contenidoHTML);
+    }
+
+    async enviarNotificacionMarcacionEmpresa(usuarioTrabajador, marcacion, empresa, lugar, domicilio_prestacion, empresa_est, emailEmpresa) {
+        /**
+        @params {object} usuarioTrabajador - Objeto con los datos del trabajador
+        @params {object} marcacion - Objeto con los datos de la marcación
+        @params {object} empresa - Objeto con los datos de la empresa
+        @params {object} lugar - Objeto con los datos del lugar (puede ser null)
+        @params {string|null} domicilio_prestacion - Dirección de prestación (puede ser null)
+        @params {object|null} empresa_est - Objeto con los datos de la empresa establecimiento (puede ser null)
+        @params {string} emailEmpresa - Email de la empresa que recibirá la notificación
+        */
+
+        // Formatear RUT empresa con puntos y guion
+        const rutEmpresaFormateado = empresa.emp_rut
+            ? empresa.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa.emp_rut.slice(-1)
+            : '';
+
+        // Si lugar no es null, armar el bloque HTML
+        let lugarHTML = '';
+        if (lugar) {
+            lugarHTML = `
+                <div class="lugar-info" style="background-color: #fffde7; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFEB3B;">
+                    <h3>Información del lugar:</h3>
+                    <p><strong>Nombre:</strong> ${lugar.nombre}</p>
+                    <p><strong>Calle:</strong> ${lugar.calle}</p>
+                    <p><strong>Número:</strong> ${lugar.numero}</p>
+                    <p><strong>Comuna:</strong> ${lugar.comuna}</p>
+                    <p><strong>Ciudad:</strong> ${lugar.ciudad}</p>
+                    <p><strong>Región:</strong> ${lugar.region}</p>
+                </div>
+            `;
+        }
+
+        // Si domicilio_prestacion no es null, agregar bloque HTML
+        let domicilioPrestacionHTML = '';
+        if (domicilio_prestacion) {
+            domicilioPrestacionHTML = `
+                <div class="domicilio-prestacion" style="background-color: #f1f8e9; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #8BC34A;">
+                    <h3>Domicilio de prestación:</h3>
+                    <p>${domicilio_prestacion}</p>
+                </div>
+            `;
+        }
+
+        // Si empresa_est no es null, agregar bloque HTML de empresa establecimiento
+        let empresaEstHTML = '';
+        if (empresa_est) {
+            const rutEmpresaEstFormateado = empresa_est.emp_rut
+                ? empresa_est.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa_est.emp_rut.slice(-1)
+                : '';
+            
+            empresaEstHTML = `
+                <div class="empresa-est-info" style="background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                    <h3>Información de la empresa a la que se prestan servicios:</h3>
+                    <p><strong>Nombre:</strong> ${empresa_est.emp_nombre}</p>
+                    <p><strong>RUT:</strong> ${rutEmpresaEstFormateado}</p>
+                </div>
+            `;
+        }
+
+        const asunto = `Copia de marcación de ${marcacion.data.tipo} - Trabajador: ${usuarioTrabajador.nombre} ${usuarioTrabajador.apellido_pat}`;
+
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Copia de Marcación Registrada</title>
+            <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .marcacion-info { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FF9800; }
+            .trabajador-info { background-color: #e1f5fe; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #03A9F4; }
+            .empresa-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+            .empresa-est-info { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50; }
+            .lugar-info { background-color: #fffde7; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #FFEB3B; }
+            .domicilio-prestacion { background-color: #f1f8e9; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #8BC34A; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+            .copia-info { background-color: #f3e5f5; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #9C27B0; font-style: italic; }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+            <div class="header">
+            <h1>Copia de Marcación Registrada</h1>
+            </div>
+            <div class="content">
+            <h2>Estimada Empresa,</h2>
+            
+            <div class="copia-info">
+                <p><strong>📋 Información:</strong> Esta es una copia de los datos de marcación que se registraron para su trabajador en el Sistema de Control de Asistencia.</p>
+            </div>
+            
+            <div class="trabajador-info">
+                <h3>Datos del trabajador:</h3>
+                <p><strong>Nombre completo:</strong> ${usuarioTrabajador.nombre} ${usuarioTrabajador.apellido_pat} ${usuarioTrabajador.apellido_mat}</p>
+                <p><strong>RUT:</strong> ${usuarioTrabajador.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}-${usuarioTrabajador.rut.slice(-1)}</p>
+                <p><strong>Email:</strong> ${usuarioTrabajador.email}</p>
+            </div>
+            
+            <div class="marcacion-info">
+                <h3>Detalles de la marcación:</h3>
+                <p><strong>Fecha:</strong> ${new Date(marcacion.data.fecha).toLocaleDateString('es-CL', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                <p><strong>Hora:</strong> ${marcacion.data.hora}</p>
+                <p><strong>Tipo:</strong> ${marcacion.data.tipo}</p>
+                <p><strong>Geolocalización:</strong> Latitud ${marcacion.data.geo_lat}, Longitud ${marcacion.data.geo_lon}</p>
+                <p><strong>Hash:</strong> ${marcacion.data.hash}</p>
+                ${marcacion.data.resolucion ? `
+                <p><strong>Resolución Número:</strong> ${marcacion.data.resolucion.resolucion_numero || 'No corresponde'}</p>
+                <p><strong>Resolución Fecha:</strong> ${marcacion.data.resolucion.resolucion_fecha ? new Date(marcacion.data.resolucion.resolucion_fecha).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'No corresponde'}</p>
+                ` : ''}
+            </div>
+            <div class="empresa-info">
+                <h3>Información de la empresa empleadora:</h3>
+                <p><strong>Nombre:</strong> ${empresa.emp_nombre}</p>
+                <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
+            </div>
+            ${empresaEstHTML}
+            ${lugarHTML}
+            ${domicilioPrestacionHTML}
+            <p>Esta notificación se envía como respaldo de la actividad de marcación de su trabajador. Para cualquier consulta o aclaración, puede contactar directamente con el trabajador o con el sistema de administración.</p>
+            </div>
+            <div class="footer">
+            <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+            </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        return await this.enviarCorreo(emailEmpresa, asunto, contenidoHTML);
     }
 
     async enviarNotificacionCodigoAcceso(email, codigo) {

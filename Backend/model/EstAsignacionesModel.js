@@ -146,7 +146,7 @@ class EstAsignacionesModel {
             ORDER BY fecha_inicio DESC
         `;
         const [rows] = await db.execute(query, [usuarioEmpresaId]);
-        return rows;
+        return rows[0] || null;
     }
     // Obtener asignaciones con información detallada de usuario y empresa
     static async getAllWithDetails() {

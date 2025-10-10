@@ -3,6 +3,8 @@ import UserModel from '../model/UserModel.js';
 import MarcacionesService from './MarcacionesServices.js';
 import ResolucionModel from '../model/usuarios_empresas_resoluciones.js';
 import EmpresaModel from '../model/EmpresaModel.js';
+import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 
 import {DateTime} from 'luxon';
 
@@ -31,7 +33,27 @@ class NotificacionService {
             // agregar datos de la empresa
             const empresa = await EmpresaModel.getEmpresaById(usuario_empresa.empresa_id);
 
-            console.log(empresa);
+
+
+            // Verificar si el usuario está afecto a una EST
+            const estAsignacion = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_empresa.id);            
+            let empresa_est = null;
+            if (estAsignacion && estAsignacion.fecha_fin === null) {
+                empresa_est = await EmpresaModel.getEmpresaById(estAsignacion.usuaria_id);
+                console.log(estAsignacion);
+                const empleador_est = await UsuarioEmpresaModel.getPrimerEmpleadorActivoByEmpresaId(estAsignacion.est_id);
+                console.log('Empleador EST:', empleador_est);
+
+                await MailService.enviarNotificacionMarcacionEmpresa(usuario,marcacion,empresa,lugar,domicilio_prestacion,empresa_est,empleador_est.usuario_email);
+            }
+
+
+            console.log('est asignacion:', estAsignacion);
+            console.log('empresa est:', empresa_est);
+
+
+            
+
 
             // Verificar conexión de correo
             const conexionValida = await MailService.verificarConexion();
@@ -51,7 +73,8 @@ class NotificacionService {
                 marcacion,
                 empresa,
                 lugar,
-                domicilio_prestacion
+                domicilio_prestacion,
+                empresa_est
             );
 
             return estado;

@@ -236,6 +236,42 @@ class UsuarioEmpresaModel {
         const [rows] = await db.execute(query, [empresa_id]);
         return rows;
     }
+    // obtener el primer empleador activo de una empresa dado el id de la empresa
+    static async getPrimerEmpleadorActivoByEmpresaId(empresa_id) {
+        const query = `
+            SELECT
+                ue.id,
+                ue.usuario_id,
+                ue.empresa_id,
+                ue.rol_en_empresa,
+                ue.fecha_inicio,
+                ue.fecha_fin,
+                ue.created_at,
+                ue.updated_at,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                u.email as usuario_email,
+                u.rut as usuario_rut,
+                u.rol as usuario_rol_global,
+                u.estado as usuario_estado,
+                e.emp_nombre as empresa_nombre,
+                e.emp_rut as empresa_rut
+                FROM usuarios_empresas ue
+                LEFT JOIN usuarios u ON ue.usuario_id = u.id
+                LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+                WHERE e.empresa_id = ?
+                AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
+                AND u.estado = 1
+                AND u.rol = 'empleador'
+                ORDER BY ue.fecha_inicio ASC
+                LIMIT 1
+        `;
+        const [rows] = await db.execute(query, [empresa_id]);
+        return rows.length > 0 ? rows[0] : null;
+    }
+
+
     
     // Verificar si un usuario pertenece a una empresa
     static async usuarioPerteneceEmpresa(usuario_id, empresa_id) {
