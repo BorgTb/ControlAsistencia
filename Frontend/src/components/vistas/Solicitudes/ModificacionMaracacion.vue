@@ -137,11 +137,11 @@
         </div>
 
         <!-- Acciones -->
-        <div v-if="!mostrarRechazo" class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">¿Qué deseas hacer con esta solicitud?</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
-              @click="mostrarFormularioRechazo"
+              @click="confirmarRechazo"
               :disabled="procesando"
               class="flex items-center justify-center px-6 py-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -159,33 +159,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
               Aceptar Solicitud
-            </button>
-          </div>
-        </div>
-
-        <!-- Formulario de Rechazo -->
-        <div v-if="mostrarRechazo" class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Motivo del Rechazo</h2>
-          <textarea 
-            v-model="motivoRechazo"
-            rows="4"
-            placeholder="Ingrese el motivo del rechazo..."
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-          ></textarea>
-          <div class="flex gap-3 mt-4">
-            <button 
-              @click="mostrarRechazo = false"
-              :disabled="procesando"
-              class="flex-1 px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-200 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button 
-              @click="manejarRechazo"
-              :disabled="procesando || !motivoRechazo.trim()"
-              class="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ procesando ? 'Procesando...' : 'Confirmar Rechazo' }}
             </button>
           </div>
         </div>
@@ -221,8 +194,6 @@ const {
 } = useSolicitudes()
 
 // Estado local del componente
-const mostrarRechazo = ref(false)
-const motivoRechazo = ref('')
 const token = ref('')
 
 // Función para formatear fechas
@@ -245,10 +216,11 @@ const inicializar = async () => {
   await cargarSolicitud(token.value)
 }
 
-// Mostrar formulario de rechazo
-const mostrarFormularioRechazo = () => {
-  mostrarRechazo.value = true
-  motivoRechazo.value = ''
+// Confirmar rechazo
+const confirmarRechazo = () => {
+  if (confirm('¿Está seguro de rechazar esta solicitud de modificación?')) {
+    manejarRechazo()
+  }
 }
 
 // Confirmar aceptación
@@ -269,14 +241,8 @@ const manejarAceptar = async () => {
 
 // Manejar rechazo de solicitud
 const manejarRechazo = async () => {
-  if (!motivoRechazo.value.trim()) {
-    alert('Debe ingresar un motivo para el rechazo')
-    return
-  }
-
   try {
-    await rechazarSolicitud(token.value, motivoRechazo.value)
-    mostrarRechazo.value = false
+    await rechazarSolicitud(token.value, '')
   } catch (err) {
     alert('Error al procesar la solicitud. Por favor, intenta nuevamente.')
   }

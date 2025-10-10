@@ -56,11 +56,10 @@ class SolicitudesService {
    * @param {string} motivo - Motivo del rechazo
    * @returns {Promise} Respuesta del rechazo
    */
-  async rechazarSolicitud(token, motivo) {
+  async rechazarSolicitud(token) {
     try {
       const response = await publicApiClient.post('/marcaciones/modificar/rechazar', {
-        token,
-        motivo
+        token
       });
       return response.data;
     } catch (error) {

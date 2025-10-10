@@ -657,9 +657,14 @@ const aceptarModificacionMarcacion = async (req, res) => {
 
 const rechazarModificacionMarcacion = async (req, res) => { 
     try {
-        const { id } = req.params;
+        const { token } = req.body;
 
-        console.log("rechazarModificacionMarcacion id:", id);
+         const { id } = AuthService.verifyToken(token);
+
+         await ReporteMarcionesModel.rechazar(id);
+
+
+         // opcional se podria enviar un correo notificando el rechazo al usuario
 
         return res.status(501).json({
             success: true,

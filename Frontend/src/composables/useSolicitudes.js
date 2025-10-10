@@ -84,20 +84,17 @@ export const useSolicitudes = () => {
    * @param {string} token - Token de la solicitud
    * @param {string} motivo - Motivo del rechazo
    */
-  const rechazarSolicitud = async (token, motivo) => {
+  const rechazarSolicitud = async (token) => {
     if (!token) {
       throw new Error('Token no proporcionado');
     }
 
-    if (!motivo || !motivo.trim()) {
-      throw new Error('Debe ingresar un motivo para el rechazo');
-    }
 
     procesando.value = true;
     error.value = null;
 
     try {
-      const resultado = await SolicitudesService.rechazarSolicitud(token, motivo);
+      const resultado = await SolicitudesService.rechazarSolicitud(token);
       
       procesado.value = true;
       mensajeProcesado.value = resultado.message || 'La solicitud ha sido rechazada. El empleado será notificado.';
