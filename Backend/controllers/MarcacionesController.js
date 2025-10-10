@@ -129,7 +129,7 @@ const registrarMarcacion = async (req, res) => {
         }
         // validar tolerancia 
 
-        if (['entrada', 'salida'].includes(tipo)) {
+        if (['entrada'].includes(tipo)) {
             console.log("Validando tolerancia para tipo:", tipo);
             const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, horaActual);
@@ -148,9 +148,6 @@ const registrarMarcacion = async (req, res) => {
             }  
         }
         // Validar tiempo mínimo entre marcaciones
-
-
-        
 
         const result = await MarcacionesService.registrarMarcacion(
             usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
