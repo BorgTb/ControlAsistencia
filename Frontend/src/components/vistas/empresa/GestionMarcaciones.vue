@@ -790,7 +790,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 import { useAuth } from '../../../composables/useAuth.js';
@@ -862,10 +862,18 @@ const estadisticas = ref({});
 
 const cargando = ref(false);
 
-// Variables para filtros
+// Variables para filtros - Inicializar con la fecha de hoy
+const obtenerFechaHoy = () => {
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = String(hoy.getMonth() + 1).padStart(2, '0');
+  const day = String(hoy.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const filtros = ref({
   busqueda: '',
-  fecha: '',
+  fecha: obtenerFechaHoy(),
   tipo: ''
 });
 
@@ -1034,6 +1042,9 @@ const cargarMarcaciones = async () => {
     
     marcacionesOriginales.value = marcacionesTransformadas;
     marcaciones.value = marcacionesTransformadas;
+    
+    // Aplicar filtros después de cargar (incluye el filtro de fecha de hoy por defecto)
+    aplicarFiltros();
     
     // Calcular estadísticas
     calcularEstadisticas(marcacionesTransformadas);
@@ -1325,6 +1336,18 @@ const irAHistorialSolicitudes = () => {
   router.push('/empresa/historial-solicitudes');
 };
 
+// Watcher para aplicar filtros automáticamente cuando cambien
+watch(() => filtros.value.busqueda, () => {
+  aplicarFiltros();
+});
+
+watch(() => filtros.value.fecha, () => {
+  aplicarFiltros();
+});
+
+watch(() => filtros.value.tipo, () => {
+  aplicarFiltros();
+});
 
 onMounted(() => {
   
