@@ -78,6 +78,34 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE ue.usuario_id = ?
+        `;
+        
+        const [rows] = await db.execute(query, [id]);
+        return rows.length > 0 ? rows[0] : null;
+    }
+    static async getUsuarioEmpresaByUsuarioId(id) {
+        const query = `
+            SELECT 
+                ue.id,
+                ue.usuario_id,
+                ue.empresa_id,
+                ue.rol_en_empresa,
+                ue.fecha_inicio,
+                ue.fecha_fin,
+                ue.created_at,
+                ue.updated_at,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                u.email as usuario_email,
+                u.rut as usuario_rut,
+                e.emp_nombre as empresa_nombre,
+                e.emp_rut as empresa_rut,
+                e.estado as empresa_estado
+            FROM usuarios_empresas ue
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
             WHERE ue.id = ?
         `;
         

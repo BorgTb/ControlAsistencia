@@ -534,7 +534,22 @@ const obtenerReporteMarcacionId = async (req,res) => {
 
         const { id } = AuthService.verifyToken(token);
         const reporte = await ReporteMarcionesModel.findById(id);
-        const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaById(reporte.usuario_id);
+        const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(reporte.usuario_id);
+
+        if (!reporte) {
+            return res.status(404).json({
+                success: false,
+                message: 'Reporte no encontrado'
+            });
+        }
+
+        if (reporte.estado !== 'POR CONFIRMAR') {
+            return res.status(400).json({
+                success: false,
+                message: 'El reporte ya ha sido procesado'
+            });
+        }
+            
 
 
         const infoData = {
@@ -571,9 +586,42 @@ const obtenerReporteMarcacionId = async (req,res) => {
 
 const aceptarModificacionMarcacion = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { token } = req.body;
         
-        console.log('Aceptar modificacion de marcacion id:', id);
+       const { id } = AuthService.verifyToken(token);
+
+        const reporte = await ReporteMarcionesModel.findById(id);
+        console.log("aceptarModificacionMarcacion id:", id);
+
+        if (!reporte) {
+            return res.status(404).json({
+                success: false,
+                message: 'Reporte no encontrado'
+            });
+        }
+
+
+
+        if (reporte.tipo === 'agregar') {
+            // Lógica para aceptar adición de marcación
+            await MarcacionesService.insertarMarcacionManual(reporte.usuario_id,reporte.tipo_marcacion_correcta,reporte.fecha_correcta,reporte.hora_correcta);
+        } else if (reporte.tipo === 'modificar') {
+            // Lógica para aceptar modificación de marcación
+            // si tiene solo fecha correcta, es un caso, si tiene solo hora correcta, es otro caso, si tiene ambos, es otro caso
+            if (reporte.fecha_correcta && reporte.hora_correcta) {
+                await MarcacionesService.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta);
+                await MarcacionesService.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta);
+            }
+            else if (reporte.fecha_correcta) {
+                await MarcacionesService.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta);
+            } else if (reporte.hora_correcta) {
+                await MarcacionesService.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta);
+            }
+        }
+
+        // Actualizar estado del reporte a 'aceptado'
+        await ReporteMarcionesModel.aprobar(id);
+        
 
         res.status(501).json({
             success: true,

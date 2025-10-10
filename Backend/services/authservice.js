@@ -98,7 +98,8 @@ const loginUser = async (email, password, ip_address = null) => {
     // Use UserModel to find user
     
     const user = await UserModel.findByEmail(email);
-        
+    
+    console.log('Usuario encontrado para login:', user);
     
 
     if (!user) {
@@ -138,7 +139,7 @@ const loginUser = async (email, password, ip_address = null) => {
 
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
 
-
+    console.log('UsuarioEmpresa:', usuarioEmpresas);
  // Generate token
     const token = generateToken(user, usuarioEmpresas.empresa_id);
 
