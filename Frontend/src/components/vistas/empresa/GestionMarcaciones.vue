@@ -11,8 +11,11 @@
             <h1 class="text-3xl font-bold text-gray-900">Gestión de Marcaciones</h1>
             <p class="text-gray-600 mt-2">Modificación y supervisión de registros de asistencia</p>
           </div>
-          <div class="flex space-x-3" v-show="!esEst">
-            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
+          <div class="flex space-x-3">
+            <button 
+              @click="abrirModalAgregarMarcacion"
+              class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+            >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
@@ -765,6 +768,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Agregar Marcación (Solo para Empleadores) -->
+    <AgregarMarcacionEmpleadorModal
+      v-if="mostrarModalAgregarMarcacion"
+      @confirm="handleAgregarMarcacion"
+      @cancel="cerrarModalAgregarMarcacion"
+    />
   </div>
 </template>
 
@@ -772,11 +782,19 @@
 import { ref, onMounted, computed } from 'vue';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 import { useAuth } from '../../../composables/useAuth.js';
+import AgregarMarcacionEmpleadorModal from '../../modals/AgregarMarcacionEmpleadorModal.vue';
 
-const { esEst } = useAuth();
+const { esEst, esEmpleador } = useAuth();
 
 // Composables
-const { obtenerMarcacionesPorEmpresa, obtenerReportesMarcaciones, aprobarReporte, rechazarReporte, modificarMarcacion} = useEmpresa();
+const { 
+  obtenerMarcacionesPorEmpresa, 
+  obtenerReportesMarcaciones, 
+  aprobarReporte, 
+  rechazarReporte, 
+  modificarMarcacion,
+  agregarMarcacionManual 
+} = useEmpresa();
 
 // Estados reactivos
 const marcaciones = ref([]);
@@ -852,6 +870,9 @@ const formularioModificacion = ref({
   tipo: '',
   motivo: ''
 });
+
+// Variables para el modal de agregar marcación (empleador)
+const mostrarModalAgregarMarcacion = ref(false);
 
 // Función para obtener las iniciales del nombre
 const obtenerIniciales = (nombre, apellido) => {
@@ -1131,6 +1152,32 @@ const guardarModificacion = async () => {
     alert('Error al modificar la marcación');
   } finally {
     procesandoModificacion.value = false;
+  }
+};
+
+// Funciones para el modal de agregar marcación (empleador)
+const abrirModalAgregarMarcacion = () => {
+  mostrarModalAgregarMarcacion.value = true;
+};
+
+const cerrarModalAgregarMarcacion = () => {
+  mostrarModalAgregarMarcacion.value = false;
+};
+
+const handleAgregarMarcacion = async (marcacionData) => {
+  try {
+    console.log('Datos de la marcación a agregar:', marcacionData);
+
+    const response = await agregarMarcacionManual(marcacionData);
+
+    await cargarMarcaciones();
+    
+    // Cerrar el modal
+   // cerrarModalAgregarMarcacion();
+    
+  } catch (error) {
+    console.error('Error al agregar marcación:', error);
+    alert('Error al agregar la marcación');
   }
 };
 

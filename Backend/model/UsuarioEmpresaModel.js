@@ -327,7 +327,7 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             WHERE ue.empresa_id = ?
-            AND ue.rol_en_empresa = ?
+            AND u.rol = ?
             AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
             AND u.estado = 1
             ORDER BY u.nombre ASC

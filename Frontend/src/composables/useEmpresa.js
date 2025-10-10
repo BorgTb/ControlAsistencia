@@ -96,6 +96,16 @@ export function useEmpresa() {
     }
   };
 
+  const agregarMarcacionManual = async (datosMarcacion) => {
+    try {
+      const response = await EmpresaServices.agregarMarcacionManual(datosMarcacion);
+      return response;
+    } catch (error) {
+      console.error("Error al agregar marcación manual:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -104,6 +114,7 @@ export function useEmpresa() {
     obtenerReportesMarcaciones,
     aprobarReporte,
     rechazarReporte,
-    modificarMarcacion
+    modificarMarcacion,
+    agregarMarcacionManual
   };
 }

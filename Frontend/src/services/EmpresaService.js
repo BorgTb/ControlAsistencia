@@ -207,6 +207,15 @@ class EmpresaServices{
       throw error
     }
   }
+
+  static async agregarMarcacionManual(datosMarcacion) {
+    try {
+      const response = await apiClient.post('/marcaciones/userEmpresa/agregar', datosMarcacion)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }
 
 export default EmpresaServices;
