@@ -106,6 +106,16 @@ export function useEmpresa() {
     }
   };
 
+  const eliminarTurno = async (turnoId) => {
+    try {
+      const response = await EmpresaServices.eliminarTurno(turnoId);
+      return response;
+    } catch (error) {
+      console.error("Error al eliminar turno:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -115,6 +125,7 @@ export function useEmpresa() {
     aprobarReporte,
     rechazarReporte,
     modificarMarcacion,
-    agregarMarcacionManual
+    agregarMarcacionManual,
+    eliminarTurno
   };
 }

@@ -1,5 +1,109 @@
 <template>
   <div class="min-h-screen bg-gray-100">
+    <!-- Notificación Toast -->
+    <div v-if="notificacion.mostrar" 
+         class="fixed top-4 right-4 z-50 max-w-md w-full bg-white rounded-lg shadow-lg border-l-4 transform transition-all duration-300"
+         :class="{
+           'border-green-500': notificacion.tipo === 'success',
+           'border-red-500': notificacion.tipo === 'error',
+           'border-blue-500': notificacion.tipo === 'info',
+           'border-yellow-500': notificacion.tipo === 'warning'
+         }">
+      <div class="p-4">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <!-- Icono Success -->
+            <svg v-if="notificacion.tipo === 'success'" class="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Icono Error -->
+            <svg v-else-if="notificacion.tipo === 'error'" class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Icono Info -->
+            <svg v-else-if="notificacion.tipo === 'info'" class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Icono Warning -->
+            <svg v-else class="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <p class="text-sm font-medium text-gray-900">
+              {{ notificacion.mensaje }}
+            </p>
+          </div>
+          <div class="ml-4 flex-shrink-0 flex">
+            <button @click="cerrarNotificacion" class="inline-flex text-gray-400 hover:text-gray-500">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div v-if="modalConfirmacion.mostrar" class="fixed inset-0 overflow-y-auto h-full w-full z-50 backdrop-blur-sm">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <div class="mt-3 text-center">
+            <h3 class="text-lg font-medium text-gray-900">{{ modalConfirmacion.titulo }}</h3>
+            <div class="mt-2 px-7 py-3">
+              <p class="text-sm text-gray-500">{{ modalConfirmacion.mensaje }}</p>
+            </div>
+            <div class="flex gap-3 px-4 py-3">
+              <button 
+                @click="confirmarAccion"
+                class="flex-1 px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Confirmar
+              </button>
+              <button 
+                @click="cancelarAccion"
+                class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ver Motivo -->
+    <div v-if="modalMotivo.mostrar" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Motivo de Modificación</h3>
+            <button @click="cerrarModalMotivo" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="mt-4 px-4 py-3">
+            <p class="text-sm text-gray-700">{{ modalMotivo.mensaje }}</p>
+          </div>
+          <div class="flex justify-end px-4 py-3 border-t border-gray-200 mt-4">
+            <button 
+              @click="cerrarModalMotivo"
+              class="px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <!-- Contenido Principal -->
@@ -270,7 +374,7 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end space-x-2">
-                      <button @click="eliminarTurno(turno.id)" class="text-red-600 hover:text-red-900">Eliminar</button>
+                      <button @click="eliminarTurnoAction(turno.id)" class="text-red-600 hover:text-red-900">Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -318,13 +422,32 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import EmpresaServices from '../../../services/EmpresaService.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
-const { obtenerTrabajadores, obtenerTurnos  } = useEmpresa();
+const { obtenerTrabajadores, obtenerTurnos, eliminarTurno} = useEmpresa();
 
 // Estados reactivos
 const filtroFecha = ref('');
 const filtroTipo = ref('');
 const trabajadores = ref([]);
 const cargando = ref(false);
+
+// Estados para notificaciones y modales
+const notificacion = ref({
+  mostrar: false,
+  tipo: 'success', // 'success', 'error', 'info', 'warning'
+  mensaje: ''
+});
+
+const modalConfirmacion = ref({
+  mostrar: false,
+  titulo: '',
+  mensaje: '',
+  accion: null
+});
+
+const modalMotivo = ref({
+  mostrar: false,
+  mensaje: ''
+});
 
 // Formulario para crear turnos
 const formTurno = reactive({
@@ -357,32 +480,92 @@ const turnosAsignados = ref([
 ]);
 
 // Funciones
+const mostrarNotificacion = (tipo, mensaje) => {
+  notificacion.value = {
+    mostrar: true,
+    tipo,
+    mensaje
+  };
+  
+  // Auto-cerrar después de 5 segundos
+  setTimeout(() => {
+    cerrarNotificacion();
+  }, 5000);
+};
+
+const cerrarNotificacion = () => {
+  notificacion.value.mostrar = false;
+};
+
+const mostrarModalConfirmacion = (titulo, mensaje, accion) => {
+  modalConfirmacion.value = {
+    mostrar: true,
+    titulo,
+    mensaje,
+    accion
+  };
+};
+
+const confirmarAccion = () => {
+  if (modalConfirmacion.value.accion) {
+    modalConfirmacion.value.accion();
+  }
+  modalConfirmacion.value.mostrar = false;
+};
+
+const cancelarAccion = () => {
+  modalConfirmacion.value.mostrar = false;
+};
+
+const cerrarModalMotivo = () => {
+  modalMotivo.value.mostrar = false;
+};
+
 const guardarTurno = async () => {
   try {
+    // Validar campos requeridos
+    if (!formTurno.usuario_id || !formTurno.tipo || !formTurno.dia || !formTurno.inicio || !formTurno.fin) {
+      mostrarNotificacion('warning', 'Por favor complete todos los campos obligatorios');
+      return;
+    }
+    
     // Crear nuevo turno usando el servicio
     console.log('Guardando turno:', formTurno);
     const response = await EmpresaServices.createTurno(formTurno);
     console.log('Turno creado:', response);
     
+    mostrarNotificacion('success', 'Turno creado exitosamente');
+    
     // Limpiar el formulario
     limpiarFormulario();
     
-    // Opcional: recargar la lista de turnos si tienes un método para eso
-    // await obtenerTurnos();
+    // Recargar la lista de turnos
+    await fetchTurnos();
     
   } catch (error) {
     console.error('Error al crear turno:', error);
-    // Aquí podrías mostrar un mensaje de error al usuario
+    mostrarNotificacion('error', 'Error al crear el turno. Por favor intente nuevamente');
   }
 };
 
-const eliminarTurno = (id) => {
-  if (confirm('¿Está seguro de eliminar este turno?')) {
-    const index = turnosAsignados.value.findIndex(t => t.id === id);
-    if (index !== -1) {
-      turnosAsignados.value.splice(index, 1);
+const eliminarTurnoAction = async (id) => {
+  mostrarModalConfirmacion(
+    'Confirmar eliminación',
+    '¿Está seguro de que desea eliminar este turno? Esta acción no se puede deshacer.',
+    async () => {
+      try {
+        await eliminarTurno(id);
+        const index = turnosAsignados.value.findIndex(t => t.id === id);
+        if (index !== -1) {
+          turnosAsignados.value.splice(index, 1);
+        }
+        mostrarNotificacion('success', 'Turno eliminado exitosamente');
+      } catch (error) {
+        console.error('Error al eliminar turno:', error);
+        mostrarNotificacion('error', 'Error al eliminar el turno. Por favor intente nuevamente');
+      }
     }
-  }
+  );
 };
 
 const limpiarFormulario = () => {
@@ -396,7 +579,10 @@ const editarTipoTurno = (tipo) => {
 };
 
 const verMotivoModificacion = (motivo) => {
-  alert(motivo);
+  modalMotivo.value = {
+    mostrar: true,
+    mensaje: motivo
+  };
 };
 
 // Funciones auxiliares

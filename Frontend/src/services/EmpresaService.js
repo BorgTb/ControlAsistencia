@@ -246,7 +246,15 @@ class EmpresaServices{
       throw error
     }
   }
-  
+
+  static async eliminarTurno(turnoId) {
+    try {
+      const response = await apiClient.delete(`/userEmpresa/turnos/${turnoId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 
 }
 
