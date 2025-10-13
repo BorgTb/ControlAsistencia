@@ -177,7 +177,8 @@
                   <input 
                     type="time" 
                     v-model="formTurno.inicio" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    :class="erroresValidacion.inicio_fin ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
                   />
                 </div>
 
@@ -187,27 +188,60 @@
                   <input 
                     type="time" 
                     v-model="formTurno.fin" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    :class="erroresValidacion.inicio_fin ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
                   />
+                  <p v-if="erroresValidacion.inicio_fin" class="mt-1 text-sm text-red-600 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ erroresValidacion.inicio_fin }}
+                  </p>
                 </div>
 
                 <!-- Horario de Colación -->
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Inicio Colación</label>
-                    <input 
-                      type="time" 
-                      v-model="formTurno.colacion_inicio" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    />
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Horario de Colación (Opcional)</label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs text-gray-600 mb-1">Inicio</label>
+                      <input 
+                        type="time" 
+                        v-model="formTurno.colacion_inicio" 
+                        class="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        :class="(erroresValidacion.colacion_completa || erroresValidacion.colacion_iguales || erroresValidacion.colacion_rango) ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-600 mb-1">Fin</label>
+                      <input 
+                        type="time" 
+                        v-model="formTurno.colacion_fin" 
+                        class="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        :class="(erroresValidacion.colacion_completa || erroresValidacion.colacion_iguales || erroresValidacion.colacion_rango) ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fin Colación</label>
-                    <input 
-                      type="time" 
-                      v-model="formTurno.colacion_fin" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    />
+                  <!-- Mensajes de error para colación -->
+                  <div v-if="erroresValidacion.colacion_completa || erroresValidacion.colacion_iguales || erroresValidacion.colacion_rango" class="mt-2">
+                    <p v-if="erroresValidacion.colacion_completa" class="text-sm text-red-600 flex items-center">
+                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      {{ erroresValidacion.colacion_completa }}
+                    </p>
+                    <p v-if="erroresValidacion.colacion_iguales" class="text-sm text-red-600 flex items-center mt-1">
+                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      {{ erroresValidacion.colacion_iguales }}
+                    </p>
+                    <p v-if="erroresValidacion.colacion_rango" class="text-sm text-red-600 flex items-center mt-1">
+                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      {{ erroresValidacion.colacion_rango }}
+                    </p>
                   </div>
                 </div>
 
@@ -215,7 +249,11 @@
                 <div class="flex space-x-3">
                   <button 
                     type="submit" 
-                    class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200"
+                    :disabled="tieneErrores"
+                    class="flex-1 px-4 py-2 rounded-md font-medium transition-colors duration-200"
+                    :class="tieneErrores 
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'"
                   >
                     Crear Turno
                   </button>
@@ -418,7 +456,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import EmpresaServices from '../../../services/EmpresaService.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
@@ -458,6 +496,19 @@ const formTurno = reactive({
   fin: '',
   colacion_inicio: '',
   colacion_fin: ''
+});
+
+// Estados para validación en tiempo real
+const erroresValidacion = ref({
+  inicio_fin: '',
+  colacion_completa: '',
+  colacion_iguales: '',
+  colacion_rango: ''
+});
+
+// Computed para verificar si hay errores de validación
+const tieneErrores = computed(() => {
+  return Object.values(erroresValidacion.value).some(error => error !== '');
 });
 
 // Array de turnos asignados (inicialmente vacío)
@@ -521,12 +572,158 @@ const cerrarModalMotivo = () => {
   modalMotivo.value.mostrar = false;
 };
 
+// Función de validación en tiempo real
+const validarTurnoEnTiempoReal = () => {
+  // Limpiar errores
+  erroresValidacion.value = {
+    inicio_fin: '',
+    colacion_completa: '',
+    colacion_iguales: '',
+    colacion_rango: ''
+  };
+
+  // Validar que inicio y fin no sean iguales
+  if (formTurno.inicio && formTurno.fin && formTurno.inicio === formTurno.fin) {
+    erroresValidacion.value.inicio_fin = 'La hora de inicio y fin no pueden ser iguales';
+  }
+
+  // Validar colación si hay algún campo lleno
+  if (formTurno.colacion_inicio || formTurno.colacion_fin) {
+    // Verificar que ambos estén completos
+    if (!formTurno.colacion_inicio || !formTurno.colacion_fin) {
+      erroresValidacion.value.colacion_completa = 'Debe completar tanto el inicio como el fin de la colación';
+      return; // Salir temprano si falta información
+    }
+    
+    // Validar que no sean iguales
+    if (formTurno.colacion_inicio === formTurno.colacion_fin) {
+      erroresValidacion.value.colacion_iguales = 'El inicio y fin de la colación no pueden ser iguales';
+    }
+
+    // Validar rango si también tenemos inicio y fin del turno
+    if (formTurno.inicio && formTurno.fin) {
+      const convertirAMinutos = (hora) => {
+        const [h, m] = hora.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const minutosInicio = convertirAMinutos(formTurno.inicio);
+      const minutosFin = convertirAMinutos(formTurno.fin);
+      const minutosColacionInicio = convertirAMinutos(formTurno.colacion_inicio);
+      const minutosColacionFin = convertirAMinutos(formTurno.colacion_fin);
+
+      // Validar que la colación tenga duración lógica (fin > inicio)
+      if (minutosColacionFin <= minutosColacionInicio) {
+        erroresValidacion.value.colacion_rango = 'La hora de fin de la colación debe ser posterior al inicio';
+        return;
+      }
+
+      // Para turnos regulares (no cruzan medianoche)
+      if (minutosFin > minutosInicio) {
+        // Validar que AMBOS extremos de la colación estén dentro del rango del turno
+        if (minutosColacionInicio < minutosInicio || minutosColacionInicio > minutosFin) {
+          erroresValidacion.value.colacion_rango = 'El inicio de la colación debe estar dentro del horario del turno';
+        } else if (minutosColacionFin < minutosInicio || minutosColacionFin > minutosFin) {
+          erroresValidacion.value.colacion_rango = 'El fin de la colación debe estar dentro del horario del turno';
+        }
+      } else {
+        // Para turnos nocturnos (cruzan medianoche)
+        // La colación puede estar:
+        // 1. Completamente en la primera parte (antes de medianoche): inicio <= colacion_inicio < colacion_fin < 24:00
+        // 2. Completamente en la segunda parte (después de medianoche): 00:00 < colacion_inicio < colacion_fin <= fin
+        // 3. NO puede cruzar medianoche
+        
+        const enPrimeraParte = minutosColacionInicio >= minutosInicio && minutosColacionFin >= minutosInicio;
+        const enSegundaParte = minutosColacionInicio <= minutosFin && minutosColacionFin <= minutosFin;
+        
+        if (!enPrimeraParte && !enSegundaParte) {
+          erroresValidacion.value.colacion_rango = 'La colación debe estar completamente dentro del horario del turno (no puede cruzar medianoche)';
+        }
+      }
+    }
+  }
+};
+
+// Watchers para validación en tiempo real
+watch(() => formTurno.inicio, validarTurnoEnTiempoReal);
+watch(() => formTurno.fin, validarTurnoEnTiempoReal);
+watch(() => formTurno.colacion_inicio, validarTurnoEnTiempoReal);
+watch(() => formTurno.colacion_fin, validarTurnoEnTiempoReal);
+
 const guardarTurno = async () => {
   try {
     // Validar campos requeridos
     if (!formTurno.usuario_id || !formTurno.tipo || !formTurno.dia || !formTurno.inicio || !formTurno.fin) {
       mostrarNotificacion('warning', 'Por favor complete todos los campos obligatorios');
       return;
+    }
+    
+    // Validar que la hora de inicio y fin no sean iguales
+    if (formTurno.inicio === formTurno.fin) {
+      mostrarNotificacion('error', 'La hora de inicio y la hora de fin no pueden ser iguales');
+      return;
+    }
+    
+    // Validar colación si está definida
+    if (formTurno.colacion_inicio || formTurno.colacion_fin) {
+      // Verificar que ambos campos de colación estén completos
+      if (!formTurno.colacion_inicio || !formTurno.colacion_fin) {
+        mostrarNotificacion('warning', 'Debe completar tanto el inicio como el fin de la colación');
+        return;
+      }
+      
+      // Convertir horas a minutos para comparación
+      const convertirAMinutos = (hora) => {
+        const [h, m] = hora.split(':').map(Number);
+        return h * 60 + m;
+      };
+      
+      const minutosInicio = convertirAMinutos(formTurno.inicio);
+      const minutosFin = convertirAMinutos(formTurno.fin);
+      const minutosColacionInicio = convertirAMinutos(formTurno.colacion_inicio);
+      const minutosColacionFin = convertirAMinutos(formTurno.colacion_fin);
+      
+      // Validar que la colación no sea igual
+      if (formTurno.colacion_inicio === formTurno.colacion_fin) {
+        mostrarNotificacion('error', 'La hora de inicio y fin de la colación no pueden ser iguales');
+        return;
+      }
+      
+      // Para turnos regulares (no nocturnos)
+      if (minutosFin > minutosInicio) {
+        // Validar que el inicio de colación esté dentro del rango del turno
+        if (minutosColacionInicio < minutosInicio || minutosColacionInicio > minutosFin) {
+          mostrarNotificacion('error', 'El inicio de la colación debe estar dentro del horario del turno');
+          return;
+        }
+        
+        // Validar que el fin de colación esté dentro del rango del turno
+        if (minutosColacionFin < minutosInicio || minutosColacionFin > minutosFin) {
+          mostrarNotificacion('error', 'El fin de la colación debe estar dentro del horario del turno');
+          return;
+        }
+        
+        // Validar que la colación tenga una duración lógica (inicio < fin)
+        if (minutosColacionFin <= minutosColacionInicio) {
+          mostrarNotificacion('error', 'La hora de fin de la colación debe ser posterior a la hora de inicio');
+          return;
+        }
+      } else {
+        // Para turnos nocturnos (cruzan medianoche)
+        mostrarNotificacion('info', 'Turno nocturno detectado. La validación de colación se realizará considerando el cruce de medianoche');
+        
+        // Para turnos nocturnos, validar que la colación esté en el rango válido
+        // Puede estar entre inicio y 23:59 O entre 00:00 y fin
+        const colacionEnRangoNocturno = 
+          (minutosColacionInicio >= minutosInicio && minutosColacionFin >= minutosInicio) || // Ambos en la primera parte (antes medianoche)
+          (minutosColacionInicio <= minutosFin && minutosColacionFin <= minutosFin) || // Ambos en la segunda parte (después medianoche)
+          (minutosColacionInicio >= minutosInicio && minutosColacionFin <= minutosFin); // Cruza medianoche
+        
+        if (!colacionEnRangoNocturno) {
+          mostrarNotificacion('error', 'La colación debe estar dentro del horario del turno nocturno');
+          return;
+        }
+      }
     }
     
     // Crear nuevo turno usando el servicio
@@ -572,6 +769,13 @@ const limpiarFormulario = () => {
   Object.keys(formTurno).forEach(key => {
     formTurno[key] = '';
   });
+  // Limpiar también los errores de validación
+  erroresValidacion.value = {
+    inicio_fin: '',
+    colacion_completa: '',
+    colacion_iguales: '',
+    colacion_rango: ''
+  };
 };
 
 const editarTipoTurno = (tipo) => {
