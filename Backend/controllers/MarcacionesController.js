@@ -119,16 +119,16 @@ const registrarMarcacion = async (req, res) => {
         
         // Validación de horario solo para entrada
         if (tipo === 'entrada') {    
-            // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
-            if (turno.fin < turno.inicio) {
-                // Si es así, la hora actual debe ser mayor que turno.inicio
-                if (horaActual < turno.inicio) {
+            // verifica si turno.hora_fin es menor que turno.hora_inicio, si es asi significa que el turno termina al dia siguiente
+            if (turno.hora_fin < turno.hora_inicio) {
+                // Si es así, la hora actual debe ser mayor que turno.hora_inicio
+                if (horaActual < turno.hora_inicio) {
                     return res.status(400).json({
                         success: false,
                         message: 'No se puede registrar la entrada fuera del horario del turno.'
                     });
                 }
-            } else if (horaActual > turno.fin) {
+            } else if (horaActual > turno.hora_fin) {
                 return res.status(400).json({
                     success: false,
                     message: 'No se puede registrar la entrada fuera del horario del turno.'
@@ -156,7 +156,7 @@ const registrarMarcacion = async (req, res) => {
         // Validar tolerancia 
         if (['entrada'].includes(tipo)) {
             console.log("Validando tolerancia para tipo:", tipo);
-            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, horaActual);
             if (diferencia.totalSegundos > 0) {
                 const minutosDiferencia = Math.floor(diferencia.totalSegundos / 60);
@@ -191,7 +191,7 @@ const registrarMarcacion = async (req, res) => {
 
         // Calcular diferencia de tiempo con respecto al turno (solo para entrada/salida)
         if (['entrada', 'salida'].includes(tipo)) {
-            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
             
             if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
@@ -315,12 +315,15 @@ const obtenerHorarioHoy = async (req, res) => {
         return res.status(200).json({
             success: true,
             data: {
-                tipo: turno.tipo,
-                inicio: turno.inicio,
-                fin: turno.fin,
-                fecha: turno.fecha,
+                tipo: turno.tipo_turno_nombre,
+                inicio: turno.hora_inicio,
+                fin: turno.hora_fin,
+                fecha_inicio: turno.fecha_inicio,
+                fecha_fin: turno.fecha_fin,
                 colacion_inicio: turno.colacion_inicio,
-                colacion_fin: turno.colacion_fin
+                colacion_fin: turno.colacion_fin,
+                dias_trabajo: turno.dias_trabajo,
+                dias_descanso: turno.dias_descanso
             },
             message: 'Horario obtenido correctamente'
         });

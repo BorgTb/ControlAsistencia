@@ -1,6 +1,8 @@
 import AuthService from "../services/authservice.js";
 import UserModel from "../model/UserModel.js";
 import TurnosModel from "../model/TurnosModel.js";
+import TipoTurnosModel from "../model/TipoTurnosModel.js";
+import AsignacionTurnosModel from "../model/AsignacionTurnosModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
 import ResolucionModel from "../model/usuarios_empresas_resoluciones.js";
 import ReporteMarcacionesModel from "../model/ReportesModel.js";
@@ -122,81 +124,69 @@ const createTrabajador = async (req, res) => {
 
 const createTurno = async (req, res) => {
     try {
-        const turnoData = req.body;
+        const asignacionData = req.body;
 
-        // Validar campos requeridos - evita errores de base de datos
-        if (!turnoData.usuario_id) {
+        // Validar campos requeridos
+        if (!asignacionData.usuario_empresa_id) {
             return res.status(400).json({ 
                 success: false, 
-                message: "El ID del usuario es requerido" 
+                message: "El ID del usuario empresa es requerido" 
             });
         }
-        if (!turnoData.tipo) {
+        if (!asignacionData.tipo_turno_id) {
             return res.status(400).json({ 
                 success: false, 
                 message: "El tipo de turno es requerido" 
             });
         }
-        if (!turnoData.dia) {
+        if (!asignacionData.fecha_inicio) {
             return res.status(400).json({ 
                 success: false, 
-                message: "El día es requerido" 
-            });
-        }
-        if (!turnoData.inicio || !turnoData.fin) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Las horas de inicio y fin son requeridas" 
+                message: "La fecha de inicio es requerida" 
             });
         }
 
-        // Verificar si ya existe un turno para este usuario en este día - evita duplicados
-        const existingTurno = await TurnosModel.obtenerTurnoPorUsuarioYDia(turnoData.usuario_id, turnoData.dia);
-        if (existingTurno) {
-            return res.status(400).json({ 
+        // Obtener información del trabajador
+        
+        const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
+        if (!trabajador) {
+            return res.status(404).json({ 
                 success: false, 
-                message: "Ya existe un turno para este trabajador en el día seleccionado" 
+                message: "Trabajador no encontrado" 
             });
         }
 
-        // Crear el turno con los datos validados
-        const newTurno = await TurnosModel.createTurno(turnoData);
+        // Obtener información del tipo de turno
+        const tipoTurno = await TipoTurnosModel.getById(asignacionData.tipo_turno_id);
+        if (!tipoTurno) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Tipo de turno no encontrado" 
+            });
+        }
 
-        // Registrar la asociación de turno en auditoría - permite seguimiento de cambios de empleador
+        // Crear la asignación de turno
+        const asignacionId = await AsignacionTurnosModel.create(asignacionData);
+
+        // Registrar la asignación de turno en auditoría
         if (req.user && req.user.id) {
             try {
-                // Obtener información del trabajador para el registro de auditoría
-                const trabajador = await UserModel.findById(turnoData.usuario_id);
-                const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
-                
-                // Traducir día al español para mejor legibilidad
-                const diasEspanol = {
-                    'lunes': 'Lunes',
-                    'martes': 'Martes', 
-                    'miercoles': 'Miércoles',
-                    'jueves': 'Jueves',
-                    'viernes': 'Viernes',
-                    'sabado': 'Sábado',
-                    'domingo': 'Domingo'
-                };
-                const diaEspanol = diasEspanol[turnoData.dia.toLowerCase()] || turnoData.dia;
+                const nombreTrabajador = `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim();
 
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
                     accion: 'asignar_turno_trabajador',
-                    tabla_afectada: 'turnos',
-                    registro_id: newTurno,
-                    descripcion: `Turno asignado a trabajador: ${nombreTrabajador} - ${turnoData.tipo} (${diaEspanol} ${turnoData.inicio}-${turnoData.fin})`,
+                    tabla_afectada: 'asignacion_turnos',
+                    registro_id: asignacionId,
+                    descripcion: `Turno asignado a trabajador: ${nombreTrabajador} - ${tipoTurno.nombre} (${tipoTurno.hora_inicio}-${tipoTurno.hora_fin})`,
                     datos_anteriores: null,
                     datos_nuevos: JSON.stringify({
-                        usuario_id: turnoData.usuario_id,
+                        usuario_empresa_id: asignacionData.usuario_empresa_id,
                         trabajador_nombre: nombreTrabajador,
-                        tipo: turnoData.tipo,
-                        dia: turnoData.dia,
-                        inicio: turnoData.inicio,
-                        fin: turnoData.fin,
-                        colacion_inicio: turnoData.colacion_inicio,
-                        colacion_fin: turnoData.colacion_fin
+                        tipo_turno_id: asignacionData.tipo_turno_id,
+                        tipo_turno_nombre: tipoTurno.nombre,
+                        fecha_inicio: asignacionData.fecha_inicio,
+                        fecha_fin: asignacionData.fecha_fin || null
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
@@ -208,8 +198,8 @@ const createTurno = async (req, res) => {
 
         res.status(201).json({ 
             success: true, 
-            message: "Turno creado exitosamente",
-            data: { id: newTurno }
+            message: "Turno asignado exitosamente",
+            data: { id: asignacionId }
         });
     } catch (error) {
         console.error("Error creating turno:", error);
@@ -234,59 +224,48 @@ const deleteTurno = async (req, res) => {
             });
         }
 
-        // Verificar que el turno existe antes de eliminarlo
-        const turnoExistente = await TurnosModel.getTurnoById(id);
-        if (!turnoExistente) {
+        // Verificar que la asignación existe antes de eliminarla
+        const asignacionExistente = await AsignacionTurnosModel.getById(id);
+        if (!asignacionExistente) {
             return res.status(404).json({ 
                 success: false, 
-                message: "Turno no encontrado" 
+                message: "Asignación de turno no encontrada" 
             });
         }
 
-        // Eliminar el turno de la base de datos
-        const turnoEliminado = await TurnosModel.deleteTurno(id);
+        // Obtener información del trabajador y tipo de turno para auditoría
+        const trabajador = await UserModel.findById(asignacionExistente.usuario_empresa_id);
+        const tipoTurno = await TipoTurnosModel.getById(asignacionExistente.tipo_turno_id);
+
+        // Eliminar la asignación de turno
+        const resultado = await AsignacionTurnosModel.delete(id);
         
-        if (turnoEliminado === 0) {
+        if (resultado === 0) {
             return res.status(404).json({ 
                 success: false, 
-                message: "No se pudo eliminar el turno" 
+                message: "No se pudo eliminar la asignación de turno" 
             });
         }
 
-        // Registrar la eliminación de turno en auditoría - permite seguimiento de cambios de empleador
-        if (req.user && req.user.id && turnoExistente) {
+        // Registrar la eliminación en auditoría
+        if (req.user && req.user.id) {
             try {
-                // Obtener información del trabajador para el registro de auditoría
-                const trabajador = await UserModel.findById(turnoExistente.usuario_id);
                 const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
-                
-                // Traducir día al español para mejor legibilidad
-                const diasEspanol = {
-                    'lunes': 'Lunes',
-                    'martes': 'Martes', 
-                    'miercoles': 'Miércoles',
-                    'jueves': 'Jueves',
-                    'viernes': 'Viernes',
-                    'sabado': 'Sábado',
-                    'domingo': 'Domingo'
-                };
-                const diaEspanol = diasEspanol[turnoExistente.dia?.toLowerCase()] || turnoExistente.dia;
+                const nombreTipoTurno = tipoTurno ? tipoTurno.nombre : 'Tipo desconocido';
 
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
                     accion: 'eliminar_turno_trabajador',
-                    tabla_afectada: 'turnos',
+                    tabla_afectada: 'asignacion_turnos',
                     registro_id: id,
-                    descripcion: `Turno eliminado de trabajador: ${nombreTrabajador} - ${turnoExistente.tipo} (${diaEspanol} ${turnoExistente.inicio}-${turnoExistente.fin})`,
+                    descripcion: `Asignación de turno eliminada: ${nombreTrabajador} - ${nombreTipoTurno}`,
                     datos_anteriores: JSON.stringify({
-                        usuario_id: turnoExistente.usuario_id,
+                        usuario_empresa_id: asignacionExistente.usuario_empresa_id,
                         trabajador_nombre: nombreTrabajador,
-                        tipo: turnoExistente.tipo,
-                        dia: turnoExistente.dia,
-                        inicio: turnoExistente.inicio,
-                        fin: turnoExistente.fin,
-                        colacion_inicio: turnoExistente.colacion_inicio,
-                        colacion_fin: turnoExistente.colacion_fin
+                        tipo_turno_id: asignacionExistente.tipo_turno_id,
+                        tipo_turno_nombre: nombreTipoTurno,
+                        fecha_inicio: asignacionExistente.fecha_inicio,
+                        fecha_fin: asignacionExistente.fecha_fin
                     }),
                     datos_nuevos: null,
                     ip_address: req.ip || req.connection.remoteAddress
@@ -299,7 +278,7 @@ const deleteTurno = async (req, res) => {
 
         res.status(200).json({ 
             success: true, 
-            message: "Turno eliminado exitosamente" 
+            message: "Asignación de turno eliminada exitosamente" 
         });
     } catch (error) {
         console.error("Error deleting turno:", error);
@@ -480,43 +459,40 @@ const obtenerTurnos = async (req, res) => {
     try {
         const { rut } = req.params;
 
-        const turnos = [];
-        // obtener trabajadores
-        const trabajadores = await UsuarioEmpresaModel.getUsuariosByEmpresaRut(rut);
-        // para cada trabajador obtener sus turnos e incluir información del trabajador
-
-        // agregar trabajadores est
-        const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(req.user.empresa_id);
+        // Obtener todas las asignaciones de turnos por empresa
+        const asignaciones = await AsignacionTurnosModel.getByEmpresaRut(rut);
         
-
-        // agregar trabajadores de est al array de trabajadores si no existen ya
-        for (const trabajadorEst of trabajadoresDeEst) {
-            if (!trabajadores.find(t => t.id === trabajadorEst.id)) {
-                trabajadores.push(trabajadorEst);
+        // Formatear las asignaciones con información completa
+        const turnosFormateados = asignaciones.map(asignacion => ({
+            id: asignacion.id,
+            usuario_empresa_id: asignacion.usuario_empresa_id,
+            tipo_turno_id: asignacion.tipo_turno_id,
+            fecha_inicio: asignacion.fecha_inicio,
+            fecha_fin: asignacion.fecha_fin,
+            estado: asignacion.estado,
+            tipo: asignacion.tipo_turno_nombre,
+            inicio: asignacion.hora_inicio,
+            fin: asignacion.hora_fin,
+            colacion_inicio: asignacion.colacion_inicio,
+            colacion_fin: asignacion.colacion_fin,
+            trabajador: {
+                id: asignacion.usuario_empresa_id,
+                nombre: asignacion.usuario_nombre,
+                apellido_pat: asignacion.usuario_apellido_pat,
+                apellido_mat: asignacion.usuario_apellido_mat,
+                rut: asignacion.usuario_rut,
+                iniciales: asignacion.usuario_nombre.charAt(0) + (asignacion.usuario_apellido_pat ? asignacion.usuario_apellido_pat.charAt(0) : '')
             }
-        }
-
-
-        for (const trabajador of trabajadores) {
-            const trabajadorTurnos = await TurnosModel.getTurnosByUsuarioId(trabajador.id);
-            const turnosConInfoTrabajador = trabajadorTurnos.map(turno => ({
-                ...turno,
-                trabajador: {
-                    id: trabajador.id,
-                    nombre: trabajador.usuario_nombre,
-                    apellido_pat: trabajador.usuario_apellido_pat,
-                    apellido_mat: trabajador.usuario_apellido_mat,
-                    rut: trabajador.usuario_rut,
-                    iniciales: trabajador.usuario_nombre.charAt(0) + (trabajador.usuario_apellido_pat ? trabajador.usuario_apellido_pat.charAt(0) : '')
-                }
-            }));
-            turnos.push(...turnosConInfoTrabajador);
-        }
+        }));
         
-        res.status(200).json({ success: true, data: turnos });
+        res.status(200).json({ success: true, data: turnosFormateados });
     } catch (error) {
         console.error("Error fetching turnos:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ 
+            success: false, 
+            message: "Error al obtener turnos",
+            error: error.message 
+        });
     }
 };
 
@@ -934,6 +910,80 @@ const actualizarHorasLaborales = async (req, res) => {
     }
 };
 
+// Nuevo: Obtener tipos de turno disponibles
+const obtenerTiposTurnos = async (req, res) => {
+    try {
+        const tiposTurnos = await TipoTurnosModel.getAll();
+        res.status(200).json({
+            success: true,
+            data: tiposTurnos
+        });
+    } catch (error) {
+        console.error("Error obteniendo tipos de turnos:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener tipos de turnos",
+            error: error.message
+        });
+    }
+};
+
+// Nuevo: Crear tipo de turno
+const crearTipoTurno = async (req, res) => {
+    try {
+        const tipoTurnoData = req.body;
+        const USR_PETICION = req.user;
+
+        // Validar que sea empleador o admin
+        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para crear tipos de turno"
+            });
+        }
+
+        // Validar campos requeridos
+        if (!tipoTurnoData.nombre || !tipoTurnoData.hora_inicio || !tipoTurnoData.hora_fin) {
+            return res.status(400).json({
+                success: false,
+                message: "Nombre, hora de inicio y hora de fin son requeridos"
+            });
+        }
+
+        const nuevoTipoId = await TipoTurnosModel.create(tipoTurnoData);
+
+        // Registrar en auditoría
+        if (req.user && req.user.id) {
+            try {
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'crear_tipo_turno',
+                    tabla_afectada: 'tipo_turnos',
+                    registro_id: nuevoTipoId,
+                    descripcion: `Tipo de turno creado: ${tipoTurnoData.nombre}`,
+                    datos_nuevos: JSON.stringify(tipoTurnoData),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+            } catch (auditError) {
+                console.error('Error al registrar en auditoría:', auditError);
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            message: "Tipo de turno creado exitosamente",
+            data: { id: nuevoTipoId }
+        });
+    } catch (error) {
+        console.error("Error creando tipo de turno:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al crear tipo de turno",
+            error: error.message
+        });
+    }
+};
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
@@ -942,10 +992,12 @@ const AdminController = {
     actualizarHorasLaborales,
     enrolarTrabajador,
     createTurno,
-    deleteTurno, // agregar método de eliminación
+    deleteTurno,
     obtenerTurnos,
-    guardarConfiguracion, // nueva funcionalidad de configuración
-    obtenerConfiguracion, // obtener configuración actual
+    obtenerTiposTurnos,
+    crearTipoTurno,
+    guardarConfiguracion,
+    obtenerConfiguracion,
     obtenerReportesMarcaciones,
     aprobarCambioMarcacion,
     rechazarCambioMarcacion,

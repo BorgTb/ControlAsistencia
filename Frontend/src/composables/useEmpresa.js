@@ -126,6 +126,28 @@ export function useEmpresa() {
     }
   };
 
+  const obtenerTiposTurnos = async () => {
+    try {
+      const response = await EmpresaServices.obtenerTiposTurnos();
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener tipos de turnos:", error);
+      throw error;
+    }
+  };
+
+  const crearTipoTurno = async (tipoTurnoData) => {
+    try {
+
+      console.log('tipo turno data', tipoTurnoData)
+      const response = await EmpresaServices.crearTipoTurno(tipoTurnoData);
+      return response;
+    } catch (error) {
+      console.error("Error al crear tipo de turno:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -137,6 +159,8 @@ export function useEmpresa() {
     modificarMarcacion,
     agregarMarcacionManual,
     eliminarTurno,
-    obtenerHorasSemanales
+    obtenerHorasSemanales,
+    obtenerTiposTurnos,
+    crearTipoTurno
   };
 }

@@ -148,9 +148,33 @@ class EmpresaServices{
     }
   }
 
-  static async createTurno(turnoData) {
+  // Nuevo: Obtener tipos de turnos disponibles
+  static async obtenerTiposTurnos() {
     try {
-      const response = await apiClient.post('/userEmpresa/turnos', turnoData)
+      const response = await apiClient.get('/userEmpresa/tipos-turnos')
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo tipos de turnos:', error)
+      throw error
+    }
+  }
+
+  // Nuevo: Crear tipo de turno
+  static async crearTipoTurno(tipoTurnoData) {
+    try {
+      const response = await apiClient.post('/userEmpresa/tipos-turnos', tipoTurnoData)
+      return response.data
+    } catch (error) {
+      console.error('Error creando tipo de turno:', error)
+      throw error
+    }
+  }
+
+  // Actualizar: createTurno ahora crea asignación
+  static async createTurno(asignacionData) {
+    try {
+      console.log('asignacionData', asignacionData)
+      const response = await apiClient.post('/userEmpresa/turnos', asignacionData)
       return response.data
     } catch (error) {
       throw error

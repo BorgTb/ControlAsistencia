@@ -14,9 +14,16 @@ router.get('/trabajador/:id/turnos',AuthService.verifyToken, UserEmpresaControll
 router.get('/trabajador/:id/marcaciones',AuthService.verifyToken, UserEmpresaController.obtenerMarcacionesTrabajador);
 router.put('/trabajador/:id/horas-laborales',AuthService.verifyToken, UserEmpresaController.actualizarHorasLaborales);
 router.post('/enrolar-trabajador',AuthService.verifyToken, UserEmpresaController.enrolarTrabajador);
+
+// Rutas para tipos de turno
+router.get('/tipos-turnos', AuthService.verifyToken, UserEmpresaController.obtenerTiposTurnos);
+router.post('/tipos-turnos', AuthService.verifyToken, UserEmpresaController.crearTipoTurno);
+
+// Rutas para asignaciones de turnos
 router.post('/turnos',AuthService.verifyToken, UserEmpresaController.createTurno);
-router.delete('/turnos/:id',AuthService.verifyToken, UserEmpresaController.deleteTurno); // nueva ruta para eliminar
+router.delete('/turnos/:id',AuthService.verifyToken, UserEmpresaController.deleteTurno);
 router.get('/turnos/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTurnos);
+
 router.get('/reportes/:rut',AuthService.verifyToken, UserEmpresaController.obtenerReportesMarcaciones);
 router.post('/reportes/aprobar/:reporteId',AuthService.verifyToken, UserEmpresaController.aprobarCambioMarcacion);
 router.post('/reportes/rechazar/:reporteId',AuthService.verifyToken, UserEmpresaController.rechazarCambioMarcacion);
