@@ -2,6 +2,7 @@ import express from 'express';
 import AuthService from '../middleware/AuthMiddleWare.js';
 import UserEmpresaController from '../controllers/UserEmpresaController.js';
 import EstController from '../controllers/EstController.js';
+import LugarController from '../controllers/LugarController.js';
 
 
 const router = express.Router();
@@ -27,5 +28,17 @@ router.get('/est/asociaciones',AuthService.verifyToken, EstController.obtenerAso
 
 
 router.get('/historial-solicitudes',AuthService.verifyToken, UserEmpresaController.historialSolicitudes);
+
+// Rutas para gestión de lugares
+router.post('/lugares', AuthService.verifyToken, LugarController.createLugar);
+router.get('/lugares', AuthService.verifyToken, LugarController.getAllLugares);
+router.get('/lugares/empresa/:empresaId', AuthService.verifyToken, LugarController.getLugaresByEmpresa);
+router.get('/lugares/empresa/:empresaId/activos', AuthService.verifyToken, LugarController.getLugaresActivosByEmpresa);
+router.get('/lugares/buscar/nombre', AuthService.verifyToken, LugarController.buscarLugaresPorNombre);
+router.get('/lugares/:id', AuthService.verifyToken, LugarController.getLugarById);
+router.put('/lugares/:id', AuthService.verifyToken, LugarController.updateLugar);
+router.patch('/lugares/:id/desactivar', AuthService.verifyToken, LugarController.desactivarLugar);
+router.patch('/lugares/:id/activar', AuthService.verifyToken, LugarController.activarLugar);
+router.delete('/lugares/:id', AuthService.verifyToken, LugarController.deleteLugar);
 
 export default router;

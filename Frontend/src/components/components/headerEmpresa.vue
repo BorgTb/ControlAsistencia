@@ -184,6 +184,19 @@
             <span>Marcaciones</span>
           </router-link>
 
+          <!-- Marcaciones -->
+          <router-link
+            to="/empresa/lugares"
+            class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
+            active-class="text-indigo-600 bg-white border-indigo-600"
+          >
+            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <span>Lugares</span>
+          </router-link>
+
           <!-- Reportes -->
           <router-link
             to="/empresa/reportes"
