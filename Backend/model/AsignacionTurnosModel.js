@@ -97,40 +97,34 @@ class AsignacionTurnosModel {
             ORDER BY at.fecha_inicio DESC
         `;
         const [rows] = await pool.query(query, [usuarioEmpresaId, fechaBusqueda, fechaBusqueda]);
-        
+    
         if (rows.length > 0) {
             // Obtener el día de la semana de la fecha
             const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const fechaObj = new Date(fechaBusqueda + 'T00:00:00');
             const diaSemana = diasSemana[fechaObj.getDay()];
+            console.log("Día de la semana para la fecha", fechaBusqueda, "es", diaSemana);
+            // Buscar la configuración del día en detalle_dias_turno
+            const diaConfig = rows.find(r => r.dia_semana === diaSemana);
             
-            // Buscar configuración específica para este día
-            const diaConfig = rows.find(r => r.dia_semana === diaSemana && r.trabaja);
-            
-            if (diaConfig) {
-                return {
-                    ...rows[0],
-                    hora_inicio: diaConfig.dia_hora_inicio || rows[0].turno_hora_inicio,
-                    hora_fin: diaConfig.dia_hora_fin || rows[0].turno_hora_fin,
-                    dia_semana: diaSemana,
-                    trabaja: true
-                };
-            } else {
-                // Verificar si el día está configurado como no laborable
-                const diaNoLaboral = rows.find(r => r.dia_semana === diaSemana && !r.trabaja);
-                if (diaNoLaboral) {
-                    return null; // No trabaja este día
-                }
-                
-                // Si no hay configuración específica, usar horarios base
-                return {
-                    ...rows[0],
-                    hora_inicio: rows[0].turno_hora_inicio,
-                    hora_fin: rows[0].turno_hora_fin,
-                    dia_semana: diaSemana,
-                    trabaja: true
-                };
+            // Si el día no existe en detalle_dias_turno, no es día laborable
+            if (!diaConfig) {
+                return null;
             }
+            
+            // Si el día está marcado como no laborable (trabaja = false)
+            if (!diaConfig.trabaja) {
+                return null;
+            }
+            
+            // El día es laborable, retornar con horarios específicos o base
+            return {
+                ...rows[0],
+                hora_inicio: diaConfig.dia_hora_inicio || rows[0].turno_hora_inicio,
+                hora_fin: diaConfig.dia_hora_fin || rows[0].turno_hora_fin,
+                dia_semana: diaSemana,
+                trabaja: true
+            };
         }
         
         return null;

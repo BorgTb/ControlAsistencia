@@ -303,7 +303,7 @@ const obtenerHorarioHoy = async (req, res) => {
 
         // obtener turno asignado para el usuario en la fecha actual
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-
+        console.log("Turno encontrado", turno);
         if (!turno) {
             return res.status(200).json({
                 success: true,
@@ -311,7 +311,7 @@ const obtenerHorarioHoy = async (req, res) => {
                 message: 'No hay horario asignado para hoy'
             });
         }
-        
+        console.log(turno);
         return res.status(200).json({
             success: true,
             data: {

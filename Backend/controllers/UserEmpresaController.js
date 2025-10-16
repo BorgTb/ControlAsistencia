@@ -916,10 +916,12 @@ const obtenerTiposTurnos = async (req, res) => {
         const empresa_id = req.user.empresa_id
         // Obtener solo los tipos de turno de la empresa
         const tiposTurnos = await TipoTurnosModel.getByEmpresaId(empresa_id);
-        
+        // para cada tipo de turno agregarle los dias en que aplica
+        const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
+        console.log("Tipos de turnos obtenidos:", tiposConDias);
         res.status(200).json({
             success: true,
-            data: tiposTurnos
+            data: tiposConDias,
         });
     } catch (error) {
         console.error("Error obteniendo tipos de turnos:", error);
