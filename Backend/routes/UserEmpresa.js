@@ -10,6 +10,9 @@ const router = express.Router();
 
 router.post('/trabajador',AuthService.verifyToken, UserEmpresaController.createTrabajador);
 router.get('/trabajador/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTrabajadores);
+router.get('/trabajador/:id/turnos',AuthService.verifyToken, UserEmpresaController.obtenerTurnosTrabajador);
+router.get('/trabajador/:id/marcaciones',AuthService.verifyToken, UserEmpresaController.obtenerMarcacionesTrabajador);
+router.put('/trabajador/:id/horas-laborales',AuthService.verifyToken, UserEmpresaController.actualizarHorasLaborales);
 router.post('/enrolar-trabajador',AuthService.verifyToken, UserEmpresaController.enrolarTrabajador);
 router.post('/turnos',AuthService.verifyToken, UserEmpresaController.createTurno);
 router.delete('/turnos/:id',AuthService.verifyToken, UserEmpresaController.deleteTurno); // nueva ruta para eliminar

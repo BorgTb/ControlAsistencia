@@ -140,7 +140,6 @@
                   >
                     <option value="trabajador">Trabajador</option>
                     <option value="empleador">Empleador</option>
-                    <option value="fiscalizador">Fiscalizador</option>
                   </select>
                   <span v-if="errors.rol" class="text-red-500 text-xs mt-1">{{ errors.rol }}</span>
                 </div>
@@ -263,6 +262,7 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import EmpresaServices from '../../services/EmpresaService.js'
+import { useAuthStore } from '../../stores/authStore.js'
 
 // Props
 const props = defineProps({
@@ -431,6 +431,18 @@ const submitForm = async () => {
   errorGeneral.value = ''
   
   try {
+    // Debug: Verificar autenticación antes de enviar
+    const authStore = useAuthStore()
+    console.log('🔍 Debug auth antes de crear trabajador:')
+    console.log('- Token existe:', !!authStore.getToken)
+    console.log('- Usuario:', authStore.getUser)
+    console.log('- Datos a enviar:', trabajador)
+    
+    if (!authStore.getToken) {
+      errorGeneral.value = 'Error de autenticación. Por favor, inicie sesión nuevamente.'
+      return
+    }
+    
     // Aquí simularemos el envío - reemplazar con llamada real al API
     await new Promise(resolve => setTimeout(resolve, 2000))
     
@@ -449,7 +461,26 @@ const submitForm = async () => {
 
   } catch (error) {
     console.error('Error registrando usuario:', error)
-    errorGeneral.value = 'Error al registrar el usuario. Por favor, intente nuevamente.'
+    
+    // Manejo específico de errores del servidor
+    if (error.response) {
+      const serverError = error.response.data
+      console.error('📋 Detalles del error del servidor:', serverError)
+      
+      if (serverError.message) {
+        errorGeneral.value = serverError.message
+      } else if (error.response.status === 400) {
+        errorGeneral.value = 'Los datos enviados no son válidos. Verifique que el RUT y email no estén ya registrados.'
+      } else if (error.response.status === 401) {
+        errorGeneral.value = 'Error de autenticación. Por favor, inicie sesión nuevamente.'
+      } else {
+        errorGeneral.value = `Error del servidor (${error.response.status}). Por favor, intente nuevamente.`
+      }
+    } else if (error.request) {
+      errorGeneral.value = 'No se pudo conectar con el servidor. Verifique su conexión a internet.'
+    } else {
+      errorGeneral.value = 'Error inesperado. Por favor, intente nuevamente.'
+    }
   } finally {
     isLoading.value = false
   }

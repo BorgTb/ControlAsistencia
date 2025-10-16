@@ -36,6 +36,9 @@ router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, Marcacio
 router.put('/userEmpresa/modificar/:id', AuthService.verifyToken, MarcacionesController.modificarMarcacionPorId);
 router.post('/userEmpresa/agregar', AuthService.verifyToken, MarcacionesController.agregarMarcacionManual);
 
+// Ruta para obtener horas semanales de un trabajador
+router.get('/horas-semanales/:usuario_empresa_id', AuthService.verifyToken, MarcacionesController.obtenerHorasSemanales);
+
 // Esta ruta debe estar al final para evitar conflictos con otras rutas
 router.get('/:id', AuthService.verifyToken, MarcacionesController.obtenerMarcacionPorUserId);
 

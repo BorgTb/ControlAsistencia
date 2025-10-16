@@ -6,6 +6,7 @@ import ResolucionModel from "../model/usuarios_empresas_resoluciones.js";
 import ReporteMarcacionesModel from "../model/ReportesModel.js";
 import EmpresaModel from "../model/EmpresaModel.js";
 import MarcacionesServices from "../services/MarcacionesServices.js";
+import MarcacionesModel from "../model/MarcacionesModel.js";
 import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
@@ -443,6 +444,11 @@ const obtenerTrabajadores = async (req, res) => {
 
         console.log("trabajadoresDeEst:", trabajadoresDeEst);
         console.log("trabajadores:", trabajadores);
+        
+        // Debug: verificar horas laborales en cada trabajador
+        trabajadores.forEach(trabajador => {
+            console.log(`👤 Trabajador ${trabajador.id}: ${trabajador.usuario_nombre} - Horas laborales: ${trabajador.horas_laborales || 'NO DEFINIDAS'}`);
+        });
 
         // juntar ambos arrays  y a los trabajadores de est agregarle un campo est = true
         const trabajadoresMap = new Map();
@@ -457,6 +463,12 @@ const obtenerTrabajadores = async (req, res) => {
 
         const trabajadoresUnicos = Array.from(trabajadoresMap.values());
         console.log("trabajadoresUnicos:", trabajadoresUnicos);
+        
+        // Debug: verificar horas laborales en resultado final
+        console.log("🎯 RESULTADO FINAL - Horas laborales por trabajador:");
+        trabajadoresUnicos.forEach(trabajador => {
+            console.log(`  - ${trabajador.usuario_nombre} (ID: ${trabajador.id}): ${trabajador.horas_laborales || 'SIN HORAS LABORALES'}`);
+        });
 
         res.status(200).json({ success: true, data: trabajadoresUnicos });
     } catch (error) {
@@ -750,11 +762,184 @@ const obtenerConfiguracionTolerancias = async (req, res) => {
     }
 }
 
+// Obtener turnos específicos de un trabajador por ID
+const obtenerTurnosTrabajador = async (req, res) => {
+    try {
+        const { id } = req.params; // ID del trabajador
+        const USR_PETICION = req.user; // usuario que genera la consulta
 
+        console.log('🔍 Obteniendo turnos para trabajador ID:', id);
+
+        // Verificar que el trabajador pertenece a la empresa del usuario logueado
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
+        
+        if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "No tiene permisos para ver turnos de este trabajador" 
+            });
+        }
+
+        // Obtener turnos del trabajador
+        const turnos = await TurnosModel.getTurnosByUsuarioId(id);
+
+        console.log('✅ Turnos encontrados:', turnos.length);
+
+        res.status(200).json({
+            success: true,
+            data: turnos,
+            message: `Turnos del trabajador obtenidos correctamente`
+        });
+
+    } catch (error) {
+        console.error('❌ Error obteniendo turnos del trabajador:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor al obtener turnos",
+            error: error.message 
+        });
+    }
+};
+
+// Obtener marcaciones específicas de un trabajador por ID
+const obtenerMarcacionesTrabajador = async (req, res) => {
+    try {
+        const { id } = req.params; // ID del trabajador
+        const { limite = 10 } = req.query; // Límite de marcaciones a obtener
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+        console.log('🔍 Obteniendo marcaciones para trabajador ID:', id, 'Límite:', limite);
+
+        // Verificar que el trabajador pertenece a la empresa del usuario logueado
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
+        
+        if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "No tiene permisos para ver marcaciones de este trabajador" 
+            });
+        }
+
+        // Obtener marcaciones del trabajador usando la función correcta
+        // Nota: getMarcacionesByUsuario usa usuario_empresa_id, no usuario_id
+        const marcacionesCompletas = await MarcacionesModel.getMarcacionesByUsuario(trabajadorEmpresa.id);
+        
+        // Aplicar límite manualmente ya que la función no lo tiene
+        const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
+
+        console.log('✅ Marcaciones encontradas:', marcaciones.length, 'de', marcacionesCompletas.length, 'totales');
+
+        // Formatear marcaciones para el frontend
+        const marcacionesFormateadas = marcaciones.map(marcacion => ({
+            id: marcacion.id,
+            fecha_marcacion: marcacion.fecha,
+            hora_marcacion: marcacion.hora,
+            tipo_marcacion: marcacion.tipo,
+            ip_origen: marcacion.ip_origen,
+            geo_lat: marcacion.geo_lat,
+            geo_lon: marcacion.geo_lon
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: marcacionesFormateadas,
+            total: marcacionesCompletas.length,
+            message: `Marcaciones del trabajador obtenidas correctamente`
+        });
+
+    } catch (error) {
+        console.error('❌ Error obteniendo marcaciones del trabajador:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor al obtener marcaciones",
+            error: error.message 
+        });
+    }
+};
+
+const actualizarHorasLaborales = async (req, res) => {
+    try {
+        const { id } = req.params; // ID del trabajador
+        const { horas_laborales } = req.body; // Nuevas horas laborales
+        const USR_PETICION = req.user; // usuario que genera la consulta
+
+        console.log('🔄 Actualizando horas laborales:', { 
+            trabajadorId: id, 
+            horasLaborales: horas_laborales,
+            usuarioEmpresa: USR_PETICION.id 
+        });
+
+        // Validar que las horas laborales sean válidas
+        const horasValidas = ['44', '45', '54'];
+        if (!horasValidas.includes(horas_laborales)) {
+            return res.status(400).json({
+                success: false,
+                message: "Las horas laborales deben ser 44, 45 o 54"
+            });
+        }
+
+        // Verificar que el trabajador pertenece a la empresa del usuario logueado
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
+        
+        if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "No tiene permisos para modificar este trabajador" 
+            });
+        }
+
+        // Actualizar las horas laborales en la base de datos
+        const resultado = await UsuarioEmpresaModel.actualizarHorasLaborales(trabajadorEmpresa.id, horas_laborales);
+
+        if (resultado.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Trabajador no encontrado"
+            });
+        }
+
+        // Registrar auditoría (comentado temporalmente)
+        // await AuditoriaModel.registrarAccion(
+        //     USR_PETICION.id,
+        //     'UPDATE',
+        //     'usuario_empresa',
+        //     trabajadorEmpresa.id,
+        //     `Actualización de horas laborales de ${trabajadorEmpresa.horas_laborales || 'Sin definir'} a ${horas_laborales} horas`,
+        //     req.ip,
+        //     req.get('User-Agent')
+        // );
+
+        console.log('✅ Horas laborales actualizadas exitosamente');
+
+        res.status(200).json({
+            success: true,
+            message: "Horas laborales actualizadas correctamente",
+            data: {
+                trabajador_id: id,
+                horas_laborales_anteriores: trabajadorEmpresa.horas_laborales,
+                horas_laborales_nuevas: horas_laborales
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error actualizando horas laborales:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor al actualizar horas laborales",
+            error: error.message 
+        });
+    }
+};
 
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
+    obtenerTurnosTrabajador,
+    obtenerMarcacionesTrabajador,
+    actualizarHorasLaborales,
     enrolarTrabajador,
     createTurno,
     deleteTurno, // agregar método de eliminación

@@ -284,6 +284,35 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
             ];
         }
     }
+
+    /**
+     * Obtiene marcaciones de un usuario por rango de fechas
+     * @param {number} usuario_empresa_id - ID del usuario en tabla usuario_empresa
+     * @param {string} fechaInicio - Fecha inicio en formato YYYY-MM-DD
+     * @param {string} fechaFin - Fecha fin en formato YYYY-MM-DD
+     * @returns {Array} Array de marcaciones
+     */
+    async obtenerMarcacionesPorUsuarioYRangoFecha(usuario_empresa_id, fechaInicio, fechaFin) {
+        try {
+            const query = `
+                SELECT 
+                    m.*,
+                    DATE(m.fecha) as fecha,
+                    TIME(m.hora) as hora
+                FROM marcaciones m
+                WHERE m.usuario_empresa_id = ?
+                AND DATE(m.fecha) >= ?
+                AND DATE(m.fecha) <= ?
+                ORDER BY m.fecha ASC, m.hora ASC
+            `;
+            
+            const [rows] = await pool.execute(query, [usuario_empresa_id, fechaInicio, fechaFin]);
+            return rows;
+        } catch (error) {
+            console.error('Error al obtener marcaciones por usuario y rango de fecha:', error);
+            throw error;
+        }
+    }
     
 }
 

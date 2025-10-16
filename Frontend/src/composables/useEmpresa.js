@@ -116,6 +116,16 @@ export function useEmpresa() {
     }
   };
 
+  const obtenerHorasSemanales = async (usuarioEmpresaId) => {
+    try {
+      const response = await EmpresaServices.obtenerHorasSemanales(usuarioEmpresaId);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener horas semanales:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -126,6 +136,7 @@ export function useEmpresa() {
     rechazarReporte,
     modificarMarcacion,
     agregarMarcacionManual,
-    eliminarTurno
+    eliminarTurno,
+    obtenerHorasSemanales
   };
 }
