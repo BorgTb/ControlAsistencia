@@ -1,4 +1,5 @@
 import EmpresaModel from "../model/EmpresaModel.js";
+import EmpresaEstModel from "../model/EmpresaEstModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
 
@@ -154,6 +155,44 @@ const updateEmpresa = async (req, res) => {
         success: false,
         message: 'Empresa no encontrada'
       });
+    }
+    console.log('👤 Datos EST:', empresaData.es_est);
+    // Manejar datos EST si la empresa es EST
+    if (empresaData.es_est) {
+      try {
+        // Verificar si ya existe un registro EST
+        const existeEst = await EmpresaEstModel.findByEmpresaId(empresaId);
+        
+        if (existeEst) {
+          // Actualizar registro EST existente
+          await EmpresaEstModel.update(empresaId, {
+            est_registro_numero: empresaData.est_registro_numero,
+            est_registro_fecha: empresaData.est_registro_fecha,
+            vigente: empresaData.est_vigente ? 1 : 0
+          });
+        } else {
+          // Crear nuevo registro EST
+          await EmpresaEstModel.create({
+            empresa_id: empresaId,
+            est_registro_numero: empresaData.est_registro_numero,
+            est_registro_fecha: empresaData.est_registro_fecha,
+            vigente: empresaData.est_vigente ? 1 : 0
+          });
+        }
+      } catch (estError) {
+        console.error('Error al manejar registro EST:', estError);
+        // No fallar toda la operación si falla el registro EST
+      }
+    } else {
+      // Si ya no es EST, eliminar el registro EST si existe
+      try {
+        const existeEst = await EmpresaEstModel.findByEmpresaId(empresaId);
+        if (existeEst) {
+          await EmpresaEstModel.delete(empresaId);
+        }
+      } catch (estError) {
+        console.error('Error al eliminar registro EST:', estError);
+      }
     }
     
     // Debug: Verificar información del usuario

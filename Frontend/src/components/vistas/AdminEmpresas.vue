@@ -118,6 +118,55 @@
               <option :value="0">Inactiva</option>
             </select>
           </div>
+          
+          <!-- Checkbox para identificar si es EST -->
+          <div class="flex items-center gap-2 mt-2">
+            <input 
+              type="checkbox" 
+              id="es_est" 
+              v-model="empresaForm.es_est" 
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label for="es_est" class="empresa-label cursor-pointer">¿Es una Empresa de Servicios Transitorios (EST)?</label>
+          </div>
+          
+          <!-- Campos adicionales para EST (solo se muestran si es_est está marcado) -->
+          <transition name="fade">
+            <div v-if="empresaForm.es_est" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2 space-y-3">
+              <h4 class="text-sm font-semibold text-blue-700 mb-2">Datos de Registro EST</h4>
+              
+              <div>
+                <label class="empresa-label">Número de Registro</label>
+                <input 
+                  v-model="empresaForm.est_registro_numero" 
+                  :required="empresaForm.es_est"
+                  class="input w-full px-2 py-1 mt-1" 
+                  placeholder="Ej: EST-2024-001234" 
+                />
+              </div>
+              
+              <div>
+                <label class="empresa-label">Fecha de Registro</label>
+                <input 
+                  type="date" 
+                  v-model="empresaForm.est_registro_fecha" 
+                  :required="empresaForm.es_est"
+                  class="input w-full px-2 py-1 mt-1" 
+                />
+              </div>
+              
+              <div>
+                <label class="empresa-label">Vigencia</label>
+                <input 
+                  v-model="empresaForm.est_vigente" 
+                  :required="empresaForm.es_est"
+                  class="input w-full px-2 py-1 mt-1" 
+                  placeholder="Ej: 2 años, Indefinida, etc." 
+                />
+              </div>
+            </div>
+          </transition>
+          
           <div v-if="error" class="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm">{{ error }}</div>
           <div class="flex justify-end gap-2 mt-4">
             <button type="button" @click="closeModal" class="px-4 py-2 border rounded-md text-base text-blue-700 border-blue-200 hover:bg-blue-50 font-semibold">Cancelar</button>
@@ -290,7 +339,11 @@ const empresaForm = ref({
   telefono: '',
   descripcion: '',
   estado: 1,
-  grup_emp_idn: null // Se deja null por defecto por ahora, para después configurarlo
+  grup_emp_idn: null, // Se deja null por defecto por ahora, para después configurarlo
+  es_est: false, // Indica si es una Empresa de Servicios Transitorios
+  est_registro_numero: '', // Número de registro EST
+  est_registro_fecha: '', // Fecha de registro EST
+  est_vigente: '' // Vigencia del registro EST
 })
 
 const showDeleteModal = ref(false)
@@ -319,7 +372,11 @@ async function fetchEmpresas() {
       estado: e.activa ? 1 : 0,
       telefono: e.telefono || '',
       descripcion: e.descripcion || '',
-      totalEmpleados: e.totalEmpleados ?? 0
+      totalEmpleados: e.totalEmpleados ?? 0,
+      es_est: e.es_est || false,
+      est_registro_numero: e.est_registro_numero || '',
+      est_registro_fecha: e.est_registro_fecha || '',
+      est_vigente: e.est_vigente || ''
     }))
   } catch {
     error.value = 'Error al cargar empresas'
@@ -334,7 +391,18 @@ async function fetchEmpresas() {
 function openModal() {
   showModal.value = true
   error.value = null
-  empresaForm.value = { empresa_id: null, emp_nombre: '', emp_rut: '', telefono: '', descripcion: '', estado: 1 }
+  empresaForm.value = { 
+    empresa_id: null, 
+    emp_nombre: '', 
+    emp_rut: '', 
+    telefono: '', 
+    descripcion: '', 
+    estado: 1,
+    es_est: false,
+    est_registro_numero: '',
+    est_registro_fecha: '',
+    est_vigente: ''
+  }
 }
 function closeModal() { showModal.value = false }
 function viewEmpresa(empresa) { empresaView.value = { ...empresa }; showViewModal.value = true }
@@ -370,7 +438,11 @@ async function saveEmpresa() {
       emp_telefono: empresaForm.value.telefono, // <-- nombre esperado por el backend
       emp_descripcion: empresaForm.value.descripcion, // <-- nombre esperado por el backend
       estado: Number(empresaForm.value.estado),
-      grup_emp_idn: null // Se deja null por defecto por ahora, para después configurarlo
+      grup_emp_idn: null, // Se deja null por defecto por ahora, para después configurarlo
+      es_est: empresaForm.value.es_est,
+      est_registro_numero: empresaForm.value.es_est ? empresaForm.value.est_registro_numero : null,
+      est_registro_fecha: empresaForm.value.es_est ? empresaForm.value.est_registro_fecha : null,
+      est_vigente: empresaForm.value.es_est ? empresaForm.value.est_vigente : null
     }
     // Usar el servicio para asegurar que el token JWT se envía correctamente
     if (empresaForm.value.empresa_id) {
@@ -380,10 +452,20 @@ async function saveEmpresa() {
     } else {
       await AdminServices.createEmpresa(payload)
     }
-    // Comentario: Este cambio es necesario porque el uso directo de axios no incluye el token JWT,
-    // mientras que el servicio AdminServices sí lo agrega automáticamente mediante un interceptor.
-    // Así se evita el error 401 (Unauthorized) al crear o editar empresas.
-    closeModal()
+    showModal.value = false
+    empresaForm.value = { 
+      empresa_id: null, 
+      emp_nombre: '', 
+      emp_rut: '', 
+      telefono: '', 
+      descripcion: '', 
+      estado: 1,
+      es_est: false,
+      est_registro_numero: '',
+      est_registro_fecha: '',
+      est_vigente: ''
+    }
+    error.value = null
     await fetchEmpresas()
   } catch {
     error.value = 'Error al guardar'

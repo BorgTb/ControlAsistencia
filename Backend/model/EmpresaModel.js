@@ -36,11 +36,26 @@ class EmpresaModel {
     }
     
     // Obtener todas las empresas SOLO de la tabla empresa
+    // Se incluye un LEFT JOIN con empresa_est para saber si es EST
     static async getAllEmpresas() {
         const query = `
-            SELECT empresa_id as id, emp_nombre as nombre, emp_rut as rut, emp_telefono as telefono, emp_descripcion as descripcion, estado as activa, grup_emp_idn, created_at, updated_at
-            FROM empresa
-            ORDER BY emp_nombre ASC
+            SELECT 
+                e.empresa_id as id, 
+                e.emp_nombre as nombre, 
+                e.emp_rut as rut, 
+                e.emp_telefono as telefono, 
+                e.emp_descripcion as descripcion, 
+                e.estado as activa, 
+                e.grup_emp_idn,
+                e.created_at, 
+                e.updated_at,
+                CASE WHEN est.empresa_id IS NOT NULL THEN 1 ELSE 0 END as es_est,
+                est.est_registro_numero,
+                est.est_registro_fecha,
+                est.vigente as est_vigente
+            FROM empresa e
+            LEFT JOIN empresa_est est ON e.empresa_id = est.empresa_id
+            ORDER BY e.emp_nombre ASC
         `;
         const [rows] = await db.execute(query);
         return rows;
