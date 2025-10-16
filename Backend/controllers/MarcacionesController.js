@@ -68,24 +68,32 @@ function calcularDiferenciaHoras(hora1, hora2) {
 
 
 
-// Función genérica para registrar marcaciones (entrada/salida)
+// Función genérica para registrar marcaciones (entrada/salida/colacion)
 const registrarMarcacion = async (req, res) => {
     try {
         const { geo_lat, geo_lon, location_quality, ip_cliente, domicilio_prestacion, tipo } = req.body;
         const usuario_id = req.user?.id;
         
         // Validar tipo de marcación
-        if (!['entrada', 'salida'].includes(tipo)) {
+        if (!['entrada', 'salida', 'colacion'].includes(tipo)) {
             return res.status(400).json({
                 success: false,
-                message: 'Tipo de marcación no válido. Debe ser "entrada" o "salida".'
+                message: 'Tipo de marcación no válido. Debe ser "entrada", "salida" o "colacion".'
             });
         }
 
-        if (!usuario_id || !geo_lat || !geo_lon || !location_quality || !ip_cliente) {
+        if (!usuario_id || !geo_lat || !geo_lon || !ip_cliente) {
             return res.status(400).json({
                 success: false,
                 message: `Faltan datos requeridos para registrar la ${tipo}.`
+            });
+        }
+
+        // location_quality es requerido solo para entrada y salida
+        if (['entrada', 'salida'].includes(tipo) && !location_quality) {
+            return res.status(400).json({
+                success: false,
+                message: `El parámetro location_quality es requerido para registrar la ${tipo}.`
             });
         }
 
@@ -107,8 +115,8 @@ const registrarMarcacion = async (req, res) => {
             });
         }
         
-        
         const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
+        
         // Validación de horario solo para entrada
         if (tipo === 'entrada') {    
             // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
@@ -127,8 +135,25 @@ const registrarMarcacion = async (req, res) => {
                 });
             }
         }
-        // validar tolerancia 
-
+        
+        // Validación específica para colación
+        if (tipo === 'colacion') {
+            const tieneColacionActiva = await MarcacionesService.verificarColacionActiva(usuarioEmpresa.id);
+            
+            // Si no tiene colación activa, está iniciando colación
+            if (!tieneColacionActiva) {
+                // Validar que esté dentro del horario de colación del turno
+                if (turno.colacion_inicio && turno.colacion_fin) {
+                    // TODO: Agregar validación de horario de colación
+                    console.log('Iniciando colación dentro del horario permitido');
+                }
+            } else {
+                // Si tiene colación activa, está terminando colación
+                console.log('Terminando colación');
+            }
+        }
+        
+        // Validar tolerancia 
         if (['entrada'].includes(tipo)) {
             console.log("Validando tolerancia para tipo:", tipo);
             const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
@@ -147,7 +172,6 @@ const registrarMarcacion = async (req, res) => {
                 console.log(`Marcación de ${tipo} a tiempo o anticipada. Diferencia:`, diferencia.formato);
             }  
         }
-        // Validar tiempo mínimo entre marcaciones
 
         const result = await MarcacionesService.registrarMarcacion(
             usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
@@ -165,13 +189,15 @@ const registrarMarcacion = async (req, res) => {
             });
         }
 
-        // Calcular diferencia de tiempo con respecto al turno
-        const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
-        const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
-        
-        if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
-            result.tarde = true;
-            result.diferencia = diferencia.formato;
+        // Calcular diferencia de tiempo con respecto al turno (solo para entrada/salida)
+        if (['entrada', 'salida'].includes(tipo)) {
+            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
+            
+            if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
+                result.tarde = true;
+                result.diferencia = diferencia.formato;
+            }
         }
 
         // Lógica específica para entrada (lugar y domicilio)
@@ -218,101 +244,13 @@ const registrarSalida = async (req, res) => {
 };
 
 const registrarColacion = async (req, res) => {
-    try {
-        const { geo_lat, geo_lon, ip_cliente } = req.body;
-        const usuario_id = req.user?.id;
-        
-        if (!usuario_id || !geo_lat || !geo_lon || !ip_cliente) {
-            return res.status(400).json({
-                success: false,
-                message: 'Faltan datos requeridos para registrar la colación.'
-            });
-        }
-        
-
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
-        if (!userEmpresa) {
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró la información de la empresa del usuario.'
-            });
-        }
-
-        const result = await MarcacionesService.registrarMarcacion(
-            userEmpresa.id, 'colacion', geo_lat, geo_lon, ip_cliente
-        );
-        if (!result.success) {
-            return res.status(500).json(result);
-        }
-        // Procesar notificación de colación de forma asíncrona (no bloquea la respuesta)
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id)
-            .catch(error => console.error('Error en notificación de colación:', error));
-        return res.status(200).json(result);
-    } catch (error) {
-        console.error('Error en registrarColacion:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
+    req.body.tipo = 'colacion';
+    return await registrarMarcacion(req, res);
 };
 
 const registrarTerminoColacion = async (req, res) => {
-    try {
-        const { geo_lat, geo_lon, ip_cliente } = req.body;
-        const usuario_id = req.user?.id;
-        
-        if (!usuario_id || !geo_lat || !geo_lon || !ip_cliente) {
-            return res.status(400).json({
-                success: false,
-                message: 'Faltan datos requeridos para terminar la colación.'
-            });
-        }
-        
-    const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
-        if (!userEmpresa) {
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró la información de la empresa del usuario.'
-            });
-        }
-
-        // Verificar que tiene una colación activa
-        const tieneColacionActiva = await MarcacionesService.verificarColacionActiva(userEmpresa.id);
-
-        if (!tieneColacionActiva) {
-            return res.status(400).json({
-                success: false,
-                message: 'No tienes una colación activa para terminar.'
-            });
-        }
-        
-        
-
-        
-
-        // Cambiar 'termino_colacion' por 'colacion'
-        const result = await MarcacionesService.registrarMarcacion(
-            userEmpresa.id, 'colacion', geo_lat, geo_lon, ip_cliente
-        );
-        
-        if (!result.success) {
-            return res.status(500).json(result);
-        }
-        
-        // Procesar notificación de término de colación de forma asíncrona
-        NotificacionService.procesarNotificacionMarcacion(usuario_id, result.data.id)
-            .catch(error => console.error('Error en notificación de término de colación:', error));
-        
-        return res.status(200).json(result);
-        
-    } catch (error) {
-        console.error('Error en registrarTerminoColacion:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
+    req.body.tipo = 'colacion';
+    return await registrarMarcacion(req, res);
 };
 
 const obtenerMarcacionesPorUsuario = async (req, res) => {
