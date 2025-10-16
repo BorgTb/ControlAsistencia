@@ -196,7 +196,7 @@
           </router-link>
 
           <!-- Marcaciones -->
-          <router-link
+          <router-link v-show="!esEst"
             to="/empresa/lugares"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"

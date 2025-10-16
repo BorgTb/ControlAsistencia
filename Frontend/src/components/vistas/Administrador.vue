@@ -48,7 +48,7 @@
           </div>
 
           <!-- 2. Control de Turnos -->
-          <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200">
+          <div v-show="!esEst" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200">
             <div class="p-6">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -67,7 +67,7 @@
                 <p class="text-sm text-gray-600 mb-4">
                   Asigne, modifique y gestione turnos de trabajo. Registre fechas de asignación y cambios de turno.
                 </p>
-                <div class="flex space-x-2">
+                <div  class="flex space-x-2">
                   <button @click="irATurnos" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
                     Asignar Turno
                   </button>
@@ -100,10 +100,10 @@
                   Agregue o modifique marcaciones cuando sea necesario, con registro de cambios y consentimiento del trabajador.
                 </p>
                 <div class="flex space-x-2">
-                  <button @click="irAMarcaciones" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                  <button @click="irAMarcacionesModificar" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
                     Modificar
                   </button>
-                  <button @click="irAMarcaciones" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                  <button v-show="!esEst" @click="irAMarcaciones" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
                     Historial
                   </button>
                 </div>
@@ -293,6 +293,8 @@
 import HeaderAdmin from '../components/headerEmpresa.vue';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth } from '../../composables/useAuth.js';
+const { esEst, esEmpleador } = useAuth();
 
 const router = useRouter();
 
@@ -345,6 +347,9 @@ const irATurnos = () => {
 
 const irAMarcaciones = () => {
   router.push('/empresa/historial-solicitudes');
+};
+const irAMarcacionesModificar = () => {
+  router.push('/empresa/marcaciones');
 };
 </script>
 
