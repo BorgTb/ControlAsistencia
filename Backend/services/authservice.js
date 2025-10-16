@@ -99,15 +99,16 @@ const loginUser = async (email, password, ip_address = null) => {
     
     const user = await UserModel.findByEmail(email);
     
-    console.log('Usuario encontrado para login:', user);
     
 
     if (!user) {
         throw new Error('User not found');
     }
     
-
+    console.log('User found:', user);
     const isPasswordValid = await bcrypt.compare(password, user.password);
+
+
 
     if (!isPasswordValid) {
         throw new Error('Invalid password');
@@ -136,19 +137,21 @@ const loginUser = async (email, password, ip_address = null) => {
     if (user.estado !== 1) {
         throw new Error('User account is inactive');
     }
-
+    
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
+    const empresaId = usuarioEmpresas ? usuarioEmpresas.empresa_id : null;
+    const empresaRut = usuarioEmpresas ? usuarioEmpresas.empresa_rut : null;
 
-    console.log('UsuarioEmpresa:', usuarioEmpresas);
- // Generate token
-    const token = generateToken(user, usuarioEmpresas.empresa_id);
+    // Generate token
+    const token = generateToken(user, empresaId);
+
 
 
     let est = false;
 
     // si es empleador verificar si su empresa es est
     if(user.rol === 'empleador'){
-        est = await verificarEst(usuarioEmpresas.empresa_id);
+        est = await verificarEst(empresaId);
     }
 
     // Registrar inicio de sesión en auditoría con información completa
@@ -178,7 +181,7 @@ const loginUser = async (email, password, ip_address = null) => {
             apellido_mat: user.apellido_mat,
             email: user.email,
             rol: user.rol,
-            rut: usuarioEmpresas.empresa_rut,
+            rut: empresaRut,
             estado: user.estado,
             est: est
         }
