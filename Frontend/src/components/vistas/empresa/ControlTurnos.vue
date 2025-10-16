@@ -34,7 +34,7 @@
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio (Base)</label>
                   <input 
                     type="time" 
                     v-model="formTipoTurno.hora_inicio" 
@@ -43,7 +43,7 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fin</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fin (Base)</label>
                   <input 
                     type="time" 
                     v-model="formTipoTurno.hora_fin" 
@@ -72,32 +72,45 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Días Trabajo</label>
-                  <input 
-                    type="number" 
-                    v-model.number="formTipoTurno.dias_trabajo" 
-                    min="1"
-                    max="7"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  />
+              <!-- Días de la semana -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Días de Trabajo</label>
+                <div class="space-y-2">
+                  <div v-for="(dia, index) in diasSemana" :key="dia.value" class="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                    <input 
+                      type="checkbox" 
+                      :id="`dia-${dia.value}`"
+                      v-model="dia.trabaja"
+                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label :for="`dia-${dia.value}`" class="flex-1 text-sm font-medium text-gray-700">
+                      {{ dia.label }}
+                    </label>
+                    <div v-if="dia.trabaja" class="flex space-x-2">
+                      <input 
+                        type="time" 
+                        v-model="dia.hora_inicio"
+                        placeholder="Hora inicio"
+                        class="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      <input 
+                        type="time" 
+                        v-model="dia.hora_fin"
+                        placeholder="Hora fin"
+                        class="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Días Descanso</label>
-                  <input 
-                    type="number" 
-                    v-model.number="formTipoTurno.dias_descanso" 
-                    min="0"
-                    max="7"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                  Deja los horarios vacíos para usar el horario base del turno
+                </p>
               </div>
 
               <button 
-                type="submit" 
-                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                type="submit"
+                :disabled="!hayAlMenosUnDiaSeleccionado"
+                class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
               >
                 Crear Tipo de Turno
               </button>
@@ -122,7 +135,7 @@
                     :key="trabajador.id" 
                     :value="trabajador.id"
                   >
-                    {{ trabajador }} {{ trabajador.usuario_apellido_pat }}
+                    {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }}
                   </option>
                 </select>
               </div>
@@ -130,7 +143,8 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Turno</label>
                 <select 
-                  v-model="formAsignacion.tipo_turno_id" 
+                  v-model="formAsignacion.tipo_turno_id"
+                  @change="onTipoTurnoChange"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
@@ -140,9 +154,22 @@
                     :key="tipoTurno.id" 
                     :value="tipoTurno.id"
                   >
-                    {{ tipoTurno.nombre }} ({{ tipoTurno.hora_inicio }} - {{ tipoTurno.hora_fin }})
+                    {{ tipoTurno.nombre }} - ({{tipoTurno.hora_inicio}} - {{tipoTurno.hora_fin}})
                   </option>
                 </select>
+              </div>
+
+              <!-- Mostrar detalle del turno seleccionado -->
+              <div v-if="turnoSeleccionado" class="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                <p class="font-medium text-blue-900 mb-2">Detalle del turno:</p>
+                <p class="text-blue-700">Horario base: {{ turnoSeleccionado.hora_inicio }} - {{ turnoSeleccionado.hora_fin }}</p>
+                <p class="text-blue-700 mt-1">Días laborables:</p>
+                <ul class="list-disc list-inside text-blue-600 ml-2">
+                  <li v-for="dia in turnoSeleccionado.dias.filter(d => d.trabaja)" :key="dia.dia_semana">
+                    {{ dia.dia_semana.charAt(0).toUpperCase() + dia.dia_semana.slice(1) }}
+                    <span v-if="dia.hora_inicio"> ({{ dia.hora_inicio }} - {{ dia.hora_fin }})</span>
+                  </li>
+                </ul>
               </div>
 
               <div>
@@ -207,7 +234,7 @@
                   <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trabajador</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Turno</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horario</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días Laborables</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Período</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -228,24 +255,36 @@
                         </div>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {{ turno.tipo }}
-                      </span>
+                    <td class="px-6 py-4">
+                      <div>
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          {{ turno.tipo }}
+                        </span>
+                        <div class="text-xs text-gray-500 mt-1">
+                          {{ turno.inicio }} - {{ turno.fin }}
+                        </div>
+                      </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ turno.inicio }} - {{ turno.fin }}
-                      <div v-if="turno.colacion_inicio" class="text-xs text-gray-500">
-                        Colación: {{ turno.colacion_inicio }} - {{ turno.colacion_fin }}
+                    <td class="px-6 py-4">
+                      <div class="text-xs text-gray-600">
+                        <span v-for="(dia, idx) in turno.dias_laborables" :key="idx" 
+                              class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-1 mb-1">
+                          {{ dia.substr(0, 3) }}
+                        </span>
                       </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {{ formatearFecha(turno.fecha_inicio) }}
                       <span v-if="turno.fecha_fin"> - {{ formatearFecha(turno.fecha_fin) }}</span>
+                      <span v-else class="text-green-600"> - Indefinido</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span 
-                        :class="turno.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                        :class="{
+                          'bg-green-100 text-green-800': turno.estado === 'activo',
+                          'bg-gray-100 text-gray-800': turno.estado === 'finalizado',
+                          'bg-yellow-100 text-yellow-800': turno.estado === 'suspendido'
+                        }"
                         class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
                       >
                         {{ turno.estado }}
@@ -253,6 +292,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button 
+                        v-if="turno.estado === 'activo'"
                         @click="eliminarTurnoAction(turno.id)"
                         class="text-red-600 hover:text-red-900"
                       >
@@ -314,12 +354,24 @@ const trabajadores = ref([]);
 const tiposTurnos = ref([]);
 const turnosAsignados = ref([]);
 const cargando = ref(false);
+const turnoSeleccionado = ref(null);
 
 const notificacion = ref({
   mostrar: false,
   tipo: 'success',
   mensaje: ''
 });
+
+// Días de la semana
+const diasSemana = ref([
+  { value: 'lunes', label: 'Lunes', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'martes', label: 'Martes', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'miércoles', label: 'Miércoles', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'jueves', label: 'Jueves', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'viernes', label: 'Viernes', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'sábado', label: 'Sábado', trabaja: false, hora_inicio: '', hora_fin: '' },
+  { value: 'domingo', label: 'Domingo', trabaja: false, hora_inicio: '', hora_fin: '' }
+]);
 
 // Formularios
 const formTipoTurno = reactive({
@@ -341,6 +393,10 @@ const formAsignacion = reactive({
 });
 
 // Computed
+const hayAlMenosUnDiaSeleccionado = computed(() => {
+  return diasSemana.value.some(dia => dia.trabaja);
+});
+
 const turnosFiltrados = computed(() => {
   let turnos = turnosAsignados.value;
 
@@ -379,13 +435,32 @@ const cerrarNotificacion = () => {
 
 const guardarTipoTurno = async () => {
   try {
-    await crearTipoTurno(formTipoTurno);
+    if (!hayAlMenosUnDiaSeleccionado.value) {
+      mostrarNotificacion('error', 'Debe seleccionar al menos un día de trabajo');
+      return;
+    }
+
+    const diasData = diasSemana.value
+      .filter(dia => dia.trabaja)
+      .map(dia => ({
+        dia_semana: dia.value,
+        trabaja: true,
+        hora_inicio: dia.hora_inicio || null,
+        hora_fin: dia.hora_fin || null
+      }));
+
+    const tipoTurnoData = {
+      ...formTipoTurno,
+      dias: diasData
+    };
+
+    await crearTipoTurno(tipoTurnoData);
     mostrarNotificacion('success', 'Tipo de turno creado exitosamente');
     limpiarFormTipoTurno();
     await cargarTiposTurnos();
   } catch (error) {
     console.error('Error al crear tipo de turno:', error);
-    mostrarNotificacion('error', 'Error al crear el tipo de turno');
+    mostrarNotificacion('error', error.response?.data?.message || 'Error al crear el tipo de turno');
   }
 };
 
@@ -423,12 +498,19 @@ const limpiarFormTipoTurno = () => {
     else if (key === 'dias_descanso') formTipoTurno[key] = 2;
     else formTipoTurno[key] = '';
   });
+  
+  diasSemana.value.forEach(dia => {
+    dia.trabaja = false;
+    dia.hora_inicio = '';
+    dia.hora_fin = '';
+  });
 };
 
 const limpiarFormAsignacion = () => {
   Object.keys(formAsignacion).forEach(key => {
     formAsignacion[key] = '';
   });
+  turnoSeleccionado.value = null;
 };
 
 const formatearFecha = (fecha) => {
@@ -451,6 +533,7 @@ const cargarTrabajadores = async () => {
 const cargarTiposTurnos = async () => {
   try {
     const response = await obtenerTiposTurnos();
+    console.log('Respuesta de tippos de turnos : ', response)
     tiposTurnos.value = response || [];
   } catch (error) {
     console.error('Error al cargar tipos de turnos:', error);
@@ -461,10 +544,25 @@ const cargarTiposTurnos = async () => {
 const fetchTurnos = async () => {
   try {
     const response = await obtenerTurnos();
-    turnosAsignados.value = response || [];
+    
+    // Procesar turnos para incluir días laborables
+    turnosAsignados.value = (response || []).map(turno => {
+      const tipoTurno = tiposTurnos.value.find(t => t.id === turno.tipo_turno_id);
+      const diasLaborables = tipoTurno?.dias?.filter(d => d.trabaja).map(d => d.dia_semana) || [];
+      
+      return {
+        ...turno,
+        dias_laborables: diasLaborables
+      };
+    });
   } catch (error) {
     console.error('Error al obtener turnos:', error);
   }
+};
+
+const onTipoTurnoChange = () => {
+  const turno = tiposTurnos.value.find(t => t.id == formAsignacion.tipo_turno_id);
+  turnoSeleccionado.value = turno || null;
 };
 
 onMounted(async () => {

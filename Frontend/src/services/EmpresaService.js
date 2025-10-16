@@ -170,6 +170,17 @@ class EmpresaServices{
     }
   }
 
+  // Nuevo: Obtener detalle de tipo de turno
+  static async obtenerDetalleTipoTurno(id) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/tipos-turnos/${id}`)
+      return response.data.data
+    } catch (error) {
+      console.error('Error obteniendo detalle de tipo de turno:', error)
+      throw error
+    }
+  }
+
   // Actualizar: createTurno ahora crea asignación
   static async createTurno(asignacionData) {
     try {

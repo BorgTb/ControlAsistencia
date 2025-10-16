@@ -77,23 +77,63 @@ class AsignacionTurnosModel {
             SELECT 
                 at.*,
                 tt.nombre as tipo_turno_nombre,
-                tt.hora_inicio,
-                tt.hora_fin,
+                tt.hora_inicio as turno_hora_inicio,
+                tt.hora_fin as turno_hora_fin,
                 tt.colacion_inicio,
                 tt.colacion_fin,
                 tt.dias_trabajo,
-                tt.dias_descanso
+                tt.dias_descanso,
+                dd.dia_semana,
+                dd.trabaja,
+                dd.hora_inicio as dia_hora_inicio,
+                dd.hora_fin as dia_hora_fin
             FROM asignacion_turnos at
             INNER JOIN tipo_turnos tt ON at.tipo_turno_id = tt.id
+            LEFT JOIN detalle_dias_turno dd ON tt.id = dd.tipo_turno_id
             WHERE at.usuario_empresa_id = ?
             AND at.estado = 'activo'
             AND at.fecha_inicio <= ?
             AND (at.fecha_fin IS NULL OR at.fecha_fin >= ?)
             ORDER BY at.fecha_inicio DESC
-            LIMIT 1
         `;
         const [rows] = await pool.query(query, [usuarioEmpresaId, fechaBusqueda, fechaBusqueda]);
-        return rows[0];
+        
+        if (rows.length > 0) {
+            // Obtener el día de la semana de la fecha
+            const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const fechaObj = new Date(fechaBusqueda + 'T00:00:00');
+            const diaSemana = diasSemana[fechaObj.getDay()];
+            
+            // Buscar configuración específica para este día
+            const diaConfig = rows.find(r => r.dia_semana === diaSemana && r.trabaja);
+            
+            if (diaConfig) {
+                return {
+                    ...rows[0],
+                    hora_inicio: diaConfig.dia_hora_inicio || rows[0].turno_hora_inicio,
+                    hora_fin: diaConfig.dia_hora_fin || rows[0].turno_hora_fin,
+                    dia_semana: diaSemana,
+                    trabaja: true
+                };
+            } else {
+                // Verificar si el día está configurado como no laborable
+                const diaNoLaboral = rows.find(r => r.dia_semana === diaSemana && !r.trabaja);
+                if (diaNoLaboral) {
+                    return null; // No trabaja este día
+                }
+                
+                // Si no hay configuración específica, usar horarios base
+                return {
+                    ...rows[0],
+                    hora_inicio: rows[0].turno_hora_inicio,
+                    hora_fin: rows[0].turno_hora_fin,
+                    dia_semana: diaSemana,
+                    trabaja: true
+                };
+            }
+        }
+        
+        return null;
     }
 
     static async create(data) {
@@ -169,6 +209,17 @@ class AsignacionTurnosModel {
             ORDER BY at.fecha_inicio DESC
         `;
         const [rows] = await pool.query(query, [rutEmpresa]);
+        return rows;
+    }
+
+    static async getDiasLaborablesByTipoTurno(tipoTurnoId) {
+        const query = `
+            SELECT dia_semana, trabaja, hora_inicio, hora_fin
+            FROM detalle_dias_turno
+            WHERE tipo_turno_id = ?
+            ORDER BY FIELD(dia_semana, 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo')
+        `;
+        const [rows] = await pool.query(query, [tipoTurnoId]);
         return rows;
     }
 }

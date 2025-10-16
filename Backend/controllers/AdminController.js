@@ -118,7 +118,7 @@ const createTrabajador = async (req, res) => {
 // Nuevo: Obtener tipos de turno disponibles
 const obtenerTiposTurnos = async (req, res) => {
     try {
-        const tiposTurnos = await TipoTurnosModel.getAll();
+        const tiposTurnos = await TipoTurnosModel.getAllWithDias();
         res.status(200).json({
             success: true,
             data: tiposTurnos
@@ -152,6 +152,14 @@ const crearTipoTurno = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Nombre, hora de inicio y hora de fin son requeridos"
+            });
+        }
+
+        // Validar que se proporcionen días de trabajo
+        if (!tipoTurnoData.dias || !Array.isArray(tipoTurnoData.dias) || tipoTurnoData.dias.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Debe especificar al menos un día de trabajo"
             });
         }
 

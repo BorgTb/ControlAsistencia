@@ -910,10 +910,13 @@ const actualizarHorasLaborales = async (req, res) => {
     }
 };
 
-// Nuevo: Obtener tipos de turno disponibles
+// Nuevo: Obtener tipos de turno disponibles para la empresa del usuario
 const obtenerTiposTurnos = async (req, res) => {
     try {
-        const tiposTurnos = await TipoTurnosModel.getAll();
+        const empresa_id = req.user.empresa_id
+        // Obtener solo los tipos de turno de la empresa
+        const tiposTurnos = await TipoTurnosModel.getByEmpresaId(empresa_id);
+        
         res.status(200).json({
             success: true,
             data: tiposTurnos
@@ -942,6 +945,16 @@ const crearTipoTurno = async (req, res) => {
             });
         }
 
+        // Obtener empresa del usuario
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        
+        if (!empresa) {
+            return res.status(404).json({
+                success: false,
+                message: "Empresa no encontrada para el usuario"
+            });
+        }
+
         // Validar campos requeridos
         if (!tipoTurnoData.nombre || !tipoTurnoData.hora_inicio || !tipoTurnoData.hora_fin) {
             return res.status(400).json({
@@ -949,6 +962,17 @@ const crearTipoTurno = async (req, res) => {
                 message: "Nombre, hora de inicio y hora de fin son requeridos"
             });
         }
+
+        // Validar que se proporcionen días de trabajo
+        if (!tipoTurnoData.dias || !Array.isArray(tipoTurnoData.dias) || tipoTurnoData.dias.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Debe especificar al menos un día de trabajo"
+            });
+        }
+
+        // Agregar empresa_id al tipo de turno
+        tipoTurnoData.empresa_id = empresa.empresa_id;
 
         const nuevoTipoId = await TipoTurnosModel.create(tipoTurnoData);
 
@@ -960,7 +984,7 @@ const crearTipoTurno = async (req, res) => {
                     accion: 'crear_tipo_turno',
                     tabla_afectada: 'tipo_turnos',
                     registro_id: nuevoTipoId,
-                    descripcion: `Tipo de turno creado: ${tipoTurnoData.nombre}`,
+                    descripcion: `Tipo de turno creado: ${tipoTurnoData.nombre} - Empresa: ${empresa.emp_nombre || empresa.empresa_id}`,
                     datos_nuevos: JSON.stringify(tipoTurnoData),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
