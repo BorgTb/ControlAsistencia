@@ -349,6 +349,15 @@ class EmpresaServices{
     }
   }
 
+  static async deleteTipoTurno(tipoTurnoId) {
+    try {
+      const response = await apiClient.delete(`/userEmpresa/tipos-turnos/${tipoTurnoId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
   /**
    * Obtiene las horas trabajadas en la semana actual para un trabajador específico
    * @param {number} usuarioEmpresaId - ID del usuario en la tabla usuario_empresa

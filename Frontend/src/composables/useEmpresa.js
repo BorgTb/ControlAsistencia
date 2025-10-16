@@ -126,6 +126,16 @@ export function useEmpresa() {
     }
   };
 
+  const eliminarTipoTurno = async (tipoTurnoId) => {
+    try {
+      const response = await EmpresaServices.deleteTipoTurno(tipoTurnoId);
+      return response;
+    } catch (error) {
+      console.error("Error al eliminar tipo de turno:", error);
+      throw error;
+    }
+  };
+
   const obtenerTiposTurnos = async () => {
     try {
       const response = await EmpresaServices.obtenerTiposTurnos();
@@ -161,6 +171,7 @@ export function useEmpresa() {
     eliminarTurno,
     obtenerHorasSemanales,
     obtenerTiposTurnos,
-    crearTipoTurno
+    crearTipoTurno,
+    eliminarTipoTurno
   };
 }

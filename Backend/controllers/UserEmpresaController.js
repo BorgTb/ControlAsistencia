@@ -933,6 +933,68 @@ const obtenerTiposTurnos = async (req, res) => {
     }
 };
 
+// Nuevo: Eliminar tipo de turno por ID
+const eliminarTipoTurno = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const USR_PETICION = req.user;
+        const empresa_id = req.user.empresa_id;
+        // Validar que sea empleador o admin
+        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para eliminar tipos de turno"
+            });
+        }
+        // Verificar que el tipo de turno pertenece a la empresa del usuario
+        const tipoTurno = await TipoTurnosModel.getById(id);
+        if (!tipoTurno || tipoTurno.empresa_id !== empresa_id) {
+            return res.status(404).json({
+                success: false,
+                message: "Tipo de turno no encontrado"
+            });
+        }
+        // Eliminar el tipo de turno
+        const resultado = await TipoTurnosModel.delete(id);
+        if (resultado === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No se pudo eliminar el tipo de turno"
+            });
+        }
+        // Registrar en auditoría
+        if (req.user && req.user.id) {
+            try {
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'eliminar_tipo_turno',
+                    tabla_afectada: 'tipo_turnos',
+                    registro_id: id,
+                    descripcion: `Tipo de turno eliminado: ${tipoTurno.nombre} - Empresa ID: ${empresa_id}`,
+                    datos_anteriores: JSON.stringify(tipoTurno),
+                    datos_nuevos: null,
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Eliminación de tipo de turno registrada en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar eliminación de tipo de turno en auditoría:', auditError);
+            }
+        }
+        res.status(200).json({
+            success: true,
+            message: "Tipo de turno eliminado exitosamente"
+        });
+    } catch (error) {
+        console.error("Error eliminando tipo de turno:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al eliminar tipo de turno",
+            error: error.message
+        });
+    }
+};
+        
+
 // Nuevo: Crear tipo de turno
 const crearTipoTurno = async (req, res) => {
     try {
@@ -1021,6 +1083,7 @@ const AdminController = {
     deleteTurno,
     obtenerTurnos,
     obtenerTiposTurnos,
+    eliminarTipoTurno,
     crearTipoTurno,
     guardarConfiguracion,
     obtenerConfiguracion,

@@ -415,7 +415,7 @@
                           Ver
                         </button>
                         <button 
-                          @click="eliminarTipoTurno(tipo.id)"
+                          @click="eliminarTipoTurnoAction(tipo.id)"
                           :disabled="contarAsignaciones(tipo.id) > 0"
                           :class="[
                             'transition-colors',
@@ -568,7 +568,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import EmpresaServices from '../../../services/EmpresaService.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
-const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno } = useEmpresa();
+const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno } = useEmpresa();
 
 // Estados reactivos
 const tabActiva = ref('asignaciones');
@@ -659,7 +659,7 @@ const verDetalleTipoTurno = (turno) => {
   console.log('Estado del modal:', modalDetalleTurno.value);
 };
 
-const eliminarTipoTurno = async (id) => {
+const eliminarTipoTurnoAction = async (id) => {
   if (contarAsignaciones(id) > 0) {
     mostrarNotificacion('error', 'No se puede eliminar un tipo de turno con asignaciones activas');
     return;
@@ -668,10 +668,9 @@ const eliminarTipoTurno = async (id) => {
   if (!confirm('¿Está seguro de que desea eliminar este tipo de turno?')) return;
 
   try {
-    // Aquí deberías implementar la función en el backend y composable
-    // await eliminarTipoTurno(id);
-    mostrarNotificacion('info', 'Función de eliminación pendiente de implementación');
-    // await cargarTiposTurnos();
+    await eliminarTipoTurno(id);
+    await cargarTiposTurnos();
+    mostrarNotificacion('success', 'Tipo de turno eliminado exitosamente');
   } catch (error) {
     console.error('Error al eliminar tipo de turno:', error);
     mostrarNotificacion('error', 'Error al eliminar el tipo de turno');
@@ -806,7 +805,7 @@ const cargarTiposTurnos = async () => {
 const fetchTurnos = async () => {
   try {
     const response = await obtenerTurnos();
-      
+
     // Procesar turnos para incluir días laborables
     turnosAsignados.value = (response || []).map(turno => {
       const tipoTurno = tiposTurnos.value.find(t => t.id === turno.tipo_turno_id);

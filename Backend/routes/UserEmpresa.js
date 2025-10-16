@@ -18,6 +18,7 @@ router.post('/enrolar-trabajador',AuthService.verifyToken, UserEmpresaController
 // Rutas para tipos de turno
 router.get('/tipos-turnos', AuthService.verifyToken, UserEmpresaController.obtenerTiposTurnos);
 router.post('/tipos-turnos', AuthService.verifyToken, UserEmpresaController.crearTipoTurno);
+router.delete('/tipos-turnos/:id', AuthService.verifyToken, UserEmpresaController.eliminarTipoTurno);
 
 // Rutas para asignaciones de turnos
 router.post('/turnos',AuthService.verifyToken, UserEmpresaController.createTurno);
