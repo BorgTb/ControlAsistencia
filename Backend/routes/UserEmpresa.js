@@ -9,6 +9,7 @@ const router = express.Router();
 
 
 router.post('/trabajador',AuthService.verifyToken, UserEmpresaController.createTrabajador);
+router.get('/trabajadores',AuthService.verifyToken, UserEmpresaController.obtenerTrabajadores);
 router.get('/trabajador/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTrabajadores);
 router.get('/trabajador/:id/turnos',AuthService.verifyToken, UserEmpresaController.obtenerTurnosTrabajador);
 router.get('/trabajador/:id/marcaciones',AuthService.verifyToken, UserEmpresaController.obtenerMarcacionesTrabajador);

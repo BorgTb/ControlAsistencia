@@ -79,10 +79,10 @@
                 Registro completo de asistencia por trabajador, incluye ausencias, tardanzas y salidas anticipadas.
               </p>
               <div class="flex space-x-2">
-                <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <button @click="abrirModalReporte" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                   Generar
                 </button>
-                <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button @click="abrirModalReporte" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Vista Previa
                 </button>
               </div>
@@ -368,11 +368,19 @@
         </div>
       </div>
     </main>
+
+    <!-- Modal de Reporte de Asistencia -->
+    <ModalReporteAsistencia 
+      :isVisible="mostrarModalReporte"
+      @cerrar="cerrarModalReporte"
+      @exportar="exportarReporte"
+    />
   </div>
 </template>
 
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
+import ModalReporteAsistencia from '../../modals/ModalReporteAsistenciaSimple.vue';
 import { ref, onMounted } from 'vue';
 
 // Estados reactivos
@@ -384,6 +392,9 @@ const configuracion = ref({
   departamento: '',
   turno: ''
 });
+
+// Estado del modal de reporte de asistencia
+const mostrarModalReporte = ref(false);
 
 // Resumen de reportes del día actual
 // Debe recibir: { reportesGenerados: number, enviadosEmail: number, trabajadoresIncluidos: number, marcacionesProcesadas: number }
@@ -424,6 +435,24 @@ const getEstadoClass = (estado) => {
     'pendiente': 'bg-gray-100 text-gray-800'
   };
   return clases[estado.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
+
+// Funciones del modal de reporte
+const abrirModalReporte = () => {
+  console.log('Abriendo modal de reporte...');
+  mostrarModalReporte.value = true;
+  console.log('Estado del modal:', mostrarModalReporte.value);
+};
+
+const cerrarModalReporte = () => {
+  console.log('Cerrando modal de reporte...');
+  mostrarModalReporte.value = false;
+};
+
+const exportarReporte = (data) => {
+  console.log('Exportando reporte:', data);
+  // Aquí implementarías la lógica para exportar a PDF
+  cerrarModalReporte();
 };
 
 onMounted(() => {
