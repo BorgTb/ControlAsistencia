@@ -344,7 +344,7 @@ const irATurnos = () => {
 };
 
 const irAMarcaciones = () => {
-  router.push('/empresa/marcaciones');
+  router.push('/empresa/historial-solicitudes');
 };
 </script>
 

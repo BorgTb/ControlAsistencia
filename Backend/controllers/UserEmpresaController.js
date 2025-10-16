@@ -165,6 +165,81 @@ const createTurno = async (req, res) => {
             });
         }
 
+        // Validar si ya tiene turnos creados en el rango de fechas
+        // Obtener los días laborables del tipo de turno
+        const diasLaborables = await AsignacionTurnosModel.getDiasLaborablesByTipoTurno(asignacionData.tipo_turno_id);
+        
+        // Obtener turnos existentes del trabajador
+        const turnosExistentes = await AsignacionTurnosModel.getByUsuarioEmpresaId(asignacionData.usuario_empresa_id);
+        
+        // Filtrar solo los turnos activos en el rango de fechas del nuevo turno
+        const fechaInicio = new Date(asignacionData.fecha_inicio);
+        const fechaFin = asignacionData.fecha_fin ? new Date(asignacionData.fecha_fin) : null;
+        
+        const turnosEnRango = turnosExistentes.filter(turno => {
+            if (turno.estado !== 'activo') return false;
+            
+            const turnoInicio = new Date(turno.fecha_inicio);
+            const turnoFin = turno.fecha_fin ? new Date(turno.fecha_fin) : null;
+            
+            // Verificar si hay solapamiento de fechas
+            if (fechaFin) {
+                // El nuevo turno tiene fecha fin
+                if (turnoFin) {
+                    // Ambos tienen fecha fin
+                    return (turnoInicio <= fechaFin && (!turnoFin || turnoFin >= fechaInicio));
+                } else {
+                    // El turno existente no tiene fecha fin
+                    return turnoInicio <= fechaFin;
+                }
+            } else {
+                // El nuevo turno no tiene fecha fin
+                if (turnoFin) {
+                    // El turno existente tiene fecha fin
+                    return turnoFin >= fechaInicio;
+                } else {
+                    // Ninguno tiene fecha fin
+                    return true;
+                }
+            }
+        });
+        
+        // Si hay turnos en el rango, verificar conflictos por día
+        if (turnosEnRango.length > 0) {
+            const diasConflicto = [];
+            
+            for (const diaLabor of diasLaborables) {
+                if (diaLabor.trabaja) {
+                    // Verificar si algún turno existente también trabaja este día
+                    for (const turnoExistente of turnosEnRango) {
+                        const diasTurnoExistente = await AsignacionTurnosModel.getDiasLaborablesByTipoTurno(turnoExistente.tipo_turno_id);
+                        
+                        const conflicto = diasTurnoExistente.find(d => 
+                            d.dia_semana === diaLabor.dia_semana && d.trabaja
+                        );
+                        
+                        if (conflicto) {
+                            diasConflicto.push({
+                                dia: diaLabor.dia_semana,
+                                turnoExistente: turnoExistente.tipo_turno_nombre || 'Turno existente',
+                                fechaInicio: turnoExistente.fecha_inicio,
+                                fechaFin: turnoExistente.fecha_fin
+                            });
+                            break; // Ya encontramos un conflicto para este día
+                        }
+                    }
+                }
+            }
+            
+            if (diasConflicto.length > 0) {
+                return res.status(409).json({ 
+                    success: false, 
+                    message: "El trabajador ya tiene turnos asignados en los siguientes días",
+                    conflictos: diasConflicto
+                });
+            }
+        }
+
         // Crear la asignación de turno
         const asignacionId = await AsignacionTurnosModel.create(asignacionData);
 
