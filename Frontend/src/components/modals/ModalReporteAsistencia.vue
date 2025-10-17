@@ -12,7 +12,7 @@
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-medium text-gray-900">
-                Reporte de Asistencia Semanal
+                Reporte de Asistencia Semanaladasdadaadsd
               </h3>
               <p class="text-sm text-gray-500">
                 Semana del {{ fechaInicio }} al {{ fechaFin }}
@@ -26,6 +26,8 @@
           </div>
         </div>
 
+        <!-- Modal content -->
+        <div class="px-6 py-4">
           <!-- Debug info -->
           <div class="mb-4 p-4 bg-blue-50 rounded">
             <p class="text-sm text-blue-700">Debug: Modal cargado correctamente</p>
