@@ -209,7 +209,12 @@
             <!-- Dirección -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Calle</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Calle
+                  <span v-if="obteniendoDireccion" class="text-xs text-blue-600 ml-2">
+                    (Obteniendo dirección...)
+                  </span>
+                </label>
                 <input
                   v-model="formulario.calle"
                   type="text"
@@ -284,9 +289,14 @@
             <!-- Coordenadas -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Latitud</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Latitud
+                  <span v-if="obteniendoCoordenadas" class="text-xs text-purple-600 ml-2">
+                    (Buscando...)
+                  </span>
+                </label>
                 <input
-                  v-model="formulario.lat"
+                  v-model.number="formulario.lat"
                   type="number"
                   step="any"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -296,13 +306,70 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
                 <input
-                  v-model="formulario.lon"
+                  v-model.number="formulario.lon"
                   type="number"
                   step="any"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="-70.6693"
                 />
               </div>
+            </div>
+
+            <!-- Botones de geolocalización -->
+            <div class="flex justify-between items-center">
+              <button
+                type="button"
+                @click="obtenerCoordenadasDesdeDireccion"
+                :disabled="obteniendoCoordenadas || !formulario.calle"
+                class="text-sm text-purple-600 hover:text-purple-800 flex items-center space-x-1 disabled:opacity-50"
+                title="Buscar coordenadas basándose en la dirección ingresada"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <span>{{ obteniendoCoordenadas ? 'Buscando coordenadas...' : 'Buscar coordenadas por dirección' }}</span>
+              </button>
+              
+              <button
+                type="button"
+                @click="obtenerUbicacionActual"
+                :disabled="obteniendoUbicacion"
+                class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 disabled:opacity-50"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span>{{ obteniendoUbicacion ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual' }}</span>
+              </button>
+            </div>
+
+            <!-- Mapa Interactivo -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Ubicación en el Mapa
+                <span class="text-xs text-gray-500 ml-2">(Arrastra el marcador o haz clic en el mapa)</span>
+              </label>
+              
+              <!-- Indicador de obtención de ubicación -->
+              <div v-if="obteniendoUbicacion" class="mb-3 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-md flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                <span class="text-sm">Obteniendo tu ubicación actual...</span>
+              </div>
+
+              <!-- Indicador de obtención de dirección -->
+              <div v-if="obteniendoDireccion" class="mb-3 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                <span class="text-sm">Obteniendo dirección aproximada...</span>
+              </div>
+
+              <!-- Indicador de búsqueda de coordenadas -->
+              <div v-if="obteniendoCoordenadas" class="mb-3 bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2 rounded-md flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                <span class="text-sm">Buscando coordenadas de la dirección...</span>
+              </div>
+              
+              <div id="map" class="w-full h-80 rounded-md border border-gray-300"></div>
             </div>
 
             <!-- Estado -->
@@ -348,9 +415,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useAuth } from '../../../composables/useAuth.js';
 import LugarService from '../../../services/LugarService.js';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix para los iconos de Leaflet en Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const { user } = useAuth();
 
@@ -361,6 +438,15 @@ const guardando = ref(false);
 const mostrarModal = ref(false);
 const modoEdicion = ref(false);
 const error = ref(null);
+
+// Estados para el mapa
+let map = null;
+let marker = null;
+const mapReady = ref(false);
+const obteniendoUbicacion = ref(false);
+const obteniendoDireccion = ref(false);
+const obteniendoCoordenadas = ref(false);
+const busquedaDireccionTimeout = ref(null);
 
 // Filtros
 const filtros = ref({
@@ -425,8 +511,43 @@ const cargarLugares = async () => {
   }
 };
 
-const abrirModalNuevo = () => {
+const abrirModalNuevo = async () => {
   modoEdicion.value = false;
+  
+  // Coordenadas por defecto (Santiago, Chile)
+  let coordenadasIniciales = {
+    lat: -33.45,
+    lon: -70.66
+  };
+
+  // Intentar obtener ubicación actual del dispositivo
+  if ('geolocation' in navigator) {
+    obteniendoUbicacion.value = true;
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          }
+        );
+      });
+      
+      coordenadasIniciales = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude
+      };
+      console.log('✓ Ubicación actual obtenida:', coordenadasIniciales);
+    } catch (err) {
+      console.log('⚠ No se pudo obtener la ubicación actual, usando coordenadas por defecto:', err.message);
+    } finally {
+      obteniendoUbicacion.value = false;
+    }
+  }
+
   formulario.value = {
     lugar_id: null,
     nombre: '',
@@ -437,12 +558,23 @@ const abrirModalNuevo = () => {
     comuna: '',
     ciudad: '',
     region: '',
-    lat: null,
-    lon: null,
+    lat: coordenadasIniciales.lat,
+    lon: coordenadasIniciales.lon,
     estado: 1
   };
   error.value = null;
   mostrarModal.value = true;
+  
+  // Obtener dirección de las coordenadas iniciales
+  if (coordenadasIniciales.lat !== -33.45 || coordenadasIniciales.lon !== -70.66) {
+    // Solo si no son las coordenadas por defecto
+    await obtenerDireccionDesdeCoordenadas(coordenadasIniciales.lat, coordenadasIniciales.lon);
+  }
+  
+  // Inicializar mapa después de que el modal sea visible
+  nextTick(() => {
+    inicializarMapa();
+  });
 };
 
 const editarLugar = (lugar) => {
@@ -457,12 +589,17 @@ const editarLugar = (lugar) => {
     comuna: lugar.comuna || '',
     ciudad: lugar.ciudad || '',
     region: lugar.region || '',
-    lat: lugar.lat,
-    lon: lugar.lon,
+    lat: lugar.lat || -33.45,
+    lon: lugar.lon || -70.66,
     estado: lugar.estado
   };
   error.value = null;
   mostrarModal.value = true;
+  
+  // Inicializar mapa después de que el modal sea visible
+  nextTick(() => {
+    inicializarMapa();
+  });
 };
 
 const guardarLugar = async () => {
@@ -515,7 +652,292 @@ const cerrarModal = () => {
   mostrarModal.value = false;
   modoEdicion.value = false;
   error.value = null;
+  
+  // Limpiar el mapa
+  if (map) {
+    map.remove();
+    map = null;
+    marker = null;
+    mapReady.value = false;
+  }
 };
+
+const obtenerUbicacionActual = async () => {
+  if (!('geolocation' in navigator)) {
+    error.value = 'Tu navegador no soporta geolocalización';
+    return;
+  }
+
+  obteniendoUbicacion.value = true;
+  error.value = null;
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    });
+
+    formulario.value.lat = position.coords.latitude;
+    formulario.value.lon = position.coords.longitude;
+    
+    console.log('✓ Ubicación actualizada:', {
+      lat: position.coords.latitude,
+      lon: position.coords.longitude,
+      precision: position.coords.accuracy
+    });
+
+    // Obtener dirección a partir de coordenadas (geocodificación inversa)
+    await obtenerDireccionDesdeCoordenadas(position.coords.latitude, position.coords.longitude);
+
+  } catch (err) {
+    console.error('Error al obtener ubicación:', err);
+    
+    let mensajeError = 'No se pudo obtener la ubicación actual';
+    
+    switch (err.code) {
+      case 1: // PERMISSION_DENIED
+        mensajeError = 'Permiso de ubicación denegado. Por favor, habilita el acceso a tu ubicación en la configuración del navegador.';
+        break;
+      case 2: // POSITION_UNAVAILABLE
+        mensajeError = 'Ubicación no disponible. Verifica tu conexión GPS.';
+        break;
+      case 3: // TIMEOUT
+        mensajeError = 'Tiempo de espera agotado al obtener ubicación.';
+        break;
+    }
+    
+    error.value = mensajeError;
+  } finally {
+    obteniendoUbicacion.value = false;
+  }
+};
+
+const obtenerDireccionDesdeCoordenadas = async (lat, lon) => {
+  try {
+    obteniendoDireccion.value = true;
+    console.log('🔍 Obteniendo dirección para coordenadas:', { lat, lon });
+    
+    // Usar la API de Nominatim de OpenStreetMap (geocodificación inversa)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'Accept-Language': 'es-CL,es;q=0.9' // Preferir español chileno
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al obtener la dirección');
+    }
+
+    const data = await response.json();
+    console.log('📍 Datos de dirección obtenidos:', data);
+
+    // Extraer información de la dirección
+    const address = data.address || {};
+    
+    // Actualizar formulario con la información obtenida
+    if (address.road) {
+      formulario.value.calle = address.road;
+    }
+    
+    if (address.house_number) {
+      formulario.value.numero = address.house_number;
+    }
+    
+    // Municipalidad/Comuna
+    if (address.municipality || address.city_district || address.suburb) {
+      formulario.value.comuna = address.municipality || address.city_district || address.suburb;
+    }
+    
+    // Ciudad
+    if (address.city || address.town || address.village) {
+      formulario.value.ciudad = address.city || address.town || address.village;
+    }
+    
+    // Región/Estado
+    if (address.state || address.region) {
+      formulario.value.region = address.state || address.region;
+    }
+
+    console.log('✓ Dirección actualizada en el formulario:', {
+      calle: formulario.value.calle,
+      numero: formulario.value.numero,
+      comuna: formulario.value.comuna,
+      ciudad: formulario.value.ciudad,
+      region: formulario.value.region
+    });
+
+  } catch (err) {
+    console.error('⚠ Error al obtener dirección:', err);
+    // No mostrar error al usuario, solo log en consola
+    // La geocodificación inversa es opcional
+  } finally {
+    obteniendoDireccion.value = false;
+  }
+};
+
+const obtenerCoordenadasDesdeDireccion = async () => {
+  // Construir la dirección completa
+  const partesDireccion = [
+    formulario.value.calle,
+    formulario.value.numero,
+    formulario.value.comuna,
+    formulario.value.ciudad,
+    formulario.value.region,
+    'Chile'
+  ].filter(Boolean);
+
+  if (partesDireccion.length < 2) {
+    // No hay suficiente información para buscar
+    return;
+  }
+
+  const direccionCompleta = partesDireccion.join(', ');
+
+  try {
+    obteniendoCoordenadas.value = true;
+    console.log('🔍 Buscando coordenadas para dirección:', direccionCompleta);
+
+    // Usar la API de Nominatim de OpenStreetMap (geocodificación directa)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccionCompleta)}&limit=1&countrycodes=cl`,
+      {
+        headers: {
+          'Accept-Language': 'es-CL,es;q=0.9'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al obtener coordenadas');
+    }
+
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const resultado = data[0];
+      const lat = parseFloat(resultado.lat);
+      const lon = parseFloat(resultado.lon);
+
+      console.log('📍 Coordenadas obtenidas:', { lat, lon, display_name: resultado.display_name });
+
+      // Actualizar las coordenadas en el formulario
+      formulario.value.lat = lat;
+      formulario.value.lon = lon;
+
+      // Actualizar el mapa si está listo
+      if (map && marker && mapReady.value) {
+        marker.setLatLng([lat, lon]);
+        map.setView([lat, lon], 16); // Zoom más cercano al encontrar una dirección
+      }
+
+      console.log('✓ Coordenadas actualizadas en el formulario');
+    } else {
+      console.log('⚠ No se encontraron coordenadas para la dirección proporcionada');
+    }
+
+  } catch (err) {
+    console.error('⚠ Error al obtener coordenadas:', err);
+    // No mostrar error al usuario, solo log en consola
+  } finally {
+    obteniendoCoordenadas.value = false;
+  }
+};
+
+const inicializarMapa = () => {
+  // Si ya existe un mapa, destruirlo primero
+  if (map) {
+    map.remove();
+    map = null;
+    marker = null;
+  }
+
+  // Esperar a que el contenedor del mapa esté en el DOM
+  setTimeout(() => {
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+
+    // Coordenadas por defecto (Santiago, Chile) o las del formulario
+    const lat = formulario.value.lat || -33.45;
+    const lng = formulario.value.lon || -70.66;
+
+    // Crear el mapa
+    map = L.map('map').setView([lat, lng], 13);
+
+    // Agregar capa de tiles de OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Agregar marcador arrastrable
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    // Actualizar coordenadas cuando se arrastra el marcador
+    marker.on('dragend', async () => {
+      const pos = marker.getLatLng();
+      formulario.value.lat = pos.lat;
+      formulario.value.lon = pos.lng;
+      
+      // Obtener dirección de la nueva posición
+      await obtenerDireccionDesdeCoordenadas(pos.lat, pos.lng);
+    });
+
+    // Actualizar marcador al hacer clic en el mapa
+    map.on('click', async (e) => {
+      const { lat, lng } = e.latlng;
+      marker.setLatLng([lat, lng]);
+      formulario.value.lat = lat;
+      formulario.value.lon = lng;
+      
+      // Obtener dirección de la nueva posición
+      await obtenerDireccionDesdeCoordenadas(lat, lng);
+    });
+
+    mapReady.value = true;
+  }, 100);
+};
+
+// Watch para actualizar el mapa cuando cambien las coordenadas manualmente
+watch(() => [formulario.value.lat, formulario.value.lon], ([newLat, newLon]) => {
+  if (map && marker && mapReady.value && newLat && newLon) {
+    marker.setLatLng([newLat, newLon]);
+    map.setView([newLat, newLon]);
+  }
+});
+
+// Watch para detectar cambios en la dirección y obtener coordenadas automáticamente
+watch(
+  () => [
+    formulario.value.calle,
+    formulario.value.numero,
+    formulario.value.comuna,
+    formulario.value.ciudad,
+    formulario.value.region
+  ],
+  () => {
+    // Limpiar timeout anterior
+    if (busquedaDireccionTimeout.value) {
+      clearTimeout(busquedaDireccionTimeout.value);
+    }
+
+    // Esperar 1.5 segundos después de que el usuario deje de escribir
+    busquedaDireccionTimeout.value = setTimeout(() => {
+      if (mostrarModal.value && !obteniendoUbicacion.value && !obteniendoDireccion.value) {
+        obtenerCoordenadasDesdeDireccion();
+      }
+    }, 1500);
+  }
+);
 
 const obtenerDireccionCompleta = (lugar) => {
   const partes = [
@@ -535,5 +957,24 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Estilos adicionales si son necesarios */
+/* Estilos para el mapa de Leaflet */
+#map {
+  z-index: 0;
+}
+
+/* Asegurar que los controles del mapa sean visibles */
+:deep(.leaflet-control-zoom) {
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+:deep(.leaflet-control-attribution) {
+  font-size: 10px;
+}
+
+/* Fix para iconos de marcadores de Leaflet */
+:deep(.leaflet-marker-icon) {
+  margin-left: -12px !important;
+  margin-top: -41px !important;
+}
 </style>
