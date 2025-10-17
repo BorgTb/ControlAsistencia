@@ -283,9 +283,8 @@ const obtenerAsistencias = async (req, res) => {
     };
     
     for (const trabajador of trabajadores) {    
-        console.log('----------------------------------------------');
         const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
-        
+        console.log('Marcaciones obtenidas para trabajador', trabajador.id, ':', marcaciones, 'Fechas:', fechaInicio, 'a', fechaFin);
         // Obtener el turno activo del trabajador para la fecha
         const TurnosModel = (await import('../model/TurnosModel.js')).default;
         const turnoActivo = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fechaInicio);
@@ -297,8 +296,7 @@ const obtenerAsistencias = async (req, res) => {
             // Validar estado de asistencia para cada fecha
             
             for (const [fecha, marcacionesDia] of Object.entries(marcaciones.marcaciones)) {
-              // aqui se obtiene el turno para la fecha
-                console.log(fecha, marcacionesDia);
+             
                 const turnoFecha = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fecha);
            
                 if (turnoFecha) {

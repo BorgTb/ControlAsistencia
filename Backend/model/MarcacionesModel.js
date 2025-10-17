@@ -55,7 +55,6 @@ class Marcaciones {
     }
 
     async getMarcacionesByUsuario(usuario_empresa_id, fechaInicio = null, fechaFin = null) {
-        console.log('usuario_empresa_id:', usuario_empresa_id, 'fechaInicio:', fechaInicio, 'fechaFin:', fechaFin);
         let query = `
             SELECT * FROM marcaciones
             WHERE usuario_empresa_id = ?
@@ -73,7 +72,6 @@ class Marcaciones {
             params.push(fechaFin);
         }
 
-        console.log('Final query:', query);
         
         query += ` ORDER BY fecha DESC, hora DESC`;
         const [rows] = await pool.execute(query, params);

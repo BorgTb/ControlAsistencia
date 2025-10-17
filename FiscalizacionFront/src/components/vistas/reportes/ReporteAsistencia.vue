@@ -757,7 +757,16 @@ const filteredData = computed(() => {
   
   // Filtro por turno específico
   if (filters.value.turnoEspecifico) {
-    data = data.filter(e => e.turnoEspecifico === filters.value.turnoEspecifico)
+    // Obtener el nombre del turno seleccionado sin paréntesis ni su contenido
+    const turnoSeleccionado = turnosDB.value.find(t => t.id === filters.value.turnoEspecifico)
+    if (turnoSeleccionado) {
+      const nombreTurnoSinParentesis = turnoSeleccionado.nombre.split('(')[0].trim()
+      // Filtrar comparando solo el nombre del turno sin paréntesis
+      data = data.filter(e => {
+        const nombreEmpleadoSinParentesis = e.turnoEspecifico.split('(')[0].trim()
+        return nombreEmpleadoSinParentesis === nombreTurnoSinParentesis
+      })
+    }
   }
   
   // Filtro por lugar de trabajo
@@ -841,9 +850,53 @@ const getStatusClass = (estado) => {
 }
 
 
-const applyFilters = () => {
-  // La funcionalidad de filtrado se maneja automáticamente con computed
-  console.log('Filtros aplicados según Art. 25:', filters.value)
+const cargarReporteConFiltros = async () => {
+  try {
+    console.log('🔍 Cargando datos con rango de fechas:', {
+      desde: filters.value.fechaDesde,
+      hasta: filters.value.fechaHasta
+    })
+    
+    // Solo enviar filtros de fecha al backend
+    // Los demás filtros se aplican en el frontend mediante el computed filteredData
+    const filtrosBackend = {
+      fecha_inicio: filters.value.fechaDesde,
+      fecha_fin: filters.value.fechaHasta
+    }
+    
+    // Llamar al backend solo con filtros de fecha
+    const rest = await obtenerReporteAsistencia(filtrosBackend)
+    console.log('📊 Datos recibidos de la API:', rest.data)
+    
+    // Verificar si la respuesta tiene la estructura esperada
+    if (rest?.data) {
+      // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
+      if (rest.data.trabajadores || rest.data.marcacionesAgrupadasPorUsuario) {
+        await loadData(rest.data)
+        console.log('✅ Datos cargados exitosamente:', empleados.value.length, 'registros de asistencia')
+        console.log('🎯 Los filtros de trabajador, cargo, región, etc. se aplican automáticamente en el frontend')
+      } 
+      // Estructura antigua (array directo)
+      else if (Array.isArray(rest.data)) {
+        await loadData(rest.data)
+        console.log('✅ Datos cargados exitosamente:', empleados.value.length, 'empleados')
+      } else {
+        console.warn('⚠️ Estructura de datos no reconocida')
+        await loadData()
+      }
+    } else {
+      console.warn('⚠️ No se recibieron datos válidos de la API')
+      await loadData()
+    }
+  } catch (error) {
+    console.error('❌ Error al cargar reporte con filtros:', error)
+    // En caso de error, mantener los datos actuales
+  }
+}
+
+const applyFilters = async () => {
+  // Llamar a la función empaquetada
+  await cargarReporteConFiltros()
 }
 
 const clearFilters = () => {
@@ -1307,31 +1360,11 @@ onMounted(async () => {
     
     cargandoFiltros.value = false;
     
-    // Cargar datos de asistencia
-    const rest = await obtenerReporteAsistencia(filters.value)
-    console.log('Datos recibidos de la API:', rest.data)
+    // Cargar datos iniciales de asistencia usando la función empaquetada
+    await cargarReporteConFiltros()
     
-    // Verificar si la respuesta tiene la estructura esperada
-    if (rest?.data) {
-      // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
-      if (rest.data.trabajadores || rest.data.marcacionesAgrupadasPorUsuario) {
-        await loadData(rest.data)
-        console.log('Datos cargados exitosamente:', empleados.value.length, 'registros de asistencia')
-      } 
-      // Estructura antigua (array directo)
-      else if (Array.isArray(rest.data)) {
-        await loadData(rest.data)
-        console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
-      } else {
-        console.warn('Estructura de datos no reconocida, usando datos de fallback')
-        await loadData()
-      }
-    } else {
-      console.warn('No se recibieron datos válidos de la API, usando datos de fallback')
-      await loadData()
-    }
   } catch (error) {
-    console.error('Error al obtener datos de asistencia:', error)
+    console.error('Error al inicializar componente:', error)
     cargandoFiltros.value = false;
     // En caso de error, cargar datos de fallback
     await loadData()
