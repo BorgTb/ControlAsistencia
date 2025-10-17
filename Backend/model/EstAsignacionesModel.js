@@ -39,25 +39,61 @@ class EstAsignacionesModel {
 
     static async getTrabajadoresByUsuariaId(usuariaId) {
         const query = `
-            SELECT ue.id,
-                ue.usuario_id,
-                ue.empresa_id,
-                ue.rol_en_empresa,
-                ue.fecha_inicio,
-                ue.fecha_fin,
-                u.nombre as usuario_nombre,
-                u.apellido_pat as usuario_apellido_pat,
-                u.apellido_mat as usuario_apellido_mat,
-                u.email as usuario_email,
-                u.rut as usuario_rut,
-                u.estado as usuario_estado FROM est_asignaciones INNER JOIN usuarios_empresas as ue ON ue.id = est_asignaciones.usuario_empresa_id INNER JOIN usuarios as u ON u.id = ue.usuario_id
-                WHERE est_asignaciones.usuaria_id = ? AND ue.rol_en_empresa = 'trabajador'`;
+        SELECT 
+            ue.id,
+            ue.usuario_id,
+            ue.empresa_id,
+            ue.rol_en_empresa,
+            ue.fecha_inicio,
+            ue.fecha_fin,
+            ue.created_at,
+            ue.updated_at,
+
+            -- Datos del usuario
+            u.nombre AS usuario_nombre,
+            u.apellido_pat AS usuario_apellido_pat,
+            u.apellido_mat AS usuario_apellido_mat,
+            u.email AS usuario_email,
+            u.rut AS usuario_rut,
+            u.rol AS usuario_rol_global,
+            u.estado AS usuario_estado,
+
+            -- Empresa usuaria (empresa donde se presta el servicio)
+            e.emp_nombre AS empresa_asignada_nombre,
+            e.emp_rut AS empresa_asignada_rut,
+
+            -- Empresa contratante (empresa del trabajador)
+            ec.emp_nombre AS empresa_empleadora_nombre,
+            ec.emp_rut AS empresa_empleadora_rut
+
+        FROM est_asignaciones ea
+        INNER JOIN usuarios_empresas ue 
+            ON ue.id = ea.usuario_empresa_id
+        INNER JOIN usuarios u 
+            ON u.id = ue.usuario_id
+
+        -- Empresa usuaria (faena, cliente, etc.)
+        INNER JOIN empresa AS e 
+            ON ea.usuaria_id = e.empresa_id
+
+        -- Empresa contratante (dueña del trabajador)
+        LEFT JOIN empresa AS ec 
+            ON ue.empresa_id = ec.empresa_id
+
+        WHERE ea.usuaria_id = ?
+        AND u.rol = 'trabajador'
+        AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
+        ORDER BY ue.fecha_inicio DESC;
+
+        `;
         const [rows] = await db.execute(query, [usuariaId]);
         return rows;
     }
 
-    static async getTrabajadoresByUsuariaRut(usuariaRut) {
-        const query = ``;
+    static async getEstInfoByUsuariaRut(usuariaRut) {
+        const query = `SELECT * FROM empresa WHERE empresa_id in (SELECT ea.est_id FROM est_asignaciones as ea INNER JOIN empresa as e WHERE ea.usuaria_id = e.empresa_id AND e.emp_rut = ? AND (ea.fecha_fin IS NULL OR ea.fecha_fin >= CURDATE()))`;
+        const [rows] = await db.execute(query, [usuariaRut]);
+        return rows;
     }
 
     // Obtener asignaciones activas (sin fecha_fin)
@@ -184,7 +220,24 @@ class EstAsignacionesModel {
         `;
         const [rows] = await db.execute(query, [estId]);
         return rows;
-    }   
+    }  
+
+    static async getEmpresaEstByUsuariaId(usuariaId) {
+        const query = `
+        SELECT 
+            e.emp_nombre, 
+            e.empresa_id
+        FROM empresa e
+        WHERE e.empresa_id IN (
+            SELECT 
+                ea.est_id
+            FROM est_asignaciones ea
+            WHERE ea.usuaria_id = ?
+        );
+        `;
+        const [rows] = await db.execute(query, [usuariaId]);
+        return rows[0];
+    }
 }
 
 export default EstAsignacionesModel;

@@ -32,6 +32,27 @@
                 ></textarea>
               </div>
 
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Jornada</label>
+                <select 
+                  v-model="formTipoTurno.tipo_jornada" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                >
+                  <option value="">Seleccionar tipo de jornada</option>
+                  <option 
+                    v-for="tipoJornada in tiposJornada" 
+                    :key="tipoJornada.value" 
+                    :value="tipoJornada.value"
+                  >
+                    {{ tipoJornada.label }}
+                  </option>
+                </select>
+                <p v-if="formTipoTurno.tipo_jornada" class="mt-1 text-xs text-gray-500">
+                  {{ obtenerDescripcionJornada(formTipoTurno.tipo_jornada) }}
+                </p>
+              </div>
+
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio (Base)</label>
@@ -356,6 +377,7 @@
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Jornada</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horario Base</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días Laborables</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Colación</th>
@@ -370,6 +392,23 @@
                           <div class="text-sm font-medium text-gray-900">{{ tipo.nombre }}</div>
                           <div v-if="tipo.descripcion" class="text-xs text-gray-500 mt-1">{{ tipo.descripcion }}</div>
                         </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          v-if="tipo.tipo_jornada_id"
+                          :class="{
+                            'bg-blue-100 text-blue-800': tipo.tipo_jornada == 1,
+                            'bg-purple-100 text-purple-800': tipo.tipo_jornada == 2,
+                            'bg-orange-100 text-orange-800': tipo.tipo_jornada == 3,
+                            'bg-green-100 text-green-800': tipo.tipo_jornada == 4,
+                            'bg-indigo-100 text-indigo-800': tipo.tipo_jornada == 5,
+                            'bg-yellow-100 text-yellow-800': tipo.tipo_jornada == 6
+                          }"
+                          class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                        >
+                          {{ obtenerLabelJornada(tipo.tipo_jornada_id) }}
+                        </span>
+                        <span v-else class="text-xs text-gray-400">Sin especificar</span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center space-x-2">
@@ -430,7 +469,7 @@
                       </td>
                     </tr>
                     <tr v-if="tiposTurnos.length === 0">
-                      <td colspan="6" class="px-6 py-8 text-center">
+                      <td colspan="7" class="px-6 py-8 text-center">
                         <div class="flex flex-col items-center">
                           <svg class="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -470,6 +509,29 @@
                 </div>
                 
                 <div class="mt-4 space-y-4">
+                  <!-- Tipo de Jornada -->
+                  <div v-if="modalDetalleTurno.turno?.tipo_jornada" class="border-l-4 border-blue-500 pl-4">
+                    <p class="text-sm font-medium text-gray-700">Tipo de Jornada</p>
+                    <div class="mt-1">
+                      <span 
+                        :class="{
+                          'bg-blue-100 text-blue-800': modalDetalleTurno.turno.tipo_jornada == 1,
+                          'bg-purple-100 text-purple-800': modalDetalleTurno.turno.tipo_jornada == 2,
+                          'bg-orange-100 text-orange-800': modalDetalleTurno.turno.tipo_jornada == 3,
+                          'bg-green-100 text-green-800': modalDetalleTurno.turno.tipo_jornada == 4,
+                          'bg-indigo-100 text-indigo-800': modalDetalleTurno.turno.tipo_jornada == 5,
+                          'bg-yellow-100 text-yellow-800': modalDetalleTurno.turno.tipo_jornada == 6
+                        }"
+                        class="inline-flex px-2 py-1 text-sm font-medium rounded-full"
+                      >
+                        {{ obtenerLabelJornada(modalDetalleTurno.turno.tipo_jornada_id) }}
+                      </span>
+                      <p class="text-xs text-gray-600 mt-1">
+                        {{ obtenerDescripcionJornada(modalDetalleTurno.turno.tipo_jornada) }}
+                      </p>
+                    </div>
+                  </div>
+
                   <!-- Horario Base -->
                   <div class="border-l-4 border-purple-500 pl-4">
                     <p class="text-sm font-medium text-gray-700">Horario Base</p>
@@ -570,6 +632,28 @@ import { useEmpresa } from '../../../composables/useEmpresa.js';
 
 const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno } = useEmpresa();
 
+// Tipos de jornada disponibles
+const tiposJornada = [
+  { value: 1, label: 'Ordinaria', descripcion: 'Jornada fija con horario establecido' },
+  { value: 2, label: 'Por Turnos', descripcion: 'Jornada rotativa o alternada' },
+  { value: 3, label: 'Excepcional', descripcion: 'Faena o turno autorizado por DT' },
+  { value: 4, label: 'Parcial', descripcion: 'Jornada inferior a 30 horas semanales' },
+  { value: 5, label: 'Nocturna', descripcion: 'Turno que se realiza en horario nocturno' },
+  { value: 6, label: 'Bisemanal', descripcion: 'Jornada acumulada o excepcional en faenas remotas' }
+];
+
+// Computed para obtener la etiqueta de un tipo de jornada por su valor
+const obtenerLabelJornada = (value) => {
+  console.log('Obteniendo label para tipo de jornada:', value);
+  const tipo = tiposJornada.find(t => t.value == value);
+  return tipo ? tipo.label : 'Sin especificar';
+};
+
+const obtenerDescripcionJornada = (value) => {
+  const tipo = tiposJornada.find(t => t.value == value);
+  return tipo ? tipo.descripcion : '';
+};
+
 // Estados reactivos
 const tabActiva = ref('asignaciones');
 const filtroFecha = ref('');
@@ -606,6 +690,7 @@ const diasSemana = ref([
 const formTipoTurno = reactive({
   nombre: '',
   descripcion: '',
+  tipo_jornada: '',
   hora_inicio: '',
   hora_fin: '',
   colacion_inicio: '',

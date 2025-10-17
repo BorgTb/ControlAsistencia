@@ -37,12 +37,6 @@ apiClient.interceptors.request.use((config) => {
     }
   }
 
-  // Agregar empresa seleccionada como parámetro
-  const dataStore = useDataStore()
-  const empresaSeleccionada = dataStore.getEmpresaSeleccionada
-  if (empresaSeleccionada?.rut) {
-    config.params = { ...config.params, empresaRut: empresaSeleccionada.rut }
-  }
 
   return config
 })
@@ -105,6 +99,24 @@ class ReporteService {
     }
   }
 
+  async obtenerDatosParaFiltros(empresa_id) {
+    
+    try {
+      const response = await apiClient.get(`/fiscalizador/datos-filtros/${empresa_id}`)
+      return {
+        success: true,
+        data: response.data,
+        message: 'Datos para filtros obtenidos correctamente'
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener datos para filtros',
+        status: error.response?.status
+      }
+    }
+  }
+
   /**
    * Obtiene el reporte de asistencia
    * @param {Object} filtros - Filtros para el reporte
@@ -112,8 +124,9 @@ class ReporteService {
    */
   async obtenerReporteAsistencia(filtros = {}) {
     const dataStore = useDataStore()
+    console.log("Empresa seleccionada en reporteService:", dataStore.empresaSeleccionada)
     try {
-      const response = await apiClient.get(`/reportes/asistencia/${dataStore.empresaSeleccionada.rut}`, { params: filtros })
+      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, filtros )
       return {
         success: true,
         data: response.data,

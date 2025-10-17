@@ -536,8 +536,21 @@ const obtenerTurnos = async (req, res) => {
 
         // Obtener todas las asignaciones de turnos por empresa
         const asignaciones = await AsignacionTurnosModel.getByEmpresaRut(rut);
+
+        // se deben otener los turnos de los trabajadore que son de una est asignados a esta empresa
+        const estActiva = await EstAsignacionesModel.getEstInfoByUsuariaRut(rut);
+        // para cada est activa obtener sus asignaciones
+        for (let est of estActiva) {
+            console.log("Obteniendo turnos para est activa:", est);
+            const asignacion  = await AsignacionTurnosModel.getByEmpresaRut(est.emp_rut);
+            console.log("Asignaciones obtenidas para est:", asignacion);
+            asignaciones.push(...asignacion);
+        }
+    
         
-        // Formatear las asignaciones con información completa
+
+        
+        // Formatear las 1 con información completa
         const turnosFormateados = asignaciones.map(asignacion => ({
             id: asignacion.id,
             usuario_empresa_id: asignacion.usuario_empresa_id,
@@ -1109,6 +1122,8 @@ const crearTipoTurno = async (req, res) => {
                 message: "Debe especificar al menos un día de trabajo"
             });
         }
+
+      
 
         // Agregar empresa_id al tipo de turno
         tipoTurnoData.empresa_id = empresa.empresa_id;
