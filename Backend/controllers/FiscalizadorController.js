@@ -667,13 +667,53 @@ const obtenerAsistenciasDomingos = async (req, res) => {
     });
 }
 
+const enviarCorreoEmpleador = async (req, res) => {
+    try {
+        const { empresa_id } = req.params;
+        
+        const primerEmpleadorActivo = await UsuarioEmpresaModel.getPrimerEmpleadorActivoByEmpresaId(empresa_id);
+        const correo = primerEmpleadorActivo ? primerEmpleadorActivo.usuario_email : null;
+        console.log('Empleador activo encontrado:', correo);
+        if (!primerEmpleadorActivo) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró un empleador activo para la empresa proporcionada'
+            });
+        }
+
+        const resultadoEnvio = await NotificacionService.enviarCorreoNotificacionEmpleador(correo);
+        if (!resultadoEnvio.success) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al enviar el correo al empleador',
+                error: resultadoEnvio.message
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Correo enviado exitosamente al empleador'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+}
+
+        
+        
+
 const FiscalizadorController = {
   solicitarAcceso,
   validarCodigo,
   cerrarSesion,
   obtenerDatosEmpresa,
     obtenerAsistencias,
-    obtenerAsistenciasDomingos  
+    obtenerAsistenciasDomingos  ,
+    enviarCorreoEmpleador
 }
 
 

@@ -708,6 +708,67 @@ class MailService {
             };
         }
     }
+
+
+    async enviarCorreoNotificacionEmpleador(email){
+        const asunto = 'Notificación de Inicio de Procedimiento de Fiscalización Laboral';
+                
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Notificación de Fiscalización Laboral</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+                    .container { max-width: 700px; margin: 0 auto; padding: 20px; background-color: white; }
+                    .header { background-color: #c62828; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0; }
+                    .header h1 { margin: 0; font-size: 24px; }
+                    .content { padding: 30px; background-color: #ffffff; border-radius: 0 0 8px 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    .notification-box { background-color: #ffebee; padding: 20px; border-left: 5px solid #c62828; margin: 20px 0; border-radius: 4px; }
+                    .legal-text { background-color: #f9f9f9; padding: 20px; border-radius: 4px; margin: 20px 0; font-style: italic; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; background-color: #f5f5f5; }
+                    .important { font-weight: bold; color: #c62828; }
+                    .icon { font-size: 24px; margin-right: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🏛️ Notificación Oficial</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 16px;">Procedimiento de Fiscalización Laboral</p>
+                    </div>
+                    <div class="content">
+                        <h2>Estimado Empleador,</h2>
+                        
+                        <div class="notification-box">
+                            <p class="important">📋 NOTIFICACIÓN OFICIAL DE FISCALIZACIÓN LABORAL</p>
+                        </div>
+                        
+                        <div class="legal-text">
+                            <p>Se informa a usted que, de acuerdo con las facultades y obligaciones legales contenidas en el <strong>Código del Trabajo</strong> y sus leyes complementarias; en el <strong>D.F.L. N°2 de 1967, del Ministerio del Trabajo y Previsión Social</strong>, y en otras disposiciones reglamentarias, se está iniciando un <span class="important">procedimiento de fiscalización laboral</span>.</p>
+                        </div>
+                        
+                        <div style="background-color: #fff3e0; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #ff9800;">
+                            <p><strong>⚠️ Esta es una notificación oficial</strong> y debe ser tratada con la debida importancia y urgencia que amerita un procedimiento de fiscalización laboral.</p>
+                        </div>
+                        
+                        <p>Se le solicita mantener disponible toda la documentación laboral correspondiente para cuando sea requerida por la autoridad competente.</p>
+                        
+                        <p>Para cualquier consulta relacionada con este procedimiento, debe dirigirse a la oficina de la Inspección del Trabajo correspondiente a su jurisdicción.</p>
+                        
+                    </div>
+                    <div class="footer">
+                        <p>© 2025 Sistema de Control de Asistencia - Notificación Oficial</p>
+                        <p>Esta comunicación se realiza en cumplimiento de las disposiciones legales vigentes</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        return await this.enviarCorreo(email, asunto, contenidoHTML);
+    }
 }
 
 export default new MailService();

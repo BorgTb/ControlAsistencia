@@ -210,8 +210,9 @@ const cargarEmpresas = async () => {
   }
 }
 
-const seleccionarEmpresa = (empresa) => {
+const seleccionarEmpresa = async (empresa) => {
   dataStore.setEmpresaSeleccionada(empresa)
+  await ReporteService.emitirCorreoAEmpleador(empresa.id);
   router.push('/dashboard')
 }
 
