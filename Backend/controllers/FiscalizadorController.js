@@ -16,6 +16,14 @@ const solicitarAcceso = async (req, res) => {
             return res.status(400).json({ message: 'El campo email es obligatorio' });
         }
 
+        /*
+        // verificar que el correo tenga dominio @dt.gob.cl
+        const dominioPermitido = '@dt.gob.cl';
+        if (!email.endsWith(dominioPermitido)) {
+            return res.status(400).json({ message: `El correo debe pertenecer al dominio ${dominioPermitido}` });
+        }
+        */
+
         // Invalidar códigos anteriores del usuario
         await LoginCodigoModel.invalidateUserCodes(email);
 
