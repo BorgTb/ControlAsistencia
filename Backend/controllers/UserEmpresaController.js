@@ -1110,6 +1110,8 @@ const crearTipoTurno = async (req, res) => {
             });
         }
 
+      
+
         // Agregar empresa_id al tipo de turno
         tipoTurnoData.empresa_id = empresa.empresa_id;
 

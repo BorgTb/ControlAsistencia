@@ -56,15 +56,16 @@ class TipoTurnosModel {
             
             const query = `
                 INSERT INTO tipo_turnos (
-                    empresa_id, nombre, descripcion, hora_inicio, hora_fin, 
+                    empresa_id, nombre, descripcion, tipo_jornada_id, hora_inicio, hora_fin, 
                     colacion_inicio, colacion_fin, dias_trabajo, dias_descanso, estado
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const [result] = await connection.query(query, [
                 data.empresa_id,
                 data.nombre,
                 data.descripcion || null,
+                data.tipo_jornada_id || data.tipo_jornada || null,
                 data.hora_inicio,
                 data.hora_fin,
                 data.colacion_inicio || null,
@@ -111,15 +112,16 @@ class TipoTurnosModel {
             
             const query = `
                 UPDATE tipo_turnos 
-                SET empresa_id = ?, nombre = ?, descripcion = ?, hora_inicio = ?, hora_fin = ?, 
-                    colacion_inicio = ?, colacion_fin = ?, dias_trabajo = ?, 
-                    dias_descanso = ?, estado = ?
+                SET empresa_id = ?, nombre = ?, descripcion = ?, tipo_jornada_id = ?, 
+                    hora_inicio = ?, hora_fin = ?, colacion_inicio = ?, colacion_fin = ?, 
+                    dias_trabajo = ?, dias_descanso = ?, estado = ?
                 WHERE id = ?
             `;
             await connection.query(query, [
                 data.empresa_id,
                 data.nombre,
                 data.descripcion || null,
+                data.tipo_jornada_id || data.tipo_jornada || null,
                 data.hora_inicio,
                 data.hora_fin,
                 data.colacion_inicio || null,
@@ -174,6 +176,7 @@ class TipoTurnosModel {
     static async getAllWithDias() {
         const query = `
             SELECT tt.id, tt.empresa_id, tt.nombre, tt.descripcion, 
+                   tt.tipo_jornada_id,
                    tt.hora_inicio, tt.hora_fin, 
                    tt.colacion_inicio, tt.colacion_fin,
                    tt.dias_trabajo, tt.dias_descanso,
@@ -197,6 +200,7 @@ class TipoTurnosModel {
                     empresa_id: row.empresa_id,
                     nombre: row.nombre,
                     descripcion: row.descripcion,
+                    tipo_jornada_id: row.tipo_jornada_id,
                     hora_inicio: row.hora_inicio,
                     hora_fin: row.hora_fin,
                     colacion_inicio: row.colacion_inicio,
@@ -223,14 +227,17 @@ class TipoTurnosModel {
     static async getAllWithDiasByEmpresaId(empresaId) {
         const query = `
             SELECT tt.id, tt.empresa_id, tt.nombre, tt.descripcion, 
+                   tt.tipo_jornada_id,
                    tt.hora_inicio, tt.hora_fin, 
                    tt.colacion_inicio, tt.colacion_fin,
                    tt.dias_trabajo, tt.dias_descanso,
+                   tj.id as tipo_jornada_id,
                    dd.dia_semana, dd.trabaja, 
                    dd.hora_inicio as dia_hora_inicio, 
                    dd.hora_fin as dia_hora_fin
             FROM tipo_turnos tt
             LEFT JOIN detalle_dias_turno dd ON tt.id = dd.tipo_turno_id
+            LEFT JOIN tipo_jornada as tj ON tt.tipo_jornada_id = tj.id
             WHERE tt.estado = 1
             AND tt.empresa_id = ?
             ORDER BY tt.nombre, 
@@ -247,6 +254,7 @@ class TipoTurnosModel {
                     empresa_id: row.empresa_id,
                     nombre: row.nombre,
                     descripcion: row.descripcion,
+                    tipo_jornada_id: row.tipo_jornada_id,
                     hora_inicio: row.hora_inicio,
                     hora_fin: row.hora_fin,
                     colacion_inicio: row.colacion_inicio,
