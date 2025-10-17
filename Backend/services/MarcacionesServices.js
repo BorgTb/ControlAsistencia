@@ -115,7 +115,7 @@ class MarcacionesService {
             };
         }
     }
-
+    
     async obtenerMarcacionesPorUsuario(usuario_id, fechaInicio = null, fechaFin = null) {
         try {
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fechaInicio, fechaFin);
