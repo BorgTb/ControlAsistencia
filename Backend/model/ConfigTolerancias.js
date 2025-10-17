@@ -239,6 +239,8 @@ class ConfigToleranciaModel {
                 : `Debe esperar al menos ${config.tiempo_min_entre_marcaciones} minutos entre marcaciones`
         };
     }
+    static async obtenerTolerenciaEmpresaUsuaria(empresa_usuario_id) {
+    }
 }
 
 export default ConfigToleranciaModel;
