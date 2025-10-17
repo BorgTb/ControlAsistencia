@@ -425,32 +425,83 @@
         </div>
 
         <!-- Contenido del Modal -->
-        <div class="mt-6 space-y-6" v-if="trabajadorSeleccionado">
+        <div class="mt-6" v-if="trabajadorSeleccionado">
           <!-- Información Personal -->
           <div class="bg-gray-50 rounded-lg p-4">
-            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-              Información Personal
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                Información Personal
+              </div>
+              <span v-if="modoEdicion" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
+                Modo Edición
+              </span>
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Nombre -->
               <div>
-                <label class="block text-sm font-medium text-gray-700">Nombre Completo</label>
-                <p class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_nombre }} {{ trabajadorSeleccionado.usuario_apellido_pat }}</p>
+                <label class="block text-sm font-medium text-gray-700">Nombre</label>
+                <input 
+                  v-if="modoEdicion"
+                  v-model="datosEdicion.nombre"
+                  type="text"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Nombre del trabajador"
+                />
+                <p v-else class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_nombre }}</p>
               </div>
+              
+              <!-- Apellido -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Apellido</label>
+                <input 
+                  v-if="modoEdicion"
+                  v-model="datosEdicion.apellido"
+                  type="text"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Apellido del trabajador"
+                />
+                <p v-else class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_apellido_pat }}</p>
+              </div>
+              
+              <!-- ID de Usuario -->
               <div>
                 <label class="block text-sm font-medium text-gray-700">ID de Usuario</label>
                 <p class="mt-1 text-sm font-bold text-blue-600">{{ trabajadorSeleccionado.id }}</p>
               </div>
+              
+              <!-- RUT -->
               <div>
                 <label class="block text-sm font-medium text-gray-700">RUT</label>
-                <p class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_rut }}</p>
+                <input 
+                  v-if="modoEdicion"
+                  v-model="datosEdicion.rut"
+                  type="text"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="12345678-9"
+                />
+                <p v-else class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_rut }}</p>
               </div>
+              
+              <!-- Email -->
               <div>
                 <label class="block text-sm font-medium text-gray-700">Email</label>
-                <p class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_email || 'Sin email registrado' }}</p>
+                <input 
+                  v-if="modoEdicion"
+                  v-model="datosEdicion.email"
+                  type="email"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="correo@ejemplo.com"
+                />
+                <p v-else class="mt-1 text-sm text-gray-900">{{ trabajadorSeleccionado.usuario_email || 'Sin email registrado' }}</p>
               </div>
+              
+              <!-- Horas Laborales Semanales -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Horas Laborales Semanales</label>
                 <div class="flex items-center space-x-2">
@@ -458,7 +509,7 @@
                     v-model="horasLaboralesSeleccionadas" 
                     @change="actualizarHorasLaborales"
                     class="block w-32 px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    :disabled="guardandoHoras"
+                    :disabled="guardandoHoras || modoEdicion"
                   >
                     <option value="44">44 horas</option>
                     <option value="45">45 horas</option>
@@ -466,8 +517,8 @@
                   </select>
                   <button 
                     @click="actualizarHorasLaborales" 
-                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                    :disabled="guardandoHoras"
+                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:bg-gray-400"
+                    :disabled="guardandoHoras || modoEdicion"
                   >
                     💾 Guardar
                   </button>
@@ -486,146 +537,50 @@
               </div>
             </div>
           </div>
-
-          <!-- Horas de Trabajo -->
-          <div class="bg-yellow-50 rounded-lg p-4">
-            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Resumen de Horas
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="text-center">
-                <p class="text-2xl font-bold" :class="excedeHorasAsignadas(trabajadorSeleccionado) ? 'text-red-600' : 'text-green-600'">
-                  {{ mostrarHorasSemana(trabajadorSeleccionado) }}
-                </p>
-                <p class="text-sm text-gray-600">Horas esta semana</p>
-              </div>
-              <div class="text-center">
-                <p class="text-2xl font-bold text-blue-600">{{ diasTrabajados[trabajadorSeleccionado.id] || 0 }}</p>
-                <p class="text-sm text-gray-600">Días trabajados</p>
-              </div>
-              <div class="text-center">
-                <p class="text-2xl font-bold text-purple-600">{{ promedioHorasDiarias[trabajadorSeleccionado.id] || '0.0' }}</p>
-                <p class="text-sm text-gray-600">Promedio hrs/día</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Turnos Asignados -->
-          <div class="bg-blue-50 rounded-lg p-4">
-            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              Turnos Asignados
-            </h4>
-            
-            <div v-if="cargandoTurnos" class="flex justify-center items-center py-8">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span class="ml-3 text-gray-600">Cargando turnos...</span>
-            </div>
-            
-            <div v-else-if="turnosTrabajador.length === 0" class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              <p class="text-lg font-medium">No hay turnos asignados</p>
-              <p class="text-sm">Este trabajador no tiene turnos configurados</p>
-            </div>
-
-            <div v-else class="space-y-3">
-              <div 
-                v-for="turno in turnosTrabajador" 
-                :key="turno.id"
-                class="bg-white border border-gray-200 rounded-lg p-4"
-              >
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h5 class="font-medium text-gray-900">{{ turno.tipo || 'Turno sin nombre' }}</h5>
-                    <p class="text-sm text-gray-600">
-                      {{ formatearHora(turno.inicio) }} - {{ formatearHora(turno.fin) }}
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">
-                      Día: {{ turno.dia || 'No especificado' }}
-                    </p>
-                    <p v-if="turno.motivo_modificacion" class="text-xs text-orange-600 mt-1">
-                      Motivo: {{ turno.motivo_modificacion }}
-                    </p>
-                  </div>
-                  <div class="text-right">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {{ calcularDuracionTurno(turno.inicio, turno.fin) }}h
-                    </span>
-                    <p v-if="turno.colacion_inicio && turno.colacion_fin" class="text-xs text-gray-500 mt-1">
-                      Colación: {{ formatearHora(turno.colacion_inicio) }} - {{ formatearHora(turno.colacion_fin) }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Últimas Marcaciones -->
-          <div class="bg-green-50 rounded-lg p-4">
-            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-              Últimas Marcaciones
-            </h4>
-            
-            <div v-if="cargandoMarcaciones" class="flex justify-center items-center py-8">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              <span class="ml-3 text-gray-600">Cargando marcaciones...</span>
-            </div>
-            
-            <div v-else-if="marcacionesTrabajador.length === 0" class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-              <p class="text-lg font-medium">No hay marcaciones registradas</p>
-              <p class="text-sm">Este trabajador no ha realizado marcaciones recientes</p>
-            </div>
-
-            <div v-else class="space-y-2 max-h-64 overflow-y-auto">
-              <div 
-                v-for="marcacion in marcacionesTrabajador.slice(0, 10)" 
-                :key="marcacion.id"
-                class="bg-white border border-gray-200 rounded p-3 flex justify-between items-center"
-              >
-                <div>
-                  <p class="text-sm font-medium text-gray-900">{{ formatDate(marcacion.fecha_marcacion) }}</p>
-                  <p class="text-xs text-gray-600">{{ formatearHora(marcacion.hora_marcacion) }}</p>
-                </div>
-                <div class="text-right">
-                  <span 
-                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                    :class="marcacion.tipo_marcacion === 'entrada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                  >
-                    {{ marcacion.tipo_marcacion === 'entrada' ? 'Entrada' : 'Salida' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Footer del Modal -->
-        <div class="mt-6 pt-4 border-t flex justify-end">
-          <button 
-            @click="cerrarModalDetalles"
-            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-md transition-colors duration-200 mr-3"
-          >
-            Cerrar
-          </button>
-          <button 
-            @click="editarTrabajador(trabajadorSeleccionado)"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
-          >
-            Editar Trabajador
-          </button>
+        <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+          <!-- Modo Normal -->
+          <template v-if="!modoEdicion">
+            <button 
+              @click="cerrarModalDetalles"
+              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-md transition-colors duration-200"
+            >
+              Cerrar
+            </button>
+            <button 
+              @click="editarTrabajador(trabajadorSeleccionado)"
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 flex items-center space-x-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+              </svg>
+              <span>Editar Trabajador</span>
+            </button>
+          </template>
+          
+          <!-- Modo Edición -->
+          <template v-else>
+            <button 
+              @click="cancelarEdicion"
+              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-md transition-colors duration-200"
+              :disabled="guardandoCambios"
+            >
+              Cancelar
+            </button>
+            <button 
+              @click="guardarCambiosTrabajador"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors duration-200 flex items-center space-x-2"
+              :disabled="guardandoCambios"
+            >
+              <div v-if="guardandoCambios" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span>{{ guardandoCambios ? 'Guardando...' : 'Guardar Cambios' }}</span>
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -679,6 +634,9 @@ const promedioHorasDiarias = ref({});
 const horasLaboralesSeleccionadas = ref('45');
 const guardandoHoras = ref(false);
 const horasActualizadas = ref(false);
+const modoEdicion = ref(false);
+const datosEdicion = ref({});
+const guardandoCambios = ref(false);
 const filtros = ref({
   busqueda: '',
   tipoHoras: '',
@@ -802,21 +760,14 @@ const abrirModalDetalles = async (trabajador) => {
   // Cargar las horas laborales actuales del trabajador
   horasLaboralesSeleccionadas.value = trabajador.horas_laborales || '45';
   horasActualizadas.value = false;
-  
-  // Cargar turnos y marcaciones del trabajador
-  await Promise.all([
-    cargarTurnosTrabajador(trabajador.id),
-    cargarMarcacionesTrabajador(trabajador.id),
-    calcularEstadisticasTrabajador(trabajador.id)
-  ]);
 };
 
 const cerrarModalDetalles = () => {
   modalDetallesAbierto.value = false;
   trabajadorSeleccionado.value = null;
-  turnosTrabajador.value = [];
-  marcacionesTrabajador.value = [];
   horasActualizadas.value = false;
+  modoEdicion.value = false;
+  datosEdicion.value = {};
 };
 
 // Función para actualizar las horas laborales del trabajador
@@ -1176,7 +1127,86 @@ const obtenerHorasAsignadas = (trabajador) => {
 // Métodos de acción
 const editarTrabajador = (trabajador) => {
   console.log('Editar trabajador:', trabajador);
-  // TODO: Implementar edición
+  modoEdicion.value = true;
+  datosEdicion.value = {
+    nombre: trabajador.usuario_nombre,
+    apellido: trabajador.usuario_apellido_pat,
+    rut: trabajador.usuario_rut,
+    email: trabajador.usuario_email
+  };
+};
+
+const cancelarEdicion = () => {
+  modoEdicion.value = false;
+  datosEdicion.value = {};
+};
+
+const guardarCambiosTrabajador = async () => {
+  if (!trabajadorSeleccionado.value) {
+    mostrarNotificacion('No hay trabajador seleccionado', 'error');
+    return;
+  }
+
+  // Validaciones básicas
+  if (!datosEdicion.value.nombre || !datosEdicion.value.apellido) {
+    mostrarNotificacion('El nombre y apellido son obligatorios', 'error');
+    return;
+  }
+
+  if (!datosEdicion.value.rut) {
+    mostrarNotificacion('El RUT es obligatorio', 'error');
+    return;
+  }
+
+  guardandoCambios.value = true;
+
+  try {
+    console.log('💾 Guardando cambios del trabajador:', {
+      id: trabajadorSeleccionado.value.id,
+      datosNuevos: datosEdicion.value
+    });
+
+    // Llamar al servicio para actualizar el trabajador
+    const response = await EmpresaServices.actualizarTrabajador(
+      trabajadorSeleccionado.value.id,
+      datosEdicion.value
+    );
+
+    if (response.success) {
+      console.log('✅ Trabajador actualizado exitosamente');
+      
+      // Actualizar el trabajador en la lista local
+      const trabajadorIndex = trabajadores.value.findIndex(t => t.id === trabajadorSeleccionado.value.id);
+      if (trabajadorIndex !== -1) {
+        trabajadores.value[trabajadorIndex].usuario_nombre = datosEdicion.value.nombre;
+        trabajadores.value[trabajadorIndex].usuario_apellido_pat = datosEdicion.value.apellido;
+        trabajadores.value[trabajadorIndex].usuario_rut = datosEdicion.value.rut;
+        trabajadores.value[trabajadorIndex].usuario_email = datosEdicion.value.email;
+      }
+
+      // Actualizar también el trabajador seleccionado
+      if (trabajadorSeleccionado.value) {
+        trabajadorSeleccionado.value.usuario_nombre = datosEdicion.value.nombre;
+        trabajadorSeleccionado.value.usuario_apellido_pat = datosEdicion.value.apellido;
+        trabajadorSeleccionado.value.usuario_rut = datosEdicion.value.rut;
+        trabajadorSeleccionado.value.usuario_email = datosEdicion.value.email;
+      }
+
+      mostrarNotificacion('Trabajador actualizado correctamente', 'success');
+      modoEdicion.value = false;
+      datosEdicion.value = {};
+      
+      // Forzar reactividad
+      await nextTick();
+    } else {
+      mostrarNotificacion(response.message || 'Error al actualizar el trabajador', 'error');
+    }
+  } catch (error) {
+    console.error('❌ Error actualizando trabajador:', error);
+    mostrarNotificacion(error.response?.data?.message || 'Error al actualizar el trabajador', 'error');
+  } finally {
+    guardandoCambios.value = false;
+  }
 };
 
 // Acciones específicas para horas excedidas

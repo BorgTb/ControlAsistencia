@@ -1147,12 +1147,109 @@ const crearTipoTurno = async (req, res) => {
     }
 };
 
+const actualizarTrabajador = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, apellido, rut, email } = req.body;
+        const USR_PETICION = req.user;
+
+        console.log('🔄 Actualizando trabajador:', { id, nombre, apellido, rut, email });
+
+        // Validaciones
+        if (!nombre || !apellido || !rut) {
+            return res.status(400).json({
+                success: false,
+                message: "Nombre, apellido y RUT son obligatorios"
+            });
+        }
+
+        // Obtener datos anteriores del trabajador para auditoría
+        const [trabajadorAnterior] = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
+        if (!trabajadorAnterior) {
+            return res.status(404).json({
+                success: false,
+                message: "Trabajador no encontrado"
+            });
+        }
+
+        // Verificar si el RUT ya existe en otro usuario (excepto el actual)
+        const existingUserByRut = await UserModel.findByRut(rut);
+        if (existingUserByRut && existingUserByRut.id !== trabajadorAnterior.usuario_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe otro trabajador con este RUT"
+            });
+        }
+
+        // Verificar si el email ya existe en otro usuario (excepto el actual)
+        if (email) {
+            const existingUserByEmail = await UserModel.findByEmail(email);
+            if (existingUserByEmail && existingUserByEmail.id !== trabajadorAnterior.usuario_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Ya existe otro trabajador con este email"
+                });
+            }
+        }
+
+        // Actualizar usuario
+        await UserModel.updateUser(trabajadorAnterior.usuario_id, {
+            nombre: nombre,
+            apellido_pat: apellido,
+            rut: rut,
+            email: email || trabajadorAnterior.usuario_email
+        });
+
+        // Registrar en auditoría
+        if (req.user && req.user.id) {
+            try {
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'actualizar_trabajador',
+                    tabla_afectada: 'usuarios',
+                    registro_id: trabajadorAnterior.usuario_id,
+                    descripcion: `Trabajador actualizado: ${nombre} ${apellido} (${rut})`,
+                    datos_anteriores: JSON.stringify({
+                        nombre: trabajadorAnterior.usuario_nombre,
+                        apellido_pat: trabajadorAnterior.usuario_apellido_pat,
+                        rut: trabajadorAnterior.usuario_rut,
+                        email: trabajadorAnterior.usuario_email
+                    }),
+                    datos_nuevos: JSON.stringify({
+                        nombre,
+                        apellido_pat: apellido,
+                        rut,
+                        email
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar en auditoría:', auditError);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Trabajador actualizado exitosamente"
+        });
+
+    } catch (error) {
+        console.error('❌ Error actualizando trabajador:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error al actualizar trabajador",
+            error: error.message
+        });
+    }
+};
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
     obtenerTurnosTrabajador,
     obtenerMarcacionesTrabajador,
     actualizarHorasLaborales,
+    actualizarTrabajador,
     enrolarTrabajador,
     createTurno,
     deleteTurno,

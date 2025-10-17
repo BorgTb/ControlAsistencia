@@ -54,6 +54,45 @@ class UserModel {
         await pool.query(`UPDATE usuarios SET ${fields} WHERE id = ?`, values);
     }
 
+    static async updateUser(id, data) {
+        const { nombre, apellido_pat, apellido_mat, rut, email } = data;
+        const updateFields = [];
+        const updateValues = [];
+
+        if (nombre !== undefined) {
+            updateFields.push('nombre = ?');
+            updateValues.push(nombre);
+        }
+        if (apellido_pat !== undefined) {
+            updateFields.push('apellido_pat = ?');
+            updateValues.push(apellido_pat);
+        }
+        if (apellido_mat !== undefined) {
+            updateFields.push('apellido_mat = ?');
+            updateValues.push(apellido_mat);
+        }
+        if (rut !== undefined) {
+            updateFields.push('rut = ?');
+            updateValues.push(rut);
+        }
+        if (email !== undefined) {
+            updateFields.push('email = ?');
+            updateValues.push(email);
+        }
+
+        if (updateFields.length === 0) {
+            throw new Error('No hay campos para actualizar');
+        }
+
+        updateValues.push(id);
+        const [result] = await pool.query(
+            `UPDATE usuarios SET ${updateFields.join(', ')} WHERE id = ?`,
+            updateValues
+        );
+        
+        return result.affectedRows > 0;
+    }
+
     static async delete(id) {
         const connection = await pool.getConnection();
         try {
