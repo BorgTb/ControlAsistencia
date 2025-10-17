@@ -930,42 +930,53 @@ const exportData = () => {
 
 const loadData = async (apiData = null) => {
   if (apiData && (apiData.trabajadores || apiData.marcacionesAgrupadasPorUsuario)) {
-    // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
+    // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {}, configuracion: {} }
     const trabajadoresData = apiData.trabajadores || [];
     const marcacionesData = apiData.marcacionesAgrupadasPorUsuario || {};
+    const configuracion = apiData.configuracion || {};
     
     // Procesar cada trabajador con sus marcaciones
     const empleadosProcessed = [];
     
     for (const trabajador of trabajadoresData) {
-      const marcacionesTrabajador = marcacionesData[trabajador.id];
+      const datosTrabajador = marcacionesData[trabajador.id];
       
-      if (marcacionesTrabajador && marcacionesTrabajador.marcaciones) {
-        // Procesar cada fecha con marcaciones
-        for (const [fecha, marcaciones] of Object.entries(marcacionesTrabajador.marcaciones)) {
-          // Organizar marcaciones por tipo
-          const entrada = marcaciones.find(m => m.tipo === 'entrada');
-          const salida = marcaciones.find(m => m.tipo === 'salida');
-          const colaciones = marcaciones.filter(m => m.tipo === 'colacion');
+      if (datosTrabajador && datosTrabajador.marcaciones) {
+        // Procesar cada fecha con datos de asistencia
+        for (const [fecha, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+          const marcacionesArray = datosAsistencia.marcaciones || [];
+          const turno = datosAsistencia.turno;
+          const estadoAsistencia = datosAsistencia.estado_asistencia;
+          const atraso = datosAsistencia.atraso;
+          const salida = datosAsistencia.salida;
           
-          // Determinar estado basado en marcaciones
-          let estado = 'AUSENTE';
-          if (entrada && salida) {
-            estado = 'PRESENTE';
-          } else if (entrada && !salida) {
-            estado = 'PRESENTE'; // Aún en turno
-          }
+          // Buscar marcaciones específicas
+          const marcacionEntrada = marcacionesArray.find(m => m.tipo === 'entrada');
+          const marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida');
+          const colaciones = marcacionesArray.filter(m => m.tipo === 'colacion');
           
           // Calcular horas trabajadas
-          const horasTrabajadas = entrada && salida 
-            ? calcularHorasTrabajadas(entrada.hora, salida.hora)
-            : entrada ? 'En turno' : '0:00';
+          const horasTrabajadas = marcacionEntrada && marcacionSalida 
+            ? calcularHorasTrabajadas(marcacionEntrada.hora, marcacionSalida.hora)
+            : marcacionEntrada ? 'En turno' : '0:00';
           
-          // Obtener información del lugar si existe lugar_id en la marcación
+          // Obtener información del lugar
           let lugarInfo = null;
-          if (entrada?.lugar_id || salida?.lugar_id) {
-            const lugarId = entrada?.lugar_id || salida?.lugar_id;
+          if (marcacionEntrada?.lugar_id || marcacionSalida?.lugar_id) {
+            const lugarId = marcacionEntrada?.lugar_id || marcacionSalida?.lugar_id;
             lugarInfo = lugaresDB.value.find(l => l.lugar_id === lugarId);
+          }
+          
+          // Determinar estado para la vista
+          let estadoVista = 'AUSENTE';
+          if (estadoAsistencia === 'PRESENTE') {
+            estadoVista = 'PRESENTE';
+          } else if (estadoAsistencia === 'TARDANZA') {
+            estadoVista = 'TARDANZA';
+          } else if (estadoAsistencia === 'NO_ASISTE') {
+            estadoVista = 'AUSENTE';
+          } else if (estadoAsistencia === 'DIA_LIBRE') {
+            estadoVista = 'DIA_LIBRE';
           }
           
           empleadosProcessed.push({
@@ -976,16 +987,16 @@ const loadData = async (apiData = null) => {
             iniciales: `${trabajador.usuario_nombre.charAt(0)}${trabajador.usuario_apellido_pat.charAt(0)}`.toUpperCase(),
             cargo: trabajador.rol_en_empresa || 'N/A',
             departamento: trabajador.rol_en_empresa || 'N/A',
-            tipoJornada: 'fija', // Por definir según datos disponibles
-            turnoEspecifico: 'N/A',
+            tipoJornada: turno ? 'fija' : 'N/A',
+            turnoEspecifico: turno?.nombre || 'N/A',
             lugarTrabajo: lugarInfo ? `${lugarInfo.nombre}, ${lugarInfo.ciudad || lugarInfo.comuna}` : 'No especificado',
             region: lugarInfo?.region || 'N/A',
             establecimiento: lugarInfo?.lugar_id || 'N/A',
-            entrada: entrada ? entrada.hora.substring(0, 5) : 'N/A',
-            salida: salida ? salida.hora.substring(0, 5) : 'N/A',
-            estado: estado,
+            entrada: marcacionEntrada ? marcacionEntrada.hora.substring(0, 5) : 'N/A',
+            salida: marcacionSalida ? marcacionSalida.hora.substring(0, 5) : 'N/A',
+            estado: estadoVista,
             fecha: fecha,
-            hashChecksum: entrada ? entrada.hash : (salida ? salida.hash : 'N/A'),
+            hashChecksum: marcacionEntrada ? marcacionEntrada.hash : (marcacionSalida ? marcacionSalida.hash : 'N/A'),
             horas: horasTrabajadas,
             es_est: trabajador.es_est || false,
             empresa_est_id: trabajador.es_est ? trabajador.empresa_id : null,
@@ -996,9 +1007,33 @@ const loadData = async (apiData = null) => {
             empresaAsignadaRut: trabajador.es_est ? trabajador.empresa_asignada_rut : null,
             empresa_id: trabajador.empresa_id,
             email: trabajador.usuario_email,
-            // Información adicional de marcaciones
+            // Información adicional
             colaciones: colaciones.length,
-            marcaciones_completas: marcaciones
+            marcaciones_completas: marcacionesArray,
+            // Información de turno
+            turno_info: turno ? {
+              id: turno.id,
+              nombre: turno.nombre,
+              hora_inicio: turno.hora_inicio,
+              hora_fin: turno.hora_fin,
+              dia_semana: turno.dia_semana
+            } : null,
+            // Información de atraso
+            atraso_info: atraso ? {
+              atrasado: atraso.atrasado,
+              minutos_atraso: atraso.minutos_atraso,
+              dentro_tolerancia: atraso.dentro_tolerancia,
+              llego_antes: atraso.llego_antes,
+              minutos_anticipacion: atraso.minutos_anticipacion
+            } : null,
+            // Información de salida
+            salida_info: salida ? {
+              salida_anticipada: salida.salida_anticipada,
+              minutos_anticipados: salida.minutos_anticipados,
+              hora_salida_esperada: salida.hora_salida_esperada,
+              compensacion_requerida: salida.compensacion_requerida,
+              minutos_compensacion: salida.minutos_compensacion
+            } : null
           });
         }
       } else {

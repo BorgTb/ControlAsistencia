@@ -1001,10 +1001,13 @@ const actualizarHorasLaborales = async (req, res) => {
 // Nuevo: Obtener tipos de turno disponibles para la empresa del usuario
 const obtenerTiposTurnos = async (req, res) => {
     try {
+        console.log(req.user);
         const empresa_id = req.user.empresa_id
         // Obtener solo los tipos de turno de la empresa
         const tiposTurnos = await TipoTurnosModel.getByEmpresaId(empresa_id);
         // para cada tipo de turno agregarle los dias en que aplica
+
+        console.log("Obteniendo tipos de turnos para empresa ID:", empresa_id);
         const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
         console.log("Tipos de turnos obtenidos:", tiposConDias);
         res.status(200).json({
