@@ -11,68 +11,118 @@
           <p class="mt-2 text-gray-600">Control y supervisión de asistencia del personal</p>
         </div>
 
-        <!-- Filtros Avanzados (Art. 25) - Sin scroll lateral, todos visibles -->
-        <div class="bg-white shadow rounded-lg mb-6">
-          <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">🔍 Filtros de Consulta (Art. 25)</h3>
+        <!-- Filtros Avanzados (Art. 25) -->
+        <div class="bg-white shadow-md rounded-lg mb-6">
+          <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-xl font-semibold text-gray-900">Filtros de Consulta</h3>
+                  <p class="text-sm text-gray-500">Según Art. 25 - Registro de asistencia</p>
+                </div>
+              </div>
+              <button 
+                @click="mostrarFiltros = !mostrarFiltros"
+                class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <svg 
+                  class="w-5 h-5 mr-2 transition-transform duration-200" 
+                  :class="{ 'rotate-180': !mostrarFiltros }"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                <span class="text-sm font-medium">
+                  {{ mostrarFiltros ? 'Ocultar' : 'Mostrar' }} Filtros
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div 
+            v-show="mostrarFiltros" 
+            class="px-6 pb-6 transition-all duration-300"
+          >
             
-            <!-- Fila 1: Búsqueda Individual y Grupal de Trabajadores -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Por Trabajador</label>
-                <div class="space-y-2">
-                  <input 
-                    v-model="filters.trabajadorNombre" 
-                    type="text" 
-                    placeholder="Nombre o apellido"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <!-- Fila 1: Búsqueda de Trabajadores y Tipo de Jornada -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- Búsqueda de Trabajadores -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  👤 Búsqueda por Trabajador
+                </label>
+                <input 
+                  v-model="filters.trabajadorNombre" 
+                  type="text" 
+                  placeholder="Buscar por nombre o apellido..."
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                <input 
+                  v-model="filters.trabajadorRut" 
+                  type="text" 
+                  placeholder="Buscar por RUT (ej: 12.345.678-9)"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                <!-- Búsqueda grupal -->
+                <div v-if="empleadosDisponibles.length > 10" class="mt-2">
+                  <button 
+                    @click="mostrarSelectorGrupal = !mostrarSelectorGrupal"
+                    class="w-full px-4 py-2.5 border border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-between transition-all"
                   >
-                  <input 
-                    v-model="filters.trabajadorRut" 
-                    type="text" 
-                    placeholder="RUT (12.345.678-9)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                  <!-- Búsqueda grupal (activada si hay más de 10 trabajadores) -->
-                  <div v-if="empleadosDisponibles.length > 10">
-                    <button 
-                      @click="mostrarSelectorGrupal = !mostrarSelectorGrupal"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
-                    >
-                      👥 Selección múltiple ({{ trabajadoresSeleccionados.length }} seleccionados)
-                    </button>
-                    <div v-if="mostrarSelectorGrupal" class="mt-2 border border-gray-200 rounded-md max-h-48 overflow-y-auto">
-                      <div class="p-2 border-b bg-gray-50">
+                    <span class="text-sm font-medium text-blue-700">
+                      👥 Selección múltiple
+                    </span>
+                    <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                      {{ trabajadoresSeleccionados.length }} seleccionados
+                    </span>
+                  </button>
+                  <div v-if="mostrarSelectorGrupal" class="mt-2 border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden bg-white">
+                    <div class="p-3 border-b bg-gray-50 sticky top-0 z-10">
+                      <input 
+                        v-model="busquedaGrupal" 
+                        placeholder="🔍 Buscar trabajadores..."
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                    </div>
+                    <div class="overflow-y-auto max-h-44">
+                      <label 
+                        v-for="empleado in empleadosFiltrados" 
+                        :key="empleado.id" 
+                        class="flex items-center px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                      >
                         <input 
-                          v-model="busquedaGrupal" 
-                          placeholder="Buscar trabajadores..."
-                          class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          type="checkbox" 
+                          :value="empleado.id" 
+                          v-model="trabajadoresSeleccionados"
+                          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         >
-                      </div>
-                      <div class="p-1">
-                        <label v-for="empleado in empleadosFiltrados" :key="empleado.id" class="flex items-center px-2 py-1 hover:bg-gray-100 text-sm">
-                          <input 
-                            type="checkbox" 
-                            :value="empleado.id" 
-                            v-model="trabajadoresSeleccionados"
-                            class="mr-2"
-                          >
-                          {{ empleado.nombre }} ({{ empleado.cedula }})
-                        </label>
-                      </div>
+                        <span class="ml-3 text-sm text-gray-700">
+                          <span class="font-medium">{{ empleado.nombre }}</span>
+                          <span class="text-gray-500 ml-2">({{ empleado.cedula }})</span>
+                        </span>
+                      </label>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <!-- Tipo de Jornada Mejorado -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Por Tipo de Jornada</label>
+              <!-- Tipo de Jornada -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  📋 Tipo de Jornada
+                </label>
                 <select 
                   v-model="filters.tipoJornada" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
-                  <option value="">Todos los tipos</option>
+                  <option value="">Todos los tipos de jornada</option>
                   <option value="fija">Jornada Fija</option>
                   <option value="turnos">Por Turnos</option>
                   <option value="ciclos">Por Ciclos</option>
@@ -80,177 +130,113 @@
                   <option value="excepcional">Excepcional</option>
                   <option value="parcial">Tiempo Parcial</option>
                 </select>
+                
+                <label class="block text-sm font-semibold text-gray-700 mt-4">
+                  🏢 Lugar de Trabajo
+                </label>
+                <select 
+                  v-model="filters.lugarTrabajo" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Todos los lugares</option>
+                  <option value="oficina">🏢 Oficina</option>
+                  <option value="terreno">⛏️ Terreno</option>
+                  <option value="mixto">🔄 Mixto</option>
+                  <option value="remoto">💻 Remoto/Teletrabajo</option>
+                </select>
               </div>
             </div>
 
-            <!-- Fila 2: Período Predeterminado y Fechas Personalizadas -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Período Predeterminado</label>
-                <div class="space-y-2">
-                  <div class="grid grid-cols-2 gap-2">
-                    <button 
-                      @click="setPeriodoRapido('semana')" 
-                      :class="{'bg-blue-500 text-white': filters.periodoRapido === 'semana', 'bg-gray-200 text-gray-700': filters.periodoRapido !== 'semana'}"
-                      class="px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      Última Semana
-                    </button>
-                    <button 
-                      @click="setPeriodoRapido('quincena')" 
-                      :class="{'bg-blue-500 text-white': filters.periodoRapido === 'quincena', 'bg-gray-200 text-gray-700': filters.periodoRapido !== 'quincena'}"
-                      class="px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      Última Quincena
-                    </button>
-                    <button 
-                      @click="setPeriodoRapido('mes')" 
-                      :class="{'bg-blue-500 text-white': filters.periodoRapido === 'mes', 'bg-gray-200 text-gray-700': filters.periodoRapido !== 'mes'}"
-                      class="px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      Mes Anterior
-                    </button>
-                    <button 
-                      @click="setPeriodoRapido('trimestre')" 
-                      :class="{'bg-blue-500 text-white': filters.periodoRapido === 'trimestre', 'bg-gray-200 text-gray-700': filters.periodoRapido !== 'trimestre'}"
-                      class="px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      Último Trimestre
-                    </button>
-                  </div>
-                  <div class="flex space-x-2">
+            <!-- Fila 2: Período y Turnos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- Período -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  📅 Período de Consulta
+                </label>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <button 
+                    @click="setPeriodoRapido('semana')" 
+                    :class="filters.periodoRapido === 'semana' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  >
+                    Última Semana
+                  </button>
+                  <button 
+                    @click="setPeriodoRapido('quincena')" 
+                    :class="filters.periodoRapido === 'quincena' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  >
+                    Quincena
+                  </button>
+                  <button 
+                    @click="setPeriodoRapido('mes')" 
+                    :class="filters.periodoRapido === 'mes' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  >
+                    Mes Anterior
+                  </button>
+                  <button 
+                    @click="setPeriodoRapido('trimestre')" 
+                    :class="filters.periodoRapido === 'trimestre' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
+                  >
+                    Trimestre
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Fecha Desde</label>
                     <input 
                       v-model="filters.fechaDesde" 
                       type="date" 
-                      placeholder="Desde"
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     >
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Fecha Hasta</label>
                     <input 
                       v-model="filters.fechaHasta" 
                       type="date" 
-                      placeholder="Hasta"
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     >
                   </div>
                 </div>
               </div>
               
-              <!-- Turnos por Extensión Horaria -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Por Turnos y Horarios</label>
-                <div class="space-y-2">
-                  <select 
-                    v-model="filters.turnoEspecifico" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todos los turnos</option>
-                    <option value="mañana_lv">Lunes a Viernes, 08:00 a 17:00</option>
-                    <option value="mañana_lj">Lunes a Jueves, 10:00 a 18:00</option>
-                    <option value="tarde_lv">Lunes a Viernes, 14:00 a 23:00</option>
-                    <option value="noche_lv">Lunes a Viernes, 22:00 a 06:00</option>
-                    <option value="rotativo_247">24/7 Rotativo</option>
-                    <option value="4x4">4x4 (4 días trabajo, 4 descanso)</option>
-                    <option value="7x7">7x7 (7 días trabajo, 7 descanso)</option>
-                  </select>
-                  <select 
-                    v-model="filters.lugarTrabajo" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todos los lugares de trabajo</option>
-                    <option value="oficina">Oficina</option>
-                    <option value="terreno">Terreno</option>
-                    <option value="mixto">Mixto</option>
-                    <option value="remoto">Remoto/Teletrabajo</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fila 3: Ubicación con Filtro por Región -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Por Ubicación</label>
-                <div class="space-y-2">
-                  <!-- Filtro por región (si hay más de 5 locales por región) -->
-                  <select 
-                    v-model="filters.region" 
-                    @change="filtrarLocalesPorRegion"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todas las regiones</option>
-                    <option value="metropolitana">Región Metropolitana</option>
-                    <option value="valparaiso">Región de Valparaíso</option>
-                    <option value="biobio">Región del Biobío</option>
-                    <option value="antofagasta">Región de Antofagasta</option>
-                  </select>
-                  
-                  <!-- Local/Establecimiento/Faena -->
-                  <select 
-                    v-model="filters.establecimiento" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todos los establecimientos</option>
-                    <option v-for="local in localesFiltrados" :key="local.codigo" :value="local.codigo">
-                      {{ local.nombre }} - {{ local.tipo }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              
-              <!-- Cargo y Empresa -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Por Organización</label>
-                <div class="space-y-2">
-                  <select 
-                    v-model="filters.cargo" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todos los cargos</option>
-                    <option value="gerente">Gerente</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="operario">Operario</option>
-                    <option value="administrativo">Administrativo</option>
-                    <option value="tecnico">Técnico</option>
-                    <option value="contador">Contador</option>
-                    <option value="vendedor">Vendedor</option>
-                  </select>
-                  
-                  <select 
-                    v-model="filters.empresaTransitoria" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Personal directo + EST</option>
-                    <option value="directos">Solo Personal Directo</option>
-                    <option value="manpower">Manpower Chile S.A.</option>
-                    <option value="randstad">Randstad Chile S.A.</option>
-                    <option value="adecco">Adecco Chile S.A.</option>
-                    <option value="experis">Experis Chile S.A.</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fila 4: Estado de Asistencia y Departamento -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Estado de Asistencia</label>
+              <!-- Turnos -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  ⏰ Turno y Horario
+                </label>
                 <select 
-                  v-model="filters.estado" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="filters.turnoEspecifico" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
-                  <option value="">Todos los estados</option>
-                  <option value="PRESENTE">Presente</option>
-                  <option value="AUSENTE">Ausente</option>
-                  <option value="TARDANZA">Tardanza</option>
-                  <option value="AUSENCIA_JUSTIFICADA">Ausencia Justificada</option>
-                  <option value="LICENCIA_MEDICA">Licencia Médica</option>
+                  <option value="">Todos los turnos</option>
+                  <option value="mañana_lv">🌅 Lunes a Viernes, 08:00 a 17:00</option>
+                  <option value="mañana_lj">🌄 Lunes a Jueves, 10:00 a 18:00</option>
+                  <option value="tarde_lv">🌆 Lunes a Viernes, 14:00 a 23:00</option>
+                  <option value="noche_lv">🌙 Lunes a Viernes, 22:00 a 06:00</option>
+                  <option value="rotativo_247">🔄 24/7 Rotativo</option>
+                  <option value="4x4">📆 4x4 (4 días trabajo, 4 descanso)</option>
+                  <option value="7x7">📆 7x7 (7 días trabajo, 7 descanso)</option>
                 </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Departamento/Área</label>
+                
+                <label class="block text-sm font-semibold text-gray-700 mt-4">
+                  🏛️ Departamento/Área
+                </label>
                 <select 
                   v-model="filters.departamento" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todos los departamentos</option>
                   <option value="RRHH">Recursos Humanos</option>
@@ -261,48 +247,140 @@
                   <option value="ADMINISTRACION">Administración</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Código Hash/Checksum</label>
+            </div>
+
+            <!-- Fila 3: Ubicación y Organización -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- Ubicación -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  📍 Ubicación Geográfica
+                </label>
+                <select 
+                  v-model="filters.region" 
+                  @change="filtrarLocalesPorRegion"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Todas las regiones</option>
+                  <option value="metropolitana">Región Metropolitana</option>
+                  <option value="valparaiso">Región de Valparaíso</option>
+                  <option value="biobio">Región del Biobío</option>
+                  <option value="antofagasta">Región de Antofagasta</option>
+                </select>
+                
+                <select 
+                  v-model="filters.establecimiento" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Todos los establecimientos</option>
+                  <option v-for="local in localesFiltrados" :key="local.codigo" :value="local.codigo">
+                    {{ local.nombre }} - {{ local.tipo }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- Organización -->
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  💼 Organización y Cargo
+                </label>
+                <select 
+                  v-model="filters.cargo" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Todos los cargos</option>
+                  <option value="gerente">👔 Gerente</option>
+                  <option value="supervisor">👷 Supervisor</option>
+                  <option value="operario">🔧 Operario</option>
+                  <option value="administrativo">📋 Administrativo</option>
+                  <option value="tecnico">🔬 Técnico</option>
+                  <option value="contador">🧮 Contador</option>
+                  <option value="vendedor">🤝 Vendedor</option>
+                </select>
+                
+                <select 
+                  v-model="filters.empresaTransitoria" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Personal directo + EST</option>
+                  <option value="directos">Solo Personal Directo</option>
+                  <option value="manpower">Manpower Chile S.A.</option>
+                  <option value="randstad">Randstad Chile S.A.</option>
+                  <option value="adecco">Adecco Chile S.A.</option>
+                  <option value="experis">Experis Chile S.A.</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fila 4: Estado y Hash -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  ✅ Estado de Asistencia
+                </label>
+                <select 
+                  v-model="filters.estado" 
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="PRESENTE">✅ Presente</option>
+                  <option value="AUSENTE">❌ Ausente</option>
+                  <option value="TARDANZA">⚠️ Tardanza</option>
+                  <option value="AUSENCIA_JUSTIFICADA">📝 Ausencia Justificada</option>
+                  <option value="LICENCIA_MEDICA">🏥 Licencia Médica</option>
+                </select>
+              </div>
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700">
+                  🔐 Código Hash/Checksum
+                </label>
                 <input 
                   v-model="filters.hashChecksum" 
                   type="text" 
-                  placeholder="Código de verificación"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ingrese código de verificación..."
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
                 >
               </div>
             </div>
 
             <!-- Botones de Acción -->
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
               <button 
                 @click="applyFilters" 
-                class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-sm font-medium"
               >
-                🔍 Aplicar Filtros
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                Aplicar Filtros
               </button>
               <button 
                 @click="clearFilters" 
-                class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+                class="inline-flex items-center px-5 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all shadow-sm font-medium"
               >
-                🧹 Limpiar Filtros
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Limpiar
               </button>
+              <div class="border-l border-gray-300 mx-2"></div>
               <button 
                 @click="exportarPDF" 
-                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                class="inline-flex items-center px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all shadow-sm font-medium"
               >
-                📄 Exportar PDF
+                📄 PDF
               </button>
               <button 
                 @click="exportarWord" 
-                class="bg-blue-800 text-white px-4 py-2 rounded-md hover:bg-blue-900 transition-colors"
+                class="inline-flex items-center px-4 py-2.5 bg-blue-800 text-white rounded-lg hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-800 focus:ring-offset-2 transition-all shadow-sm font-medium"
               >
-                📝 Exportar Word
+                📝 Word
               </button>
               <button 
                 @click="exportarExcel" 
-                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                class="inline-flex items-center px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all shadow-sm font-medium"
               >
-                📊 Exportar Excel
+                📊 Excel
               </button>
             </div>
           </div>
@@ -464,6 +542,9 @@ const filters = ref({
   estado: '',
   departamento: ''
 })
+
+// Control de visibilidad de filtros
+const mostrarFiltros = ref(true)
 
 // Nuevas variables para búsqueda grupal
 const mostrarSelectorGrupal = ref(false)

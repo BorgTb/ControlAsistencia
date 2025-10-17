@@ -129,6 +129,8 @@ router.beforeEach(async (to, from, next) => {
     // Si hay token y usuario autenticado, verificar que el token sea válido
     if (authStore.getToken && authStore.isAuthenticated) {
         try {
+            
+            /*
             const isTokenValid = await verifyTokenAPI(authStore.getToken)
             
             if (!isTokenValid) {
@@ -137,7 +139,8 @@ router.beforeEach(async (to, from, next) => {
                 dataStore.clearData()
                 next({ name: 'Login' })
                 return
-            }
+            }*/
+           return next()
         } catch (error) {
             console.warn('Error verificando token en navegación:', error)
             authStore.clearAuth()

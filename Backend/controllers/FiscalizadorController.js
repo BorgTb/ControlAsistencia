@@ -123,11 +123,17 @@ const cerrarSesion = async (req, res) => {
 
 
 
+const obtenerDatosEmpresa = async (empresa_id) => {
+    // esta funcion permite obtener los datos de la empresa seleccionada para poder utilizar los filtros del reporte
+    
+}
+
 
 const FiscalizadorController = {
   solicitarAcceso,
   validarCodigo,
-  cerrarSesion
+  cerrarSesion,
+    obtenerDatosEmpresa
 }
 
 

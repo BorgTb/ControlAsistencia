@@ -7,6 +7,7 @@ import TestRoutes from "./TestRoutes.js";
 import UserEmpresaRoutes from "./UserEmpresa.js";
 import AuditoriaRoutes from "./AuditoriaRoutes.js";
 import EstadisticasRoutes from "./EstadisticasRoutes.js";
+import FiscalizadorRoutes from "./FiscalizadorRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -17,7 +18,8 @@ const router = {
     empresas: EmpresasRoutes,
     test: TestRoutes,
     auditoria: AuditoriaRoutes,
-    estadisticas: EstadisticasRoutes
+    estadisticas: EstadisticasRoutes,
+    fiscalizador: FiscalizadorRoutes
 }
 
 export default router;
