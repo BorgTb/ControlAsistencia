@@ -649,10 +649,15 @@ const trabajadoresFiltrados = computed(() => {
 
   
   return trabajadores.value.filter(trabajador => {
-    // Verificar diferentes campos de rol
-    const esTrabajador = trabajador.rol === 'trabajador' || 
-                        trabajador.usuario_rol === 'trabajador' || 
-                        trabajador.rol_en_empresa === 'trabajador';
+    // Verificar diferentes campos de rol (incluir EST y trabajadores normales)
+    // Aceptar: trabajador, est, o cualquier rol que no sea admin/empresa
+    const esPersonalValido = !trabajador.rol || 
+                            trabajador.rol === 'trabajador' || 
+                            trabajador.rol === 'est' ||
+                            trabajador.usuario_rol === 'trabajador' || 
+                            trabajador.usuario_rol === 'est' ||
+                            trabajador.rol_en_empresa === 'trabajador' ||
+                            trabajador.rol_en_empresa === 'est';
     
 
     
@@ -688,7 +693,7 @@ const trabajadoresFiltrados = computed(() => {
       }
     }
     
-    return esTrabajador && matchBusqueda && matchDepartamento && matchHoras;
+    return esPersonalValido && matchBusqueda && matchDepartamento && matchHoras;
   });
 });
 
@@ -969,6 +974,7 @@ const cargarTrabajadores = async () => {
   try {
     cargando.value = true;
     const response = await obtenerTrabajadores(false);
+    console.log('📦 Respuesta completa de trabajadores:', response);
     trabajadores.value = response || [];
     
     // Debug: verificar horas laborales en frontend

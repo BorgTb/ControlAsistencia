@@ -6,6 +6,7 @@ export function useEmpresa() {
   const obtenerTrabajadores = async (enrolados = false) => {
     try {
         const response = await EmpresaServices.obtenerTrabajadores(user.value.rut,enrolados);
+       
         return response.data;
     } catch (error) {
       console.error("Error al obtener trabajadores:", error);
