@@ -1,6 +1,9 @@
 import AuthService from '../services/authservice.js';
 import NotificacionService from '../services/NotificacionService.js';
 import LoginCodigoModel from '../model/LoginCodigoModel.js';
+import TipoTurnosModel from '../model/TipoTurnosModel.js';
+import EmpresaLugarModel from '../model/EmpresaLugarModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 
 const solicitarAcceso = async (req, res) => {
     try {
@@ -123,9 +126,30 @@ const cerrarSesion = async (req, res) => {
 
 
 
-const obtenerDatosEmpresa = async (empresa_id) => {
+const obtenerDatosEmpresa = async (req, res) => {
     // esta funcion permite obtener los datos de la empresa seleccionada para poder utilizar los filtros del reporte
     
+    // datos que necesitamos:
+    const empresaId = 4; // ID de la empresa (en un caso real, esto vendría del token o de la sesión)
+    
+    
+    
+    const tiposJornada = await TipoTurnosModel.getTiposJornada();
+    const lugaresTrabajo = await EmpresaLugarModel.getLugaresByEmpresaId(empresaId);
+    const turnos = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresaId);
+    const roles = await UsuarioEmpresaModel.obtenerRolesDisponiblesByEmpresaId(empresaId);
+    // departamentos (si aplica) por implementar
+    
+
+    res.status(200).json({
+        success: true,
+        tiposJornada: tiposJornada,
+        lugaresTrabajo: lugaresTrabajo,
+        turnos: turnos,
+        roles: roles
+    });
+
+
 }
 
 
@@ -133,7 +157,7 @@ const FiscalizadorController = {
   solicitarAcceso,
   validarCodigo,
   cerrarSesion,
-    obtenerDatosEmpresa
+  obtenerDatosEmpresa
 }
 
 

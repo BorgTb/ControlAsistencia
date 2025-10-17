@@ -287,6 +287,16 @@ class TipoTurnosModel {
         const [rows] = await pool.query(query, [empresaId]);
         return rows;
     }
+
+    static async getTiposJornada() {
+        const query = `
+            SELECT * 
+            FROM tipo_jornada
+        `;
+        const [rows] = await pool.query(query);
+        return rows;
+        return rows;
+    }
 }
 
 export default TipoTurnosModel;

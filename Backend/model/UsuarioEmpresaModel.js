@@ -584,6 +584,16 @@ class UsuarioEmpresaModel {
         return result;
     }
 
+    static async obtenerRolesDisponiblesByEmpresaId(empresaId) {
+        const query = `
+            SELECT DISTINCT rol_en_empresa
+            FROM usuarios_empresas
+            WHERE empresa_id = ?
+        `;
+        const [rows] = await db.execute(query, [empresaId]);
+        return rows.map(row => row.rol_en_empresa);
+    }
+
 }
 
 export default UsuarioEmpresaModel;
