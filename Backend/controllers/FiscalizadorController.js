@@ -128,7 +128,6 @@ const cerrarSesion = async (req, res) => {
 
 const obtenerDatosEmpresa = async (req, res) => {
     // esta funcion permite obtener los datos de la empresa seleccionada para poder utilizar los filtros del reporte
-    
     // datos que necesitamos:
     const empresaId = 4; // ID de la empresa (en un caso real, esto vendría del token o de la sesión)
     
@@ -139,17 +138,21 @@ const obtenerDatosEmpresa = async (req, res) => {
     const turnos = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresaId);
     const roles = await UsuarioEmpresaModel.obtenerRolesDisponiblesByEmpresaId(empresaId);
     // departamentos (si aplica) por implementar
-    
+    const regiones = lugaresTrabajo.map(lugar => lugar.region).filter((value, index, self) => self.indexOf(value) === index);
+    const comunas = lugaresTrabajo.map(lugar => lugar.comuna).filter((value, index, self) => self.indexOf(value) === index);
 
     res.status(200).json({
         success: true,
         tiposJornada: tiposJornada,
         lugaresTrabajo: lugaresTrabajo,
         turnos: turnos,
-        roles: roles
+        roles: roles,
+        regiones: regiones,
+        comunas: comunas
     });
+}
 
-
+const obtenerAsistencias = async (req, res) => {
 }
 
 

@@ -157,6 +157,33 @@ export function useReportes() {
     error.value = ''
   }
 
+
+  const obtenerDatosParaFiltros = async () => {
+    if (!hasEmpresaSeleccionada.value) {
+      return {
+        success: false,
+        error: 'Debe seleccionar una empresa primero'
+      }
+    }
+    isLoading.value = true
+    error.value = ''
+    try {
+      const response = await ReporteService.obtenerDatosParaFiltros()
+      if (!response.success) {
+        error.value = response.error
+      }
+      return response
+    } catch (e) {
+      error.value = 'Error de conexión. Por favor, intenta de nuevo.'
+      return {
+        success: false,
+        error: error.value
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // Estado
     isLoading,
@@ -171,6 +198,7 @@ export function useReportes() {
     obtenerReporteModificacionesTurnos,
     obtenerReporteMarcacionesDiarias,
     obtenerReporteIncidentesTecnicos,
+    obtenerDatosParaFiltros,
     
     // Método de exportación
     exportarReporte,

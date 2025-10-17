@@ -105,6 +105,23 @@ class ReporteService {
     }
   }
 
+  async obtenerDatosParaFiltros() {
+    try {
+      const response = await apiClient.get('/fiscalizador/datos-filtros')
+      return {
+        success: true,
+        data: response.data,
+        message: 'Datos para filtros obtenidos correctamente'
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener datos para filtros',
+        status: error.response?.status
+      }
+    }
+  }
+
   /**
    * Obtiene el reporte de asistencia
    * @param {Object} filtros - Filtros para el reporte
@@ -112,8 +129,9 @@ class ReporteService {
    */
   async obtenerReporteAsistencia(filtros = {}) {
     const dataStore = useDataStore()
+    console.log("Empresa seleccionada en reporteService:", dataStore.empresaSeleccionada)
     try {
-      const response = await apiClient.get(`/reportes/asistencia/${dataStore.empresaSeleccionada.rut}`, { params: filtros })
+      const response = await apiClient.get(`/reportes/asistencia/${dataStore.empresaSeleccionada.id}`, { params: filtros })
       return {
         success: true,
         data: response.data,

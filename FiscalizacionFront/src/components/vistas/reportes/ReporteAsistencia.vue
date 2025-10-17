@@ -50,6 +50,14 @@
             v-show="mostrarFiltros" 
             class="px-6 pb-6 transition-all duration-300"
           >
+            <!-- Indicador de carga de filtros -->
+            <div v-if="cargandoFiltros" class="flex justify-center items-center py-12">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span class="ml-3 text-gray-600">Cargando opciones de filtro...</span>
+            </div>
+
+            <!-- Contenido de filtros -->
+            <div v-else>
             
             <!-- Fila 1: Búsqueda de Trabajadores y Tipo de Jornada -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -123,12 +131,9 @@
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todos los tipos de jornada</option>
-                  <option value="fija">Jornada Fija</option>
-                  <option value="turnos">Por Turnos</option>
-                  <option value="ciclos">Por Ciclos</option>
-                  <option value="bisemanal">Bisemanal</option>
-                  <option value="excepcional">Excepcional</option>
-                  <option value="parcial">Tiempo Parcial</option>
+                  <option v-for="jornada in tiposJornadaDB" :key="jornada.id" :value="jornada.id">
+                    {{ jornada.nombre }} - {{ jornada.descripcion }}
+                  </option>
                 </select>
                 
                 <label class="block text-sm font-semibold text-gray-700 mt-4">
@@ -139,10 +144,9 @@
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todos los lugares</option>
-                  <option value="oficina">🏢 Oficina</option>
-                  <option value="terreno">⛏️ Terreno</option>
-                  <option value="mixto">🔄 Mixto</option>
-                  <option value="remoto">💻 Remoto/Teletrabajo</option>
+                  <option v-for="lugar in lugaresDB" :key="lugar.lugar_id" :value="lugar.lugar_id">
+                    {{ lugar.nombre }} - {{ lugar.ciudad }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -222,29 +226,22 @@
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todos los turnos</option>
-                  <option value="mañana_lv">🌅 Lunes a Viernes, 08:00 a 17:00</option>
-                  <option value="mañana_lj">🌄 Lunes a Jueves, 10:00 a 18:00</option>
-                  <option value="tarde_lv">🌆 Lunes a Viernes, 14:00 a 23:00</option>
-                  <option value="noche_lv">🌙 Lunes a Viernes, 22:00 a 06:00</option>
-                  <option value="rotativo_247">🔄 24/7 Rotativo</option>
-                  <option value="4x4">📆 4x4 (4 días trabajo, 4 descanso)</option>
-                  <option value="7x7">📆 7x7 (7 días trabajo, 7 descanso)</option>
+                  <option v-for="turno in turnosDB" :key="turno.id" :value="turno.id">
+                    {{ turno.nombre }} ({{ turno.hora_inicio?.substring(0,5) }} - {{ turno.hora_fin?.substring(0,5) }})
+                  </option>
                 </select>
                 
                 <label class="block text-sm font-semibold text-gray-700 mt-4">
-                  🏛️ Departamento/Área
+                  🏛️ Cargo/Rol
                 </label>
                 <select 
-                  v-model="filters.departamento" 
+                  v-model="filters.cargo" 
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
-                  <option value="">Todos los departamentos</option>
-                  <option value="RRHH">Recursos Humanos</option>
-                  <option value="IT">Tecnología</option>
-                  <option value="VENTAS">Ventas</option>
-                  <option value="MARKETING">Marketing</option>
-                  <option value="PRODUCCION">Producción</option>
-                  <option value="ADMINISTRACION">Administración</option>
+                  <option value="">Todos los cargos</option>
+                  <option v-for="rol in rolesDB" :key="rol" :value="rol">
+                    {{ rol }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -262,10 +259,9 @@
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todas las regiones</option>
-                  <option value="metropolitana">Región Metropolitana</option>
-                  <option value="valparaiso">Región de Valparaíso</option>
-                  <option value="biobio">Región del Biobío</option>
-                  <option value="antofagasta">Región de Antofagasta</option>
+                  <option v-for="region in regionesDB" :key="region" :value="region">
+                    {{ region }}
+                  </option>
                 </select>
                 
                 <select 
@@ -273,8 +269,8 @@
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 >
                   <option value="">Todos los establecimientos</option>
-                  <option v-for="local in localesFiltrados" :key="local.codigo" :value="local.codigo">
-                    {{ local.nombre }} - {{ local.tipo }}
+                  <option v-for="local in localesFiltrados" :key="local.lugar_id" :value="local.lugar_id">
+                    {{ local.nombre }} - {{ local.ciudad || local.comuna }}
                   </option>
                 </select>
               </div>
@@ -383,6 +379,8 @@
                 📊 Excel
               </button>
             </div>
+            </div>
+            <!-- Fin del contenido de filtros -->
           </div>
         </div>
 
@@ -523,7 +521,7 @@ import Header from '../../component/header.vue'
 import { useReportes } from '../../composables/useReportes'
 
 
-const {obtenerReporteAsistencia} = useReportes()
+const {obtenerReporteAsistencia, obtenerDatosParaFiltros} = useReportes()
 
 const filters = ref({
   trabajadorNombre: '',
@@ -545,6 +543,7 @@ const filters = ref({
 
 // Control de visibilidad de filtros
 const mostrarFiltros = ref(true)
+const cargandoFiltros = ref(true)
 
 // Nuevas variables para búsqueda grupal
 const mostrarSelectorGrupal = ref(false)
@@ -553,34 +552,16 @@ const trabajadoresSeleccionados = ref([])
 
 const empleados = ref([])
 const empleadosDisponibles = ref([]) // Lista completa para búsqueda grupal
-const establecimientos = ref([]) // Lista de establecimientos por región
 
-// Datos simulados de establecimientos por región
-const establecimientosPorRegion = {
-  metropolitana: [
-    { codigo: 'rm_central', nombre: 'Oficina Central Santiago', tipo: 'Oficina' },
-    { codigo: 'rm_las_condes', nombre: 'Sucursal Las Condes', tipo: 'Sucursal' },
-    { codigo: 'rm_providencia', nombre: 'Centro de Distribución Providencia', tipo: 'Centro Distribución' },
-    { codigo: 'rm_puente_alto', nombre: 'Planta Puente Alto', tipo: 'Planta' },
-    { codigo: 'rm_maipu', nombre: 'Bodega Maipú', tipo: 'Bodega' },
-    { codigo: 'rm_quinta_normal', nombre: 'Taller Quinta Normal', tipo: 'Taller' }
-  ],
-  valparaiso: [
-    { codigo: 'vp_viña', nombre: 'Sucursal Viña del Mar', tipo: 'Sucursal' },
-    { codigo: 'vp_valpo', nombre: 'Puerto Valparaíso', tipo: 'Puerto' },
-    { codigo: 'vp_quilpue', nombre: 'Centro Logístico Quilpué', tipo: 'Centro Logístico' }
-  ],
-  biobio: [
-    { codigo: 'bb_concepcion', nombre: 'Oficina Concepción', tipo: 'Oficina' },
-    { codigo: 'bb_talcahuano', nombre: 'Puerto Talcahuano', tipo: 'Puerto' },
-    { codigo: 'bb_los_angeles', nombre: 'Faena Forestal Los Ángeles', tipo: 'Faena' }
-  ],
-  antofagasta: [
-    { codigo: 'af_antofagasta', nombre: 'Puerto Antofagasta', tipo: 'Puerto' },
-    { codigo: 'af_calama', nombre: 'Faena Minera Calama', tipo: 'Faena Minera' },
-    { codigo: 'af_mejillones', nombre: 'Terminal Mejillones', tipo: 'Terminal' }
-  ]
-}
+// Datos dinámicos desde la API
+const tiposJornadaDB = ref([])
+const lugaresDB = ref([])
+const turnosDB = ref([])
+const rolesDB = ref([])
+const regionesDB = ref([])
+const comunasDB = ref([])
+
+const establecimientos = ref([]) // Lista de establecimientos por región
 
 // Computed para empleados filtrados en búsqueda grupal
 const empleadosFiltrados = computed(() => {
@@ -595,10 +576,11 @@ const empleadosFiltrados = computed(() => {
 // Computed para locales filtrados por región
 const localesFiltrados = computed(() => {
   if (!filters.value.region) {
-    // Si no hay región seleccionada, mostrar todos
-    return Object.values(establecimientosPorRegion).flat()
+    // Si no hay región seleccionada, mostrar todos los lugares
+    return lugaresDB.value
   }
-  return establecimientosPorRegion[filters.value.region] || []
+  // Filtrar lugares por región seleccionada
+  return lugaresDB.value.filter(lugar => lugar.region === filters.value.region)
 })
 
 const summary = computed(() => {
@@ -913,6 +895,47 @@ const calcularHorasTrabajadas = (entrada, salida) => {
 
 onMounted(async () => {
   try {
+    cargandoFiltros.value = true;
+    
+    // Cargar datos para filtros
+    const dataFiltros = await obtenerDatosParaFiltros();
+    console.log('Datos para filtros obtenidos:', dataFiltros);
+    
+    // Verificar estructura de respuesta
+    const filtrosData = dataFiltros?.data?.data || dataFiltros?.data;
+    
+    if (filtrosData) {
+      // Cargar tipos de jornada
+      tiposJornadaDB.value = filtrosData.tiposJornada || [];
+      
+      // Cargar lugares de trabajo
+      lugaresDB.value = filtrosData.lugaresTrabajo || [];
+      
+      // Cargar turnos
+      turnosDB.value = filtrosData.turnos || [];
+      
+      // Cargar roles/cargos
+      rolesDB.value = filtrosData.roles || [];
+      
+      // Cargar regiones (eliminar duplicados y valores vacíos)
+      regionesDB.value = [...new Set(filtrosData.regiones || [])].filter(r => r && r.trim());
+      
+      // Cargar comunas (eliminar duplicados y valores vacíos)
+      comunasDB.value = [...new Set(filtrosData.comunas || [])].filter(c => c && c.trim());
+      
+      console.log('Filtros cargados:', {
+        tiposJornada: tiposJornadaDB.value.length,
+        lugares: lugaresDB.value.length,
+        turnos: turnosDB.value.length,
+        roles: rolesDB.value.length,
+        regiones: regionesDB.value.length,
+        comunas: comunasDB.value.length
+      });
+    }
+    
+    cargandoFiltros.value = false;
+    
+    // Cargar datos de asistencia
     const rest = await obtenerReporteAsistencia()
     console.log('Datos recibidos de la API:', rest.data)
     
@@ -926,6 +949,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error al obtener datos de asistencia:', error)
+    cargandoFiltros.value = false;
     // En caso de error, cargar datos de fallback
     await loadData()
   }
