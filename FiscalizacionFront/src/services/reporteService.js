@@ -105,9 +105,10 @@ class ReporteService {
     }
   }
 
-  async obtenerDatosParaFiltros() {
+  async obtenerDatosParaFiltros(empresa_id) {
+    
     try {
-      const response = await apiClient.get('/fiscalizador/datos-filtros')
+      const response = await apiClient.get(`/fiscalizador/datos-filtros/${empresa_id}`)
       return {
         success: true,
         data: response.data,

@@ -278,21 +278,8 @@
               <!-- Organización -->
               <div class="space-y-3">
                 <label class="block text-sm font-semibold text-gray-700">
-                  💼 Organización y Cargo
+                  💼 Organización
                 </label>
-                <select 
-                  v-model="filters.cargo" 
-                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                >
-                  <option value="">Todos los cargos</option>
-                  <option value="gerente">👔 Gerente</option>
-                  <option value="supervisor">👷 Supervisor</option>
-                  <option value="operario">🔧 Operario</option>
-                  <option value="administrativo">📋 Administrativo</option>
-                  <option value="tecnico">🔬 Técnico</option>
-                  <option value="contador">🧮 Contador</option>
-                  <option value="vendedor">🤝 Vendedor</option>
-                </select>
                 
                 <select 
                   v-model="filters.empresaTransitoria" 

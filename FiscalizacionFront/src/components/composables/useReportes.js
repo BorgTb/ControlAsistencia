@@ -168,7 +168,7 @@ export function useReportes() {
     isLoading.value = true
     error.value = ''
     try {
-      const response = await ReporteService.obtenerDatosParaFiltros()
+      const response = await ReporteService.obtenerDatosParaFiltros(dataStore.getEmpresaSeleccionada.id)
       if (!response.success) {
         error.value = response.error
       }

@@ -129,9 +129,9 @@ const cerrarSesion = async (req, res) => {
 const obtenerDatosEmpresa = async (req, res) => {
     // esta funcion permite obtener los datos de la empresa seleccionada para poder utilizar los filtros del reporte
     // datos que necesitamos:
-    const empresaId = 4; // ID de la empresa (en un caso real, esto vendría del token o de la sesión)
+    const empresaId = req.params.empresa_id; // ID de la empresa (en un caso real, esto vendría del token o de la sesión)
     
-    
+    console.log("Obteniendo datos para filtros de la empresa ID:", empresaId);
     
     const tiposJornada = await TipoTurnosModel.getTiposJornada();
     const lugaresTrabajo = await EmpresaLugarModel.getLugaresByEmpresaId(empresaId);
