@@ -6,6 +6,7 @@ import EmpresaLugarModel from '../model/EmpresaLugarModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import MarcacionesServices from '../services/MarcacionesServices.js';
+import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 import {DateTime} from 'luxon';
 
 const solicitarAcceso = async (req, res) => {
@@ -176,35 +177,265 @@ const obtenerAsistencias = async (req, res) => {
         ...estAsignaciones.map(est => ({ ...est, es_est: true })),
         ...trabajadoresEmpresa.map(trabajador => ({ ...trabajador, es_est: false }))
     ].filter(trabajador => trabajador.usuario_rol_global !== 'empleador');
-   // para cada trabajador, obtener sus asistencias agrupadas fecha, 
    
-   /*
-   Ejemplo de retorno marcaciones
-        Marcaciones obtenidas: {
-            success: true,
-            marcaciones: { '2025-10-16': [ [Object], [Object], [Object], [Object] ] }
-        }
-   */
-  // para cada trabajador se agrupan las marcaciones
-  //feccha actual chile
+    // Obtener configuración de tolerancias de la empresa
+    const configuracionTolerancia = await ConfigToleranciaModel.findByEmpresaId(empresaId);
+    const toleranciaEntradaMinutos = configuracionTolerancia?.tolerancia_entrada || 0;
+    
+    // Fecha actual Chile
     const fechaInicio = DateTime.now().setZone('America/Santiago').toISODate();
     const fechaFin = fechaInicio; // mismo día por ahora
     const marcacionesAgrupadasPorUsuario = {};
+    
+    /**
+     * Calcula si una marcación de entrada está atrasada
+     * @param {string} horaEntradaMarcacion - Hora de la marcación (HH:mm:ss)
+     * @param {string} horaInicioTurno - Hora de inicio del turno (HH:mm:ss)
+     * @param {number} toleranciaMinutos - Tolerancia en minutos
+     * @returns {object} - { atrasado: boolean, minutos_atraso: number, dentro_tolerancia: boolean }
+     */
+    const calcularAtraso = (horaEntradaMarcacion, horaInicioTurno, toleranciaMinutos) => {
+        // Convertir horas a minutos desde medianoche
+        const [horaM, minM, segM] = horaEntradaMarcacion.split(':').map(Number);
+        const [horaT, minT, segT] = horaInicioTurno.split(':').map(Number);
+        
+        const minutosMarcacion = horaM * 60 + minM;
+        const minutosTurno = horaT * 60 + minT;
+        
+        const diferenciaMinutos = minutosMarcacion - minutosTurno;
+        
+        // Si la diferencia es positiva, llegó tarde
+        const atrasado = diferenciaMinutos > 0;
+        const minutos_atraso = Math.max(0, diferenciaMinutos);
+        const dentro_tolerancia = diferenciaMinutos <= toleranciaMinutos;
+        
+        return {
+            atrasado,
+            minutos_atraso,
+            dentro_tolerancia,
+            llego_antes: diferenciaMinutos < 0,
+            minutos_anticipacion: Math.max(0, -diferenciaMinutos)
+        };
+    };
+    
+    /**
+     * Calcula si una marcación de salida fue anticipada
+     * @param {string} horaSalidaMarcacion - Hora de la marcación de salida (HH:mm:ss)
+     * @param {string} horaFinTurno - Hora de fin del turno (HH:mm:ss)
+     * @param {string} horaEntradaMarcacion - Hora real de entrada del trabajador (HH:mm:ss)
+     * @param {string} horaInicioTurno - Hora de inicio del turno (HH:mm:ss)
+     * @param {number} toleranciaMinutos - Tolerancia en minutos
+     * @returns {object} - { salida_anticipada: boolean, minutos_anticipados: number, hora_salida_esperada: string }
+     */
+    const calcularSalidaAnticipada = (horaSalidaMarcacion, horaFinTurno, horaEntradaMarcacion, horaInicioTurno, toleranciaMinutos) => {
+        // Convertir horas a minutos desde medianoche
+        const [horaSM, minSM] = horaSalidaMarcacion.split(':').map(Number);
+        const [horaFT, minFT] = horaFinTurno.split(':').map(Number);
+        const [horaEM, minEM] = horaEntradaMarcacion.split(':').map(Number);
+        const [horaIT, minIT] = horaInicioTurno.split(':').map(Number);
+        
+        const minutosSalidaMarcacion = horaSM * 60 + minSM;
+        const minutosFinTurno = horaFT * 60 + minFT;
+        const minutosEntradaMarcacion = horaEM * 60 + minEM;
+        const minutosInicioTurno = horaIT * 60 + minIT;
+        
+        // Calcular el atraso en la entrada
+        const atrasoEntrada = minutosEntradaMarcacion - minutosInicioTurno;
+        
+        // Si el trabajador entró tarde fuera de la tolerancia, debe compensar ese tiempo
+        let horaFinAjustada = minutosFinTurno;
+        if (atrasoEntrada > toleranciaMinutos) {
+            // Debe compensar el tiempo que llegó tarde (fuera de tolerancia)
+            horaFinAjustada = minutosFinTurno + (atrasoEntrada - toleranciaMinutos);
+        } else if (atrasoEntrada > 0 && atrasoEntrada <= toleranciaMinutos) {
+            // Llegó tarde pero dentro de tolerancia, debe salir a su hora normal
+            horaFinAjustada = minutosFinTurno;
+        }
+        
+        // Calcular diferencia entre la salida real y la salida esperada
+        const diferenciaMinutos = horaFinAjustada - minutosSalidaMarcacion;
+        
+        // Si la diferencia es positiva, salió antes de lo que debía
+        const salida_anticipada = diferenciaMinutos > 0;
+        const minutos_anticipados = Math.max(0, diferenciaMinutos);
+        
+        // Calcular la hora de salida esperada en formato HH:mm
+        const horaEsperada = Math.floor(horaFinAjustada / 60);
+        const minutosEsperados = horaFinAjustada % 60;
+        const hora_salida_esperada = `${String(horaEsperada).padStart(2, '0')}:${String(minutosEsperados).padStart(2, '0')}:00`;
+        
+        return {
+            salida_anticipada,
+            minutos_anticipados,
+            hora_salida_esperada,
+            hora_salida_real: horaSalidaMarcacion,
+            compensacion_requerida: atrasoEntrada > toleranciaMinutos,
+            minutos_compensacion: Math.max(0, atrasoEntrada - toleranciaMinutos)
+        };
+    };
+    
     for (const trabajador of trabajadores) {    
         const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id);
+        
+        // Obtener el turno activo del trabajador para la fecha
+        const TurnosModel = (await import('../model/TurnosModel.js')).default;
+        const turnoActivo = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fechaInicio);
+        
+        // Validar asistencia por cada fecha en el rango
+        const marcacionesConEstado = {};
+        
+        if (marcaciones.success && marcaciones.marcaciones) {
+            // Validar estado de asistencia para cada fecha
+            for (const [fecha, marcacionesDia] of Object.entries(marcaciones.marcaciones)) {
+                const turnoFecha = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fecha);
+                
+                if (turnoFecha) {
+                    // Hay turno asignado para este día
+                    const marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
+                    const marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                    
+                    const tieneEntrada = !!marcacionEntrada;
+                    const tieneSalida = !!marcacionSalida;
+                    
+                    // Calcular atraso si hay marcación de entrada
+                    let infoAtraso = null;
+                    let infoSalida = null;
+                    let estadoAsistencia = 'NO_ASISTE';
+                    
+                    if (tieneEntrada) {
+                        infoAtraso = calcularAtraso(
+                            marcacionEntrada.hora, 
+                            turnoFecha.hora_inicio, 
+                            toleranciaEntradaMinutos
+                        );
+                        
+                        // Calcular salida anticipada si hay marcación de salida
+                        if (tieneSalida) {
+                            infoSalida = calcularSalidaAnticipada(
+                                marcacionSalida.hora,
+                                turnoFecha.hora_fin,
+                                marcacionEntrada.hora,
+                                turnoFecha.hora_inicio,
+                                toleranciaEntradaMinutos
+                            );
+                        }
+                        
+                        // Determinar estado de asistencia
+                        if (infoAtraso.atrasado && !infoAtraso.dentro_tolerancia) {
+                            estadoAsistencia = 'TARDANZA'; // Llegó tarde y fuera de tolerancia
+                        } else {
+                            estadoAsistencia = 'PRESENTE'; // Llegó a tiempo o dentro de tolerancia
+                        }
+                    }
+                    
+                    // Agregar metadata de asistencia
+                    marcacionesConEstado[fecha] = {
+                        marcaciones: marcacionesDia,
+                        turno: {
+                            id: turnoFecha.id,
+                            nombre: turnoFecha.tipo_turno_nombre,
+                            hora_inicio: turnoFecha.hora_inicio,
+                            hora_fin: turnoFecha.hora_fin,
+                            dia_semana: turnoFecha.dia_semana
+                        },
+                        estado_asistencia: estadoAsistencia,
+                        tiene_entrada: tieneEntrada,
+                        tiene_salida: tieneSalida,
+                        atraso: infoAtraso ? {
+                            atrasado: infoAtraso.atrasado,
+                            minutos_atraso: infoAtraso.minutos_atraso,
+                            dentro_tolerancia: infoAtraso.dentro_tolerancia,
+                            tolerancia_minutos: toleranciaEntradaMinutos,
+                            llego_antes: infoAtraso.llego_antes,
+                            minutos_anticipacion: infoAtraso.minutos_anticipacion,
+                            hora_marcacion: marcacionEntrada.hora,
+                            hora_turno: turnoFecha.hora_inicio
+                        } : null,
+                        salida: infoSalida ? {
+                            salida_anticipada: infoSalida.salida_anticipada,
+                            minutos_anticipados: infoSalida.minutos_anticipados,
+                            hora_salida_esperada: infoSalida.hora_salida_esperada,
+                            hora_salida_real: infoSalida.hora_salida_real,
+                            compensacion_requerida: infoSalida.compensacion_requerida,
+                            minutos_compensacion: infoSalida.minutos_compensacion,
+                            hora_turno_fin: turnoFecha.hora_fin
+                        } : null
+                    };
+                } else {
+                    // No hay turno asignado para este día (día libre/descanso)
+                    marcacionesConEstado[fecha] = {
+                        marcaciones: marcacionesDia,
+                        turno: null,
+                        estado_asistencia: 'DIA_LIBRE',
+                        tiene_entrada: false,
+                        tiene_salida: false,
+                        atraso: null
+                    };
+                }
+            }
+            
+            // Verificar si hay turno para el día actual pero no hay marcaciones
+            if (turnoActivo && !marcaciones.marcaciones[fechaInicio]) {
+                marcacionesConEstado[fechaInicio] = {
+                    marcaciones: [],
+                    turno: {
+                        id: turnoActivo.id,
+                        nombre: turnoActivo.tipo_turno_nombre,
+                        hora_inicio: turnoActivo.hora_inicio,
+                        hora_fin: turnoActivo.hora_fin,
+                        dia_semana: turnoActivo.dia_semana
+                    },
+                    estado_asistencia: 'NO_ASISTE',
+                    tiene_entrada: false,
+                    tiene_salida: false,
+                    atraso: null
+                };
+            }
+        } else {
+            // No hay marcaciones, verificar si hay turno asignado
+            if (turnoActivo) {
+                marcacionesConEstado[fechaInicio] = {
+                    marcaciones: [],
+                    turno: {
+                        id: turnoActivo.id,
+                        nombre: turnoActivo.tipo_turno_nombre,
+                        hora_inicio: turnoActivo.hora_inicio,
+                        hora_fin: turnoActivo.hora_fin,
+                        dia_semana: turnoActivo.dia_semana
+                    },
+                    estado_asistencia: 'NO_ASISTE',
+                    tiene_entrada: false,
+                    tiene_salida: false,
+                    atraso: null
+                };
+            } else {
+                // No hay turno ni marcaciones (día libre)
+                marcacionesConEstado[fechaInicio] = {
+                    marcaciones: [],
+                    turno: null,
+                    estado_asistencia: 'DIA_LIBRE',
+                    tiene_entrada: false,
+                    tiene_salida: false,
+                    atraso: null
+                };
+            }
+        }
+        
         marcacionesAgrupadasPorUsuario[trabajador.id] = {
             trabajador: trabajador,
-            marcaciones: marcaciones.marcaciones
+            marcaciones: marcacionesConEstado
         };
     }
 
-
-    console.log('Marcaciones agrupadas por usuario: ', marcacionesAgrupadasPorUsuario);
+    console.log('Marcaciones agrupadas por usuario con validación de asistencia y atrasos:', marcacionesAgrupadasPorUsuario['22'].marcaciones);
 
     res.status(200).json({
         success: true,
         trabajadores: trabajadores,
-        marcacionesAgrupadasPorUsuario: marcacionesAgrupadasPorUsuario
+        marcacionesAgrupadasPorUsuario: marcacionesAgrupadasPorUsuario,
+        configuracion: {
+            tolerancia_entrada_minutos: toleranciaEntradaMinutos
+        }
     });
 
 }
