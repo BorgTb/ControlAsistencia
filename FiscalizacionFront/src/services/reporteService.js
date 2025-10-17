@@ -37,12 +37,6 @@ apiClient.interceptors.request.use((config) => {
     }
   }
 
-  // Agregar empresa seleccionada como parámetro
-  const dataStore = useDataStore()
-  const empresaSeleccionada = dataStore.getEmpresaSeleccionada
-  if (empresaSeleccionada?.rut) {
-    config.params = { ...config.params, empresaRut: empresaSeleccionada.rut }
-  }
 
   return config
 })
@@ -132,7 +126,7 @@ class ReporteService {
     const dataStore = useDataStore()
     console.log("Empresa seleccionada en reporteService:", dataStore.empresaSeleccionada)
     try {
-      const response = await apiClient.get(`/reportes/asistencia/${dataStore.empresaSeleccionada.id}`, { params: filtros })
+      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, filtros )
       return {
         success: true,
         data: response.data,

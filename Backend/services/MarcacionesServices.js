@@ -115,33 +115,59 @@ class MarcacionesService {
             };
         }
     }
-    
-    async obtenerMarcacionesPorUsuario(usuario_id, fecha = null) {
+
+    async obtenerMarcacionesPorUsuario(usuario_id, fechaInicio = null, fechaFin = null) {
         try {
-            const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fecha);
+            const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fechaInicio, fechaFin);
 
             // Si no hay marcaciones, devolver estructura vacía
             if (!marcaciones || marcaciones.length === 0) {
                 return {
                     success: true,
-                    fecha: fecha || new Date().toISOString().split('T')[0],
+                    fecha: fechaFin || new Date().toISOString().split('T')[0],
                     marcaciones: []
                 };
             }
 
             // Si se especificó una fecha, devolver las marcaciones directamente
-            if (fecha) {
+            if (fechaFin) {
                 return {
                     success: true,
-                    fecha: fecha,
+                    fecha: fechaFin,
                     marcaciones: marcaciones
                 };
             }
 
-            // Si no se especificó fecha, devolver todas las marcaciones agrupadas por fecha
+            // Si no se especificó fecha, agrupar todas las marcaciones por fecha
+            const marcacionesAgrupadas = {};
+            
+            marcaciones.forEach(marcacion => {
+                const fechaMarcacion = new Date(marcacion.fecha);
+                const fechaKey = fechaMarcacion.toISOString().split('T')[0];
+                
+                if (!marcacionesAgrupadas[fechaKey]) {
+                    marcacionesAgrupadas[fechaKey] = [];
+                }
+                
+                marcacionesAgrupadas[fechaKey].push({
+                    id: marcacion.id,
+                    usuario_empresa_id: marcacion.usuario_empresa_id,
+                    lugar_id: marcacion.lugar_id,
+                    mandante_id: marcacion.mandante_id,
+                    fecha: marcacion.fecha,
+                    hora: marcacion.hora,
+                    tipo: marcacion.tipo,
+                    hash: marcacion.hash,
+                    ip_origen: marcacion.ip_origen,
+                    geo_lat: marcacion.geo_lat,
+                    geo_lon: marcacion.geo_lon,
+                    created_at: marcacion.created_at
+                });
+            });
+            
             return {
                 success: true,
-                marcaciones
+                marcaciones: marcacionesAgrupadas
             };
 
         } catch (error) {

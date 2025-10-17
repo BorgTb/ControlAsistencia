@@ -54,16 +54,22 @@ class Marcaciones {
         return result;
     }
 
-    async getMarcacionesByUsuario(usuario_empresa_id, fecha = null) {
+    async getMarcacionesByUsuario(usuario_empresa_id, fechaInicio = null, fechaFin = null) {
         let query = `
             SELECT * FROM marcaciones
             WHERE usuario_empresa_id = ?
         `;
         let params = [usuario_empresa_id];
         
-        if (fecha) {
-            query += ` AND DATE(fecha) = ?`;
-            params.push(fecha);
+        if (fechaInicio && fechaFin) {
+            query += ` AND DATE(fecha) >= ? AND DATE(fecha) <= ?`;
+            params.push(fechaInicio, fechaFin);
+        } else if (fechaInicio) {
+            query += ` AND DATE(fecha) >= ?`;
+            params.push(fechaInicio);
+        } else if (fechaFin) {
+            query += ` AND DATE(fecha) <= ?`;
+            params.push(fechaFin);
         }
         
         query += ` ORDER BY fecha DESC, hora DESC`;

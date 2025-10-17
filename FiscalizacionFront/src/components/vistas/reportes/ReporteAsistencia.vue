@@ -111,9 +111,15 @@
                           v-model="trabajadoresSeleccionados"
                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         >
-                        <span class="ml-3 text-sm text-gray-700">
+                        <span class="ml-3 text-sm text-gray-700 flex-1">
                           <span class="font-medium">{{ empleado.nombre }}</span>
                           <span class="text-gray-500 ml-2">({{ empleado.cedula }})</span>
+                          <span v-if="empleado.es_est" class="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                            EST: {{ empleado.empresa_nombre }}
+                          </span>
+                          <span v-else class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                            Directo
+                          </span>
                         </span>
                       </label>
                     </div>
@@ -287,10 +293,9 @@
                 >
                   <option value="">Personal directo + EST</option>
                   <option value="directos">Solo Personal Directo</option>
-                  <option value="manpower">Manpower Chile S.A.</option>
-                  <option value="randstad">Randstad Chile S.A.</option>
-                  <option value="adecco">Adecco Chile S.A.</option>
-                  <option value="experis">Experis Chile S.A.</option>
+                  <option v-if="empresaEstDB" :value="empresaEstDB.empresa_id">
+                    EST: {{ empresaEstDB.emp_nombre }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -451,49 +456,190 @@
               <table class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Empleado</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Cargo/Jornada</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Lugar</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Entrada</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Salida</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Horas</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Hash</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Trabajador<br><span class="text-[10px] normal-case">(Nombre y RUT)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Empleador<br><span class="text-[10px] normal-case">(Razón Social / RUT)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Lugar<br><span class="text-[10px] normal-case">(Prestación)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Fecha<br><span class="text-[10px] normal-case">(dd/mm/aa)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Asistencia<br><span class="text-[10px] normal-case">(Sí/No)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Ausencia<br><span class="text-[10px] normal-case">(J/I)*</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Horario<br><span class="text-[10px] normal-case">(Entrada - Salida)</span></th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Observaciones<br><span class="text-[10px] normal-case">(Motivos)</span></th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="empleado in filteredData" :key="empleado.id">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10">
-                          <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span class="text-sm font-medium text-gray-700">{{ empleado.iniciales }}</span>
-                          </div>
+                  <tr v-if="filteredData.length === 0">
+                    <td colspan="8" class="px-6 py-12 text-center">
+                      <div class="flex flex-col items-center justify-center">
+                        <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay registros de asistencia</h3>
+                        <p class="text-sm text-gray-500">No se encontraron registros con los filtros seleccionados.</p>
+                        <p class="text-sm text-gray-500 mt-1">Intenta ajustar los filtros o seleccionar un rango de fechas diferente.</p>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-for="empleado in filteredData" :key="`${empleado.usuario_id}-${empleado.fecha}`">
+                    <!-- Trabajador (Nombre y RUT) -->
+                    <td class="px-4 py-3">
+                      <div class="text-sm font-semibold text-gray-900">{{ empleado.nombre }}</div>
+                      <div class="text-xs text-gray-600">RUT: {{ formatRut(empleado.cedula) }}</div>
+                      <div class="text-xs text-gray-500">{{ empleado.cargo }}</div>
+                    </td>
+                    
+                    <!-- Empleador (Razón Social / RUT) -->
+                    <td class="px-4 py-3">
+                      <!-- Empleador -->
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">
+                          {{ empleado.empresaEmpleadora }}
                         </div>
-                        <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900">{{ empleado.nombre }}</div>
-                          <div class="text-sm text-gray-500">RUT: {{ empleado.cedula }}</div>
-                          <div class="text-xs text-blue-600" v-if="empleado.empresaTransitoria">EST: {{ empleado.empresaTransitoria }}</div>
+                        <div class="text-xs text-gray-600">
+                          RUT: {{ formatRut(empleado.empresaEmpleadoraRut) }}
+                        </div>
+                        <div class="mt-2">
+                          <!-- Badge para EST -->
+                          <span v-if="empleado.es_est" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            🏢 EST (Art. 183-A)
+                          </span>
+                          <!-- Badge para Contrato Directo -->
+                          <span v-else class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            📋 Contrato Directo
+                          </span>
                         </div>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{{ empleado.cargo }}</div>
-                      <div class="text-sm text-gray-500">{{ empleado.tipoJornada }} - {{ empleado.departamento }}</div>
+                    
+                    <!-- Lugar de Prestación -->
+                    <td class="px-4 py-3">
+                      <div class="text-sm text-gray-900">{{ empleado.lugarTrabajo || 'No especificado' }}</div>
+                      <div class="text-xs text-gray-500" v-if="empleado.region && empleado.region !== 'N/A'">
+                        {{ empleado.region }}
+                      </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.lugarTrabajo?.replace('_', ' ') || 'N/A' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.entrada }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.salida }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span :class="getStatusClass(empleado.estado)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                        {{ empleado.estado }}
+                    
+                    <!-- Fecha (dd/mm/aa) -->
+                    <td class="px-4 py-3 text-center">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ formatFecha(empleado.fecha) }}
+                      </div>
+                    </td>
+                    
+                    <!-- Asistencia (Sí/No) -->
+                    <td class="px-4 py-3 text-center">
+                      <span v-if="empleado.estado === 'PRESENTE'" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800">
+                        SÍ
+                      </span>
+                      <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
+                        NO
                       </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ empleado.horas }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">{{ empleado.hashChecksum?.substring(0, 8) || 'N/A' }}</td>
+                    
+                    <!-- Ausencia (Justificada/Injustificada) -->
+                    <td class="px-4 py-3 text-center">
+                      <span v-if="empleado.estado === 'AUSENTE'" class="text-sm font-medium text-red-600">
+                        Injustificada
+                      </span>
+                      <span v-else-if="empleado.estado === 'AUSENCIA_JUSTIFICADA'" class="text-sm font-medium text-yellow-600">
+                        Justificada
+                      </span>
+                      <span v-else-if="empleado.estado === 'LICENCIA_MEDICA'" class="text-sm font-medium text-blue-600">
+                        Justificada
+                      </span>
+                      <span v-else class="text-sm text-gray-400">
+                        -
+                      </span>
+                    </td>
+                    
+                    <!-- Horario (Entrada - Salida) -->
+                    <td class="px-4 py-3">
+                      <div class="text-sm text-gray-900">
+                        <span class="font-medium">{{ empleado.entrada }}</span>
+                        <span class="text-gray-500 mx-1">-</span>
+                        <span class="font-medium">{{ empleado.salida }}</span>
+                      </div>
+                      <div class="text-xs text-gray-500">
+                        Total: {{ empleado.horas }}
+                      </div>
+                      <div v-if="empleado.colaciones > 0" class="text-xs text-blue-600 mt-1">
+                        🍽️ {{ empleado.colaciones }} colación{{ empleado.colaciones > 1 ? 'es' : '' }}
+                      </div>
+                    </td>
+                    
+                    <!-- Observaciones (Motivos) -->
+                    <td class="px-4 py-3">
+                      <div class="text-xs text-gray-700">
+                        <span v-if="empleado.estado === 'LICENCIA_MEDICA'" class="block">
+                          🏥 Licencia Médica
+                        </span>
+                        <span v-else-if="empleado.estado === 'AUSENCIA_JUSTIFICADA'" class="block">
+                          📝 Ausencia Justificada
+                        </span>
+                        <span v-else-if="empleado.estado === 'TARDANZA'" class="block">
+                          ⚠️ Ingreso tardío
+                        </span>
+                        <span v-else-if="empleado.estado === 'PRESENTE'" class="block text-green-600">
+                          ✓ Asistencia normal
+                        </span>
+                        <span v-else class="block text-red-600">
+                          ✗ Sin justificación
+                        </span>
+                      </div>
+                      <div class="text-[10px] text-gray-400 mt-1 font-mono">
+                        Hash: {{ empleado.hashChecksum?.substring(0, 8) || 'N/A' }}
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+            
+            <!-- Notas al pie -->
+            <div class="mt-6 px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div class="text-xs text-gray-600 space-y-2">
+                <div class="font-semibold text-gray-700 mb-2">📋 Notas Explicativas:</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <span class="font-medium">• EST (Empresa de Servicios Transitorios):</span> 
+                    Régimen establecido en Art. 183-A y siguientes del Código del Trabajo.
+                  </div>
+                  <div>
+                    <span class="font-medium">• Empleador EST:</span> 
+                    Empresa que tiene el contrato laboral con el trabajador.
+                  </div>
+                  <div>
+                    <span class="font-medium">• Empresa Asignada (Usuaria):</span> 
+                    Empresa donde el trabajador EST presta servicios temporalmente.
+                  </div>
+                  <div>
+                    <span class="font-medium">• Contrato Directo:</span> 
+                    Trabajador con relación laboral directa con la empresa.
+                  </div>
+                  <div>
+                    <span class="font-medium">• J/I:</span> 
+                    Justificada (J) / Injustificada (I)
+                  </div>
+                  <div>
+                    <span class="font-medium">• Ausencias Justificadas:</span> 
+                    Licencias médicas, permisos legales, vacaciones.
+                  </div>
+                  <div>
+                    <span class="font-medium">• Hash:</span> 
+                    Código de verificación criptográfica de integridad del registro.
+                  </div>
+                  <div>
+                    <span class="font-medium">• Lugar de Prestación:</span> 
+                    Ubicación física donde se realizan las labores.
+                  </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-300">
+                  <span class="font-medium text-gray-700">Generado conforme al Art. 25 del Código del Trabajo</span> - 
+                  Sistema de registro electrónico de asistencia con trazabilidad criptográfica.
+                  <span class="block mt-1 text-gray-500">
+                    Para trabajadores EST: Se registra tanto el empleador (EST) como la empresa usuaria (asignada) según Art. 183-O.
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -547,6 +693,8 @@ const turnosDB = ref([])
 const rolesDB = ref([])
 const regionesDB = ref([])
 const comunasDB = ref([])
+const trabajadoresDB = ref([])
+const empresaEstDB = ref(null)
 
 const establecimientos = ref([]) // Lista de establecimientos por región
 
@@ -585,7 +733,10 @@ const filteredData = computed(() => {
   
   // Filtro por trabajadores seleccionados grupalmente
   if (trabajadoresSeleccionados.value.length > 0) {
-    data = data.filter(e => trabajadoresSeleccionados.value.includes(e.id))
+    data = data.filter(e => 
+      trabajadoresSeleccionados.value.includes(e.id) || 
+      trabajadoresSeleccionados.value.includes(e.usuario_id)
+    )
   }
   
   // Filtro por nombre o apellido del trabajador
@@ -632,9 +783,14 @@ const filteredData = computed(() => {
   // Filtro por empresa transitoria
   if (filters.value.empresaTransitoria) {
     if (filters.value.empresaTransitoria === 'directos') {
-      data = data.filter(e => !e.empresaTransitoria)
+      data = data.filter(e => !e.es_est)
     } else {
-      data = data.filter(e => e.empresaTransitoria === filters.value.empresaTransitoria)
+      // Filtrar por ID de empresa EST (empleadora)
+      data = data.filter(e => 
+        e.empresaEmpleadora === filters.value.empresaTransitoria || 
+        e.empresa_est_id === filters.value.empresaTransitoria ||
+        (e.es_est && String(e.empresa_id) === String(filters.value.empresaTransitoria))
+      )
     }
   }
   
@@ -656,10 +812,15 @@ const filteredData = computed(() => {
   // Filtro por rango de fechas
   if (filters.value.fechaDesde && filters.value.fechaHasta) {
     data = data.filter(e => {
-      const fechaEmpleado = new Date(e.fecha)
-      const fechaDesde = new Date(filters.value.fechaDesde)
-      const fechaHasta = new Date(filters.value.fechaHasta)
-      return fechaEmpleado >= fechaDesde && fechaEmpleado <= fechaHasta
+      if (!e.fecha) return false;
+      const fechaEmpleado = new Date(e.fecha);
+      const fechaDesde = new Date(filters.value.fechaDesde);
+      const fechaHasta = new Date(filters.value.fechaHasta);
+      // Normalizar las fechas a medianoche para comparar solo días
+      fechaEmpleado.setHours(0, 0, 0, 0);
+      fechaDesde.setHours(0, 0, 0, 0);
+      fechaHasta.setHours(23, 59, 59, 999);
+      return fechaEmpleado >= fechaDesde && fechaEmpleado <= fechaHasta;
     })
   }
   
@@ -768,21 +929,126 @@ const exportData = () => {
 
 
 const loadData = async (apiData = null) => {
-  if (apiData && apiData.length > 0) {
-    // Usar datos reales de la API
-
+  if (apiData && (apiData.trabajadores || apiData.marcacionesAgrupadasPorUsuario)) {
+    // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
+    const trabajadoresData = apiData.trabajadores || [];
+    const marcacionesData = apiData.marcacionesAgrupadasPorUsuario || {};
+    
+    // Procesar cada trabajador con sus marcaciones
+    const empleadosProcessed = [];
+    
+    for (const trabajador of trabajadoresData) {
+      const marcacionesTrabajador = marcacionesData[trabajador.id];
+      
+      if (marcacionesTrabajador && marcacionesTrabajador.marcaciones) {
+        // Procesar cada fecha con marcaciones
+        for (const [fecha, marcaciones] of Object.entries(marcacionesTrabajador.marcaciones)) {
+          // Organizar marcaciones por tipo
+          const entrada = marcaciones.find(m => m.tipo === 'entrada');
+          const salida = marcaciones.find(m => m.tipo === 'salida');
+          const colaciones = marcaciones.filter(m => m.tipo === 'colacion');
+          
+          // Determinar estado basado en marcaciones
+          let estado = 'AUSENTE';
+          if (entrada && salida) {
+            estado = 'PRESENTE';
+          } else if (entrada && !salida) {
+            estado = 'PRESENTE'; // Aún en turno
+          }
+          
+          // Calcular horas trabajadas
+          const horasTrabajadas = entrada && salida 
+            ? calcularHorasTrabajadas(entrada.hora, salida.hora)
+            : entrada ? 'En turno' : '0:00';
+          
+          // Obtener información del lugar si existe lugar_id en la marcación
+          let lugarInfo = null;
+          if (entrada?.lugar_id || salida?.lugar_id) {
+            const lugarId = entrada?.lugar_id || salida?.lugar_id;
+            lugarInfo = lugaresDB.value.find(l => l.lugar_id === lugarId);
+          }
+          
+          empleadosProcessed.push({
+            id: trabajador.id,
+            usuario_id: trabajador.usuario_id,
+            nombre: `${trabajador.usuario_nombre} ${trabajador.usuario_apellido_pat} ${trabajador.usuario_apellido_mat}`.trim(),
+            cedula: trabajador.usuario_rut,
+            iniciales: `${trabajador.usuario_nombre.charAt(0)}${trabajador.usuario_apellido_pat.charAt(0)}`.toUpperCase(),
+            cargo: trabajador.rol_en_empresa || 'N/A',
+            departamento: trabajador.rol_en_empresa || 'N/A',
+            tipoJornada: 'fija', // Por definir según datos disponibles
+            turnoEspecifico: 'N/A',
+            lugarTrabajo: lugarInfo ? `${lugarInfo.nombre}, ${lugarInfo.ciudad || lugarInfo.comuna}` : 'No especificado',
+            region: lugarInfo?.region || 'N/A',
+            establecimiento: lugarInfo?.lugar_id || 'N/A',
+            entrada: entrada ? entrada.hora.substring(0, 5) : 'N/A',
+            salida: salida ? salida.hora.substring(0, 5) : 'N/A',
+            estado: estado,
+            fecha: fecha,
+            hashChecksum: entrada ? entrada.hash : (salida ? salida.hash : 'N/A'),
+            horas: horasTrabajadas,
+            es_est: trabajador.es_est || false,
+            empresa_est_id: trabajador.es_est ? trabajador.empresa_id : null,
+            // Para EST: empresa_empleadora es quien lo contrata, empresa_asignada es donde presta servicios
+            empresaEmpleadora: trabajador.es_est ? trabajador.empresa_empleadora_nombre : (trabajador.empresa_nombre || 'EmpresaPrincipal'),
+            empresaEmpleadoraRut: trabajador.es_est ? trabajador.empresa_empleadora_rut : (trabajador.empresa_rut || '123'),
+            empresaAsignada: trabajador.es_est ? trabajador.empresa_asignada_nombre : null,
+            empresaAsignadaRut: trabajador.es_est ? trabajador.empresa_asignada_rut : null,
+            empresa_id: trabajador.empresa_id,
+            email: trabajador.usuario_email,
+            // Información adicional de marcaciones
+            colaciones: colaciones.length,
+            marcaciones_completas: marcaciones
+          });
+        }
+      } else {
+        // Trabajador sin marcaciones
+        empleadosProcessed.push({
+          id: trabajador.id,
+          usuario_id: trabajador.usuario_id,
+          nombre: `${trabajador.usuario_nombre} ${trabajador.usuario_apellido_pat} ${trabajador.usuario_apellido_mat}`.trim(),
+          cedula: trabajador.usuario_rut,
+          iniciales: `${trabajador.usuario_nombre.charAt(0)}${trabajador.usuario_apellido_pat.charAt(0)}`.toUpperCase(),
+          cargo: trabajador.rol_en_empresa || 'N/A',
+          departamento: trabajador.rol_en_empresa || 'N/A',
+          tipoJornada: 'fija',
+          turnoEspecifico: 'N/A',
+          lugarTrabajo: 'No especificado',
+          region: 'N/A',
+          establecimiento: 'N/A',
+          entrada: 'N/A',
+          salida: 'N/A',
+          estado: 'AUSENTE',
+          fecha: new Date().toISOString().split('T')[0],
+          hashChecksum: 'N/A',
+          horas: '0:00',
+          es_est: trabajador.es_est || false,
+          empresa_est_id: trabajador.es_est ? trabajador.empresa_id : null,
+          // Para EST: empresa_empleadora es quien lo contrata, empresa_asignada es donde presta servicios
+          empresaEmpleadora: trabajador.es_est ? trabajador.empresa_empleadora_nombre : (trabajador.empresa_nombre || 'EmpresaPrincipal'),
+          empresaEmpleadoraRut: trabajador.es_est ? trabajador.empresa_empleadora_rut : (trabajador.empresa_rut || '123'),
+          empresaAsignada: trabajador.es_est ? trabajador.empresa_asignada_nombre : null,
+          empresaAsignadaRut: trabajador.es_est ? trabajador.empresa_asignada_rut : null,
+          empresa_id: trabajador.empresa_id,
+          email: trabajador.usuario_email,
+          colaciones: 0,
+          marcaciones_completas: []
+        });
+      }
+    }
+    
+    empleados.value = empleadosProcessed;
+    
+  } else if (apiData && Array.isArray(apiData)) {
+    // Estructura antigua (por compatibilidad)
     empleados.value = apiData.map(empleado => ({
       ...empleado,
-      // Normalizar campos para compatibilidad con la vista
-      estado: empleado.estado?.toUpperCase() || 'PRESENTE', // Convertir a mayúsculas
-      tipoJornada: normalizeJornadaType(empleado.tipoJornada),
-      turnoEspecifico: normalizeTurnoType(empleado.turnoEspecifico),
-      lugarTrabajo: normalizeLugarType(empleado.lugarTrabajo),
-      region: normalizeRegionType(empleado.region),
-      // Asegurar que horas esté calculado
+      estado: empleado.estado?.toUpperCase() || 'PRESENTE',
+      es_est: empleado.es_est || false,
+      empresa_est_id: empleado.empresa_est_id || null,
+      empresaTransitoria: empleado.es_est ? empleado.empresa_asignada_nombre : null,
       horas: empleado.horas || calcularHorasTrabajadas(empleado.entrada, empleado.salida)
-    }))
-
+    }));
   } else {
     // Datos de fallback/simulados para desarrollo
     empleados.value = [
@@ -802,15 +1068,25 @@ const loadData = async (apiData = null) => {
         estado: 'PRESENTE',
         cargo: 'tecnico',
         empresaTransitoria: null,
+        es_est: false,
         fecha: '2024-01-15',
         hashChecksum: 'abc123def456',
         horas: '9:00'
       }
-    ]
+    ];
   }
   
-  // Cargar empleados disponibles para búsqueda grupal
-  empleadosDisponibles.value = [...empleados.value]
+  // Si empleadosDisponibles está vacío (no se cargó desde filtros), cargar desde empleados
+  if (empleadosDisponibles.value.length === 0) {
+    empleadosDisponibles.value = empleados.value.map(e => ({
+      id: e.id,
+      nombre: e.nombre,
+      cedula: e.cedula,
+      rol: e.cargo,
+      es_est: e.es_est || false,
+      empresa_nombre: e.empresaTransitoria || 'Personal Directo'
+    }));
+  }
 }
 
 // Funciones de normalización para compatibilidad
@@ -880,6 +1156,40 @@ const calcularHorasTrabajadas = (entrada, salida) => {
   }
 }
 
+// Formatear RUT chileno (ej: 12345678-9)
+const formatRut = (rut) => {
+  if (!rut) return 'N/A'
+  
+  // Limpiar el RUT de puntos y guiones
+  const cleanRut = rut.toString().replace(/[.-]/g, '')
+  
+  // Separar dígito verificador
+  const dv = cleanRut.slice(-1)
+  const numero = cleanRut.slice(0, -1)
+  
+  // Formatear con puntos de miles
+  const formattedNumero = numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  
+  return `${formattedNumero}-${dv}`
+}
+
+// Formatear fecha a formato chileno (dd/mm/aa)
+const formatFecha = (fecha) => {
+  if (!fecha) return 'N/A'
+  
+  try {
+    const date = new Date(fecha)
+    const dia = date.getDate().toString().padStart(2, '0')
+    const mes = (date.getMonth() + 1).toString().padStart(2, '0')
+    const anio = date.getFullYear().toString().slice(-2) // Solo últimos 2 dígitos
+    
+    return `${dia}/${mes}/${anio}`
+  } catch (error) {
+    console.error('Error formateando fecha:', error)
+    return 'N/A'
+  }
+}
+
 onMounted(async () => {
   try {
     cargandoFiltros.value = true;
@@ -888,7 +1198,7 @@ onMounted(async () => {
     const dataFiltros = await obtenerDatosParaFiltros();
     console.log('Datos para filtros obtenidos:', dataFiltros);
     
-    // Verificar estructura de respuesta
+    // Verificar estructura de respuesta (puede ser data.data o data.data.data)
     const filtrosData = dataFiltros?.data?.data || dataFiltros?.data;
     
     if (filtrosData) {
@@ -901,7 +1211,7 @@ onMounted(async () => {
       // Cargar turnos
       turnosDB.value = filtrosData.turnos || [];
       
-      // Cargar roles/cargos
+      // Cargar roles/cargos (array de strings)
       rolesDB.value = filtrosData.roles || [];
       
       // Cargar regiones (eliminar duplicados y valores vacíos)
@@ -910,13 +1220,33 @@ onMounted(async () => {
       // Cargar comunas (eliminar duplicados y valores vacíos)
       comunasDB.value = [...new Set(filtrosData.comunas || [])].filter(c => c && c.trim());
       
+      // Cargar trabajadores
+      trabajadoresDB.value = filtrosData.trabajadores || [];
+      
+      // Cargar empresa EST (puede ser null)
+      empresaEstDB.value = filtrosData.empresaEst || null;
+      
+      // Actualizar empleados disponibles para búsqueda grupal
+      empleadosDisponibles.value = trabajadoresDB.value.map(t => ({
+        id: t.usuario_id,
+        nombre: `${t.usuario_nombre} ${t.usuario_apellido_pat} ${t.usuario_apellido_mat}`.trim(),
+        cedula: t.usuario_rut,
+        rol: t.rol_en_empresa,
+        email: t.usuario_email,
+        es_est: t.es_est,
+        empresa_nombre: t.es_est ? t.empresa_asignada_nombre : t.empresa_nombre,
+        empresa_rut: t.es_est ? t.empresa_asignada_rut : t.empresa_rut
+      }));
+      
       console.log('Filtros cargados:', {
         tiposJornada: tiposJornadaDB.value.length,
         lugares: lugaresDB.value.length,
         turnos: turnosDB.value.length,
         roles: rolesDB.value.length,
         regiones: regionesDB.value.length,
-        comunas: comunasDB.value.length
+        comunas: comunasDB.value.length,
+        trabajadores: trabajadoresDB.value.length,
+        empresaEst: empresaEstDB.value ? empresaEstDB.value.emp_nombre : 'Sin EST'
       });
     }
     
@@ -927,9 +1257,20 @@ onMounted(async () => {
     console.log('Datos recibidos de la API:', rest.data)
     
     // Verificar si la respuesta tiene la estructura esperada
-    if (rest?.data && Array.isArray(rest.data)) {
-      await loadData(rest.data)
-      console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
+    if (rest?.data) {
+      // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
+      if (rest.data.trabajadores || rest.data.marcacionesAgrupadasPorUsuario) {
+        await loadData(rest.data)
+        console.log('Datos cargados exitosamente:', empleados.value.length, 'registros de asistencia')
+      } 
+      // Estructura antigua (array directo)
+      else if (Array.isArray(rest.data)) {
+        await loadData(rest.data)
+        console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
+      } else {
+        console.warn('Estructura de datos no reconocida, usando datos de fallback')
+        await loadData()
+      }
     } else {
       console.warn('No se recibieron datos válidos de la API, usando datos de fallback')
       await loadData()
