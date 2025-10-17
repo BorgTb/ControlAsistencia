@@ -56,8 +56,10 @@ class EstAsignacionesModel {
         return rows;
     }
 
-    static async getTrabajadoresByUsuariaRut(usuariaRut) {
-        const query = ``;
+    static async getEstInfoByUsuariaRut(usuariaRut) {
+        const query = `SELECT * FROM empresa WHERE empresa_id in (SELECT ea.est_id FROM est_asignaciones as ea INNER JOIN empresa as e WHERE ea.usuaria_id = e.empresa_id AND e.emp_rut = ? AND (ea.fecha_fin IS NULL OR ea.fecha_fin >= CURDATE()))`;
+        const [rows] = await db.execute(query, [usuariaRut]);
+        return rows;
     }
 
     // Obtener asignaciones activas (sin fecha_fin)
