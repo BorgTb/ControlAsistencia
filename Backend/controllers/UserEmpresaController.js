@@ -1179,7 +1179,7 @@ const actualizarTrabajador = async (req, res) => {
         }
 
         // Obtener datos anteriores del trabajador para auditoría
-        const [trabajadorAnterior] = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
+        const trabajadorAnterior = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
         if (!trabajadorAnterior) {
             return res.status(404).json({
                 success: false,

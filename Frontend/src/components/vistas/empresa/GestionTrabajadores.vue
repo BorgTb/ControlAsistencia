@@ -176,7 +176,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas Semana</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas Laborales</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -227,12 +227,12 @@
                           : 'text-gray-900 bg-gray-100'
                       ]"
                     >
-                      {{ mostrarHorasSemana(trabajador) }} hrs
+                      {{ trabajador.horas_laborales || '45' }} hrs
                       <span v-if="excedeHorasAsignadas(trabajador)" class="ml-2 text-lg">🚨</span>
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(trabajador.ultimo_acceso) }}</td>
-                  <td v-if="!trabajador.esDeEst" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button 
                       @click="abrirModalDetalles(trabajador)" 
                       class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -383,14 +383,14 @@
                       Sin ID
                     </span>
                     
-                    <!-- Horas semanales -->
+                    <!-- Horas laborales asignadas -->
                     <span 
                       class="text-xs px-2 py-1 rounded font-medium"
                       :class="excedeHorasAsignadas(trabajador) 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-gray-100 text-gray-700'"
                     >
-                      {{ mostrarHorasSemana(trabajador) }} hrs/sem
+                      {{ trabajador.horas_laborales || '45' }} hrs/sem
                     </span>
                   </div>
                 </div>
