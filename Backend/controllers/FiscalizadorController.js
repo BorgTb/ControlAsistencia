@@ -455,12 +455,225 @@ const obtenerAsistencias = async (req, res) => {
     });
 
 }
+
+const obtenerAsistenciasDomingos = async (req, res) => {
+    const empresaId = req.params.empresa_id;
+
+    const fechaInicioParam = req.query.fecha_inicio;
+    const fechaFinParam = req.query.fecha_fin;
+
+    const estAsignaciones = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresaId);
+    const trabajadoresEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
+    const trabajadores = [
+        ...estAsignaciones.map(est => ({ ...est, es_est: true })),
+        ...trabajadoresEmpresa.map(trabajador => ({ ...trabajador, es_est: false }))
+    ].filter(trabajador => trabajador.usuario_rol_global !== 'empleador');
+   
+    // Obtener configuración de tolerancias de la empresa
+    const configuracionTolerancia = await ConfigToleranciaModel.findByEmpresaId(empresaId);
+    const toleranciaEntradaMinutos = configuracionTolerancia?.tolerancia_entrada || 0;
+    
+    // Configurar fechas: usar parámetros o fecha actual por defecto
+    const fechaActualChile = DateTime.now().setZone('America/Santiago').toISODate();
+    const fechaInicio = fechaInicioParam || fechaActualChile;
+    const fechaFin = fechaFinParam || fechaInicio;
+    
+    const marcacionesAgrupadasPorUsuario = {};
+    
+    /**
+     * Calcula si una marcación de entrada está atrasada
+     */
+    const calcularAtraso = (horaEntradaMarcacion, horaInicioTurno, toleranciaMinutos) => {
+        const [horaM, minM, segM] = horaEntradaMarcacion.split(':').map(Number);
+        const [horaT, minT, segT] = horaInicioTurno.split(':').map(Number);
+        
+        const minutosMarcacion = horaM * 60 + minM;
+        const minutosTurno = horaT * 60 + minT;
+        
+        const diferenciaMinutos = minutosMarcacion - minutosTurno;
+        
+        const atrasado = diferenciaMinutos > 0;
+        const minutos_atraso = Math.max(0, diferenciaMinutos);
+        const dentro_tolerancia = diferenciaMinutos <= toleranciaMinutos;
+        
+        return {
+            atrasado,
+            minutos_atraso,
+            dentro_tolerancia,
+            llego_antes: diferenciaMinutos < 0,
+            minutos_anticipacion: Math.max(0, -diferenciaMinutos)
+        };
+    };
+    
+    /**
+     * Calcula si una marcación de salida fue anticipada
+     */
+    const calcularSalidaAnticipada = (horaSalidaMarcacion, horaFinTurno, horaEntradaMarcacion, horaInicioTurno, toleranciaMinutos) => {
+        const [horaSM, minSM] = horaSalidaMarcacion.split(':').map(Number);
+        const [horaFT, minFT] = horaFinTurno.split(':').map(Number);
+        const [horaEM, minEM] = horaEntradaMarcacion.split(':').map(Number);
+        const [horaIT, minIT] = horaInicioTurno.split(':').map(Number);
+        
+        const minutosSalidaMarcacion = horaSM * 60 + minSM;
+        const minutosFinTurno = horaFT * 60 + minFT;
+        const minutosEntradaMarcacion = horaEM * 60 + minEM;
+        const minutosInicioTurno = horaIT * 60 + minIT;
+        
+        const atrasoEntrada = minutosEntradaMarcacion - minutosInicioTurno;
+        
+        let horaFinAjustada = minutosFinTurno;
+        if (atrasoEntrada > toleranciaMinutos) {
+            horaFinAjustada = minutosFinTurno + (atrasoEntrada - toleranciaMinutos);
+        } else if (atrasoEntrada > 0 && atrasoEntrada <= toleranciaMinutos) {
+            horaFinAjustada = minutosFinTurno;
+        }
+        
+        const diferenciaMinutos = horaFinAjustada - minutosSalidaMarcacion;
+        
+        const salida_anticipada = diferenciaMinutos > 0;
+        const minutos_anticipados = Math.max(0, diferenciaMinutos);
+        
+        const horaEsperada = Math.floor(horaFinAjustada / 60);
+        const minutosEsperados = horaFinAjustada % 60;
+        const hora_salida_esperada = `${String(horaEsperada).padStart(2, '0')}:${String(minutosEsperados).padStart(2, '0')}:00`;
+        
+        return {
+            salida_anticipada,
+            minutos_anticipados,
+            hora_salida_esperada,
+            hora_salida_real: horaSalidaMarcacion,
+            compensacion_requerida: atrasoEntrada > toleranciaMinutos,
+            minutos_compensacion: Math.max(0, atrasoEntrada - toleranciaMinutos)
+        };
+    };
+    
+    // Generar array con todas las fechas domingos en el rango
+    const fechasInicio = DateTime.fromISO(fechaInicio);
+    const fechasFin = DateTime.fromISO(fechaFin);
+    const fechasDomingos = [];
+    
+    let fechaActual = fechasInicio;
+    while (fechaActual <= fechasFin) {
+        if (fechaActual.weekday === 7) { // domingo
+            fechasDomingos.push(fechaActual.toISODate());
+        }
+        fechaActual = fechaActual.plus({ days: 1 });
+    }
+    
+    for (const trabajador of trabajadores) {    
+        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
+        
+        const TurnosModel = (await import('../model/TurnosModel.js')).default;
+        
+        const marcacionesConEstado = {};
+        
+        // Verificar cada domingo en el rango de fechas
+        for (const fechaDomingo of fechasDomingos) {
+            const turnoFecha = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fechaDomingo);
+            
+            // Solo procesar si tiene turno asignado para el domingo
+            if (turnoFecha) {
+                const marcacionesDia = marcaciones.success && marcaciones.marcaciones 
+                    ? marcaciones.marcaciones[fechaDomingo] || []
+                    : [];
+                
+                const marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
+                const marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                
+                const tieneEntrada = !!marcacionEntrada;
+                const tieneSalida = !!marcacionSalida;
+                
+                let infoAtraso = null;
+                let infoSalida = null;
+                let estadoAsistencia = 'NO_ASISTE';
+                
+                if (tieneEntrada) {
+                    infoAtraso = calcularAtraso(
+                        marcacionEntrada.hora, 
+                        turnoFecha.hora_inicio, 
+                        toleranciaEntradaMinutos
+                    );
+                    
+                    if (tieneSalida) {
+                        infoSalida = calcularSalidaAnticipada(
+                            marcacionSalida.hora,
+                            turnoFecha.hora_fin,
+                            marcacionEntrada.hora,
+                            turnoFecha.hora_inicio,
+                            toleranciaEntradaMinutos
+                        );
+                    }
+                    
+                    if (infoAtraso.atrasado && !infoAtraso.dentro_tolerancia) {
+                        estadoAsistencia = 'TARDANZA';
+                    } else {
+                        estadoAsistencia = 'PRESENTE';
+                    }
+                }
+                
+                marcacionesConEstado[fechaDomingo] = {
+                    marcaciones: marcacionesDia,
+                    turno: {
+                        id: turnoFecha.id,
+                        nombre: turnoFecha.tipo_turno_nombre,
+                        hora_inicio: turnoFecha.hora_inicio,
+                        hora_fin: turnoFecha.hora_fin,
+                        dia_semana: turnoFecha.dia_semana
+                    },
+                    estado_asistencia: estadoAsistencia,
+                    tiene_entrada: tieneEntrada,
+                    tiene_salida: tieneSalida,
+                    es_domingo: true,
+                    atraso: infoAtraso ? {
+                        atrasado: infoAtraso.atrasado,
+                        minutos_atraso: infoAtraso.minutos_atraso,
+                        dentro_tolerancia: infoAtraso.dentro_tolerancia,
+                        tolerancia_minutos: toleranciaEntradaMinutos,
+                        llego_antes: infoAtraso.llego_antes,
+                        minutos_anticipacion: infoAtraso.minutos_anticipacion,
+                        hora_marcacion: marcacionEntrada.hora,
+                        hora_turno: turnoFecha.hora_inicio
+                    } : null,
+                    salida: infoSalida ? {
+                        salida_anticipada: infoSalida.salida_anticipada,
+                        minutos_anticipados: infoSalida.minutos_anticipados,
+                        hora_salida_esperada: infoSalida.hora_salida_esperada,
+                        hora_salida_real: infoSalida.hora_salida_real,
+                        compensacion_requerida: infoSalida.compensacion_requerida,
+                        minutos_compensacion: infoSalida.minutos_compensacion,
+                        hora_turno_fin: turnoFecha.hora_fin
+                    } : null
+                };
+            }
+        }
+        
+        // Solo agregar trabajadores que tienen turnos de domingos (con o sin marcaciones)
+        if (Object.keys(marcacionesConEstado).length > 0) {
+            marcacionesAgrupadasPorUsuario[trabajador.id] = {
+                trabajador: trabajador,
+                marcaciones: marcacionesConEstado
+            };
+        }
+    }
+
+    res.status(200).json({
+        success: true,
+        trabajadores: trabajadores.filter(t => marcacionesAgrupadasPorUsuario[t.id]),
+        marcacionesAgrupadasPorUsuario: marcacionesAgrupadasPorUsuario,
+        configuracion: {
+            tolerancia_entrada_minutos: toleranciaEntradaMinutos
+        },
+        filtro: 'solo_domingos'
+    });
+}
+
 const FiscalizadorController = {
   solicitarAcceso,
   validarCodigo,
   cerrarSesion,
   obtenerDatosEmpresa,
-    obtenerAsistencias
+    obtenerAsistencias,
+    obtenerAsistenciasDomingos  
 }
 
 
