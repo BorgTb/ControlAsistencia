@@ -11,7 +11,7 @@
             <h1 class="text-3xl font-bold text-gray-900">Gestión de Marcaciones</h1>
             <p class="text-gray-600 mt-2">Modificación y supervisión de registros de asistencia</p>
           </div>
-          <div class="flex space-x-3">
+          <div class="flex space-x-3" v-show="!esEst">
             <button 
               @click="abrirModalAgregarMarcacion"
               class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"

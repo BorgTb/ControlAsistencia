@@ -3,7 +3,12 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
         <div class="flex items-center cursor-pointer" @click="home">
-          <h1 class="text-3xl font-bold text-gray-900">TeleMarcación</h1>
+          <h1 class="text-3xl font-bold text-gray-900">
+            TeleMarcación
+            <span v-if="userData.empresa_nombre" class="text-lg font-medium text-gray-600">
+              - {{ userData.empresa_nombre }}
+            </span>
+          </h1>
         </div>
         
         <div class="flex items-center space-x-4">
@@ -54,6 +59,9 @@
                   <p class="text-sm font-medium text-gray-900">{{ userData.nombre || 'Usuario' }}</p>
                   <p class="text-sm text-gray-500">{{ userData.email || 'usuario@empresa.com' }}</p>
                   <p class="text-xs text-gray-400 mt-1">{{ userData.cargo || 'Empleado' }}</p>
+                  <p v-if="userData.empresa_nombre" class="text-xs text-indigo-600 mt-1 font-medium">
+                    {{ userData.empresa_nombre }}
+                  </p>
                 </div>
 
                 <!-- Opciones del menú -->
@@ -146,7 +154,10 @@ import { useAuth } from '../../composables/useAuth'
 const router = useRouter()
 const { user, isLoading, logout } = useAuth()
 
-const userData = computed(() => user.value || {})
+const userData = computed(() => {
+  console.log('👤 Datos de usuario en header:', user.value)
+  return user.value || {}
+})
 
 const isUserDropdownOpen = ref(false)
 

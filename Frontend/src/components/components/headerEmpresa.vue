@@ -3,7 +3,15 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
         <div class="flex items-center cursor-pointer" @click="home">
-          <h1 class="text-3xl font-bold text-gray-900">TeleMarcación - empresa</h1>
+          <h1 class="text-3xl font-bold text-gray-900">
+            TeleMarcación
+            <span v-if="userData.empresa_nombre" class="text-3xl font-bold text-gray-900">
+              - {{ userData.empresa_nombre }}
+            </span>
+            <span v-else class="text-3xl font-bold text-gray-900">
+              - empresa
+            </span>
+          </h1>
         </div>
         
         <div class="flex items-center space-x-4">
@@ -51,9 +59,12 @@
               >
                 <!-- Información del usuario -->
                 <div class="px-4 py-3 border-b border-gray-200">
-                  <p class="text-sm font-medium text-gray-900">{{ user?.name || 'Administrador' }}</p>
-                  <p class="text-sm text-gray-500">{{ user?.email || 'admin@empresa.com' }}</p>
-                  <p class="text-xs text-gray-400 mt-1">{{ user?.role || 'Administrador del Sistema' }}</p>
+                  <p class="text-sm font-medium text-gray-900">{{ userData.nombre || 'Administrador' }}</p>
+                  <p class="text-sm text-gray-500">{{ userData.email || 'admin@empresa.com' }}</p>
+                  <p class="text-xs text-gray-400 mt-1">{{ userData.rol || 'Administrador del Sistema' }}</p>
+                  <p v-if="userData.empresa_nombre" class="text-xs text-indigo-600 mt-1 font-medium">
+                    {{ userData.empresa_nombre }}
+                  </p>
                 </div>
 
                 <!-- Opciones del menú -->
@@ -185,7 +196,7 @@
           </router-link>
 
           <!-- Marcaciones -->
-          <router-link
+          <router-link v-show="!esEst"
             to="/empresa/lugares"
             class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
             active-class="text-indigo-600 bg-white border-indigo-600"
@@ -237,12 +248,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../../composables/useAuth.js';
 
 const router = useRouter();
 const { user, logout, isLoading: authLoading, esEst } = useAuth();
+
+const userData = computed(() => {
+  console.log('🏢 Datos de usuario en headerEmpresa:', user.value)
+  return user.value || {}
+})
 
 const isUserDropdownOpen = ref(false);
 

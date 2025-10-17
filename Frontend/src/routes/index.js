@@ -114,6 +114,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
+            path: '/empresa/reportes/asistencia',
+            name: 'EmpresaReporteAsistencia',
+            component: () => import('../components/vistas/empresa/ReporteAsistencia.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
+        {
             path: '/empresa/configuracion',
             name: 'EmpresaConfiguracion',
             component: () => import('../components/vistas/empresa/Configuracion.vue'),
@@ -180,6 +186,7 @@ router.beforeEach((to, from, next) => {
         '/empresa/turnos',
         '/empresa/marcaciones',
         '/empresa/reportes',
+        '/empresa/reportes/asistencia',
         '/empresa/configuracion',
         '/empresa/trabajadores/asociar',
         '/empresa/historial-solicitudes',

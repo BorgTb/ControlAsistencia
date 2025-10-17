@@ -426,6 +426,134 @@ class MarcacionesService {
         }
     }
 
+    /**
+     * Calcula las horas trabajadas en la semana actual para un usuario específico
+     * @param {number} usuario_empresa_id - ID del usuario en la tabla usuario_empresa
+     * @returns {Object} - Objeto con las horas calculadas y detalles
+     */
+    async calcularHorasSemanales(usuario_empresa_id) {
+        try {
+            // Obtener fecha de inicio y fin de la semana actual (lunes a domingo)
+            const hoy = new Date();
+            const diaSemana = hoy.getDay(); // 0 = domingo, 1 = lunes, etc.
+            const diasHastaLunes = diaSemana === 0 ? 6 : diaSemana - 1; // Ajustar para que lunes sea día 0
+            
+            const inicioSemana = new Date(hoy);
+            inicioSemana.setDate(hoy.getDate() - diasHastaLunes);
+            inicioSemana.setHours(0, 0, 0, 0);
+            
+            const finSemana = new Date(inicioSemana);
+            finSemana.setDate(inicioSemana.getDate() + 6);
+            finSemana.setHours(23, 59, 59, 999);
+
+            console.log(`📅 Calculando horas para usuario ${usuario_empresa_id} del ${inicioSemana.toISOString().split('T')[0]} al ${finSemana.toISOString().split('T')[0]}`);
+
+            // Obtener todas las marcaciones de la semana
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorUsuarioYRangoFecha(
+                usuario_empresa_id, 
+                inicioSemana.toISOString().split('T')[0], 
+                finSemana.toISOString().split('T')[0]
+            );
+
+            console.log(`📊 Marcaciones encontradas: ${marcaciones.length}`);
+
+            // Agrupar marcaciones por día
+            const marcacionesPorDia = {};
+            marcaciones.forEach(marcacion => {
+                const fecha = marcacion.fecha;
+                if (!marcacionesPorDia[fecha]) {
+                    marcacionesPorDia[fecha] = [];
+                }
+                marcacionesPorDia[fecha].push(marcacion);
+            });
+
+            let totalHorasSemanales = 0;
+            const detallesPorDia = [];
+
+            // Calcular horas por cada día
+            for (const [fecha, marcacionesDia] of Object.entries(marcacionesPorDia)) {
+                const entradas = marcacionesDia.filter(m => m.tipo === 'entrada').sort((a, b) => a.hora.localeCompare(b.hora));
+                const salidas = marcacionesDia.filter(m => m.tipo === 'salida').sort((a, b) => a.hora.localeCompare(b.hora));
+
+                let horasDia = 0;
+                const sesiones = [];
+
+                // Emparejar entradas con salidas
+                for (let i = 0; i < Math.min(entradas.length, salidas.length); i++) {
+                    const entrada = entradas[i];
+                    const salida = salidas[i];
+
+                    if (entrada && salida) {
+                        const horasCalculadas = this.calcularDiferenciaHorasDecimal(entrada.hora, salida.hora);
+                        horasDia += horasCalculadas;
+                        
+                        sesiones.push({
+                            entrada: entrada.hora,
+                            salida: salida.hora,
+                            horas: horasCalculadas
+                        });
+                    }
+                }
+
+                totalHorasSemanales += horasDia;
+                detallesPorDia.push({
+                    fecha,
+                    horasDia: Math.round(horasDia * 100) / 100, // Redondear a 2 decimales
+                    sesiones
+                });
+            }
+
+            return {
+                success: true,
+                usuario_empresa_id,
+                semana: {
+                    inicio: inicioSemana.toISOString().split('T')[0],
+                    fin: finSemana.toISOString().split('T')[0]
+                },
+                totalHorasSemanales: Math.round(totalHorasSemanales * 100) / 100,
+                detallesPorDia,
+                totalMarcaciones: marcaciones.length
+            };
+
+        } catch (error) {
+            console.error('Error al calcular horas semanales:', error);
+            return {
+                success: false,
+                message: 'Error al calcular horas semanales',
+                error: error.message,
+                totalHorasSemanales: 0
+            };
+        }
+    }
+
+    /**
+     * Función auxiliar para calcular diferencia de horas en formato decimal
+     * @param {string} horaInicio - Formato HH:MM:SS
+     * @param {string} horaFin - Formato HH:MM:SS
+     * @returns {number} - Horas en formato decimal
+     */
+    calcularDiferenciaHorasDecimal(horaInicio, horaFin) {
+        try {
+            const [hInicio, mInicio, sInicio] = horaInicio.split(':').map(Number);
+            const [hFin, mFin, sFin] = horaFin.split(':').map(Number);
+
+            const inicioEnMinutos = hInicio * 60 + mInicio + sInicio / 60;
+            const finEnMinutos = hFin * 60 + mFin + sFin / 60;
+
+            let diferencia = finEnMinutos - inicioEnMinutos;
+            
+            // Si la hora de fin es menor, asumimos que cruzó medianoche
+            if (diferencia < 0) {
+                diferencia += 24 * 60; // Agregar 24 horas
+            }
+
+            return diferencia / 60; // Convertir a horas decimales
+        } catch (error) {
+            console.error('Error al calcular diferencia de horas:', error);
+            return 0;
+        }
+    }
+
 }
 
 export default new MarcacionesService();

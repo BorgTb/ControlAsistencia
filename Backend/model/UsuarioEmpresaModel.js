@@ -318,6 +318,7 @@ class UsuarioEmpresaModel {
                 ue.rol_en_empresa,
                 ue.fecha_inicio,
                 ue.fecha_fin,
+                ue.horas_laborales,
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
                 u.apellido_mat as usuario_apellido_mat,
@@ -536,7 +537,7 @@ class UsuarioEmpresaModel {
     }
 
     /**
-     * Obtiene todas las relaciones usuario-empresa de forma simplificada
+     * Obtiene todos los usuarios con sus empresas asignadas
      * Utilizado para determinar qué usuarios tienen empresa asignada
      * @returns {Array} Array con objetos {usuario_id, empresa_id}
      */
@@ -555,6 +556,32 @@ class UsuarioEmpresaModel {
         
         const [rows] = await db.execute(query);
         return rows;
+    }
+
+    /**
+     * Actualiza las horas laborales de un trabajador
+     * @param {number} usuarioEmpresaId - ID del registro usuario_empresa
+     * @param {string} horasLaborales - Horas laborales (44, 45 o 54)
+     * @returns {Object} Resultado de la actualización
+     */
+    static async actualizarHorasLaborales(usuarioEmpresaId, horasLaborales) {
+        const query = `
+            UPDATE usuarios_empresas 
+            SET horas_laborales = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+        
+        console.log('🔄 Ejecutando query actualización horas laborales:', {
+            usuarioEmpresaId,
+            horasLaborales,
+            query
+        });
+        
+        const [result] = await db.execute(query, [horasLaborales, usuarioEmpresaId]);
+        
+        console.log('✅ Resultado actualización horas laborales:', result);
+        
+        return result;
     }
 
 }

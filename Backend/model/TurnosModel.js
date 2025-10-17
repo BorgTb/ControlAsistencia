@@ -1,106 +1,42 @@
 import pool from '../config/dbconfig.js'
 import { DateTime } from 'luxon';
-
+import AsignacionTurnosModel from './AsignacionTurnosModel.js';
 
 class TurnosModel {
+    // Mantener métodos antiguos para compatibilidad
     static async getAllTurnos() {
-        const query = `SELECT turnos.*,usuarios.nombre as trabajador_nombre
-FROM turnos INNER JOIN usuarios
-ON turnos.usuario_id = usuarios.id
-;`;
-        const [rows] = await pool.query(query);
-        return rows;
+        return await AsignacionTurnosModel.getAll();
     }
 
     static async getTurnoById(id) {
-        const query = 'SELECT * FROM turnos WHERE id = ?';
-        const [rows] = await pool.query(query, [id]);
-        return rows[0];
+        return await AsignacionTurnosModel.getById(id);
     }
 
-    static async getTurnosByUsuarioId(usuario_id) {
-        const query = 'SELECT * FROM turnos WHERE usuario_id = ?';
-        const [rows] = await pool.query(query, [usuario_id]);
-        return rows;
+    static async getTurnosByUsuarioId(usuario_empresa_id) {
+        return await AsignacionTurnosModel.getByUsuarioEmpresaId(usuario_empresa_id);
     }
 
     static async createTurno(turnoData) {
-        const query = `
-            INSERT INTO turnos (usuario_id, tipo, inicio, fin, motivo_modificacion, modificado_por, fecha_modificacion, colacion_inicio, colacion_fin, dia)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [
-            turnoData.usuario_id,
-            turnoData.tipo,
-            turnoData.inicio,
-            turnoData.fin,
-            turnoData.motivo_modificacion,
-            turnoData.modificado_por,
-            turnoData.fecha_modificacion,
-            turnoData.colacion_inicio,
-            turnoData.colacion_fin,
-            turnoData.dia
-        ];
-        const [result] = await pool.query(query, values);
-        return result.insertId;
+        // Compatibilidad: si viene del formato antiguo, crear asignación
+        return await AsignacionTurnosModel.create(turnoData);
     }
 
     static async updateTurno(id, turnoData) {
-        const query = `
-            UPDATE turnos
-            SET usuario_id = ?, tipo = ?, inicio = ?, fin = ?, motivo_modificacion = ?, modificado_por = ?, fecha_modificacion = ?, colacion_inicio = ?, colacion_fin = ?
-            WHERE id = ?
-        `;
-        const values = [
-            turnoData.usuario_id,
-            turnoData.tipo,
-            turnoData.inicio,
-            turnoData.fin,
-            turnoData.motivo_modificacion,
-            turnoData.modificado_por,
-            turnoData.fecha_modificacion,
-            turnoData.colacion_inicio,
-            turnoData.colacion_fin,
-            id,
-        ];
-        const [result] = await pool.query(query, values);
-        return result.affectedRows;
+        return await AsignacionTurnosModel.update(id, turnoData);
     }
 
     static async deleteTurno(id) {
-        const query = 'DELETE FROM turnos WHERE id = ?';
-        const [result] = await pool.query(query, [id]);
-        return result.affectedRows;
+        return await AsignacionTurnosModel.delete(id);
     }
 
-    static async obtenerTurnoPorUsuarioYFecha(usuario_id, fecha) {
-        // Convertir la fecha a día de la semana en español usando luxon
-        const diasSemana = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-        const fechaObj = DateTime.fromISO(fecha);
-        const diaSemana = diasSemana[fechaObj.weekday - 1]; // Luxon weekday: 1 (lunes) to 7 (domingo)
-
-        const query = `
-            SELECT * FROM turnos 
-            WHERE usuario_id = ? AND LOWER(dia) = LOWER(?)
-            ORDER BY id DESC
-            LIMIT 1
-        `;
-        const [rows] = await pool.query(query, [usuario_id, diaSemana]);
-        return rows[0];
+    static async obtenerTurnoPorUsuarioYFecha(usuario_empresa_id, fecha) {
+        return await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(usuario_empresa_id, fecha);
     }
 
-    static async obtenerTurnoPorUsuarioYDia(usuario_id, dia) {
-        const query = `
-            SELECT * FROM turnos 
-            WHERE usuario_id = ? AND LOWER(dia) = LOWER(?)
-            ORDER BY id DESC
-            LIMIT 1
-        `;
-        const [rows] = await pool.query(query, [usuario_id, dia]);
-        return rows[0];
+    static async obtenerTurnoPorUsuarioYDia(usuario_empresa_id, dia) {
+        // Para nueva estructura, buscar turno activo
+        return await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(usuario_empresa_id);
     }
-
 }
-
 
 export default TurnosModel;

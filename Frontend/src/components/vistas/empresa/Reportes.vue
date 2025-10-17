@@ -79,10 +79,10 @@
                 Registro completo de asistencia por trabajador, incluye ausencias, tardanzas y salidas anticipadas.
               </p>
               <div class="flex space-x-2">
-                <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <button @click="irReporteAsistencia" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                   Generar
                 </button>
-                <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button @click="irReporteAsistencia" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Vista Previa
                 </button>
               </div>
@@ -374,6 +374,9 @@
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // Estados reactivos
 const reportes = ref([]);
@@ -424,6 +427,12 @@ const getEstadoClass = (estado) => {
     'pendiente': 'bg-gray-100 text-gray-800'
   };
   return clases[estado.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
+
+// Función para ir a la vista de Reporte de Asistencia
+const irReporteAsistencia = () => {
+  console.log('Navegando a Reporte de Asistencia...');
+  router.push({ name: 'EmpresaReporteAsistencia' });
 };
 
 onMounted(() => {

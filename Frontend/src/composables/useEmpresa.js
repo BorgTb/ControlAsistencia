@@ -116,6 +116,48 @@ export function useEmpresa() {
     }
   };
 
+  const obtenerHorasSemanales = async (usuarioEmpresaId) => {
+    try {
+      const response = await EmpresaServices.obtenerHorasSemanales(usuarioEmpresaId);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener horas semanales:", error);
+      throw error;
+    }
+  };
+
+  const eliminarTipoTurno = async (tipoTurnoId) => {
+    try {
+      const response = await EmpresaServices.deleteTipoTurno(tipoTurnoId);
+      return response;
+    } catch (error) {
+      console.error("Error al eliminar tipo de turno:", error);
+      throw error;
+    }
+  };
+
+  const obtenerTiposTurnos = async () => {
+    try {
+      const response = await EmpresaServices.obtenerTiposTurnos();
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener tipos de turnos:", error);
+      throw error;
+    }
+  };
+
+  const crearTipoTurno = async (tipoTurnoData) => {
+    try {
+
+      console.log('tipo turno data', tipoTurnoData)
+      const response = await EmpresaServices.crearTipoTurno(tipoTurnoData);
+      return response;
+    } catch (error) {
+      console.error("Error al crear tipo de turno:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -126,6 +168,10 @@ export function useEmpresa() {
     rechazarReporte,
     modificarMarcacion,
     agregarMarcacionManual,
-    eliminarTurno
+    eliminarTurno,
+    obtenerHorasSemanales,
+    obtenerTiposTurnos,
+    crearTipoTurno,
+    eliminarTipoTurno
   };
 }

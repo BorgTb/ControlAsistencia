@@ -154,6 +154,19 @@ const loginUser = async (email, password, ip_address = null) => {
         est = await verificarEst(empresaId);
     }
 
+    // Obtener información de la empresa
+    let empresaInfo = null;
+    try {
+        console.log('🔍 Empresa RUT para buscar:', empresaRut);
+        if (empresaRut) {
+            empresaInfo = await EmpresaModel.getEmpresaByRut(empresaRut);
+            console.log('🏢 Información de empresa encontrada:', empresaInfo);
+        }
+    } catch (empresaError) {
+        console.error('❌ Error al obtener información de empresa:', empresaError);
+        // No bloqueamos el login por errores de empresa
+    }
+
     // Registrar inicio de sesión en auditoría con información completa
     try {
         console.log('📝 Registrando inicio de sesión en auditoría:', {
@@ -172,6 +185,22 @@ const loginUser = async (email, password, ip_address = null) => {
     }
 
     // Return both token and user info (without password)
+    const responseUser = {
+        id: user.id,
+        nombre: user.nombre,
+        apellido_pat: user.apellido_pat,
+        apellido_mat: user.apellido_mat,
+        email: user.email,
+        rol: user.rol,
+        rut: empresaRut,
+        estado: user.estado,
+        est: est,
+        empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
+        empresa_rut: empresaRut
+    };
+    
+    console.log('👤 Usuario final que se enviará al frontend:', responseUser);
+    
     return {
         token,
         user: {

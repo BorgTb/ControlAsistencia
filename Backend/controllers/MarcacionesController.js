@@ -119,16 +119,16 @@ const registrarMarcacion = async (req, res) => {
         
         // Validación de horario solo para entrada
         if (tipo === 'entrada') {    
-            // verifica si turno.fin es menor que turno.inicio, si es asi significa que el turno termina al dia siguiente
-            if (turno.fin < turno.inicio) {
-                // Si es así, la hora actual debe ser mayor que turno.inicio
-                if (horaActual < turno.inicio) {
+            // verifica si turno.hora_fin es menor que turno.hora_inicio, si es asi significa que el turno termina al dia siguiente
+            if (turno.hora_fin < turno.hora_inicio) {
+                // Si es así, la hora actual debe ser mayor que turno.hora_inicio
+                if (horaActual < turno.hora_inicio) {
                     return res.status(400).json({
                         success: false,
                         message: 'No se puede registrar la entrada fuera del horario del turno.'
                     });
                 }
-            } else if (horaActual > turno.fin) {
+            } else if (horaActual > turno.hora_fin) {
                 return res.status(400).json({
                     success: false,
                     message: 'No se puede registrar la entrada fuera del horario del turno.'
@@ -156,7 +156,7 @@ const registrarMarcacion = async (req, res) => {
         // Validar tolerancia 
         if (['entrada'].includes(tipo)) {
             console.log("Validando tolerancia para tipo:", tipo);
-            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, horaActual);
             if (diferencia.totalSegundos > 0) {
                 const minutosDiferencia = Math.floor(diferencia.totalSegundos / 60);
@@ -191,7 +191,7 @@ const registrarMarcacion = async (req, res) => {
 
         // Calcular diferencia de tiempo con respecto al turno (solo para entrada/salida)
         if (['entrada', 'salida'].includes(tipo)) {
-            const horaReferencia = tipo === 'entrada' ? turno.inicio : turno.fin;
+            const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
             
             if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
@@ -303,7 +303,7 @@ const obtenerHorarioHoy = async (req, res) => {
 
         // obtener turno asignado para el usuario en la fecha actual
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-
+        console.log("Turno encontrado", turno);
         if (!turno) {
             return res.status(200).json({
                 success: true,
@@ -311,16 +311,19 @@ const obtenerHorarioHoy = async (req, res) => {
                 message: 'No hay horario asignado para hoy'
             });
         }
-        
+        console.log(turno);
         return res.status(200).json({
             success: true,
             data: {
-                tipo: turno.tipo,
-                inicio: turno.inicio,
-                fin: turno.fin,
-                fecha: turno.fecha,
+                tipo: turno.tipo_turno_nombre,
+                inicio: turno.hora_inicio,
+                fin: turno.hora_fin,
+                fecha_inicio: turno.fecha_inicio,
+                fecha_fin: turno.fecha_fin,
                 colacion_inicio: turno.colacion_inicio,
-                colacion_fin: turno.colacion_fin
+                colacion_fin: turno.colacion_fin,
+                dias_trabajo: turno.dias_trabajo,
+                dias_descanso: turno.dias_descanso
             },
             message: 'Horario obtenido correctamente'
         });
@@ -437,6 +440,17 @@ const modificarMarcacionPorId = async (req, res) => {
     try {
         const { id } = req.params;
         const { fecha, hora, tipo, motivo, usuario_id } = req.body;
+        const USR_PETICION = req.user; // usuario que genera la solicitud
+
+        console.log('🔄 Iniciando modificación de marcación:', {
+            marcacionId: id,
+            fecha,
+            hora,
+            tipo,
+            motivo,
+            usuario_id,
+            solicitadoPor: USR_PETICION.id
+        });
 
         // Validar datos requeridos
         if (!fecha || !hora || !tipo || !motivo || !usuario_id) {
@@ -455,11 +469,29 @@ const modificarMarcacionPorId = async (req, res) => {
             });
         }
 
-        // Enviar notificación por correo de forma asíncrona
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
-        
-        //marcacion_id, usuario_id, tipo, tipo_problema, descripcion, fecha_correcta, hora_correcta, tipo_marcacion_correcta
+        console.log('📋 Marcación original encontrada:', marcacionOriginal.data);
 
+        // Obtener información del usuario empresas (trabajador)
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(usuario_id);
+        if (!usuarioEmpresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario empresa no encontrado'
+            });
+        }
+
+        console.log('👤 Usuario empresa encontrado:', usuarioEmpresa);
+
+        // Verificar que el usuario solicitante tiene permisos para modificar marcaciones de este trabajador
+        const [empresaSolicitante] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresaSolicitante || empresaSolicitante.empresa_id !== usuarioEmpresa.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tiene permisos para modificar marcaciones de este trabajador'
+            });
+        }
+
+        // Crear reporte de solicitud de modificación
         const newReporteId = await ReporteMarcionesModel.createPorConfirmar({
             marcacion_id: marcacionOriginal.data.id,
             usuario_id: usuarioEmpresa.id,
@@ -471,22 +503,37 @@ const modificarMarcacionPorId = async (req, res) => {
             tipo_marcacion_correcta: tipo
         });
 
+        console.log('📝 Reporte de modificación creado con ID:', newReporteId);
+
+        // Enviar notificación por correo de forma asíncrona
         NotificacionService.procesarNotificacionModificacionMarcacion(
-            usuarioEmpresa,marcacionOriginal.data, req.body, newReporteId
+            usuarioEmpresa, marcacionOriginal.data, req.body, newReporteId
         ).catch(error => console.error('Error en notificación de modificación de marcación:', error));
 
+        console.log('✅ Solicitud de modificación procesada exitosamente');
 
-
-        return res.status(501).json({
+        return res.status(200).json({
             success: true,
-            message: 'En desarrollo',
+            message: 'Solicitud de modificación enviada correctamente. Será revisada por un supervisor.',
+            reporteId: newReporteId,
+            data: {
+                marcacionOriginal: marcacionOriginal.data,
+                cambiosSolicitados: {
+                    fecha,
+                    hora,
+                    tipo,
+                    motivo
+                }
+            }
         });
 
     } catch (error) {
-        console.error('Error en modificarMarcacionPorId:', error);
+        console.error('❌ Error en modificarMarcacionPorId:', error);
+        console.error('📋 Stack trace:', error.stack);
         return res.status(500).json({
             success: false,
-            message: 'Error interno del servidor'
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 }
@@ -685,6 +732,43 @@ const agregarMarcacionManual = async (req, res) => {
     }
 }
 
+/**
+ * Obtiene las horas trabajadas en la semana actual para un usuario
+ */
+const obtenerHorasSemanales = async (req, res) => {
+    try {
+        const { usuario_empresa_id } = req.params;
+        
+        if (!usuario_empresa_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de usuario empresa es requerido'
+            });
+        }
+
+        console.log(`🕒 Calculando horas semanales para usuario_empresa_id: ${usuario_empresa_id}`);
+        
+        const resultado = await MarcacionesService.calcularHorasSemanales(parseInt(usuario_empresa_id));
+        
+        if (resultado.success) {
+            res.json({
+                success: true,
+                data: resultado
+            });
+        } else {
+            res.status(500).json(resultado);
+        }
+        
+    } catch (error) {
+        console.error('Error en obtenerHorasSemanales:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+}
+
 const MarcacionesController = {
     registrarEntrada,
     registrarSalida,
@@ -700,7 +784,8 @@ const MarcacionesController = {
     aceptarModificacionMarcacion,
     rechazarModificacionMarcacion,
     obtenerReporteMarcacionId,
-    agregarMarcacionManual
+    agregarMarcacionManual,
+    obtenerHorasSemanales
 }
 
 export default MarcacionesController;
