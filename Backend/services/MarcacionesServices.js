@@ -129,15 +129,6 @@ class MarcacionesService {
                 };
             }
 
-            // Si se especificó una fecha, devolver las marcaciones directamente
-            if (fechaFin) {
-                return {
-                    success: true,
-                    fecha: fechaFin,
-                    marcaciones: marcaciones
-                };
-            }
-
             // Si no se especificó fecha, agrupar todas las marcaciones por fecha
             const marcacionesAgrupadas = {};
             

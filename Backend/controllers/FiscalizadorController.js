@@ -171,6 +171,10 @@ const obtenerDatosEmpresa = async (req, res) => {
 const obtenerAsistencias = async (req, res) => {
     const empresaId = req.params.empresa_id;
 
+    
+    const fechaInicioParam = req.query.fecha_inicio;
+    const fechaFinParam = req.query.fecha_fin;
+
     const estAsignaciones = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresaId);
     const trabajadoresEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
     const trabajadores = [
@@ -182,9 +186,13 @@ const obtenerAsistencias = async (req, res) => {
     const configuracionTolerancia = await ConfigToleranciaModel.findByEmpresaId(empresaId);
     const toleranciaEntradaMinutos = configuracionTolerancia?.tolerancia_entrada || 0;
     
-    // Fecha actual Chile
-    const fechaInicio = DateTime.now().setZone('America/Santiago').toISODate();
-    const fechaFin = fechaInicio; // mismo día por ahora
+    // Configurar fechas: usar parámetros o fecha actual por defecto
+    const fechaActualChile = DateTime.now().setZone('America/Santiago').toISODate();
+    const fechaInicio = fechaInicioParam || fechaActualChile;
+    const fechaFin = fechaFinParam || fechaInicio; // Si no se especifica fecha_fin, usar fecha_inicio
+    
+
+    
     const marcacionesAgrupadasPorUsuario = {};
     
     /**
@@ -275,7 +283,8 @@ const obtenerAsistencias = async (req, res) => {
     };
     
     for (const trabajador of trabajadores) {    
-        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id);
+        console.log('----------------------------------------------');
+        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
         
         // Obtener el turno activo del trabajador para la fecha
         const TurnosModel = (await import('../model/TurnosModel.js')).default;
@@ -283,12 +292,15 @@ const obtenerAsistencias = async (req, res) => {
         
         // Validar asistencia por cada fecha en el rango
         const marcacionesConEstado = {};
-        
+        //console.log('marcaciones recibidas:', marcaciones);
         if (marcaciones.success && marcaciones.marcaciones) {
             // Validar estado de asistencia para cada fecha
+            
             for (const [fecha, marcacionesDia] of Object.entries(marcaciones.marcaciones)) {
+              // aqui se obtiene el turno para la fecha
+                console.log(fecha, marcacionesDia);
                 const turnoFecha = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fecha);
-                
+           
                 if (turnoFecha) {
                     // Hay turno asignado para este día
                     const marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
@@ -426,8 +438,6 @@ const obtenerAsistencias = async (req, res) => {
             marcaciones: marcacionesConEstado
         };
     }
-
-    console.log('Marcaciones agrupadas por usuario con validación de asistencia y atrasos:', marcacionesAgrupadasPorUsuario['22'].marcaciones);
 
     res.status(200).json({
         success: true,

@@ -126,7 +126,8 @@ class ReporteService {
     const dataStore = useDataStore()
     console.log("Empresa seleccionada en reporteService:", dataStore.empresaSeleccionada)
     try {
-      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, filtros )
+      console.log('Los filtros: ', filtros)
+      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, { params: filtros} )
       return {
         success: true,
         data: response.data,

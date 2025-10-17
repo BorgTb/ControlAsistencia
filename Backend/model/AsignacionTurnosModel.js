@@ -103,7 +103,6 @@ class AsignacionTurnosModel {
             const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const fechaObj = new Date(fechaBusqueda + 'T00:00:00');
             const diaSemana = diasSemana[fechaObj.getDay()];
-            console.log("Día de la semana para la fecha", fechaBusqueda, "es", diaSemana);
             // Buscar la configuración del día en detalle_dias_turno
             const diaConfig = rows.find(r => r.dia_semana === diaSemana);
             

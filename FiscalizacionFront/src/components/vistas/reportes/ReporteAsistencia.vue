@@ -662,8 +662,8 @@ const filters = ref({
   tipoJornada: '',
   turnoEspecifico: '',
   lugarTrabajo: '',
-  fechaDesde: '',
-  fechaHasta: '',
+  fechaDesde: new Date().toISOString().split('T')[0],
+  fechaHasta: new Date().toISOString().split('T')[0],
   periodoRapido: '',
   region: '',
   establecimiento: '',
@@ -943,7 +943,11 @@ const loadData = async (apiData = null) => {
       
       if (datosTrabajador && datosTrabajador.marcaciones) {
         // Procesar cada fecha con datos de asistencia
-        for (const [fecha, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+        for (const [fechaISO, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+          // Convertir fecha ISO a formato local sin cambio de día
+          // La fecha viene como "2025-10-17", mantenerla tal cual
+          const fecha = fechaISO; // Ya viene en formato YYYY-MM-DD, no necesita conversión
+          
           const marcacionesArray = datosAsistencia.marcaciones || [];
           const turno = datosAsistencia.turno;
           const estadoAsistencia = datosAsistencia.estado_asistencia;
@@ -1213,10 +1217,26 @@ const formatFecha = (fecha) => {
   if (!fecha) return 'N/A'
   
   try {
+    // Si la fecha ya viene en formato YYYY-MM-DD, usarla directamente
+    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [anio, mes, dia] = fecha.split('-')
+      return `${dia}/${mes}/${anio.slice(-2)}` // Solo últimos 2 dígitos del año
+    }
+    
+    // Si viene en otro formato, convertir evitando problemas de zona horaria
+    const fechaStr = fecha.toString()
+    if (fechaStr.includes('T')) {
+      // Fecha con hora, extraer solo la parte de la fecha
+      const fechaSolo = fechaStr.split('T')[0]
+      const [anio, mes, dia] = fechaSolo.split('-')
+      return `${dia}/${mes}/${anio.slice(-2)}`
+    }
+    
+    // Último recurso: usar Date con UTC para evitar cambio de zona horaria
     const date = new Date(fecha)
-    const dia = date.getDate().toString().padStart(2, '0')
-    const mes = (date.getMonth() + 1).toString().padStart(2, '0')
-    const anio = date.getFullYear().toString().slice(-2) // Solo últimos 2 dígitos
+    const dia = date.getUTCDate().toString().padStart(2, '0')
+    const mes = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const anio = date.getUTCFullYear().toString().slice(-2)
     
     return `${dia}/${mes}/${anio}`
   } catch (error) {
@@ -1288,7 +1308,7 @@ onMounted(async () => {
     cargandoFiltros.value = false;
     
     // Cargar datos de asistencia
-    const rest = await obtenerReporteAsistencia()
+    const rest = await obtenerReporteAsistencia(filters.value)
     console.log('Datos recibidos de la API:', rest.data)
     
     // Verificar si la respuesta tiene la estructura esperada
