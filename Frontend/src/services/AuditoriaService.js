@@ -9,7 +9,7 @@
 import { useAuthStore } from '../stores/authStore.js'
 
 // URL base del backend para endpoints de auditoría
-const API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 /**
  * ========== ENDPOINTS DE AUDITORÍA ==========
