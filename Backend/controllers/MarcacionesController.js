@@ -154,38 +154,7 @@ const registrarMarcacion = async (req, res) => {
             }
         }
         
-        // Validar tolerancia 
-        if (['entrada'].includes(tipo)) {
-            console.log("Validando tolerancia para tipo:", tipo);
-            const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
-            const diferencia = calcularDiferenciaHoras(horaReferencia, horaActual);
-            if (diferencia.totalSegundos > 0) {
-                const minutosDiferencia = Math.floor(diferencia.totalSegundos / 60);
-                const toleranciaResult = await ConfigToleranciaModel.validarTolerancia(usuarioEmpresa.empresa_id, tipo, minutosDiferencia);
-                if (!toleranciaResult.valido) {
-
-
-                    // si no es valido verificar si es est y la empresa usuaria tiene configurada tolerancia 
-                    const EmpresaEst = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuarioEmpresa.id);
-                    console.log("EmpresaEst:", EmpresaEst);
-                    if (EmpresaEst) {
-                        const toleranciaEst = await ConfigToleranciaModel.validarTolerancia(EmpresaEst.usuaria_id, tipo, minutosDiferencia);
-                     
-                        if (toleranciaEst) {
-                            console.log("Tolerancia especial encontrada:", toleranciaEst);
-                        }
-                    } else {
-                        return res.status(400).json({
-                            success: false,
-                            message: `No se puede registrar la ${tipo} fuera de la tolerancia permitida. ${toleranciaResult.mensaje}`
-                        });
-                    }
-                }
-                console.log(`Marcación de ${tipo} dentro de tolerancia:`, toleranciaResult);
-            } else {
-                console.log(`Marcación de ${tipo} a tiempo o anticipada. Diferencia:`, diferencia.formato);
-            }  
-        }
+      
 
         const result = await MarcacionesService.registrarMarcacion(
             usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
