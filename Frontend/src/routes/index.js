@@ -77,6 +77,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
+            path: '/solicitudes',
+            name: 'Solicitudes',
+            component: () => import('../components/vistas/Solicitudes.vue'),
+            meta: { requiresAuth: true, requiresUser: true }
+        },
+        {
             path: '/administracion',
             name: 'Empresa',
             component: () => import('../components/vistas/Administrador.vue'),
@@ -196,7 +202,8 @@ router.beforeEach((to, from, next) => {
     const trabajadorRoutes = [
         '/dashboard',
         '/configuracion',
-        '/historial'
+        '/historial',
+        '/solicitudes'
     ]
     
     const guestRoutes = [
