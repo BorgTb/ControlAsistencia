@@ -549,7 +549,7 @@
             >
               Cerrar
             </button>
-            <button 
+            <button v-show="!trabajadorSeleccionado.esDeEst"
               @click="editarTrabajador(trabajadorSeleccionado)"
               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 flex items-center space-x-2"
             >
