@@ -83,6 +83,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
+            path: '/dias-trabajados',
+            name: 'DiasTrabajados',
+            component: () => import('../components/vistas/DiasTrabajados.vue'),
+            meta: { requiresAuth: true, requiresUser: true }
+        },
+        {
             path: '/administracion',
             name: 'Empresa',
             component: () => import('../components/vistas/Administrador.vue'),
@@ -203,7 +209,8 @@ router.beforeEach((to, from, next) => {
         '/dashboard',
         '/configuracion',
         '/historial',
-        '/solicitudes'
+        '/solicitudes',
+        '/dias-trabajados'
     ]
     
     const guestRoutes = [
