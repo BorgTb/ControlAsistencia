@@ -70,6 +70,7 @@ class DiasTrabajadosService {
       const response = await apiClient.get(`/marcaciones/calendario`, {
         params: { mes, anio }
       })
+      console.log('Respuesta del calendario mensual:', response.data)
       return response.data
     } catch (error) {
       console.error('Error al obtener calendario mensual:', error)

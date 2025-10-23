@@ -7,6 +7,8 @@ import AuthService from '../services/authservice.js';
 import ReporteMarcionesModel from '../model/ReportesModel.js';
 import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
+import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
+import TipoTurnosModel from '../model/TipoTurnosModel.js';
 
 
 
@@ -765,9 +767,41 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
                 message: 'Los parámetros mes y anio son requeridos'
             });
         }
-        console.log(req.user);
-        //MarcacionesService.obtenerMarcacionesPorUsuario()
 
+        const ueId = await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id);
+        const marcaciones = await MarcacionesService.obtenerMarcacionesPorUsuario(ueId.id);
+        
+        console.log('Marcaciones obtenidas para calcular días trabajados:', marcaciones);
+    
+        const turnos = await AsignacionTurnosModel.getByUsuarioEmpresaId(ueId.id);
+        for (const turno of turnos) {
+            // agregar detalle dias por tipo turno
+            turno.detalle_dias = await TipoTurnosModel.getDetalleDiasPorTipoTurnoId(turno.tipo_turno_id);
+        }
+       
+        console.log('Turnos obtenidos:', turnos);
+
+        if (!marcaciones.success) {
+            return res.status(500).json(marcaciones);
+        }
+
+        // Procesar días del mes
+        const dias = procesarDiasMes(parseInt(mes), parseInt(anio), marcaciones.marcaciones, turnos);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                mes: parseInt(mes),
+                anio: parseInt(anio),
+                dias: dias,
+                resumen: {
+                    diasTrabajados: dias.filter(d => d.estado === 'trabajado').length,
+                    diasConIncidente: dias.filter(d => d.estado === 'incidente').length,
+                    diasAusentes: dias.filter(d => d.estado === 'ausente').length,
+                    diasLibres: dias.filter(d => d.estado === 'libre').length
+                }
+            }
+        });
 
     } catch (error) {
         console.error('Error en obtenerDiasTrabajadosPorMes:', error);
@@ -776,6 +810,244 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
             message: 'Error interno del servidor'
         });
     }
+};
+
+/**
+ * Procesa los días del mes con sus marcaciones y turnos
+ */
+const procesarDiasMes = (mes, anio, marcaciones, turnos) => {
+    const diasDelMes = new Date(anio, mes, 0).getDate(); // Obtener cantidad de días del mes
+    const dias = [];
+    
+    // Mapeo de días de la semana en español
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+    for (let dia = 1; dia <= diasDelMes; dia++) {
+        const fecha = new Date(anio, mes - 1, dia);
+        const fechaStr = fecha.toISOString().split('T')[0];
+        const diaSemana = diasSemana[fecha.getDay()];
+        
+        // Obtener marcaciones del día
+        const marcacionesDia = marcaciones[fechaStr] || [];
+        
+        // Obtener turno aplicable para este día
+        const turnoDelDia = obtenerTurnoParaDia(fecha, turnos, diaSemana);
+        
+        // Procesar el día
+        const diaInfo = procesarDia(fechaStr, marcacionesDia, turnoDelDia, diaSemana);
+        dias.push(diaInfo);
+    }
+    
+    return dias;
+};
+
+/**
+ * Obtiene el turno aplicable para una fecha específica
+ * Los días de trabajo están definidos en turno.detalle_dias
+ */
+const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
+    if (!turnos || turnos.length === 0) return null;
+    
+    // Buscar turno activo que aplique para esta fecha
+    for (const turno of turnos) {
+        const fechaInicio = new Date(turno.fecha_inicio);
+        fechaInicio.setHours(0, 0, 0, 0);
+        
+        const fechaFin = turno.fecha_fin ? new Date(turno.fecha_fin) : null;
+        if (fechaFin) {
+            fechaFin.setHours(23, 59, 59, 999);
+        }
+        
+        const fechaEvaluar = new Date(fecha);
+        fechaEvaluar.setHours(0, 0, 0, 0);
+        
+        // Verificar si la fecha está en el rango del turno
+        if (fechaEvaluar >= fechaInicio && (!fechaFin || fechaEvaluar <= fechaFin)) {
+            // Verificar si el día de la semana está en los días laborables según detalle_dias
+            if (turno.detalle_dias && turno.detalle_dias.length > 0) {
+                const diaDetalle = turno.detalle_dias.find(d => 
+                    d.dia_semana.toLowerCase() === diaSemana.toLowerCase() && d.trabaja === 1
+                );
+                
+                if (diaDetalle) {
+                    return turno;
+                }
+            }
+        }
+    }
+    
+    return null;
+};
+
+/**
+ * Procesa la información de un día específico
+ */
+const procesarDia = (fecha, marcacionesDia, turno, diaSemana) => {
+    // Si no hay turno asignado, el día es libre
+    if (!turno) {
+        return {
+            fecha,
+            estado: 'libre',
+            horaEntrada: null,
+            horaSalida: null,
+            horaInicioColacion: null,
+            horaFinColacion: null,
+            incidente: null,
+            tipoIncidente: null,
+            turno: null,
+            horasTrabajadas: null,
+            minutosRetraso: 0,
+            minutosExtra: 0,
+            horasExtras: null
+        };
+    }
+
+    // Extraer marcaciones por tipo
+    const entradas = marcacionesDia.filter(m => m.tipo === 'entrada');
+    const salidas = marcacionesDia.filter(m => m.tipo === 'salida');
+    const colaciones = marcacionesDia.filter(m => m.tipo === 'colacion');
+    
+    const entrada = entradas.length > 0 ? entradas[0] : null;
+    const salida = salidas.length > 0 ? salidas[salidas.length - 1] : null; // Última salida
+    const inicioColacion = colaciones.length > 0 ? colaciones[0] : null;
+    const finColacion = colaciones.length > 1 ? colaciones[1] : null;
+
+    // Determinar estado e incidentes
+    let estado = 'trabajado';
+    let incidente = null;
+    let tipoIncidente = null;
+
+    if (!entrada && !salida) {
+        estado = 'ausente';
+        incidente = 'Sin marcaciones registradas';
+        tipoIncidente = 'AUSENCIA_COMPLETA';
+    } else if (!entrada) {
+        estado = 'incidente';
+        incidente = 'No marcó entrada';
+        tipoIncidente = 'ENTRADA_FALTANTE';
+    } else if (!salida) {
+        estado = 'incidente';
+        incidente = 'No marcó salida';
+        tipoIncidente = 'SALIDA_FALTANTE';
+    }
+
+    // Calcular horas trabajadas
+    let horasTrabajadas = null;
+    let minutosRetraso = 0;
+    let minutosExtra = 0;
+    let horasExtras = null;
+
+    if (entrada && salida) {
+        const horasTrabajadasDecimal = calcularHorasTrabajadas(
+            entrada.hora, 
+            salida.hora, 
+            inicioColacion?.hora, 
+            finColacion?.hora
+        );
+        horasTrabajadas = formatearHoras(horasTrabajadasDecimal);
+        
+        // Calcular retraso
+        minutosRetraso = calcularMinutosRetraso(entrada.hora, turno.hora_inicio);
+        
+        // Calcular horas extras
+        const horasTurno = calcularDiferenciaHorasDecimal(turno.hora_inicio, turno.hora_fin);
+        if (horasTrabajadasDecimal > horasTurno) {
+            const horasExtrasDecimal = horasTrabajadasDecimal - horasTurno;
+            minutosExtra = Math.round(horasExtrasDecimal * 60);
+            horasExtras = formatearHoras(horasExtrasDecimal);
+        }
+    } else if (entrada) {
+        // Calcular retraso aunque no haya salida
+        minutosRetraso = calcularMinutosRetraso(entrada.hora, turno.hora_inicio);
+    }
+
+    return {
+        fecha,
+        estado,
+        horaEntrada: entrada ? formatearHora(entrada.hora) : null,
+        horaSalida: salida ? formatearHora(salida.hora) : null,
+        horaInicioColacion: inicioColacion ? formatearHora(inicioColacion.hora) : null,
+        horaFinColacion: finColacion ? formatearHora(finColacion.hora) : null,
+        incidente,
+        tipoIncidente,
+        turno: {
+            tipo: turno.tipo_turno_nombre,
+            horaInicio: formatearHora(turno.hora_inicio),
+            horaFin: formatearHora(turno.hora_fin)
+        },
+        horasTrabajadas,
+        minutosRetraso,
+        minutosExtra,
+        horasExtras
+    };
+};
+
+/**
+ * Calcula la diferencia en horas entre dos tiempos (versión simplificada)
+ */
+const calcularDiferenciaHorasDecimal = (horaInicio, horaFin) => {
+    const [hInicio, mInicio, sInicio = 0] = horaInicio.split(':').map(Number);
+    const [hFin, mFin, sFin = 0] = horaFin.split(':').map(Number);
+    
+    const inicioEnMinutos = hInicio * 60 + mInicio + sInicio / 60;
+    const finEnMinutos = hFin * 60 + mFin + sFin / 60;
+    
+    let diferencia = finEnMinutos - inicioEnMinutos;
+    
+    // Si la hora de fin es menor, asumimos que cruzó medianoche
+    if (diferencia < 0) {
+        diferencia += 24 * 60;
+    }
+    
+    return diferencia / 60; // Retornar en horas decimales
+};
+
+/**
+ * Calcula las horas trabajadas restando el tiempo de colación
+ */
+const calcularHorasTrabajadas = (horaEntrada, horaSalida, horaInicioColacion, horaFinColacion) => {
+    const totalHoras = calcularDiferenciaHorasDecimal(horaEntrada, horaSalida);
+    
+    if (horaInicioColacion && horaFinColacion) {
+        const horasColacion = calcularDiferenciaHorasDecimal(horaInicioColacion, horaFinColacion);
+        return Math.max(0, totalHoras - horasColacion);
+    }
+    
+    return totalHoras;
+};
+
+/**
+ * Calcula los minutos de retraso
+ */
+const calcularMinutosRetraso = (horaEntrada, horaInicioTurno) => {
+    const [hEntrada, mEntrada, sEntrada = 0] = horaEntrada.split(':').map(Number);
+    const [hTurno, mTurno, sTurno = 0] = horaInicioTurno.split(':').map(Number);
+    
+    const entradaEnMinutos = hEntrada * 60 + mEntrada;
+    const turnoEnMinutos = hTurno * 60 + mTurno;
+    
+    const retraso = entradaEnMinutos - turnoEnMinutos;
+    
+    return Math.max(0, retraso);
+};
+
+/**
+ * Formatea horas decimales a formato HH:MM
+ */
+const formatearHoras = (horasDecimales) => {
+    const horas = Math.floor(horasDecimales);
+    const minutos = Math.round((horasDecimales - horas) * 60);
+    
+    return `${horas}:${minutos.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Formatea hora de HH:MM:SS a HH:MM
+ */
+const formatearHora = (hora) => {
+    if (!hora) return null;
+    const partes = hora.split(':');
+    return `${partes[0]}:${partes[1]}`;
 };
 
 
