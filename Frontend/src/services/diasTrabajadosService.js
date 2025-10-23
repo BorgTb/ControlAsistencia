@@ -60,15 +60,14 @@ apiClient.interceptors.response.use(
 
 class DiasTrabajadosService {
   /**
-   * Obtiene el calendario de días trabajados de un usuario para un mes específico
-   * @param {number} userId - ID del usuario
+   * Obtiene el calendario de días trabajados del usuario autenticado para un mes específico
    * @param {number} mes - Mes (1-12)
    * @param {number} anio - Año
    * @returns {Promise<Object>} - Datos del calendario
    */
-  async getCalendarioMensual(userId, mes, anio) {
+  async getCalendarioMensual(mes, anio) {
     try {
-      const response = await apiClient.get(`/marcaciones/calendario/${userId}`, {
+      const response = await apiClient.get(`/marcaciones/calendario`, {
         params: { mes, anio }
       })
       return response.data
@@ -79,17 +78,16 @@ class DiasTrabajadosService {
   }
 
   /**
-   * Obtiene los días trabajados de un usuario para un mes específico
-   * @param {number} userId - ID del usuario
+   * Obtiene los días trabajados del usuario autenticado para un mes específico
    * @param {number} mes - Mes (0-11, formato JavaScript)
    * @param {number} anio - Año
    * @returns {Promise<Array>} - Array de días trabajados
    */
-  async getDiasTrabajados(userId, mes, anio) {
+  async getDiasTrabajados(mes, anio) {
     try {
       // Convertir mes de JavaScript (0-11) a mes normal (1-12)
       const mesBackend = mes + 1
-      const response = await this.getCalendarioMensual(userId, mesBackend, anio)
+      const response = await this.getCalendarioMensual(mesBackend, anio)
       
       // Retornar solo el array de días
       return response.data?.dias || []
@@ -100,15 +98,14 @@ class DiasTrabajadosService {
   }
 
   /**
-   * Obtiene el resumen de asistencia del mes
-   * @param {number} userId - ID del usuario
+   * Obtiene el resumen de asistencia del mes del usuario autenticado
    * @param {number} mes - Mes (1-12)
    * @param {number} anio - Año
    * @returns {Promise<Object>} - Resumen de asistencia
    */
-  async getResumenAsistencia(userId, mes, anio) {
+  async getResumenAsistencia(mes, anio) {
     try {
-      const response = await this.getCalendarioMensual(userId, mes, anio)
+      const response = await this.getCalendarioMensual(mes, anio)
       return response.data?.estadisticas || {}
     } catch (error) {
       console.error('Error al obtener resumen de asistencia:', error)
@@ -117,15 +114,14 @@ class DiasTrabajadosService {
   }
 
   /**
-   * Obtiene los detalles de un día específico
-   * @param {number} userId - ID del usuario
+   * Obtiene los detalles de un día específico del usuario autenticado
    * @param {string} fecha - Fecha en formato YYYY-MM-DD
    * @returns {Promise<Object>} - Detalles del día
    */
-  async getDetalleDia(userId, fecha) {
+  async getDetalleDia(fecha) {
     try {
       const [anio, mes] = fecha.split('-').map(Number)
-      const response = await this.getCalendarioMensual(userId, mes, anio)
+      const response = await this.getCalendarioMensual(mes, anio)
       const dias = response.data?.dias || []
       
       return dias.find(d => d.fecha === fecha) || null
@@ -136,20 +132,37 @@ class DiasTrabajadosService {
   }
 
   /**
-   * Obtiene las estadísticas de asistencia de un periodo
-   * @param {number} userId - ID del usuario
+   * Obtiene las estadísticas de asistencia de un periodo del usuario autenticado
    * @param {string} fechaInicio - Fecha inicio en formato YYYY-MM-DD
    * @param {string} fechaFin - Fecha fin en formato YYYY-MM-DD
    * @returns {Promise<Object>} - Estadísticas del periodo
    */
-  async getEstadisticasPeriodo(userId, fechaInicio, fechaFin) {
+  async getEstadisticasPeriodo(fechaInicio, fechaFin) {
     try {
-      const response = await apiClient.get(`/marcaciones/estadisticas/${userId}`, {
+      const response = await apiClient.get(`/marcaciones/estadisticas`, {
         params: { fechaInicio, fechaFin }
       })
       return response.data
     } catch (error) {
       console.error('Error al obtener estadísticas del periodo:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene las horas extras del usuario autenticado para un mes específico
+   * @param {number} mes - Mes (1-12)
+   * @param {number} anio - Año
+   * @returns {Promise<Object>} - Horas extras del mes
+   */
+  async getHorasExtrasMes(mes, anio) {
+    try {
+      const response = await apiClient.get(`/horas-extras`, {
+        params: { mes, anio }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener horas extras:', error)
       throw error
     }
   }
@@ -160,11 +173,11 @@ const diasTrabajadosService = new DiasTrabajadosService()
 export default diasTrabajadosService
 
 // Exportar también las funciones individuales para compatibilidad
-export const getDiasTrabajados = (userId, mes, anio) => 
-  diasTrabajadosService.getDiasTrabajados(userId, mes, anio)
+export const getDiasTrabajados = (mes, anio) => 
+  diasTrabajadosService.getDiasTrabajados(mes, anio)
 
-export const getResumenAsistencia = (userId, mes, anio) => 
-  diasTrabajadosService.getResumenAsistencia(userId, mes + 1, anio)
+export const getResumenAsistencia = (mes, anio) => 
+  diasTrabajadosService.getResumenAsistencia(mes + 1, anio)
 
-export const getDetalleDia = (userId, fecha) => 
-  diasTrabajadosService.getDetalleDia(userId, fecha)
+export const getDetalleDia = (fecha) => 
+  diasTrabajadosService.getDetalleDia(fecha)

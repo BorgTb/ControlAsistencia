@@ -752,6 +752,34 @@ const obtenerHorasSemanales = async (req, res) => {
     }
 }
 
+
+
+
+const obtenerDiasTrabajadosPorMes = async (req, res) => {
+    try {
+        const { mes, anio } = req.query;
+
+        if (!mes || !anio) {
+            return res.status(400).json({
+                success: false,
+                message: 'Los parámetros mes y anio son requeridos'
+            });
+        }
+        console.log(req.user);
+        //MarcacionesService.obtenerMarcacionesPorUsuario()
+
+
+    } catch (error) {
+        console.error('Error en obtenerDiasTrabajadosPorMes:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+
+
 const MarcacionesController = {
     registrarEntrada,
     registrarSalida,
@@ -768,7 +796,8 @@ const MarcacionesController = {
     rechazarModificacionMarcacion,
     obtenerReporteMarcacionId,
     agregarMarcacionManual,
-    obtenerHorasSemanales
+    obtenerHorasSemanales,
+    obtenerDiasTrabajadosPorMes
 }
 
 export default MarcacionesController;

@@ -4,19 +4,21 @@ import diasTrabajadosService from '../services/diasTrabajadosService';
 export function useDiasTrabajados() {
   const diasTrabajados = ref([]);
   const estadisticas = ref(null);
+  const horasExtras = ref(null);
   const isLoading = ref(false);
+  const isLoadingHorasExtras = ref(false);
   const error = ref(null);
   const mesActual = ref(new Date().getMonth());
   const anioActual = ref(new Date().getFullYear());
 
   // Obtener datos de días trabajados
-  const fetchDiasTrabajados = async (userId, mes, anio) => {
+  const fetchDiasTrabajados = async (mes, anio) => {
     isLoading.value = true;
     error.value = null;
     try {
       // Convertir mes de JavaScript (0-11) a mes normal (1-12)
       const mesBackend = mes + 1;
-      const response = await diasTrabajadosService.getCalendarioMensual(userId, mesBackend, anio);
+      const response = await diasTrabajadosService.getCalendarioMensual(mesBackend, anio);
       
       if (response.success) {
         diasTrabajados.value = response.data?.dias || [];
@@ -31,6 +33,27 @@ export function useDiasTrabajados() {
       estadisticas.value = null;
     } finally {
       isLoading.value = false;
+    }
+  };
+
+  // Obtener horas extras del mes
+  const fetchHorasExtras = async (mes, anio) => {
+    isLoadingHorasExtras.value = true;
+    try {
+      // Convertir mes de JavaScript (0-11) a mes normal (1-12)
+      const mesBackend = mes + 1;
+      const response = await diasTrabajadosService.getHorasExtrasMes(mesBackend, anio);
+      
+      if (response.success) {
+        horasExtras.value = response.data || null;
+      } else {
+        horasExtras.value = null;
+      }
+    } catch (err) {
+      console.error('Error fetching horas extras:', err);
+      horasExtras.value = null;
+    } finally {
+      isLoadingHorasExtras.value = false;
     }
   };
 
@@ -94,11 +117,16 @@ export function useDiasTrabajados() {
         dia,
         fecha,
         esMesActual: true,
+        esHoy: esHoy(dia),
         estado: diaData?.estado || null,
         horaEntrada: diaData?.horaEntrada || null,
         horaSalida: diaData?.horaSalida || null,
         incidente: diaData?.incidente || null,
-        esHoy: esHoy(dia)
+        tipoIncidente: diaData?.tipoIncidente || null,
+        horasTrabajadas: diaData?.horasTrabajadas || null,
+        horasExtras: diaData?.horasExtras || null,
+        minutosExtra: diaData?.minutosExtra || null,
+        minutosRetraso: diaData?.minutosRetraso || null
       });
     }
 
@@ -167,19 +195,65 @@ export function useDiasTrabajados() {
     return stats;
   });
 
+  // Computed para horas extras
+  const horasExtrasInfo = computed(() => {
+    if (!horasExtras.value) {
+      return {
+        aprobadas: '0:00',
+        acumuladas: '0:00',
+        pendientes: '0:00',
+        tieneAprobadas: false,
+        tieneAcumuladas: false
+      };
+    }
+
+    return {
+      aprobadas: horasExtras.value.horasAprobadas || '0:00',
+      acumuladas: horasExtras.value.horasAcumuladas || '0:00',
+      pendientes: horasExtras.value.horasPendientes || '0:00',
+      tieneAprobadas: horasExtras.value.horasAprobadas && horasExtras.value.horasAprobadas !== '0:00',
+      tieneAcumuladas: horasExtras.value.horasAcumuladas && horasExtras.value.horasAcumuladas !== '0:00'
+    };
+  });
+
+  // Función para formatear minutos a horas
+  const formatearMinutosAHoras = (minutos) => {
+    if (!minutos || minutos === 0) return null;
+    const horas = Math.floor(Math.abs(minutos) / 60);
+    const mins = Math.abs(minutos) % 60;
+    const signo = minutos < 0 ? '-' : '+';
+    return `${signo}${horas}:${String(mins).padStart(2, '0')}`;
+  };
+
+  // Función para determinar si tiene horas extras
+  const tieneHorasExtras = (dia) => {
+    return dia.minutosExtra && dia.minutosExtra > 0;
+  };
+
+  // Función para determinar si tiene retraso
+  const tieneRetraso = (dia) => {
+    return dia.minutosRetraso && dia.minutosRetraso > 0;
+  };
+
   return {
     diasTrabajados,
     isLoading,
+    isLoadingHorasExtras,
     error,
     mesActual,
     anioActual,
     nombreMes,
     diasCalendario,
     estadisticasMes,
+    horasExtrasInfo,
     fetchDiasTrabajados,
+    fetchHorasExtras,
     cambiarMes,
     irMesActual,
     getEstadoColor,
-    getEstadoIcono
+    getEstadoIcono,
+    formatearMinutosAHoras,
+    tieneHorasExtras,
+    tieneRetraso
   };
 }
