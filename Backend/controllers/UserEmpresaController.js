@@ -1331,6 +1331,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                             fechaMarcacion
                         );
 
+                   
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion] = {
                             marcaciones: [],
                             turno: turno || null,
@@ -1348,12 +1349,21 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                         fecha: marcacion.fecha,
                         lugar_id: marcacion.lugar_id
                     });
+                }
 
-                    // Determinar estado de asistencia
+                // Determinar estado de asistencia para cada fecha DESPUÉS de agrupar todas las marcaciones
+                for (const fechaMarcacion in marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones) {
                     const tiposMarcacion = marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.map(m => m.tipo);
+                    console.log(`Tipos de marcación para usuario_empresa_id ${usuarioEmpresaId} en ${fechaMarcacion}:`, tiposMarcacion);
                     
-                    if (tiposMarcacion.includes('entrada') || tiposMarcacion.includes('salida')) {
+                    if (tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'PRESENTE';
+                    } else if (tiposMarcacion.includes('entrada') && !tiposMarcacion.includes('salida')) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'INCOMPLETA_SALIDA';
+                    } else if (!tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'INCOMPLETA_ENTRADA';
+                    } else {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'NO';
                     }
                 }
             }

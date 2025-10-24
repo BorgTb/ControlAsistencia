@@ -209,7 +209,12 @@
                       </span>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ registro.jornadaPactada || 'N/A' }}
+                      <div>
+                        {{ registro.jornadaPactada || 'N/A' }}
+                        <div v-if="registro.jornadaPactadaMinutos > 0" class="text-xs text-gray-500">
+                          ({{ formatearDuracion(registro.jornadaPactadaMinutos) }})
+                        </div>
+                      </div>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {{ registro.entrada || 'N/A' }}
@@ -352,7 +357,14 @@ const stats = computed(() => {
   
   return {
     jornadaCompleta: data.filter(r => r.cumplimiento === 'COMPLETO').length,
-    jornadaIncompleta: data.filter(r => r.cumplimiento === 'INCOMPLETO' || r.cumplimiento === 'AUSENTE').length,
+    jornadaIncompleta: data.filter(r => 
+      r.cumplimiento === 'INCOMPLETO' || 
+      r.cumplimiento === 'AUSENTE' || 
+      r.cumplimiento === 'SIN ENTRADA' || 
+      r.cumplimiento === 'SIN SALIDA' ||
+      r.cumplimiento === 'ATRASO GRAVE' ||
+      r.cumplimiento === 'SALIDA ANTICIPADA'
+    ).length,
     horasExtras: horasExtrasTotales.toFixed(1),
     promedioHoras: promedioHoras
   }
@@ -365,8 +377,8 @@ const totalesSemanales = computed(() => {
   
   // Calcular total jornada pactada
   const totalJornadaPactada = data.reduce((sum, r) => {
-    if (r.jornadaPactada && r.jornadaPactada !== '00:00') {
-      return sum + convertirHoraAMinutos(r.jornadaPactada)
+    if (r.jornadaPactadaMinutos && r.jornadaPactadaMinutos > 0) {
+      return sum + r.jornadaPactadaMinutos
     }
     return sum
   }, 0)
@@ -431,10 +443,20 @@ const getCumplimientoClass = (cumplimiento) => {
     case 'COMPLETO':
       return 'bg-green-100 text-green-800'
     case 'INCOMPLETO':
+    case 'SIN ENTRADA':
+    case 'SIN SALIDA':
       return 'bg-red-100 text-red-800'
+    case 'ATRASO GRAVE':
+      return 'bg-orange-100 text-orange-800'
+    case 'SALIDA ANTICIPADA':
+      return 'bg-yellow-100 text-yellow-800'
     case 'EXCEDIDO':
     case 'HORAS_EXTRA':
       return 'bg-blue-100 text-blue-800'
+    case 'AUSENTE':
+      return 'bg-gray-100 text-gray-800'
+    case 'DIA_LIBRE':
+      return 'bg-purple-100 text-purple-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }
@@ -489,10 +511,7 @@ const loadData = async (apiData = null) => {
   if (apiData && (apiData.trabajadores || apiData.marcacionesAgrupadasPorUsuario)) {
     const trabajadoresData = apiData.trabajadores || []
     const marcacionesData = apiData.marcacionesAgrupadasPorUsuario || {}
-    
-    console.log('📦 Procesando trabajadores:', trabajadoresData.length)
-    console.log('📦 Procesando marcaciones:', Object.keys(marcacionesData).length)
-    
+
     const registrosProcessed = []
     
     for (const trabajador of trabajadoresData) {
@@ -508,18 +527,31 @@ const loadData = async (apiData = null) => {
           const atraso = datosAsistencia.atraso
           const salida = datosAsistencia.salida
           
+          console.log(`📋 Turno para ${trabajador.usuario_nombre} en ${fecha}:`, turno)
+        
           const marcacionEntrada = marcacionesArray.find(m => m.tipo === 'entrada')
           const marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida')
           const colaciones = marcacionesArray.filter(m => m.tipo === 'colacion')
           
-          // Calcular jornada pactada
-          let jornadaPactada = '00:00:00'
+          // Obtener jornada pactada (hora inicio - hora fin)
+          let jornadaPactada = 'N/A'
+          let jornadaPactadaMinutos = 0
           if (turno && turno.hora_inicio && turno.hora_fin) {
+            console.log(`⏰ Jornada pactada - Inicio: ${turno.hora_inicio}, Fin: ${turno.hora_fin}`)
+            // Formatear las horas (quitar segundos si existen)
+            const horaInicio = turno.hora_inicio.substring(0, 5)
+            const horaFin = turno.hora_fin.substring(0, 5)
+            jornadaPactada = `${horaInicio} - ${horaFin}`
+            
+            // Calcular minutos de jornada pactada para comparaciones
             const minutosInicio = convertirHoraAMinutos(turno.hora_inicio)
             const minutosFin = convertirHoraAMinutos(turno.hora_fin)
-            let diferenciaMinutos = minutosFin - minutosInicio
-            if (diferenciaMinutos < 0) diferenciaMinutos += 24 * 60
-            jornadaPactada = convertirMinutosAHoras(diferenciaMinutos)
+            jornadaPactadaMinutos = minutosFin - minutosInicio
+            if (jornadaPactadaMinutos < 0) jornadaPactadaMinutos += 24 * 60
+            
+            console.log(`⏰ Jornada pactada: ${jornadaPactada} (${jornadaPactadaMinutos} minutos)`)
+          } else {
+            console.warn(`⚠️ No se pudo obtener jornada pactada - turno:`, turno)
           }
           
           // Calcular horas trabajadas y diferencias
@@ -534,8 +566,7 @@ const loadData = async (apiData = null) => {
             if (minutosReales < 0) minutosReales += 24 * 60
           }
           
-          if (marcacionEntrada && marcacionSalida && turno) {
-            const jornadaPactadaMinutos = convertirHoraAMinutos(jornadaPactada)
+          if (marcacionEntrada && marcacionSalida && turno && jornadaPactadaMinutos > 0) {
             const diferencia = minutosReales - jornadaPactadaMinutos
             
             if (diferencia > 0) {
@@ -545,16 +576,64 @@ const loadData = async (apiData = null) => {
             }
           }
           
-          // Determinar cumplimiento
+          // Determinar cumplimiento con análisis de entrada/salida atrasada o anticipada
           let cumplimiento = 'INCOMPLETO'
-          if (estadoAsistencia === 'NO_ASISTE') {
+          let entroMuyTarde = false
+          let salioMuyAntes = false
+          
+          // Analizar si entró muy tarde o salió muy antes (tolerancia: 30 minutos)
+          const TOLERANCIA_MINUTOS = 30
+          
+          if (turno && turno.hora_inicio && turno.hora_fin && marcacionEntrada && marcacionSalida) {
+            const minutosInicioTurno = convertirHoraAMinutos(turno.hora_inicio)
+            const minutosFinTurno = convertirHoraAMinutos(turno.hora_fin)
+            const minutosEntradaReal = convertirHoraAMinutos(marcacionEntrada.hora)
+            const minutosSalidaReal = convertirHoraAMinutos(marcacionSalida.hora)
+            
+            // Verificar si entró muy tarde (más de 30 minutos después)
+            const atrasoEntrada = minutosEntradaReal - minutosInicioTurno
+            if (atrasoEntrada > TOLERANCIA_MINUTOS) {
+              entroMuyTarde = true
+            }
+            
+            // Verificar si salió muy antes (más de 30 minutos antes)
+            const anticipoSalida = minutosFinTurno - minutosSalidaReal
+            if (anticipoSalida > TOLERANCIA_MINUTOS) {
+              salioMuyAntes = true
+            }
+          }
+
+          if (estadoAsistencia === 'NO_ASISTE' || estadoAsistencia === 'NO') {
             cumplimiento = 'AUSENTE'
           } else if (estadoAsistencia === 'PRESENTE') {
-            if (tiempoExtra) {
+            // Si entró muy tarde Y salió muy antes = INCOMPLETO
+            if (entroMuyTarde && salioMuyAntes) {
+              cumplimiento = 'INCOMPLETO'
+            }
+            // Solo entró muy tarde
+            else if (entroMuyTarde && !salioMuyAntes) {
+              cumplimiento = 'ATRASO GRAVE'
+            }
+            // Solo salió muy antes
+            else if (!entroMuyTarde && salioMuyAntes) {
+              cumplimiento = 'SALIDA ANTICIPADA'
+            }
+            // Cumplimiento normal con horas extra
+            else if (tiempoExtra) {
               cumplimiento = 'EXCEDIDO'
-            } else if (!tiempoFaltante) {
+            }
+            // Cumplimiento normal sin tiempo faltante
+            else if (!tiempoFaltante) {
               cumplimiento = 'COMPLETO'
             }
+            // Tiene tiempo faltante pero dentro de tolerancia
+            else {
+              cumplimiento = 'INCOMPLETO'
+            }
+          } else if (estadoAsistencia === 'INCOMPLETA_ENTRADA') {
+            cumplimiento = 'SIN ENTRADA'
+          } else if (estadoAsistencia === 'INCOMPLETA_SALIDA') {
+            cumplimiento = 'SIN SALIDA'
           } else if (estadoAsistencia === 'DIA_LIBRE') {
             cumplimiento = 'DIA_LIBRE'
           }
@@ -577,9 +656,10 @@ const loadData = async (apiData = null) => {
             cedula: trabajador.usuario_rut,
             iniciales: `${trabajador.usuario_nombre[0]}${trabajador.usuario_apellido_pat[0]}`.toUpperCase(),
             cargo: trabajador.rol_en_empresa || 'Trabajador',
-            turno: turno ? `${turno.nombre}` : 'Sin turno',
+            turno: turno ? `${turno.tipo_turno_nombre}` : 'Sin turno',
             fecha: fecha,
             jornadaPactada: jornadaPactada,
+            jornadaPactadaMinutos: jornadaPactadaMinutos,
             entrada: marcacionEntrada ? marcacionEntrada.hora : 'N/A',
             salida: marcacionSalida ? marcacionSalida.hora : 'N/A',
             colacionPactada: colacionPactada,
@@ -666,6 +746,17 @@ const calcularHorasEfectivas = (registro) => {
   if (diferencia < 0) diferencia += 24 * 60
   
   return convertirMinutosAHoras(diferencia)
+}
+
+const formatearDuracion = (minutos) => {
+  const horas = Math.floor(minutos / 60)
+  const mins = minutos % 60
+  
+  if (mins === 0) {
+    return `${horas} hrs`
+  } else {
+    return `${horas} hrs ${mins} min`
+  }
 }
 
 const applyFilters = async () => {
