@@ -10,7 +10,7 @@
       </div>
 
       <!-- Tarjeta de estadísticas -->
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
         <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-green-500">
           <div class="px-4 py-5 sm:p-6">
             <dt class="text-sm font-medium text-gray-500 truncate flex items-center">
@@ -77,6 +77,20 @@
             </dt>
             <dd class="mt-1 text-3xl font-semibold text-gray-900">
               {{ estadisticasMes.justificados || 0 }}
+            </dd>
+          </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-gray-400">
+          <div class="px-4 py-5 sm:p-6">
+            <dt class="text-sm font-medium text-gray-500 truncate flex items-center">
+              <svg class="w-5 h-5 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+              </svg>
+              Sin Turno
+            </dt>
+            <dd class="mt-1 text-3xl font-semibold text-gray-900">
+              {{ estadisticasMes.sinTurno || 0 }}
             </dd>
           </div>
         </div>
@@ -341,7 +355,7 @@
       <!-- Leyenda -->
       <div class="mt-8 bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Leyenda</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
           <div class="flex items-center space-x-2">
             <div class="w-12 h-12 rounded border-2 bg-green-100 border-green-300 flex items-center justify-center text-green-800 font-bold text-xl">
               ✓
@@ -389,6 +403,16 @@
             <div>
               <div class="font-medium text-gray-900">Justificado</div>
               <div class="text-xs text-gray-500">Ausencia justificada</div>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <div class="w-12 h-12 rounded border-2 bg-gray-100 border-gray-300 flex items-center justify-center text-gray-600 font-bold text-xl">
+              —
+            </div>
+            <div>
+              <div class="font-medium text-gray-900">Sin Turno</div>
+              <div class="text-xs text-gray-500">Día previo a asignación</div>
             </div>
           </div>
         </div>
@@ -909,7 +933,8 @@ const formatearEstado = (estado) => {
     'libre': 'Libre',
     'ausente': 'Ausente',
     'incidente': 'Incidente',
-    'justificado': 'Justificado'
+    'justificado': 'Justificado',
+    'sin_turno': 'Sin Turno Asignado'
   };
   return estados[estado] || estado;
 };
@@ -920,7 +945,8 @@ const getEstadoColorTexto = (estado) => {
     'libre': 'text-blue-600',
     'ausente': 'text-red-600',
     'incidente': 'text-yellow-600',
-    'justificado': 'text-purple-600'
+    'justificado': 'text-purple-600',
+    'sin_turno': 'text-gray-600'
   };
   return colores[estado] || 'text-gray-600';
 };

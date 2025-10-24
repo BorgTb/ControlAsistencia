@@ -797,6 +797,8 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
             ultimoDiaStr
         );
 
+        
+
         // Procesar días del mes
         const dias = procesarDiasMes(parseInt(mes), parseInt(anio), marcaciones.marcaciones, turnos, diasJustificados, ueId.id);
 
@@ -811,7 +813,8 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
                     diasConIncidente: dias.filter(d => d.estado === 'incidente').length,
                     diasAusentes: dias.filter(d => d.estado === 'ausente').length,
                     diasLibres: dias.filter(d => d.estado === 'libre').length,
-                    diasJustificados: dias.filter(d => d.estado === 'justificado').length
+                    diasJustificados: dias.filter(d => d.estado === 'justificado').length,
+                    diasSinTurno: dias.filter(d => d.estado === 'sin_turno').length
                 }
             }
         });
@@ -839,10 +842,16 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
     const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
     // Crear un mapa de días justificados para búsqueda rápida
+
+    console.log("Dias justificados:", diasJustificados);
     const mapaDiasJustificados = {};
     diasJustificados.forEach(dj => {
-        mapaDiasJustificados[dj.fecha] = dj;
+        const fechaStr = new Date(dj.fecha).toISOString().split('T')[0];
+        mapaDiasJustificados[fechaStr] = dj;
     });
+
+
+    console.log(mapaDiasJustificados);
 
     for (let dia = 1; dia <= diasDelMes; dia++) {
         const fecha = new Date(anio, mes - 1, dia);
@@ -873,6 +882,28 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
 const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
     if (!turnos || turnos.length === 0) return null;
     
+    const fechaEvaluar = new Date(fecha);
+    fechaEvaluar.setHours(0, 0, 0, 0);
+    
+    // Encontrar la fecha de inicio del primer turno
+    let fechaPrimerTurno = null;
+    for (const turno of turnos) {
+        const fechaInicio = new Date(turno.fecha_inicio);
+        fechaInicio.setHours(0, 0, 0, 0);
+        
+        if (!fechaPrimerTurno || fechaInicio < fechaPrimerTurno) {
+            fechaPrimerTurno = fechaInicio;
+        }
+    }
+    
+    // Si la fecha es anterior al primer turno, retornar objeto especial
+    if (fechaPrimerTurno && fechaEvaluar < fechaPrimerTurno) {
+        return {
+            sinTurnoAsignado: true,
+            fechaPrimerTurno: fechaPrimerTurno
+        };
+    }
+    
     // Buscar turno activo que aplique para esta fecha
     for (const turno of turnos) {
         const fechaInicio = new Date(turno.fecha_inicio);
@@ -882,9 +913,6 @@ const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
         if (fechaFin) {
             fechaFin.setHours(23, 59, 59, 999);
         }
-        
-        const fechaEvaluar = new Date(fecha);
-        fechaEvaluar.setHours(0, 0, 0, 0);
         
         // Verificar si la fecha está en el rango del turno
         if (fechaEvaluar >= fechaInicio && (!fechaFin || fechaEvaluar <= fechaFin)) {
@@ -908,6 +936,27 @@ const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
  * Procesa la información de un día específico
  */
 const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = null) => {
+    // Si el día es anterior a la asignación del turno (sin turno asignado aún)
+    if (turno && turno.sinTurnoAsignado) {
+        return {
+            fecha,
+            estado: 'sin_turno',
+            horaEntrada: null,
+            horaSalida: null,
+            horaInicioColacion: null,
+            horaFinColacion: null,
+            incidente: 'Día anterior a la asignación de turno',
+            tipoIncidente: 'SIN_TURNO_ASIGNADO',
+            turno: null,
+            horasTrabajadas: null,
+            minutosRetraso: 0,
+            minutosExtra: 0,
+            horasExtras: null,
+            justificado: false,
+            justificacion: null
+        };
+    }
+    
     // Si no hay turno asignado, el día es libre
     if (!turno) {
         return {
