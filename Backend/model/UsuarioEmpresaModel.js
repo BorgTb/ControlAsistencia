@@ -86,6 +86,7 @@ class UsuarioEmpresaModel {
         return rows.length > 0 ? rows[0] : null;
     }
     static async getUsuarioEmpresaByUsuarioId(id) {
+        console.log('[getUsuarioEmpresaByUsuarioId] Parámetro recibido (usuario_empresa_id):', id);
         const query = `
             SELECT 
                 ue.id,
@@ -107,10 +108,14 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
-            WHERE ue.id = ?
+            WHERE ue.id = ? AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
+            LIMIT 1
         `;
-        
         const [rows] = await db.execute(query, [id]);
+        console.log('[getUsuarioEmpresaByUsuarioId] Resultado consulta:', rows);
+        if (rows.length > 0 && rows[0].empresa_id) {
+            rows[0].empresa_id = Number(rows[0].empresa_id);
+        }
         return rows.length > 0 ? rows[0] : null;
     }
     

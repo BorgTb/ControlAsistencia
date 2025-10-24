@@ -270,8 +270,10 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
                 ORDER BY m.fecha DESC, m.hora DESC
                 LIMIT ?
             `;
-            const [rows] = await pool.execute(query, [limite]);
-            
+            // const [rows] = await pool.execute(query, [limite]); // Eliminado: declaración duplicada
+                    const limiteNum = Number(limite);
+                    const limiteFinal = isNaN(limiteNum) || limiteNum <= 0 ? 5 : limiteNum;
+                    const [rows] = await pool.execute(query, [limiteFinal]);
             // Formatear los datos para la actividad reciente
             return rows.map(row => ({
                 tipo: row.tipo || 'general',
@@ -319,6 +321,11 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
             console.error('Error al obtener marcaciones por usuario y rango de fecha:', error);
             throw error;
         }
+    }
+
+    // Método alias para el reporte de asistencia
+    async obtenerMarcacionesPorPeriodo(usuario_empresa_id, fechaInicio, fechaFin) {
+        return this.obtenerMarcacionesPorUsuarioYRangoFecha(usuario_empresa_id, fechaInicio, fechaFin);
     }
     
 }

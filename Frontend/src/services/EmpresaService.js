@@ -497,6 +497,29 @@ class EmpresaServices{
     }
   }
 
+  /**
+   * Obtiene reporte de asistencia detallado con métricas avanzadas
+   * @param {string} fechaInicio - Fecha de inicio (YYYY-MM-DD) - opcional
+   * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD) - opcional
+   * @returns {Promise} Datos detallados del reporte de asistencia
+   */
+  static async obtenerReporteAsistenciaDetallado(fechaInicio = null, fechaFin = null) {
+    try {
+      console.log('🚀 Obteniendo reporte de asistencia detallado:', { fechaInicio, fechaFin })
+      
+      const params = {}
+      if (fechaInicio) params.fechaInicio = fechaInicio
+      if (fechaFin) params.fechaFin = fechaFin
+      
+      const response = await apiClient.get('/userEmpresa/reportes-asistencia-detallado', { params })
+      console.log('✅ Reporte detallado obtenido:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo reporte detallado:', error)
+      throw error
+    }
+  }
+
 }
 
 export default EmpresaServices;

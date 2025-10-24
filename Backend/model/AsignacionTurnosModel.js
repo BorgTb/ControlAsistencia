@@ -215,6 +215,30 @@ class AsignacionTurnosModel {
         const [rows] = await pool.query(query, [tipoTurnoId]);
         return rows;
     }
+
+    static async getTurnosByUsuarioEmpresa(usuarioEmpresaId) {
+        const query = `
+            SELECT 
+                at.*,
+                tt.nombre as tipo_turno_nombre,
+                tt.hora_inicio,
+                tt.hora_fin,
+                tt.colacion_inicio,
+                tt.colacion_fin,
+                tt.dias_trabajo,
+                tt.dias_descanso,
+                tt.tipo_jornada_id,
+                tj.nombre as tipo_jornada_nombre
+            FROM asignacion_turnos at
+            INNER JOIN tipo_turnos tt ON at.tipo_turno_id = tt.id
+            LEFT JOIN tipo_jornada tj ON tt.tipo_jornada_id = tj.id
+            WHERE at.usuario_empresa_id = ?
+            AND at.estado = 'activo'
+            ORDER BY at.fecha_inicio DESC
+        `;
+        const [rows] = await pool.query(query, [usuarioEmpresaId]);
+        return rows;
+    }
 }
 
 export default AsignacionTurnosModel;

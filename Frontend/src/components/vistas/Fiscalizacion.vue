@@ -1,3 +1,5 @@
+
+
 <template>
   <!-- Navbar tipo tabs moderno -->
   <div class="w-full bg-gray-50 border-b border-gray-200">
@@ -101,6 +103,7 @@
             @change="actualizarFiltros({ limite: parseInt(filtros.limite) })"
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
           >
+            <option value="10">10 registros</option>
             <option value="25">25 registros</option>
             <option value="50">50 registros</option>
             <option value="100">100 registros</option>
@@ -210,77 +213,69 @@
         </div>
       </div>
 
+
       <!-- Tabla de registros de auditoría -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white">
+      <div v-if="error && !loading" class="p-8 text-center">
+        <div class="flex flex-col items-center justify-center">
+          <svg class="h-16 w-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="text-xl font-bold text-red-700 mb-2">Error al cargar registros</h3>
+          <p class="text-red-600 text-base">{{ error }}</p>
+        </div>
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-xs border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
           <thead class="sticky top-0 z-10 shadow-sm">
             <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
-              <th class="p-4 font-semibold text-left rounded-tl-2xl">Usuario</th>
-              <th class="p-4 font-semibold text-left">Email</th>
-              <th class="p-4 font-semibold text-left">Rol</th>
-              <th class="p-4 font-semibold text-left">Estado Usuario</th>
-              <th class="p-4 font-semibold text-center rounded-tr-2xl">Acciones</th>
+              <th class="px-3 py-2 font-semibold text-left rounded-tl-2xl">Usuario</th>
+              <th class="px-3 py-2 font-semibold text-left">Email</th>
+              <th class="px-3 py-2 font-semibold text-left">Rol</th>
+              <!-- <th class="px-3 py-2 font-semibold text-left">Estado</th> -->
+              <th class="px-3 py-2 font-semibold text-center rounded-tr-2xl">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <!-- Mostrar registros si existen -->
-            <template v-if="registros.length > 0">
+            <template v-if="registrosPaginados.length > 0">
               <tr
-                v-for="registro in registros"
+                v-for="(registro, idx) in registrosPaginados"
                 :key="registro.id"
-                class="hover:bg-green-50 transition border-b border-gray-200"
+                :class="[
+                  'transition border-b border-gray-100',
+                  idx % 2 === 0 ? 'bg-white' : 'bg-green-50',
+                  'hover:bg-green-100',
+                  'text-xs',
+                  'h-8',
+                  'align-middle'
+                ]"
               >
-                <td class="p-4">
+                <td class="px-3 py-1 align-middle">
                   <div class="font-medium text-gray-900">
                     {{ registro.nombre }} {{ registro.apellido_pat }} {{ registro.apellido_mat }}
                   </div>
                 </td>
-                <td class="p-4 text-gray-600">{{ registro.email }}</td>
-                <td class="p-4">
-                  <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                <td class="px-3 py-1 text-gray-600 align-middle">{{ registro.email }}</td>
+                <td class="px-3 py-1 align-middle">
+                  <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
                     {{ registro.rol }}
                   </span>
                 </td>
-                <!-- Estado del usuario: activo (1) o inactivo (0) -->
-                <td class="p-4">
-                  <span 
-                    class="px-2 py-1 text-xs font-medium rounded-full"
-                    :class="registro.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                <!-- Estado eliminado -->
+                <td class="px-3 py-1 text-center align-middle">
+                  <button
+                    @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
+                    class="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 transition text-xs shadow-sm mx-auto"
+                    title="Ver cambios realizados por este usuario"
                   >
-                    {{ registro.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td class="p-4 text-center">
-                  <div class="flex gap-2 justify-center">
-                    <!-- Botón para ver cambios realizados por el usuario -->
-                    <button
-                      @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
-                      class="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-200 transition text-xs"
-                      title="Ver cambios realizados por este usuario"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                      </svg>
-                      Ver Cambios
-                    </button>
-                    
-                    <!-- Botón para cerrar sesión activa (solo si tiene sesión activa) -->
-                    <button
-                      v-if="registro.estado === 'activo'"
-                      @click="manejarCierreSesion(registro.usuario_id, registro.id)"
-                      class="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-lg border border-red-200 hover:bg-red-200 transition text-xs"
-                      title="Cerrar sesión activa"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                      </svg>
-                      Cerrar
-                    </button>
-                  </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <span class="hidden sm:inline">Ver Cambios</span>
+                  </button>
                 </td>
               </tr>
             </template>
-            
             <!-- Mensaje cuando no hay registros -->
             <tr v-else-if="!loading">
               <td colspan="5" class="py-8 text-center text-gray-400 text-lg">
@@ -292,7 +287,6 @@
                 </div>
               </td>
             </tr>
-            
             <!-- Indicador de carga -->
             <tr v-else>
               <td colspan="5" class="py-8 text-center">
@@ -307,6 +301,45 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Paginación mejorada -->
+      <div class="flex justify-center items-center py-4">
+        <nav class="inline-flex rounded-lg shadow-sm border border-gray-200 bg-white overflow-hidden">
+          <button
+            @click="paginaActual > 1 && cambiarPagina(paginaActual - 1)"
+            :disabled="paginaActual === 1"
+            class="px-3 py-1 text-gray-500 hover:text-green-600 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-green-200"
+            aria-label="Anterior"
+          >
+            &lt;
+          </button>
+          <template v-for="n in totalPaginas" :key="n">
+            <button
+              @click="cambiarPagina(n)"
+              :class="[
+                'px-3 py-1 mx-0.5 font-medium',
+                paginaActual === n ? 'bg-green-100 text-green-700 border-b-2 border-green-500' : 'text-gray-700 hover:bg-green-50',
+                'rounded-none focus:outline-none focus:ring-2 focus:ring-green-200'
+              ]"
+            >
+              {{ n }}
+            </button>
+          </template>
+          <button
+            @click="paginaActual < totalPaginas && cambiarPagina(paginaActual + 1)"
+            :disabled="paginaActual === totalPaginas"
+            class="px-3 py-1 text-gray-500 hover:text-green-600 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-green-200"
+            aria-label="Siguiente"
+          >
+            &gt;
+          </button>
+        </nav>
+      </div>
+
+      <!-- Info de registros -->
+      <div class="text-xs text-gray-500 text-center pb-2">
+        Mostrando {{ inicioRegistro }} al {{ finRegistro }} de {{ totalRegistros }} resultados
       </div>
     </div>
   </div>
@@ -323,7 +356,7 @@
 
 <script setup>
 // Importaciones necesarias para el componente de auditoría
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAuditoria } from '../../composables/useAuditoria.js'
 import { useNotification } from '../../composables/useNotification.js'
 import ModalCambiosUsuario from '../modals/ModalCambiosUsuario.vue'
@@ -356,11 +389,44 @@ const { showSuccess, showError } = useNotification()
 // ========== ESTADO PARA MODAL DE CAMBIOS ==========
 // Variables reactivas para controlar el modal de cambios de usuario
 const mostrarModalCambios = ref(false)
+
 const usuarioSeleccionado = ref({
   id: null,
   nombre: '',
   rol: ''
-})
+});
+
+// PAGINACIÓN REACTIVA
+const paginaActual = ref(1);
+const registrosPorPagina = ref(Number(filtros.limite) || 10);
+
+watch(() => filtros.limite, (nuevoLimite) => {
+  registrosPorPagina.value = Number(nuevoLimite) || 15;
+  paginaActual.value = 1;
+});
+
+const totalRegistros = computed(() => registros.value.length);
+const totalPaginas = computed(() => Math.ceil(totalRegistros.value / registrosPorPagina.value) || 1);
+const inicioRegistro = computed(() => (totalRegistros.value === 0 ? 0 : (paginaActual.value - 1) * registrosPorPagina.value + 1));
+const finRegistro = computed(() => Math.min(paginaActual.value * registrosPorPagina.value, totalRegistros.value));
+
+function cambiarPagina(nuevaPagina) {
+  if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas.value) {
+    paginaActual.value = nuevaPagina;
+  }
+}
+
+const registrosPaginados = computed(() => {
+  const start = (paginaActual.value - 1) * registrosPorPagina.value;
+  return registros.value.slice(start, start + registrosPorPagina.value);
+});
+
+
+
+// Asegurar valor por defecto para filtros.limite
+if (!filtros.limite) {
+  filtros.limite = 10;
+}
 
 // ========== FUNCIONES DEL COMPONENTE ==========
 
@@ -444,3 +510,4 @@ onMounted(async () => {
   }
 })
 </script>
+})
