@@ -192,6 +192,16 @@ class EmpresaServices{
     }
   }
 
+  static async updateTurno(turnoId, nuevosDatos) {
+    try {
+      console.log('Modificando turno:', turnoId, nuevosDatos)
+      const response = await apiClient.put(`/userEmpresa/turnos/${turnoId}`, nuevosDatos)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
   static async obtenerTurnos(rut) {
     try {
       const response = await apiClient.get(`/userEmpresa/turnos/${rut}`)

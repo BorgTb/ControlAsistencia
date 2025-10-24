@@ -175,6 +175,61 @@ class AuditoriaModel {
         }
     }
 
+    // Obtener cambios por usuario con filtro de tabla afectada
+    static async obtenerCambiosPorUsuarioYTabla(usuario_id, tabla_afectada = null, limite = 20) {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+            
+            // Asegurar que los parámetros sean del tipo correcto
+            const usuarioIdNumero = parseInt(usuario_id);
+            const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 20, 200));
+            
+            let whereClause = 'WHERE ac.usuario_id = ?';
+            let params = [usuarioIdNumero];
+            
+            // Agregar filtro de tabla si se especifica
+            if (tabla_afectada && tabla_afectada.trim() !== '') {
+                whereClause += ' AND ac.tabla_afectada = ?';
+                params.push(tabla_afectada.trim());
+            }
+            
+            const query = `
+                SELECT 
+                    ac.id,
+                    ac.usuario_id,
+                    ac.accion,
+                    ac.tabla_afectada,
+                    ac.registro_id,
+                    ac.descripcion,
+                    ac.datos_anteriores,
+                    ac.datos_nuevos,
+                    ac.fecha_cambio,
+                    ac.ip_address,
+                    u.nombre,
+                    u.apellido_pat,
+                    u.apellido_mat,
+                    u.email,
+                    u.rol
+                FROM auditoria_cambios ac
+                INNER JOIN usuarios u ON ac.usuario_id = u.id
+                ${whereClause}
+                ORDER BY ac.fecha_cambio DESC
+                LIMIT ${limiteNumero}
+            `;
+            
+            const [rows] = await pool.execute(query, params);
+            
+            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` + 
+                       (tabla_afectada ? ` en tabla '${tabla_afectada}'` : ''));
+            
+            return rows;
+        } catch (error) {
+            console.error('Error al obtener cambios por usuario y tabla:', error);
+            throw error;
+        }
+    }
+
     // Cerrar sesión específica del usuario con zona horaria correcta
     static async cerrarSesionUsuario(usuario_id) {
         try {

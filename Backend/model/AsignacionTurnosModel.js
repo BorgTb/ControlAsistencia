@@ -244,6 +244,67 @@ class AsignacionTurnosModel {
         const [rows] = await pool.query(query, [usuarioEmpresaId]);
         return rows;
     }
+
+    /**
+     * Modifica un turno existente invalidando el anterior y creando uno nuevo
+     * @param {number} turnoId - ID del turno a modificar
+     * @param {object} nuevosDatos - Datos del nuevo turno
+     * @returns {object} - { turnoAnteriorId, nuevoTurnoId }
+     */
+    static async modificarTurno(turnoId, nuevosDatos) {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Obtener el turno actual
+            const [turnoActual] = await connection.query(
+                'SELECT * FROM asignacion_turnos WHERE id = ?',
+                [turnoId]
+            );
+
+            if (turnoActual.length === 0) {
+                throw new Error('Turno no encontrado');
+            }
+
+            const turno = turnoActual[0];
+
+            // Invalidar el turno actual estableciendo fecha_fin = hoy y estado = 'modificado'
+            const fechaActual = DateTime.now().setZone('America/Santiago').toISODate();
+            await connection.query(
+                `UPDATE asignacion_turnos 
+                 SET fecha_fin = ?, estado = 'modificado', updated_at = NOW()
+                 WHERE id = ?`,
+                [fechaActual, turnoId]
+            );
+
+            // Crear el nuevo turno con los datos actualizados
+            const [result] = await connection.query(
+                `INSERT INTO asignacion_turnos 
+                 (usuario_empresa_id, tipo_turno_id, fecha_inicio, fecha_fin, estado)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    turno.usuario_empresa_id, // Mantener el mismo usuario
+                    nuevosDatos.tipo_turno_id || turno.tipo_turno_id,
+                    nuevosDatos.fecha_inicio || DateTime.now().setZone('America/Santiago').plus({ days: 1 }).toISODate(),
+                    nuevosDatos.fecha_fin || null,
+                    'activo'
+                ]
+            );
+
+            await connection.commit();
+
+            return {
+                turnoAnteriorId: turnoId,
+                nuevoTurnoId: result.insertId,
+                turnoAnterior: turno
+            };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 export default AsignacionTurnosModel;

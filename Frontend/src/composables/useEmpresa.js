@@ -117,6 +117,16 @@ export function useEmpresa() {
     }
   };
 
+  const modificarTurno = async (turnoId, nuevosDatos) => {
+    try {
+      const response = await EmpresaServices.updateTurno(turnoId, nuevosDatos);
+      return response;
+    } catch (error) {
+      console.error("Error al modificar turno:", error);
+      throw error;
+    }
+  };
+
   const obtenerHorasSemanales = async (usuarioEmpresaId) => {
     try {
       const response = await EmpresaServices.obtenerHorasSemanales(usuarioEmpresaId);
@@ -231,6 +241,7 @@ export function useEmpresa() {
     modificarMarcacion,
     agregarMarcacionManual,
     eliminarTurno,
+    modificarTurno,
     obtenerHorasSemanales,
     obtenerTiposTurnos,
     crearTipoTurno,

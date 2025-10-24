@@ -8,6 +8,7 @@ import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import MarcacionesServices from '../services/MarcacionesServices.js';
 import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 import {DateTime} from 'luxon';
+import AuditoriaModel from '../model/AuditoriaModel.js';
 
 const solicitarAcceso = async (req, res) => {
     try {
@@ -706,6 +707,32 @@ const enviarCorreoEmpleador = async (req, res) => {
 
 const obtenerReporteModificaciones = async (req, res) => {
     // Por implementar: función para obtener reporte de modificaciones de marcaciones
+    const empleadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(req.params.empresa_id,'empleador');
+    console.log('Empleadores obtenidos para la empresa:', empleadores);
+    if (!empleadores) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error al obtener empleadores de la empresa',
+            error: empleadores.message
+        });
+    }
+
+   // para cada empleador obtener las modificaciones realizadas sobre la tabla asignacion_turnos
+   const modificacionesPorEmpleador = {};
+    for (const empleador of empleadores) {
+        const modificaciones = await AuditoriaModel.obtenerCambiosPorUsuarioYTabla(empleador.usuario_id, 'asignacion_turnos');
+        modificacionesPorEmpleador[empleador.usuario_id] = modificaciones;
+    }
+
+    // ahora necesito obtener si se elimino un turno y luego
+
+    console.log('Modificaciones obtenidas por empleador:', modificacionesPorEmpleador); 
+
+    res.status(200).json({
+        success: true,
+        message: 'Reporte de modificaciones obtenido exitosamente',
+        modificacionesPorEmpleador: modificacionesPorEmpleador
+    });
 }
 
         

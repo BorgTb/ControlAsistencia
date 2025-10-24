@@ -365,6 +365,116 @@ const deleteTurno = async (req, res) => {
     }
 };
 
+// Modificar turno asignado - invalida el turno actual y crea uno nuevo
+const updateTurno = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const nuevosDatos = req.body;
+
+        // Validar que el ID del turno sea válido
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de turno inválido" 
+            });
+        }
+
+        // Validar campos requeridos para el nuevo turno
+        if (!nuevosDatos.tipo_turno_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "El tipo de turno es requerido" 
+            });
+        }
+
+        // Verificar que la asignación existe antes de modificarla
+        const asignacionExistente = await AsignacionTurnosModel.getById(id);
+        if (!asignacionExistente) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Asignación de turno no encontrada" 
+            });
+        }
+
+        // Verificar que el estado sea 'activo'
+        if (asignacionExistente.estado !== 'activo') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Solo se pueden modificar turnos activos" 
+            });
+        }
+
+        // Obtener información del nuevo tipo de turno
+        const nuevoTipoTurno = await TipoTurnosModel.getById(nuevosDatos.tipo_turno_id);
+        if (!nuevoTipoTurno) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Tipo de turno no encontrado" 
+            });
+        }
+
+        // Obtener información del trabajador usando usuario_empresa_id
+        const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionExistente.usuario_empresa_id);
+        const tipoTurnoAnterior = await TipoTurnosModel.getById(asignacionExistente.tipo_turno_id);
+
+        // Modificar el turno (invalida el anterior y crea uno nuevo)
+        const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
+        
+        // Registrar la modificación en auditoría
+        if (req.user && req.user.id) {
+            try {
+                const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'modificar_turno_trabajador',
+                    tabla_afectada: 'asignacion_turnos',
+                    registro_id: resultado.nuevoTurnoId,
+                    descripcion: `Turno modificado para trabajador: ${nombreTrabajador} - De ${tipoTurnoAnterior?.nombre || 'Turno anterior'} a ${nuevoTipoTurno.nombre}`,
+                    datos_anteriores: JSON.stringify({
+                        id: id,
+                        usuario_empresa_id: asignacionExistente.usuario_empresa_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo_turno_id: asignacionExistente.tipo_turno_id,
+                        tipo_turno_nombre: tipoTurnoAnterior?.nombre,
+                        fecha_inicio: asignacionExistente.fecha_inicio,
+                        fecha_fin: asignacionExistente.fecha_fin
+                    }),
+                    datos_nuevos: JSON.stringify({
+                        id: resultado.nuevoTurnoId,
+                        usuario_empresa_id: asignacionExistente.usuario_empresa_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo_turno_id: nuevosDatos.tipo_turno_id,
+                        tipo_turno_nombre: nuevoTipoTurno.nombre,
+                        fecha_inicio: nuevosDatos.fecha_inicio,
+                        fecha_fin: nuevosDatos.fecha_fin || null
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Modificación de turno registrada en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar modificación de turno en auditoría:', auditError);
+            }
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Turno modificado exitosamente",
+            data: {
+                turnoAnteriorId: resultado.turnoAnteriorId,
+                nuevoTurnoId: resultado.nuevoTurnoId
+            }
+        });
+    } catch (error) {
+        console.error("Error modificando turno:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
 // Guardar configuración del sistema empresarial - permite personalizar ajustes
 const guardarConfiguracion = async (req, res) => {
     try {
@@ -1666,6 +1776,7 @@ const AdminController = {
     enrolarTrabajador,
     createTurno,
     deleteTurno,
+    updateTurno,
     obtenerTurnos,
     obtenerTiposTurnos,
     eliminarTipoTurno,

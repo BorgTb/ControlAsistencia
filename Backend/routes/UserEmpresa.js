@@ -25,6 +25,7 @@ router.delete('/tipos-turnos/:id', AuthService.verifyToken, UserEmpresaControlle
 
 // Rutas para asignaciones de turnos
 router.post('/turnos',AuthService.verifyToken, UserEmpresaController.createTurno);
+router.put('/turnos/:id',AuthService.verifyToken, UserEmpresaController.updateTurno);
 router.delete('/turnos/:id',AuthService.verifyToken, UserEmpresaController.deleteTurno);
 router.get('/turnos/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTurnos);
 
