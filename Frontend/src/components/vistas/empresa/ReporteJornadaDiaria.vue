@@ -244,9 +244,9 @@
                       </span>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <!-- Botón de aprobar horas extras - solo visible si hay tiempo extra positivo -->
+                      <!-- Botón de aprobar horas extras - solo visible si hay tiempo extra positivo y NO están aprobadas -->
                       <button
-                        v-if="registro.tiempoExtra && !registro.horasExtrasAprobadas"
+                        v-if="registro.tiempoExtra && !registro.horasExtrasAprobadas && !registro.horasExtrasPendientes && !registro.horasExtrasRechazadas"
                         @click="abrirModalAprobarHorasExtras(registro)"
                         class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                         title="Aprobar horas extras"
@@ -256,12 +256,51 @@
                         </svg>
                         Aprobar H. Extras
                       </button>
-                      <span v-else-if="registro.horasExtrasAprobadas" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                        Aprobadas
-                      </span>
+                      
+                      <!-- Horas extras aprobadas -->
+                      <div v-else-if="registro.horasExtrasAprobadas" class="flex flex-col space-y-1">
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md">
+                          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                          </svg>
+                          Aprobadas
+                        </span>
+                        <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500">
+                          {{ registro.horaExtraInfo.total_horas }} hrs
+                          <span v-if="registro.horaExtraInfo.tipo_compensacion === 'DESCANSO'" class="text-blue-600">(Descanso)</span>
+                          <span v-else class="text-green-600">(Pago)</span>
+                        </span>
+                        <span v-if="registro.horaExtraInfo && registro.horaExtraInfo.aprobado_por_nombre" class="text-xs text-gray-400">
+                          Por: {{ registro.horaExtraInfo.aprobado_por_nombre }} {{ registro.horaExtraInfo.aprobado_por_apellido_pat }}
+                        </span>
+                      </div>
+                      
+                      <!-- Horas extras pendientes -->
+                      <div v-else-if="registro.horasExtrasPendientes" class="flex flex-col space-y-1">
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md">
+                          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          Pendientes
+                        </span>
+                        <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500">
+                          {{ registro.horaExtraInfo.total_horas }} hrs
+                        </span>
+                      </div>
+                      
+                      <!-- Horas extras rechazadas -->
+                      <div v-else-if="registro.horasExtrasRechazadas" class="flex flex-col space-y-1">
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-100 rounded-md">
+                          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                          </svg>
+                          Rechazadas
+                        </span>
+                        <span v-if="registro.horaExtraInfo && registro.horaExtraInfo.motivo" class="text-xs text-gray-500">
+                          {{ registro.horaExtraInfo.motivo }}
+                        </span>
+                      </div>
+                      
                       <span v-else class="text-gray-400 text-xs">--</span>
                     </td>
                   </tr>
@@ -661,6 +700,12 @@ const loadData = async (apiData = null) => {
           const marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida')
           const colaciones = marcacionesArray.filter(m => m.tipo === 'colacion')
           
+          // Verificar si hay horas extras aprobadas, pendientes o rechazadas en este día
+          const horaExtraInfo = marcacionesArray.find(m => m.hora_extra !== null)?.hora_extra || null
+          const tieneHorasExtrasAprobadas = horaExtraInfo?.estado === 'APROBADA'
+          const tieneHorasExtrasPendientes = horaExtraInfo?.estado === 'PENDIENTE'
+          const tieneHorasExtrasRechazadas = horaExtraInfo?.estado === 'RECHAZADA'
+          
           // Obtener jornada pactada (hora inicio - hora fin)
           let jornadaPactada = 'N/A'
           let jornadaPactadaMinutos = 0
@@ -800,7 +845,10 @@ const loadData = async (apiData = null) => {
             cumplimiento: cumplimiento,
             observaciones: atraso || salida || '',
             otrasMarcaciones: marcacionesArray.filter(m => m.tipo !== 'entrada' && m.tipo !== 'salida' && m.tipo !== 'colacion'),
-            horasExtrasAprobadas: false, // Para controlar si ya fueron aprobadas
+            horasExtrasAprobadas: tieneHorasExtrasAprobadas,
+            horasExtrasPendientes: tieneHorasExtrasPendientes,
+            horasExtrasRechazadas: tieneHorasExtrasRechazadas,
+            horaExtraInfo: horaExtraInfo, // Información completa de la hora extra
             asignacion_turno_id: turno?.asignacion_id || null,
             marcacion_id: marcacionEntrada?.id || null
           })

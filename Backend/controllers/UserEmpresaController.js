@@ -9,12 +9,14 @@ import ReporteMarcacionesModel from "../model/ReportesModel.js";
 import EmpresaModel from "../model/EmpresaModel.js";
 import MarcacionesServices from "../services/MarcacionesServices.js";
 import MarcacionesModel from "../model/MarcacionesModel.js";
+import HorasExtrasModel from "../model/HorasExtrasModel.js";
 import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
 import  ConfigToleranciaModel from "../model/ConfigTolerancias.js";
+
 
 
 
@@ -1427,6 +1429,23 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 fecha_fin
             );
             console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
+            
+            // Obtener horas extras del trabajador en el rango de fechas
+            const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioYFechas(
+                usuarioEmpresaId,
+                fecha_inicio,
+                fecha_fin
+            );
+            console.log(`⏰ Horas extras obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, horasExtras);
+
+            // Crear un mapa de horas extras por marcacion_id para búsqueda rápida
+            const horasExtrasMap = {};
+            horasExtras.forEach(he => {
+                if (he.marcacion_id) {
+                    horasExtrasMap[he.marcacion_id] = he;
+                }
+            });
+
             // Agrupar marcaciones por fecha
             if (marcaciones && marcaciones.data && marcaciones.data.length > 0) {
                 for (const marcacion of marcaciones.data) {
@@ -1441,7 +1460,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                             fechaMarcacion
                         );
 
-                   
+                        
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion] = {
                             marcaciones: [],
                             turno: turno || null,
@@ -1451,13 +1470,29 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                         };
                     }
 
-                    // Agregar marcación al array
+                    // Verificar si esta marcación tiene hora extra asociada
+                    const horaExtra = horasExtrasMap[marcacion.id];
+
+                    // Agregar marcación al array con información de hora extra
                     marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.push({
                         id: marcacion.id,
                         hora: marcacion.hora,
                         tipo: marcacion.tipo,
                         fecha: marcacion.fecha,
-                        lugar_id: marcacion.lugar_id
+                        lugar_id: marcacion.lugar_id,
+                        hora_extra: horaExtra ? {
+                            id: horaExtra.id,
+                            estado: horaExtra.estado,
+                            total_horas: horaExtra.total_horas,
+                            motivo: horaExtra.motivo,
+                            aprobado_por: horaExtra.aprobado_por,
+                            aprobado_por_nombre: horaExtra.aprobado_por_nombre,
+                            aprobado_por_apellido_pat: horaExtra.aprobado_por_apellido_pat,
+                            aprobado_por_apellido_mat: horaExtra.aprobado_por_apellido_mat,
+                            fecha_aprobacion: horaExtra.fecha_aprobacion,
+                            tipo_compensacion: horaExtra.tipo_compensacion,
+                            dias_descanso_equivalentes: horaExtra.dias_descanso_equivalentes
+                        } : null
                     });
                 }
 
