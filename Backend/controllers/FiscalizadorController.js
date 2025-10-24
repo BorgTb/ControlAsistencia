@@ -3,12 +3,15 @@ import NotificacionService from '../services/NotificacionService.js';
 import LoginCodigoModel from '../model/LoginCodigoModel.js';
 import TipoTurnosModel from '../model/TipoTurnosModel.js';
 import EmpresaLugarModel from '../model/EmpresaLugarModel.js';
+import EmpresaModel from '../model/EmpresaModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import MarcacionesServices from '../services/MarcacionesServices.js';
 import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 import {DateTime} from 'luxon';
 import AuditoriaModel from '../model/AuditoriaModel.js';
+import pool from '../config/dbconfig.js';
+import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
 
 const solicitarAcceso = async (req, res) => {
     try {
@@ -706,34 +709,137 @@ const enviarCorreoEmpleador = async (req, res) => {
 
 
 const obtenerReporteModificaciones = async (req, res) => {
-    // Por implementar: función para obtener reporte de modificaciones de marcaciones
-    const empleadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(req.params.empresa_id,'empleador');
-    console.log('Empleadores obtenidos para la empresa:', empleadores);
-    if (!empleadores) {
-        return res.status(500).json({
+    try {
+        const empresaId = req.params.empresa_id;
+        const empleadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresaId, 'empleador');
+        // Obtener información de la empresa
+        const empresa = await EmpresaModel.getEmpresaById(empresaId);
+        if (!empresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'Empresa no encontrada'
+            });
+        }
+    
+        // Obtener modificaciones de marcaciones para la empresa
+        const todasLasModificaciones = [];
+        
+        for (const empleador of empleadores) {
+            const modificaciones = await AuditoriaModel.obtenerCambiosPorUsuarioYAccion(empleador.usuario_id, 'modificar_turno_trabajador', empresaId);
+            
+            // Procesar cada modificación para extraer solo los datos necesarios
+            for (const modificacion of modificaciones) {
+
+
+
+                
+                // agregar created_at de la tabla asignacion de turnos para ambos turnos el nuevo y el anterior
+                const asignacionAnterior = await AsignacionTurnosModel.getById(modificacion.datos_anteriores.id);
+                const asignacionNueva = await AsignacionTurnosModel.getById(modificacion.datos_nuevos.id);
+
+               
+                // agregar los dias en que trabaja en ese turno
+
+                const detalleDiasTurnoAnterior = await TipoTurnosModel.getDetalleDiasPorTipoTurnoId(modificacion.datos_anteriores.tipo_turno_id);
+                const detalleDiasTurnoNuevo = await TipoTurnosModel.getDetalleDiasPorTipoTurnoId(modificacion.datos_nuevos.tipo_turno_id);
+
+
+                console.log('Detalle dias turno anterior:', detalleDiasTurnoAnterior);
+                console.log('Detalle dias turno nuevo:', detalleDiasTurnoNuevo);
+
+                const modificacionProcesada = {
+                    id: modificacion.id,
+                    usuario_id: modificacion.usuario_id,
+                    accion: modificacion.accion,
+                    tabla_afectada: modificacion.tabla_afectada,
+                    registro_id: modificacion.registro_id,
+                    descripcion: modificacion.descripcion,
+                    fecha_cambio: modificacion.fecha_cambio,
+                    ip_address: modificacion.ip_address,
+                    solicitante: 'empleador',
+                    empleador: {
+                    nombre: modificacion.nombre,
+                    apellido_pat: modificacion.apellido_pat,
+                    apellido_mat: modificacion.apellido_mat,
+                    email: modificacion.email,
+                    rol: modificacion.rol,
+                    },
+                    datos_anteriores: {
+                    fecha_inicio: modificacion.datos_anteriores.fecha_inicio,
+                    tipo_turno_id: modificacion.datos_anteriores.tipo_turno_id,
+                    usuario_empresa_id: modificacion.datos_anteriores.usuario_empresa_id,
+                    tipo_turno_nombre: modificacion.datos_anteriores.tipo_turno_nombre,
+                    fecha_asignacion: asignacionAnterior.created_at,
+                    hora_inicio: asignacionAnterior.hora_inicio,
+                    hora_fin: asignacionAnterior.hora_fin,
+                    colacion_inicio: asignacionAnterior.colacion_inicio,
+                    colacion_fin: asignacionAnterior.colacion_fin,
+                    detalle_dias_turno: detalleDiasTurnoAnterior
+                    },
+                    datos_nuevos: {
+                    fecha_inicio: modificacion.datos_nuevos.fecha_inicio,
+                    tipo_turno_id: modificacion.datos_nuevos.tipo_turno_id,
+                    usuario_empresa_id: modificacion.datos_nuevos.usuario_empresa_id,
+                    tipo_turno_nombre: modificacion.datos_nuevos.tipo_turno_nombre,
+                    fecha_asignacion: asignacionNueva.created_at,
+                    hora_inicio: asignacionNueva.hora_inicio,
+                    hora_fin: asignacionNueva.hora_fin,
+                    colacion_inicio: asignacionNueva.colacion_inicio,
+                    colacion_fin: asignacionNueva.colacion_fin    ,
+                    detalle_dias_turno: detalleDiasTurnoNuevo,
+                    },
+            };
+
+
+            
+            todasLasModificaciones.push(modificacionProcesada);
+            }
+        }
+        
+        for (const modificacion of todasLasModificaciones) {
+            // agregar datos de trabajador en base a datos_anteriores.usuario_empresa_id
+            const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(modificacion.datos_anteriores.usuario_empresa_id);
+            modificacion.trabajador = {
+                nombre: trabajador.usuario_nombre,
+                apellido_pat: trabajador.usuario_apellido_pat,
+                apellido_mat: trabajador.usuario_apellido_mat,
+                email: trabajador.usuario_email,
+                rut: trabajador.usuario_rut
+            };
+
+
+        }
+
+        console.log('Modificaciones procesadas:', todasLasModificaciones);
+        
+        // Calcular estadísticas
+        const stats = {
+            total: todasLasModificaciones.length,
+            porEmpleador: todasLasModificaciones.filter(m => m.empleador?.rol === 'empleador').length,
+            porTrabajador: todasLasModificaciones.filter(m => m.empleador?.rol === 'trabajador').length,
+            modificaciones: todasLasModificaciones.length
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'Reporte de modificaciones obtenido exitosamente',
+            empresa: {
+                id: empresa.empresa_id,
+                razonSocial: empresa.emp_nombre,
+                rut: empresa.emp_rut
+            },
+            modificaciones: todasLasModificaciones,
+            stats: stats
+        });
+    } catch (error) {
+        console.error('Error al obtener reporte de modificaciones:', error);
+        res.status(500).json({
             success: false,
-            message: 'Error al obtener empleadores de la empresa',
-            error: empleadores.message
+            message: 'Error al obtener reporte de modificaciones',
+            error: error.message
         });
     }
-
-   // para cada empleador obtener las modificaciones realizadas sobre la tabla asignacion_turnos
-   const modificacionesPorEmpleador = {};
-    for (const empleador of empleadores) {
-        const modificaciones = await AuditoriaModel.obtenerCambiosPorUsuarioYTabla(empleador.usuario_id, 'asignacion_turnos');
-        modificacionesPorEmpleador[empleador.usuario_id] = modificaciones;
-    }
-
-    // ahora necesito obtener si se elimino un turno y luego
-
-    console.log('Modificaciones obtenidas por empleador:', modificacionesPorEmpleador); 
-
-    res.status(200).json({
-        success: true,
-        message: 'Reporte de modificaciones obtenido exitosamente',
-        modificacionesPorEmpleador: modificacionesPorEmpleador
-    });
-}
+};
 
         
         

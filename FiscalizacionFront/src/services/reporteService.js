@@ -271,6 +271,47 @@ class ReporteService {
   }
 
   /**
+   * Obtiene el reporte de modificaciones de turnos de una empresa
+   * @param {number} empresaId - ID de la empresa
+   * @returns {Promise<Object>} Reporte de modificaciones de turnos
+   */
+  async obtenerReporteModificacionesTurnos(empresaId) {
+    try {
+      const response = await apiClient.get(`/fiscalizador/reporte-modificaciones/${empresaId}`)
+      if (!response.data || response.data.status === 'error') {
+        return {
+          success: false,
+          error: response.data?.message || 'Error al obtener reporte de modificaciones de turnos',
+          status: response.status,
+          data: [],
+          empresa: {},
+          stats: {}
+        }
+      }
+
+    
+      
+      return {
+        success: true,
+        data: response.data.modificaciones || [],
+        empresa: response.data.empresa || {},
+        stats: response.data.stats || {},
+        message: response.data.message || 'Reporte de modificaciones obtenido correctamente'
+      }
+    } catch (error) {
+      console.error('Error al obtener reporte de modificaciones de turnos:', error)
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener reporte de modificaciones de turnos',
+        status: error.response?.status,
+        data: [],
+        empresa: {},
+        stats: {}
+      }
+    }
+  }
+
+  /**
    * Exporta un reporte en el formato especificado
    * @param {string} tipoReporte - Tipo de reporte a exportar
    * @param {string} formato - Formato de exportación (pdf, excel, word)

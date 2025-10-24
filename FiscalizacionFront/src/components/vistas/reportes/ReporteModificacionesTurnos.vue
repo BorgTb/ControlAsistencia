@@ -85,50 +85,7 @@
           </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="p-2 bg-blue-100 rounded-lg">
-                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Modificaciones</p>
-                <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Por Empleador</p>
-                <p class="text-2xl font-bold text-gray-900">{{ stats.porEmpleador }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex items-center">
-              <div class="p-2 bg-green-100 rounded-lg">
-                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Por Trabajador</p>
-                <p class="text-2xl font-bold text-gray-900">{{ stats.porTrabajador }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         <!-- Data Table -->
         <div class="bg-white shadow rounded-lg">
@@ -151,7 +108,16 @@
               </div>
             </div>
             
-            <div class="mt-8 overflow-x-auto">
+            <!-- Indicador de Carga -->
+            <div v-if="cargando" class="mt-8 flex justify-center items-center py-12">
+              <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-sm text-gray-600">Cargando modificaciones de turnos...</p>
+              </div>
+            </div>
+
+            <!-- Tabla de Datos -->
+            <div v-else class="mt-8 overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                   <tr>
@@ -169,71 +135,80 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="modificacion in filteredData" :key="modificacion.id" class="hover:bg-gray-50">
+                  <tr v-for="modificacion in modificaciones" :key="modificacion.id" class="hover:bg-gray-50">
                     <!-- d.1) Trabajador: Nombre completo y cédula -->
                     <td class="px-3 py-4 text-sm">
-                      <div class="font-medium text-gray-900">{{ modificacion.nombreCompleto }}</div>
+                      <div class="font-medium text-gray-900">
+                        {{ getNombreCompleto(modificacion.trabajador) }}
+                      </div>
+                      <div class="text-xs text-gray-500">{{ formatearRut(modificacion.trabajador?.rut) }}</div>
                     </td>
                     
                     <!-- d.1) CI y Lugar de prestación -->
                     <td class="px-3 py-4 text-sm">
-                      <div class="text-gray-900">{{ formatearRut(modificacion.ci) }}</div>
-                      <div class="text-xs text-gray-500">{{ modificacion.lugarPrestacion }}</div>
+                      <div class="text-xs text-gray-500">-</div>
                     </td>
                     
                     <!-- d.2) Fecha asignación turno original -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ formatearFecha(modificacion.fechaAsignacionOriginal) }}
+                      {{ formatearFecha(modificacion.datos_anteriores?.fecha_asignacion) }}
                     </td>
                     
                     <!-- d.3) Turno asignado original -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm">
-                      <div class="text-gray-900">{{ modificacion.turnoOriginal.horario }}</div>
+                      <div class="text-gray-900">{{ getTurnoHorario(modificacion.datos_anteriores) }}</div>
                     </td>
                     
                     <!-- d.4) Extensión del turno original -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ modificacion.turnoOriginal.extension }}
+                      {{ getTurnoExtension(modificacion.datos_anteriores) }}
                     </td>
                     
                     <!-- d.5) Fecha asignación nuevo turno -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ formatearFecha(modificacion.fechaAsignacionNuevo) }}
+                      {{ formatearFecha(modificacion.datos_nuevos?.fecha_asignacion) }}
                     </td>
                     
                     <!-- d.6) Inicio del nuevo turno -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ formatearFecha(modificacion.fechaInicioNuevo) }}
+                      {{ modificacion.datos_nuevos?.fecha_inicio }}
                     </td>
                     
                     <!-- d.7) Nuevo turno asignado -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm">
-                      <div class="text-gray-900">{{ modificacion.turnoNuevo.horario }}</div>
+                      <div class="text-gray-900">{{ getTurnoHorario(modificacion.datos_nuevos) }}</div>
                     </td>
                     
                     <!-- d.8) Extensión del nuevo turno -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ modificacion.turnoNuevo.extension }}
+                      {{ getTurnoExtension(modificacion.datos_nuevos) }}
                     </td>
                     
                     <!-- d.9) Quién solicitó el cambio -->
                     <td class="px-3 py-4 whitespace-nowrap text-sm">
                       <span :class="getSolicitanteClass(modificacion.solicitante)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                        {{ modificacion.solicitante }}
+                        {{ capitalize(modificacion.solicitante) }}
                       </span>
                     </td>
                     
                     <!-- d.10) Observaciones -->
                     <td class="px-3 py-4 text-sm text-gray-900 max-w-xs">
-                      <div class="truncate" :title="modificacion.observaciones">
-                        {{ modificacion.observaciones || 'Sin observaciones' }}
+                      <div class="truncate" :title="modificacion.descripcion">
+                        {{ modificacion.descripcion || 'Sin observaciones' }}
                       </div>
                     </td>
                   </tr>
                   
-                  <tr v-if="filteredData.length === 0">
-                    <td colspan="11" class="px-3 py-8 text-center text-sm text-gray-500">
-                      No se encontraron registros de modificaciones de turnos
+                  <!-- Mensaje cuando no hay datos -->
+                  <tr v-if="!cargando && filteredData.length === 0">
+                    <td colspan="11" class="px-3 py-12 text-center">
+                      <div class="flex flex-col items-center">
+                        <svg class="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-sm text-gray-500 font-medium">No se encontraron modificaciones de turnos</p>
+                        <p class="text-xs text-gray-400 mt-1">Intenta ajustar los filtros de búsqueda</p>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -254,15 +229,15 @@
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Nombre Completo:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.nombreCompleto }}</p>
+                      <p class="text-sm text-gray-900">{{ getNombreCompleto(modificacionSeleccionada.trabajador) }}</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Cédula:</label>
-                      <p class="text-sm text-gray-900">{{ formatearRut(modificacionSeleccionada.ci) }}</p>
+                      <p class="text-sm text-gray-900">{{ formatearRut(modificacionSeleccionada.trabajador?.rut) }}</p>
                     </div>
                     <div class="col-span-2">
                       <label class="block text-sm font-medium text-gray-700">Lugar de Prestación:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.lugarPrestacion }}</p>
+                      <p class="text-sm text-gray-900">-</p>
                     </div>
                   </div>
                 </div>
@@ -273,15 +248,15 @@
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Fecha Asignación:</label>
-                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.fechaAsignacionOriginal) }}</p>
+                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.datos_anteriores?.fecha_asignacion) }}</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Horario:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.turnoOriginal.horario }}</p>
+                      <p class="text-sm text-gray-900">{{ getTurnoHorario(modificacionSeleccionada.datos_anteriores) }}</p>
                     </div>
                     <div class="col-span-2">
                       <label class="block text-sm font-medium text-gray-700">Extensión:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.turnoOriginal.extension }}</p>
+                      <p class="text-sm text-gray-900">{{ getTurnoExtension(modificacionSeleccionada.datos_anteriores) }}</p>
                     </div>
                   </div>
                 </div>
@@ -292,19 +267,19 @@
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Fecha Asignación:</label>
-                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.fechaAsignacionNuevo) }}</p>
+                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.datos_nuevos?.fecha_asignacion) }}</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Inicio Turno:</label>
-                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.fechaInicioNuevo) }}</p>
+                      <p class="text-sm text-gray-900">{{ formatearFecha(modificacionSeleccionada.datos_nuevos?.fecha_inicio) }}</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Horario:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.turnoNuevo.horario }}</p>
+                      <p class="text-sm text-gray-900">{{ getTurnoHorario(modificacionSeleccionada.datos_nuevos) }}</p>
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-gray-700">Extensión:</label>
-                      <p class="text-sm text-gray-900">{{ modificacionSeleccionada.turnoNuevo.extension }}</p>
+                      <p class="text-sm text-gray-900">{{ getTurnoExtension(modificacionSeleccionada.datos_nuevos) }}</p>
                     </div>
                   </div>
                 </div>
@@ -314,12 +289,12 @@
                   <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700">Solicitante:</label>
                     <span :class="getSolicitanteClass(modificacionSeleccionada.solicitante)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                      {{ modificacionSeleccionada.solicitante }}
+                      {{ capitalize(modificacionSeleccionada.solicitante) }}
                     </span>
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700">Observaciones:</label>
-                    <p class="text-sm text-gray-900">{{ modificacionSeleccionada.observaciones || 'Sin observaciones' }}</p>
+                    <p class="text-sm text-gray-900">{{ modificacionSeleccionada.descripcion || 'Sin observaciones' }}</p>
                   </div>
                 </div>
               </div>
@@ -341,7 +316,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import Header from '../../component/header.vue'
+import { useDataStore } from '../../../store/dataStorage.js'
+import reporteService from '../../../services/reporteService.js'
+
+const dataStore = useDataStore()
+const empresaSeleccionada = computed(() => dataStore.empresaSeleccionada)
 
 const today = new Date()
 const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -359,40 +338,52 @@ const filters = ref({
 })
 
 const modificaciones = ref([])
+const cargando = ref(false)
 const modalDetalle = ref(false)
 const modificacionSeleccionada = ref(null)
 
 const stats = computed(() => {
   return {
     total: filteredData.value.length,
-    porEmpleador: filteredData.value.filter(m => m.solicitante === 'Empleador').length,
-    porTrabajador: filteredData.value.filter(m => m.solicitante === 'Trabajador').length
+    porEmpleador: filteredData.value.filter(m => m.solicitante?.toLowerCase() === 'empleador').length,
+    porTrabajador: filteredData.value.filter(m => m.solicitante?.toLowerCase() === 'trabajador').length
   }
 })
 
 const filteredData = computed(() => {
   let data = modificaciones.value
 
+
+  console.log(data)
+
   if (filters.value.trabajador) {
-    data = data.filter(m => 
-      m.nombreCompleto.toLowerCase().includes(filters.value.trabajador.toLowerCase())
-    )
+    const busqueda = filters.value.trabajador.toLowerCase()
+    data = data.filter(m => {
+      const nombreCompleto = getNombreCompleto(m.trabajador).toLowerCase()
+      const rut = m.trabajador?.rut?.toLowerCase() || ''
+      return nombreCompleto.includes(busqueda) || rut.includes(busqueda)
+    })
   }
 
   if (filters.value.lugar) {
-    data = data.filter(m => 
-      m.lugarPrestacion.toLowerCase().includes(filters.value.lugar.toLowerCase())
-    )
+    data = data.filter(m => {
+      const lugar = m.lugar || '-'
+      return lugar.toLowerCase().includes(filters.value.lugar.toLowerCase())
+    })
   }
 
   if (filters.value.fechaInicio && filters.value.fechaFin) {
     data = data.filter(m => {
-      const fecha = new Date(m.fechaAsignacionNuevo)
+      const fecha = new Date(m.datos_nuevos?.fecha_asignacion || m.fecha_cambio)
       return fecha >= new Date(filters.value.fechaInicio) && fecha <= new Date(filters.value.fechaFin)
     })
   }
 
-  return data.sort((a, b) => new Date(b.fechaAsignacionNuevo) - new Date(a.fechaAsignacionNuevo))
+  return data.sort((a, b) => {
+    const fechaA = new Date(a.datos_nuevos?.fecha_asignacion || a.fecha_cambio)
+    const fechaB = new Date(b.datos_nuevos?.fecha_asignacion || b.fecha_cambio)
+    return fechaB - fechaA
+  })
 })
 
 // Formatear fecha a formato dd/mm/aa
@@ -416,99 +407,97 @@ const formatearRut = (rut) => {
 
 // Obtener clase CSS según el solicitante
 const getSolicitanteClass = (solicitante) => {
+  const solicitanteLower = solicitante?.toLowerCase() || ''
   const classes = {
-    'Empleador': 'bg-blue-100 text-blue-800',
-    'Trabajador': 'bg-green-100 text-green-800'
+    'empleador': 'bg-blue-100 text-blue-800',
+    'trabajador': 'bg-green-100 text-green-800'
   }
-  return classes[solicitante] || 'bg-gray-100 text-gray-800'
+  return classes[solicitanteLower] || 'bg-gray-100 text-gray-800'
+}
+
+// Capitalizar primera letra
+const capitalize = (str) => {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+// Obtener nombre completo del trabajador
+const getNombreCompleto = (trabajador) => {
+  if (!trabajador) return '-'
+  const nombre = trabajador.nombre || ''
+  const apellidoPat = trabajador.apellido_pat || ''
+  const apellidoMat = trabajador.apellido_mat || ''
+  return `${nombre} ${apellidoPat} ${apellidoMat}`.trim()
+}
+
+// Obtener horario del turno (hora_inicio - hora_fin)
+const getTurnoHorario = (datos) => {
+  if (!datos) return '-'
+  const horaInicio = datos.hora_inicio || ''
+  const horaFin = datos.hora_fin || ''
+  if (!horaInicio || !horaFin) return datos.tipo_turno_nombre || '-'
+  return `${horaInicio.substring(0, 5)} - ${horaFin.substring(0, 5)}`
+}
+
+// Obtener extensión del turno (días que trabaja)
+const getTurnoExtension = (datos) => {
+  if (!datos || !datos.detalle_dias_turno) return '-'
+  const diasTrabaja = datos.detalle_dias_turno
+    .filter(d => d.trabaja === 1)
+    .map(d => d.dia_semana)
+  
+  if (diasTrabaja.length === 0) return 'Sin días asignados'
+  
+  // Mapeo de días en español
+  const diasAbreviados = {
+    'lunes': 'L',
+    'martes': 'M',
+    'miércoles': 'X',
+    'miercoles': 'X',
+    'jueves': 'J',
+    'viernes': 'V',
+    'sábado': 'S',
+    'sabado': 'S',
+    'domingo': 'D'
+  }
+  
+  return diasTrabaja.map(d => diasAbreviados[d.toLowerCase()] || d.substring(0, 1).toUpperCase()).join(', ')
 }
 
 const loadData = async () => {
-  // Simular información del empleador
-  empleadorInfo.value = {
-    razonSocial: 'TELEMEDIOS S.A.',
-    rut: '76.123.456-7'
+  if (!empresaSeleccionada.value?.id) {
+    console.warn('No hay empresa seleccionada')
+    return
   }
-  
-  // Simular datos de modificaciones según requisitos regulatorios
-  modificaciones.value = [
-    {
-      id: 1,
-      nombreCompleto: 'Juan Carlos Pérez González',
-      ci: '12345678-9',
-      lugarPrestacion: 'Sucursal Santiago Centro',
-      fechaAsignacionOriginal: '2024-01-05',
-      turnoOriginal: {
-        horario: '08:00 - 17:00',
-        extension: 'Diario'
-      },
-      fechaAsignacionNuevo: '2024-01-15',
-      fechaInicioNuevo: '2024-01-20',
-      turnoNuevo: {
-        horario: '14:00 - 23:00',
-        extension: 'Semanal'
-      },
-      solicitante: 'Trabajador',
-      observaciones: 'Solicita cambio de turno por motivos de estudios'
-    },
-    {
-      id: 2,
-      nombreCompleto: 'María Fernanda López Silva',
-      ci: '23456789-0',
-      lugarPrestacion: 'Sucursal Providencia',
-      fechaAsignacionOriginal: '2024-01-03',
-      turnoOriginal: {
-        horario: '14:00 - 23:00',
-        extension: 'Semanal'
-      },
-      fechaAsignacionNuevo: '2024-01-10',
-      fechaInicioNuevo: '2024-01-12',
-      turnoNuevo: {
-        horario: '08:00 - 17:00',
-        extension: 'Diario'
-      },
-      solicitante: 'Empleador',
-      observaciones: 'Cambio por necesidad de servicio'
-    },
-    {
-      id: 3,
-      nombreCompleto: 'Carlos Andrés Ramírez Torres',
-      ci: '34567890-1',
-      lugarPrestacion: 'Sucursal Las Condes',
-      fechaAsignacionOriginal: '2024-01-01',
-      turnoOriginal: {
-        horario: '22:00 - 06:00',
-        extension: 'Bisemanal'
-      },
-      fechaAsignacionNuevo: '2024-01-08',
-      fechaInicioNuevo: '2024-01-10',
-      turnoNuevo: {
-        horario: '06:00 - 14:00',
-        extension: 'Mensual'
-      },
-      solicitante: 'Trabajador',
-      observaciones: 'Solicita turno diurno por problemas de salud'
-    },
-    {
-      id: 4,
-      nombreCompleto: 'Ana Patricia Morales Vega',
-      ci: '45678901-2',
-      lugarPrestacion: 'Sucursal Maipú',
-      fechaAsignacionOriginal: '2023-12-20',
-      turnoOriginal: {
-        horario: '06:00 - 14:00',
-        extension: 'Mensual'
-      },
-      fechaAsignacionNuevo: '2024-01-12',
-      fechaInicioNuevo: '2024-01-15',
-      turnoNuevo: {
-        horario: '08:00 - 17:00',
-        extension: 'Diario'
-      },
-      solicitante: 'Empleador',
-      observaciones: 'Ajuste por reestructuración de equipos'
+
+  try {
+    cargando.value = true
+    
+    // Obtener reporte de modificaciones desde el backend
+    const response = await reporteService.obtenerReporteModificacionesTurnos(empresaSeleccionada.value.id)
+    
+    if (response.success) {
+      modificaciones.value = response.data
+      
+      // Actualizar información del empleador
+      if (response.empresa) {
+        empleadorInfo.value = {
+          razonSocial: response.empresa.razonSocial || 'Sin información',
+          rut: formatearRut(response.empresa.rut) || 'Sin información'
+        }
+      }
+      
+      console.log('✅ Modificaciones cargadas:', modificaciones.value)
+    } else {
+      console.error('❌ Error al cargar modificaciones:', response.error)
+      modificaciones.value = []
     }
-  ]
+  } catch (error) {
+    console.error('❌ Error al cargar datos:', error)
+    modificaciones.value = []
+  } finally {
+    cargando.value = false
+  }
 }
 
 const applyFilters = () => {

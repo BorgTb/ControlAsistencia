@@ -431,6 +431,61 @@ class AuditoriaModel {
         }
     }
 
+    // Obtener cambios por usuario y acción específica
+    static async obtenerCambiosPorUsuarioYAccion(usuario_id, accion = null, limite = 50) {
+        try {
+            // Configurar zona horaria de Chile
+            await pool.execute("SET time_zone = '-03:00'");
+            
+            // Validar y limitar parámetros
+            const usuarioIdNumero = parseInt(usuario_id);
+            const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 50, 200));
+
+            let whereClause = 'WHERE ac.usuario_id = ?';
+            let params = [usuarioIdNumero];
+            
+            // Agregar filtro de acción si se especifica
+            if (accion && accion.trim() !== '') {
+                whereClause += ' AND ac.accion = ?';
+                params.push(accion.trim());
+            }
+
+            const query = `
+                SELECT 
+                    ac.id,
+                    ac.usuario_id,
+                    ac.accion,
+                    ac.tabla_afectada,
+                    ac.registro_id,
+                    ac.descripcion,
+                    ac.datos_anteriores,
+                    ac.datos_nuevos,
+                    ac.fecha_cambio,
+                    ac.ip_address,
+                    u.nombre,
+                    u.apellido_pat,
+                    u.apellido_mat,
+                    u.email,
+                    u.rol
+                FROM auditoria_cambios ac
+                INNER JOIN usuarios u ON ac.usuario_id = u.id
+                ${whereClause}
+                ORDER BY ac.fecha_cambio DESC
+                LIMIT ${limiteNumero}
+            `;
+
+            const [rows] = await pool.execute(query, params);
+
+            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` + 
+                       (accion ? ` con acción '${accion}'` : ''));
+            return rows;
+
+        } catch (error) {
+            console.error('❌ Error al obtener cambios por usuario y acción:', error);
+            throw error;
+        }
+    }
+
     // Obtener estadísticas de cambios del sistema
     static async obtenerEstadisticasCambios() {
         try {
