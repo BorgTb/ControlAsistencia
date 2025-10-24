@@ -393,6 +393,88 @@ class EmpresaServices{
     }
   }
 
+  /**
+   * Registra una nueva amonestación para un trabajador
+   * @param {Object} amonestacionData - Datos de la amonestación
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async registrarAmonestacion(amonestacionData) {
+    try {
+      console.log('🚀 Registrando amonestación:', amonestacionData)
+      const response = await apiClient.post('/userEmpresa/amonestaciones', amonestacionData)
+      console.log('✅ Amonestación registrada:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error registrando amonestación:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene las amonestaciones de un trabajador específico o todas si no se especifica
+   * @param {number} trabajadorId - ID del trabajador (opcional)
+   * @returns {Promise} Lista de amonestaciones
+   */
+  static async obtenerAmonestaciones(trabajadorId = null) {
+    try {
+      const url = trabajadorId 
+        ? `/userEmpresa/amonestaciones/trabajador/${trabajadorId}`
+        : '/userEmpresa/amonestaciones'
+      
+      const response = await apiClient.get(url)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo amonestaciones:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene todas las amonestaciones de una empresa
+   * @param {string} rutEmpresa - RUT de la empresa
+   * @returns {Promise} Lista de amonestaciones de la empresa
+   */
+  static async obtenerAmonestacionesPorEmpresa(rutEmpresa) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/amonestaciones/empresa/${rutEmpresa}`)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo amonestaciones de la empresa:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualiza una amonestación existente
+   * @param {number} amonestacionId - ID de la amonestación
+   * @param {Object} datosActualizados - Datos a actualizar
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async actualizarAmonestacion(amonestacionId, datosActualizados) {
+    try {
+      const response = await apiClient.put(`/userEmpresa/amonestaciones/${amonestacionId}`, datosActualizados)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error actualizando amonestación:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Elimina una amonestación
+   * @param {number} amonestacionId - ID de la amonestación
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async eliminarAmonestacion(amonestacionId) {
+    try {
+      const response = await apiClient.delete(`/userEmpresa/amonestaciones/${amonestacionId}`)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error eliminando amonestación:', error)
+      throw error
+    }
+  }
+
 }
 
 export default EmpresaServices;

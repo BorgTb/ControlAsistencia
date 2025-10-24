@@ -318,8 +318,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useNotification } from '../../composables/useNotification.js';
+import { useEmpresa } from '../../composables/useEmpresa.js';
 
 const { showSuccess, showError, showWarning } = useNotification();
+const { agregarAmonestacion } = useEmpresa();
 
 // Props
 const props = defineProps({
@@ -478,27 +480,60 @@ const guardarAmonestacion = async () => {
       archivos: archivosSeleccionados.value.map(a => a.name)
     });
 
-    // Aquí deberías hacer la llamada al servicio para guardar la amonestación
-    // Por ejemplo:
-    // const response = await EmpresaServices.registrarAmonestacion({
-    //   trabajadorId: props.trabajador.id,
-    //   ...formulario.value,
-    //   archivos: archivosSeleccionados.value
-    // });
-
-    // Simulación de guardado
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    showSuccess('Amonestación registrada exitosamente');
-    emit('success', {
+    // Preparar datos para enviar al backend
+    const amonestacionData = {
       trabajadorId: props.trabajador.id,
-      ...formulario.value
-    });
-    cerrarModal();
+      usuarioId: props.trabajador.usuario_id,
+      empresaId: props.trabajador.empresa_id,
+      
+      // Datos del trabajador
+      nombreTrabajador: formulario.value.nombreTrabajador,
+      rutTrabajador: formulario.value.rutTrabajador,
+      emailTrabajador: formulario.value.emailTrabajador,
+      cargo: formulario.value.cargo,
+      empresaAsignada: formulario.value.empresaAsignada,
+      empresaEmpleadoraRut: formulario.value.empresaEmpleadoraRut,
+      supervisorResponsable: formulario.value.supervisorResponsable,
+      
+      // Detalle de la falta
+      tipoFalta: formulario.value.tipoFalta,
+      fechaHecho: formulario.value.fechaHecho,
+      descripcionDetallada: formulario.value.descripcionDetallada,
+      normaInfringida: formulario.value.normaInfringida,
+      
+      // Sanción aplicada
+      tipoSancion: formulario.value.tipoSancion,
+      montoMulta: formulario.value.montoMulta || null,
+      observacionesRRHH: formulario.value.observacionesRRHH,
+      
+      // Derecho a descargos
+      plazoDescargos: formulario.value.plazoDescargos,
+      descargosTrabajador: formulario.value.descargosTrabajador,
+      
+      // Archivos adjuntos (por ahora solo nombres, después se implementará upload)
+      archivosAdjuntos: archivosSeleccionados.value.map(a => a.name)
+    };
+
+    // Llamar al servicio para guardar la amonestación
+    const response = await agregarAmonestacion(amonestacionData);
+    console.log('✅ Respuesta del backend al guardar amonestación:', response);
+    if (response.success) {
+      guardando.value = false; // Establecer antes de cerrar el modal
+      showSuccess('Amonestación registrada exitosamente');
+      emit('success', {
+        trabajadorId: props.trabajador.id,
+        amonestacionId: response.data?.id,
+        ...formulario.value
+      });
+      cerrarModal();
+    } else {
+      showError(response.message || 'Error al registrar la amonestación');
+    }
 
   } catch (error) {
     console.error('❌ Error guardando amonestación:', error);
-    showError('Error al registrar la amonestación');
+    const errorMessage = error.response?.data?.message || error.message || 'Error al registrar la amonestación';
+    showError(errorMessage);
   } finally {
     guardando.value = false;
   }
