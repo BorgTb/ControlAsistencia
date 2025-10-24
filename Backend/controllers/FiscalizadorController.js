@@ -703,6 +703,11 @@ const enviarCorreoEmpleador = async (req, res) => {
     }
 }
 
+
+const obtenerReporteModificaciones = async (req, res) => {
+    // Por implementar: función para obtener reporte de modificaciones de marcaciones
+}
+
         
         
 
@@ -713,7 +718,8 @@ const FiscalizadorController = {
   obtenerDatosEmpresa,
     obtenerAsistencias,
     obtenerAsistenciasDomingos  ,
-    enviarCorreoEmpleador
+    enviarCorreoEmpleador,
+    obtenerReporteModificaciones
 }
 
 

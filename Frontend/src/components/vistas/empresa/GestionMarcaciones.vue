@@ -1154,7 +1154,7 @@ const guardarModificacion = async () => {
       motivo: formularioModificacion.value.motivo,
       usuario_id: marcacionSeleccionada.value.usuario_id
     };
-    
+     console.log('Datos de modificación:', datosModificacion);
     console.log(marcacionSeleccionada.value)
     // Llamar a la función del composable
     const response = await modificarMarcacion(marcacionSeleccionada.value.id, datosModificacion);

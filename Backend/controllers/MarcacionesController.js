@@ -427,7 +427,7 @@ const modificarMarcacionPorId = async (req, res) => {
         const { id } = req.params;
         const { fecha, hora, tipo, motivo, usuario_id } = req.body;
         const USR_PETICION = req.user; // usuario que genera la solicitud
-
+        
         console.log('🔄 Iniciando modificación de marcación:', {
             marcacionId: id,
             fecha,
@@ -458,7 +458,7 @@ const modificarMarcacionPorId = async (req, res) => {
         console.log('📋 Marcación original encontrada:', marcacionOriginal.data);
 
         // Obtener información del usuario empresas (trabajador)
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(usuario_id);
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
         if (!usuarioEmpresa) {
             return res.status(404).json({
                 success: false,
