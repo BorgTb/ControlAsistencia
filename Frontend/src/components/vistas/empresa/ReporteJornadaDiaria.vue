@@ -180,6 +180,7 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hrs Efectivas</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diferencia</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -241,6 +242,27 @@
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="getCumplimientoClass(registro.cumplimiento)">
                         {{ registro.cumplimiento }}
                       </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <!-- Botón de aprobar horas extras - solo visible si hay tiempo extra positivo -->
+                      <button
+                        v-if="registro.tiempoExtra && !registro.horasExtrasAprobadas"
+                        @click="abrirModalAprobarHorasExtras(registro)"
+                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        title="Aprobar horas extras"
+                      >
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Aprobar H. Extras
+                      </button>
+                      <span v-else-if="registro.horasExtrasAprobadas" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Aprobadas
+                      </span>
+                      <span v-else class="text-gray-400 text-xs">--</span>
                     </td>
                   </tr>
                 </tbody>
@@ -305,6 +327,106 @@
         </div>
       </div>
     </main>
+
+    <!-- Modal Aprobar Horas Extras -->
+    <div v-if="modalAprobarHorasExtras" class="fixed z-[9999] inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="cerrarModalAprobarHorasExtras"></div>
+
+        <!-- Center alignment helper -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-[10000] relative">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  Aprobar Horas Extras
+                </h3>
+                <div class="mt-4 space-y-3">
+                  <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <p class="text-sm text-gray-700">
+                      <span class="font-semibold">Trabajador:</span> {{ registroSeleccionado?.nombre }}
+                    </p>
+                    <p class="text-sm text-gray-700">
+                      <span class="font-semibold">Fecha:</span> {{ formatearFecha(registroSeleccionado?.fecha) }}
+                    </p>
+                    <p class="text-sm text-gray-700">
+                      <span class="font-semibold">Turno:</span> {{ registroSeleccionado?.turno }}
+                    </p>
+                    <p class="text-sm text-gray-700">
+                      <span class="font-semibold">Jornada Pactada:</span> {{ registroSeleccionado?.jornadaPactada }}
+                    </p>
+                    <div class="border-t border-blue-300 mt-2 pt-2">
+                      <p class="text-sm text-gray-700">
+                        <span class="font-semibold">Hora Real de Entrada:</span> {{ registroSeleccionado?.entrada }}
+                      </p>
+                      <p class="text-sm text-gray-700">
+                        <span class="font-semibold">Hora Real de Salida:</span> {{ registroSeleccionado?.salida }}
+                      </p>
+                    </div>
+                    <div class="bg-blue-100 rounded mt-2 p-2">
+                      <p class="text-xs text-blue-800 font-semibold mb-1">Cálculo de Horas Extras:</p>
+                      <p class="text-xs text-blue-800">
+                        Desde: <span class="font-bold">{{ registroSeleccionado?.jornadaPactada?.split(' - ')[1] || 'N/A' }}</span> (fin del turno)
+                      </p>
+                      <p class="text-xs text-blue-800">
+                        Hasta: <span class="font-bold">{{ registroSeleccionado?.salida }}</span> (salida real)
+                      </p>
+                      <p class="text-sm font-bold text-blue-700 mt-1">
+                        Total: {{ registroSeleccionado?.tiempoExtra }}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label for="motivo-horas-extras" class="block text-sm font-medium text-gray-700 mb-1">
+                      Motivo (opcional)
+                    </label>
+                    <textarea
+                      id="motivo-horas-extras"
+                      v-model="motivoHorasExtras"
+                      rows="3"
+                      class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      placeholder="Ej: Horas extras trabajadas por demanda excepcional"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              @click="confirmarAprobarHorasExtras"
+              :disabled="procesandoAprobacion"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="procesandoAprobacion" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ procesandoAprobacion ? 'Aprobando...' : 'Aprobar Horas Extras' }}
+            </button>
+            <button
+              type="button"
+              @click="cerrarModalAprobarHorasExtras"
+              :disabled="procesandoAprobacion"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -313,7 +435,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useEmpresa } from '../../../composables/useEmpresa'
 import { useAuth } from '../../../composables/useAuth'
 
-const { obtenerReporteJornadaDiaria } = useEmpresa()
+const { obtenerReporteJornadaDiaria, aprobarHorasExtras } = useEmpresa()
 const { user } = useAuth()
 
 const filters = ref({
@@ -325,6 +447,12 @@ const filters = ref({
 
 const registros = ref([])
 const cargandoDatos = ref(false)
+
+// Estados para el modal de aprobar horas extras
+const modalAprobarHorasExtras = ref(false)
+const registroSeleccionado = ref(null)
+const motivoHorasExtras = ref('')
+const procesandoAprobacion = ref(false)
 
 // Computed para estadísticas
 const stats = computed(() => {
@@ -651,6 +779,7 @@ const loadData = async (apiData = null) => {
           registrosProcessed.push({
             id: `${trabajador.id}-${fecha}`,
             trabajador_id: trabajador.id,
+            usuario_empresa_id: trabajador.id, // ID de usuario_empresa para aprobar horas extras
             usuario_id: trabajador.usuario_id,
             nombre: `${trabajador.usuario_nombre} ${trabajador.usuario_apellido_pat} ${trabajador.usuario_apellido_mat}`.trim(),
             cedula: trabajador.usuario_rut,
@@ -670,7 +799,10 @@ const loadData = async (apiData = null) => {
             horasEfectivas: minutosReales > 0 ? convertirMinutosAHoras(minutosReales) : '00:00:00',
             cumplimiento: cumplimiento,
             observaciones: atraso || salida || '',
-            otrasMarcaciones: marcacionesArray.filter(m => m.tipo !== 'entrada' && m.tipo !== 'salida' && m.tipo !== 'colacion')
+            otrasMarcaciones: marcacionesArray.filter(m => m.tipo !== 'entrada' && m.tipo !== 'salida' && m.tipo !== 'colacion'),
+            horasExtrasAprobadas: false, // Para controlar si ya fueron aprobadas
+            asignacion_turno_id: turno?.asignacion_id || null,
+            marcacion_id: marcacionEntrada?.id || null
           })
         }
       }
@@ -798,6 +930,87 @@ const exportarPDF = () => {
 
 const exportarExcel = () => {
   alert('Exportación a Excel - Funcionalidad en desarrollo\nDatos filtrados: ' + filteredData.value.length + ' registros')
+}
+
+// Funciones para aprobar horas extras
+const abrirModalAprobarHorasExtras = (registro) => {
+  console.log('🔵 Abriendo modal para aprobar horas extras:', registro)
+  registroSeleccionado.value = registro
+  motivoHorasExtras.value = `Horas extras del ${formatearFecha(registro.fecha)} - ${registro.tiempoExtra}`
+  modalAprobarHorasExtras.value = true
+  console.log('🔵 Modal abierto:', modalAprobarHorasExtras.value)
+}
+
+const cerrarModalAprobarHorasExtras = () => {
+  console.log('🔴 Cerrando modal de horas extras')
+  modalAprobarHorasExtras.value = false
+  registroSeleccionado.value = null
+  motivoHorasExtras.value = ''
+}
+
+const confirmarAprobarHorasExtras = async () => {
+  if (!registroSeleccionado.value) return
+  
+  try {
+    procesandoAprobacion.value = true
+    
+    // Calcular hora de inicio de horas extras (hora fin del turno pactado)
+    // Calcular hora de fin de horas extras (hora real de salida)
+    // Las horas extras son desde que termina el turno hasta que marcó la salida
+    
+    // Extraer hora fin del turno pactado
+    let horaInicioHorasExtras = registroSeleccionado.value.entrada
+    
+    // Si hay jornada pactada, usar la hora de fin del turno como inicio de horas extras
+    if (registroSeleccionado.value.jornadaPactada && registroSeleccionado.value.jornadaPactada !== 'N/A') {
+      const partes = registroSeleccionado.value.jornadaPactada.split(' - ')
+      if (partes.length === 2) {
+        horaInicioHorasExtras = partes[1].trim() // Hora fin del turno
+      }
+    }
+    
+    // Datos para aprobar horas extras
+    const horasExtrasData = {
+      usuario_empresa_id: registroSeleccionado.value.usuario_empresa_id,
+      fecha: registroSeleccionado.value.fecha,
+      hora_inicio: horaInicioHorasExtras, // Desde que termina el turno
+      hora_fin: registroSeleccionado.value.salida, // Hasta que marcó la salida
+      motivo: motivoHorasExtras.value || `Horas extras del ${formatearFecha(registroSeleccionado.value.fecha)}`,
+      asignacion_turno_id: registroSeleccionado.value.asignacion_turno_id || null,
+      marcacion_id: registroSeleccionado.value.marcacion_id || null
+    }
+    
+    console.log('📤 Enviando datos de aprobación:', horasExtrasData)
+    
+    const response = await aprobarHorasExtras(horasExtrasData)
+    
+    if (response && response.success) {
+      console.log('✅ Horas extras aprobadas exitosamente')
+      
+      // Marcar el registro como aprobado
+      const index = registros.value.findIndex(r => 
+        r.usuario_empresa_id === registroSeleccionado.value.usuario_empresa_id && 
+        r.fecha === registroSeleccionado.value.fecha
+      )
+      
+      if (index !== -1) {
+        registros.value[index].horasExtrasAprobadas = true
+      }
+      
+      // Mostrar mensaje de éxito
+      alert(`✅ Horas extras aprobadas exitosamente para ${registroSeleccionado.value.nombre}\n\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}`)
+      
+      cerrarModalAprobarHorasExtras()
+    } else {
+      throw new Error(response?.message || 'Error al aprobar horas extras')
+    }
+    
+  } catch (error) {
+    console.error('❌ Error al aprobar horas extras:', error)
+    alert(`❌ Error al aprobar horas extras: ${error.message || 'Error desconocido'}`)
+  } finally {
+    procesandoAprobacion.value = false
+  }
 }
 
 onMounted(async () => {

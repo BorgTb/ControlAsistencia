@@ -5,6 +5,8 @@ import EstController from '../controllers/EstController.js';
 import LugarController from '../controllers/LugarController.js';
 // Importar el controlador de amonestaciones
 import AmonestacionesController from '../controllers/AmonestacionesController.js';
+// Importar el controlador de horas extras
+import HorasExtrasController from '../controllers/HorasExtrasController.js';
 
 const router = express.Router();
 
@@ -74,5 +76,11 @@ router.put('/amonestaciones/:id', AuthService.verifyToken, AmonestacionesControl
 router.delete('/amonestaciones/:id', AuthService.verifyToken, AmonestacionesController.eliminar);
 router.patch('/amonestaciones/:id/descargos', AuthService.verifyToken, AmonestacionesController.actualizarDescargos);
 router.patch('/amonestaciones/:id/estado', AuthService.verifyToken, AmonestacionesController.cambiarEstado);
+
+// Rutas para gestión de horas extras
+router.post('/horas-extras/aprobar', AuthService.verifyToken, HorasExtrasController.aprobarHorasExtras);
+router.get('/horas-extras/empresa/:empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPorEmpresa);
+router.get('/horas-extras/trabajador/:usuario_empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPorTrabajador);
+router.get('/horas-extras/resumen/:empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerResumenHorasExtras);
 
 export default router;

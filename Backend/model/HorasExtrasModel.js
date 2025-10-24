@@ -20,10 +20,12 @@ class HorasExtrasModel {
                     motivo, 
                     aprobado_por, 
                     fecha_aprobacion,
+                    tipo_compensacion,
+                    dias_descanso_equivalentes,
                     created_at, 
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             `;
             
             const [result] = await connection.execute(query, [
@@ -36,7 +38,9 @@ class HorasExtrasModel {
                 horaExtraData.estado || 'PENDIENTE',
                 horaExtraData.motivo || null,
                 horaExtraData.aprobado_por || null,
-                horaExtraData.fecha_aprobacion || null
+                horaExtraData.fecha_aprobacion || null,
+                horaExtraData.tipo_compensacion || 'PAGO',
+                horaExtraData.dias_descanso_equivalentes || 0
             ]);
             
             const horaExtraId = result.insertId;
@@ -224,6 +228,8 @@ class HorasExtrasModel {
                     motivo = ?, 
                     aprobado_por = ?, 
                     fecha_aprobacion = ?,
+                    tipo_compensacion = ?,
+                    dias_descanso_equivalentes = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             `;
@@ -239,6 +245,8 @@ class HorasExtrasModel {
                 horaExtraData.motivo || null,
                 horaExtraData.aprobado_por || null,
                 horaExtraData.fecha_aprobacion || null,
+                horaExtraData.tipo_compensacion || 'PAGO',
+                horaExtraData.dias_descanso_equivalentes || 0,
                 id
             ]);
             
