@@ -210,6 +210,16 @@ export function useEmpresa() {
     }
   };
 
+  const obtenerReporteJornadaDiaria = async (fechaInicio, fechaFin) => {
+    try {
+      const response = await EmpresaServices.obtenerReporteJornadaDiaria(user.value.rut, fechaInicio, fechaFin);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener reporte de jornada diaria:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -229,6 +239,7 @@ export function useEmpresa() {
     obtenerAmonestaciones,
     obtenerAmonestacionesPorEmpresa,
     actualizarAmonestacion,
-    eliminarAmonestacion
+    eliminarAmonestacion,
+    obtenerReporteJornadaDiaria
   };
 }

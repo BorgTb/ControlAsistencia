@@ -571,6 +571,31 @@ class MarcacionesService {
         }
     }
 
+    /**
+     * Obtener marcaciones por usuario en un rango de fechas
+     * @param {number} usuarioEmpresaId - ID del usuario-empresa
+     * @param {string} fechaInicio - Fecha inicio (YYYY-MM-DD)
+     * @param {string} fechaFin - Fecha fin (YYYY-MM-DD)
+     * @returns {Promise<Object>} - Marcaciones del usuario en el rango
+     */
+    async obtenerMarcacionesPorUsuarioYRango(usuarioEmpresaId, fechaInicio, fechaFin) {
+        try {
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorUsuarioYRangoFecha(
+                usuarioEmpresaId,
+                fechaInicio,
+                fechaFin
+            );
+
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener marcaciones por usuario y rango:', error);
+            throw error;
+        }
+    }
+
 }
 
 export default new MarcacionesService();

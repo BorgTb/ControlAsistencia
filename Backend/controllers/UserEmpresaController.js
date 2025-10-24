@@ -1252,6 +1252,155 @@ const actualizarTrabajador = async (req, res) => {
     }
 };
 
+/**
+ * Obtener reporte de jornada diaria con marcaciones agrupadas por usuario
+ * Similar al reporte de asistencia pero específico para empresas
+ */
+const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
+    try {
+        const { rutEmpresa } = req.params;
+        const { fecha_inicio, fecha_fin } = req.query;
+
+        console.log('📊 Obteniendo reporte de jornada diaria:', {
+            rutEmpresa,
+            fecha_inicio,
+            fecha_fin,
+            usuario: req.user
+        });
+
+        // Validar fechas
+        if (!fecha_inicio || !fecha_fin) {
+            return res.status(400).json({
+                success: false,
+                message: 'Se requieren fecha_inicio y fecha_fin'
+            });
+        }
+
+        // Obtener empresa
+        const empresa = await EmpresaModel.getEmpresaByRut(rutEmpresa);
+        if (!empresa) {
+            return res.status(404).json({
+                success: false,
+                message: 'Empresa no encontrada'
+            });
+        }
+        // Obtener todos los trabajadores de la empresa (directos)
+        const trabajadoresDirectos = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresa.empresa_id);
+        
+        // Obtener trabajadores de empresas EST asociadas
+        const trabajadoresEST = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
+        console.log(trabajadoresEST);
+        // Combinar todos los trabajadores
+        const todosTrabajadores = [...trabajadoresDirectos, ...trabajadoresEST];
+
+        // Objeto para agrupar marcaciones por usuario
+        const marcacionesAgrupadasPorUsuario = {};
+
+        // Procesar cada trabajador
+        for (const trabajador of todosTrabajadores) {
+            const usuarioEmpresaId = trabajador.id;
+
+            // Inicializar estructura de datos para este trabajador
+            marcacionesAgrupadasPorUsuario[usuarioEmpresaId] = {
+                trabajador_id: usuarioEmpresaId,
+                marcaciones: {}
+            };
+
+            // Obtener marcaciones del trabajador en el rango de fechas
+            const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
+                usuarioEmpresaId,
+                fecha_inicio,
+                fecha_fin
+            );
+            console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
+            // Agrupar marcaciones por fecha
+            if (marcaciones && marcaciones.data && marcaciones.data.length > 0) {
+                for (const marcacion of marcaciones.data) {
+                    const fechaMarcacion = DateTime.fromJSDate(new Date(marcacion.fecha))
+                        .setZone('America/Santiago')
+                        .toISODate();
+
+                    if (!marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion]) {
+                        // Obtener turno del trabajador para esa fecha
+                        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
+                            usuarioEmpresaId,
+                            fechaMarcacion
+                        );
+
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion] = {
+                            marcaciones: [],
+                            turno: turno || null,
+                            estado_asistencia: 'NO_ASISTE',
+                            atraso: null,
+                            salida: null
+                        };
+                    }
+
+                    // Agregar marcación al array
+                    marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.push({
+                        id: marcacion.id,
+                        hora: marcacion.hora,
+                        tipo: marcacion.tipo,
+                        fecha: marcacion.fecha,
+                        lugar_id: marcacion.lugar_id
+                    });
+
+                    // Determinar estado de asistencia
+                    const tiposMarcacion = marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.map(m => m.tipo);
+                    
+                    if (tiposMarcacion.includes('entrada') || tiposMarcacion.includes('salida')) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'PRESENTE';
+                    }
+                }
+            }
+        }
+
+        // Formatear respuesta con información de trabajadores
+        const trabajadoresFormateados = todosTrabajadores.map(t => ({
+            id: t.id,
+            usuario_id: t.usuario_id,
+            usuario_nombre: t.usuario_nombre,
+            usuario_apellido_pat: t.usuario_apellido_pat,
+            usuario_apellido_mat: t.usuario_apellido_mat,
+            usuario_rut: t.usuario_rut,
+            usuario_email: t.usuario_email,
+            rol_en_empresa: t.rol_en_empresa,
+            es_est: t.es_est || false,
+            empresa_id: t.empresa_id,
+            empresa_nombre: t.empresa_nombre || empresa.emp_nombre,
+            empresa_rut: t.empresa_rut || empresa.emp_rut
+        }));
+
+        console.log(marcacionesAgrupadasPorUsuario);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                trabajadores: trabajadoresFormateados,
+                marcacionesAgrupadasPorUsuario,
+                empresa: {
+                    id: empresa.id,
+                    nombre: empresa.emp_nombre,
+                    rut: empresa.emp_rut
+                },
+                periodo: {
+                    fecha_inicio,
+                    fecha_fin
+                }
+            },
+            message: 'Reporte de jornada diaria obtenido exitosamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error al obtener reporte de jornada diaria:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener reporte de jornada diaria',
+            error: error.message
+        });
+    }
+};
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
@@ -1273,7 +1422,8 @@ const AdminController = {
     rechazarCambioMarcacion,
     configurarToleranciaHorarias,
     obtenerConfiguracionTolerancias,
-    historialSolicitudes
+    historialSolicitudes,
+    obtenerReporteJornadaDiariaEmpresa
 };
 
 

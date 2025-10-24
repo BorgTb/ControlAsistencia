@@ -132,6 +132,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
+            path: '/empresa/reportes/jornada-diaria',
+            name: 'EmpresaReporteJornadaDiaria',
+            component: () => import('../components/vistas/empresa/ReporteJornadaDiaria.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
+        {
             path: '/empresa/configuracion',
             name: 'EmpresaConfiguracion',
             component: () => import('../components/vistas/empresa/Configuracion.vue'),
@@ -202,7 +208,8 @@ router.beforeEach((to, from, next) => {
         '/empresa/configuracion',
         '/empresa/trabajadores/asociar',
         '/empresa/historial-solicitudes',
-        '/empresa/lugares'
+        '/empresa/lugares',
+        '/empresa/reportes/jornada-diaria'
     ]
     
     const trabajadorRoutes = [

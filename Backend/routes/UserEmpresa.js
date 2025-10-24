@@ -32,6 +32,9 @@ router.get('/reportes/:rut',AuthService.verifyToken, UserEmpresaController.obten
 router.post('/reportes/aprobar/:reporteId',AuthService.verifyToken, UserEmpresaController.aprobarCambioMarcacion);
 router.post('/reportes/rechazar/:reporteId',AuthService.verifyToken, UserEmpresaController.rechazarCambioMarcacion);
 
+// Ruta para reporte de jornada diaria (nueva, no modifica las existentes)
+router.get('/reporte-jornada/:rutEmpresa', AuthService.verifyToken, UserEmpresaController.obtenerReporteJornadaDiariaEmpresa);
+
 // Rutas para configuración del sistema empresarial
 router.post('/configuracion/marcaciones',AuthService.verifyToken, UserEmpresaController.configurarToleranciaHorarias); // Guardar configuración
 router.get('/configuracion',AuthService.verifyToken, UserEmpresaController.obtenerConfiguracion); // Obtener configuración

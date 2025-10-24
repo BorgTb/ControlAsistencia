@@ -475,6 +475,28 @@ class EmpresaServices{
     }
   }
 
+  /**
+   * Obtiene el reporte de jornada diaria para una empresa
+   * @param {string} rutEmpresa - RUT de la empresa
+   * @param {string} fechaInicio - Fecha de inicio (YYYY-MM-DD)
+   * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD)
+   * @returns {Promise} Reporte de jornada diaria
+   */
+  static async obtenerReporteJornadaDiaria(rutEmpresa, fechaInicio, fechaFin) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/reporte-jornada/${rutEmpresa}`, {
+        params: {
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo reporte de jornada diaria:', error)
+      throw error
+    }
+  }
+
 }
 
 export default EmpresaServices;
