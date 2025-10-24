@@ -918,9 +918,19 @@ const cargarMarcacionesHoy = async () => {
   
   try {
     const result = await AsistenciaService.obtenerMarcacionesHoy()
-    
+    console.log('Resultado de obtenerMarcacionesHoy:', result)
     if (result.success) {
-      marcacionesHoy.value = result.data || []
+      // El nuevo formato agrupa marcaciones por fecha: { "2025-10-17": [...marcaciones] }
+      if (result.data && typeof result.data === 'object') {
+        // Extraer todas las marcaciones de todas las fechas y aplanarlas en un solo array
+        const todasLasMarcaciones = Object.values(result.data).flat()
+        marcacionesHoy.value = todasLasMarcaciones || []
+        
+        console.log('📋 Marcaciones cargadas:', todasLasMarcaciones.length, 'registros')
+      } else {
+        // Formato antiguo (array directo) - por compatibilidad
+        marcacionesHoy.value = result.data || []
+      }
       
       // Actualizar el estado basado en las marcaciones cargadas
       currentStatus.value = estadoCalculado.value
@@ -956,11 +966,33 @@ const cargarHorarioHoy = async () => {
 }
 
 const formatearFecha = (fecha) => {
-  return new Date(fecha).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })
+  if (!fecha) return 'N/A'
+  
+  try {
+    // Si la fecha ya viene en formato YYYY-MM-DD, usarla directamente
+    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [anio, mes, dia] = fecha.split('-')
+      return `${dia}/${mes}/${anio}`
+    }
+    
+    // Si viene en formato ISO con hora (YYYY-MM-DDTHH:mm:ss.sssZ), extraer solo la fecha
+    if (typeof fecha === 'string' && fecha.includes('T')) {
+      const fechaSolo = fecha.split('T')[0]
+      const [anio, mes, dia] = fechaSolo.split('-')
+      return `${dia}/${mes}/${anio}`
+    }
+    
+    // Último recurso: usar Date con UTC para evitar cambio de zona horaria
+    const date = new Date(fecha)
+    const dia = date.getUTCDate().toString().padStart(2, '0')
+    const mes = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const anio = date.getUTCFullYear()
+    
+    return `${dia}/${mes}/${anio}`
+  } catch (error) {
+    console.error('Error formateando fecha:', error)
+    return 'N/A'
+  }
 }
 
 const formatearHora = (hora) => {

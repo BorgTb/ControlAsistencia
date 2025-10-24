@@ -11,6 +11,8 @@ const router = express.Router();
 // IMPORTANTE: Estas deben ir ANTES de las rutas con autenticación
 // ============================================
 
+router.get('/calendario/', AuthService.verifyToken, MarcacionesController.obtenerDiasTrabajadosPorMes);
+
 // Ruta pública para obtener solicitud de modificación por token
 router.get('/solicitud-modificar', MarcacionesController.obtenerReporteMarcacionId);
 

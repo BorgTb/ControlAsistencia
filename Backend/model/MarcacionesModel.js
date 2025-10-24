@@ -62,7 +62,7 @@ class Marcaciones {
         let params = [usuario_empresa_id];
         
         if (fechaInicio && fechaFin) {
-            query += ` AND DATE(fecha) >= ? AND DATE(fecha) <= ?`;
+            query += ` AND DATE(fecha) BETWEEN ? AND ?`;
             params.push(fechaInicio, fechaFin);
         } else if (fechaInicio) {
             query += ` AND DATE(fecha) >= ?`;
@@ -71,6 +71,7 @@ class Marcaciones {
             query += ` AND DATE(fecha) <= ?`;
             params.push(fechaFin);
         }
+
         
         query += ` ORDER BY fecha DESC, hora DESC`;
         const [rows] = await pool.execute(query, params);

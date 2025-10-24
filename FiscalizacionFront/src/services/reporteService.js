@@ -99,6 +99,24 @@ class ReporteService {
     }
   }
 
+
+  async emitirCorreoAEmpleador(empresa_id) {
+    try {
+      const response = await apiClient.post(`/fiscalizador/enviar-correo-empleador/${empresa_id}`)
+      return {
+        success: true,
+        data: response.data,
+        message: 'Correo enviado correctamente al empleador'
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al enviar correo al empleador',
+        status: error.response?.status
+      }
+    }
+  }
+
   async obtenerDatosParaFiltros(empresa_id) {
     
     try {
@@ -126,7 +144,8 @@ class ReporteService {
     const dataStore = useDataStore()
     console.log("Empresa seleccionada en reporteService:", dataStore.empresaSeleccionada)
     try {
-      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, filtros )
+      console.log('Los filtros: ', filtros)
+      const response = await apiClient.get(`/fiscalizador/asistencia/${dataStore.empresaSeleccionada.id}`, { params: filtros} )
       return {
         success: true,
         data: response.data,

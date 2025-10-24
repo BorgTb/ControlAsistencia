@@ -120,7 +120,7 @@
         <div class="mt-6 text-center">
           <p class="text-xs text-gray-500">
             ¿Eres usuario regular? 
-            <a href="http://localhost:5173/" class="text-green-600 hover:text-green-500 font-medium">
+            <a :href="appUrl" class="text-green-600 hover:text-green-500 font-medium">
               Ingresar como usuario
             </a>
           </p>
@@ -151,6 +151,7 @@ const { solicitarAcceso, validarCodigo, isLoading } = useAuth()
 
 const error = ref('')
 const codigoEnviado = ref(false)
+const appUrl = import.meta.env.VITE_APP_URL
 
 const form = reactive({
   email: '',

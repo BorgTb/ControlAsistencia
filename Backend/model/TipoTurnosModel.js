@@ -297,6 +297,19 @@ class TipoTurnosModel {
         return rows;
         return rows;
     }
+
+
+    static async getDetalleDiasPorTipoTurnoId(tipo_turno_id) {
+        const query = `
+            SELECT *
+            FROM detalle_dias_turno
+            WHERE tipo_turno_id = ?
+            ORDER BY FIELD(dia_semana, 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo')
+        `;
+        const [rows] = await pool.query(query, [tipo_turno_id]);
+        return rows;
+    }
+    
 }
 
 export default TipoTurnosModel;

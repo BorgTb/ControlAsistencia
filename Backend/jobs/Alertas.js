@@ -1,9 +1,11 @@
 import Bull from 'bull';
 import Redis from 'ioredis';
 import TurnosModel from '../model/TurnosModel.js';
+import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
 import UserModel from '../model/UserModel.js';
 import MailService from '../services/MailService.js';
 import MarcacionesService from '../services/MarcacionesServices.js';
+import pool from '../config/dbconfig.js';
 import cron from 'node-cron';
 import { DateTime } from 'luxon';
 
@@ -101,20 +103,52 @@ class AlertasService {
             const fechaSantiago = this.obtenerFechaSantiago();
             console.log(`📅 Iniciando programación de alertas para hoy: ${fechaSantiago.toFormat('yyyy-MM-dd HH:mm:ss')} (${this.timezone})`);
             
-            // Obtener todos los turnos
-            const turnos = await TurnosModel.getAllTurnos();
+            // Obtener todas las asignaciones de turnos activas
+            const asignaciones = await TurnosModel.getAllTurnos();
             const fechaHoy = this.formatearFechaParaDB(fechaSantiago);
             
-            console.log(`📋 Se encontraron ${turnos.length} turnos para procesar`);
+            console.log(`📋 Se encontraron ${asignaciones.length} asignaciones de turnos para revisar`);
+            console.log(`Asignaciones: ${JSON.stringify(asignaciones, null, 2)}`);
+            let turnosProgramados = 0;
 
-            for (const turno of turnos) {
-                await this.programarAlertasParaTurno(turno, fechaHoy);
+            for (const asignacion of asignaciones) {
+                // Verificar si la asignación está activa para la fecha actual
+                const fechaInicio = new Date(asignacion.fecha_inicio);
+                const fechaFin = asignacion.fecha_fin ? new Date(asignacion.fecha_fin) : null;
+                const fechaActual = new Date(fechaHoy);
+
+                // Verificar que la asignación esté en el rango de fechas
+                if (fechaActual < fechaInicio || (fechaFin && fechaActual > fechaFin)) {
+                    console.log(`⏭️  Asignación ${asignacion.id} fuera del rango de fechas, omitiendo...`);
+                    continue;
+                }
+
+                // Verificar si el estado es activo
+                if (asignacion.estado !== 'activo') {
+                    console.log(`⏭️  Asignación ${asignacion.id} no está activa, omitiendo...`);
+                    continue;
+                }
+
+                // Obtener la configuración del turno activo para este día específico
+                const turnoActivo = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(
+                    asignacion.usuario_empresa_id, 
+                    fechaHoy
+                );
+
+                if (!turnoActivo || !turnoActivo.trabaja) {
+                    console.log(`⏭️  Usuario ${asignacion.usuario_nombre} no trabaja hoy, omitiendo...`);
+                    continue;
+                }
+
+                // Programar alertas para este turno
+                await this.programarAlertasParaTurno(turnoActivo, fechaHoy);
+                turnosProgramados++;
             }
 
-            console.log('✅ Programación de alertas completada');
+            console.log(`✅ Programación de alertas completada: ${turnosProgramados} turnos programados de ${asignaciones.length} asignaciones revisadas`);
             
             // Guardar estadísticas en Redis
-            await this.guardarEstadisticasProgramacion(turnos.length);
+            await this.guardarEstadisticasProgramacion(turnosProgramados);
             
         } catch (error) {
             console.error('❌ Error programando alertas diarias:', error);
@@ -124,18 +158,27 @@ class AlertasService {
     // Programar alertas para un turno específico (entrada y salida)
     async programarAlertasParaTurno(turno, fecha) {
         try {
-            // Obtener datos del usuario
-            const usuario = await UserModel.findById(turno.usuario_id);
-            if (!usuario) {
-                console.warn(`⚠️ Usuario no encontrado para turno ID: ${turno.id}`);
+            // Obtener datos del usuario a través de usuario_empresa_id
+            const [usuarioEmpresa] = await pool.query(`
+                SELECT ue.usuario_id, u.email, u.nombre, u.apellido_pat, u.apellido_mat
+                FROM usuarios_empresas ue
+                INNER JOIN usuarios u ON ue.usuario_id = u.id
+                WHERE ue.id = ?
+            `, [turno.usuario_empresa_id]);
+
+            if (!usuarioEmpresa || usuarioEmpresa.length === 0) {
+                console.log(`⚠️  No se encontró usuario para usuario_empresa_id ${turno.usuario_empresa_id}`);
                 return;
             }
 
+            const usuario = usuarioEmpresa[0];
+            const nombreCompleto = `${usuario.nombre} ${usuario.apellido_pat} ${usuario.apellido_mat}`.trim();
+
             // Programar alerta de entrada (30 minutos después de la hora de entrada)
-            await this.programarAlertaEntrada(turno, usuario, fecha);
+            await this.programarAlertaEntrada(turno, usuario, nombreCompleto, fecha);
             
             // Programar alerta de salida (30 minutos después de la hora de salida)
-            await this.programarAlertaSalida(turno, usuario, fecha);
+            await this.programarAlertaSalida(turno, usuario, nombreCompleto, fecha);
             
         } catch (error) {
             console.error(`❌ Error programando alertas para turno ${turno.id}:`, error);
@@ -143,10 +186,18 @@ class AlertasService {
     }
 
     // Programar alerta de entrada específica
-    async programarAlertaEntrada(turno, usuario, fecha) {
+    async programarAlertaEntrada(turno, usuario, nombreCompleto, fecha) {
         try {
             // Parsear hora de entrada del turno (formato HH:mm:ss)
-            const [horas, minutos] = turno.inicio.split(':').map(Number);
+            // En la nueva estructura, puede venir como turno_hora_inicio o hora_inicio
+            const horaInicio = turno.hora_inicio || turno.turno_hora_inicio;
+            
+            if (!horaInicio) {
+                console.log(`⚠️  No se encontró hora de inicio para el turno ${turno.id}`);
+                return;
+            }
+
+            const [horas, minutos] = horaInicio.split(':').map(Number);
             
             // Crear fecha/hora para 30 minutos después de la hora de entrada en Santiago
             const fechaAlerta = this.crearFechaSantiago(horas, minutos + 30);
@@ -157,7 +208,7 @@ class AlertasService {
             
             // Si la hora ya pasó hoy, ejecutar inmediatamente
             if (fechaAlerta <= ahora) {
-                console.log(`⚡ Hora de alerta de entrada ya pasó para ${usuario.nombre} (${fechaAlerta.toFormat('HH:mm')}), ejecutando inmediatamente`);
+                console.log(`⚡ Hora de alerta de entrada ya pasó para ${nombreCompleto} (${fechaAlerta.toFormat('HH:mm')}), ejecutando inmediatamente`);
                 delay = 1000; // 1 segundo de delay mínimo
                 ejecutarInmediatamente = true;
             } else {
@@ -165,17 +216,18 @@ class AlertasService {
                 delay = fechaAlerta.toMillis() - ahora.toMillis();
             }
             
-            console.log(`📊 Debug - Usuario: ${usuario.nombre}, Fecha: ${fecha}, Alerta: ${fechaAlerta.toFormat('yyyy-MM-dd HH:mm:ss')} (${this.timezone})`);
+            console.log(`📊 Debug - Usuario: ${nombreCompleto}, Fecha: ${fecha}, Alerta: ${fechaAlerta.toFormat('yyyy-MM-dd HH:mm:ss')} (${this.timezone})`);
             
             // Programar el job en Bull
             const job = await alertasQueue.add(
                 'recordatorio-entrada',
                 {
-                    usuario_id: turno.usuario_id,
+                    usuario_id: usuario.usuario_id,
+                    usuario_empresa_id: turno.usuario_empresa_id,
                     email: usuario.email,
-                    nombre: usuario.nombre,
+                    nombre: nombreCompleto,
                     turno_id: turno.id,
-                    hora_entrada: turno.inicio,
+                    hora_entrada: horaInicio,
                     fecha_programada: fecha,
                     fecha_alerta: fechaAlerta.toISO(),
                     tipo: 'entrada'
@@ -192,10 +244,10 @@ class AlertasService {
                 }
             );
             console.log(fechaAlerta);
-            console.log(`⏰ Alerta de ENTRADA programada para ${usuario.nombre} (${usuario.email}) a las ${fechaAlerta.toFormat('HH:mm:ss')} - Job ID: ${job.id}`);
+            console.log(`⏰ Alerta de ENTRADA programada para ${nombreCompleto} (${usuario.email}) a las ${fechaAlerta.toFormat('HH:mm:ss')} - Job ID: ${job.id}`);
             
             // Guardar referencia del job en Redis
-            await this.guardarReferenciaJob(usuario.id, fecha, job.id, fechaAlerta.toISO(), 'entrada');
+            await this.guardarReferenciaJob(usuario.usuario_id, fecha, job.id, fechaAlerta.toISO(), 'entrada');
             
         } catch (error) {
             console.error(`❌ Error programando alerta de entrada para turno ${turno.id}:`, error);
@@ -203,10 +255,18 @@ class AlertasService {
     }
 
     // Programar alerta de salida específica
-    async programarAlertaSalida(turno, usuario, fecha) {
+    async programarAlertaSalida(turno, usuario, nombreCompleto, fecha) {
         try {
             // Parsear hora de salida del turno (formato HH:mm:ss)
-            const [horas, minutos] = turno.fin.split(':').map(Number);
+            // En la nueva estructura, puede venir como turno_hora_fin o hora_fin
+            const horaFin = turno.hora_fin || turno.turno_hora_fin;
+            
+            if (!horaFin) {
+                console.log(`⚠️  No se encontró hora de fin para el turno ${turno.id}`);
+                return;
+            }
+
+            const [horas, minutos] = horaFin.split(':').map(Number);
             
             // Crear fecha/hora para 30 minutos después de la hora de salida en Santiago
             const fechaAlerta = this.crearFechaSantiago(horas, minutos + 30);
@@ -216,24 +276,25 @@ class AlertasService {
             
             // Si la hora ya pasó hoy, ejecutar inmediatamente (con 1 minuto de delay)
             if (fechaAlerta <= ahora) {
-                console.log(`⚡ Hora de alerta de SALIDA ya pasó (${fechaAlerta.toFormat('HH:mm')}), ejecutando inmediatamente para ${usuario.nombre}`);
+                console.log(`⚡ Hora de alerta de SALIDA ya pasó (${fechaAlerta.toFormat('HH:mm')}), ejecutando inmediatamente para ${nombreCompleto}`);
                 delay = 60000; // 1 minuto en milisegundos
             } else {
                 // Calcular delay normal
                 delay = fechaAlerta.toMillis() - ahora.toMillis();
             }
             
-            console.log(`📊 Debug - Usuario: ${usuario.nombre}, Fecha: ${fecha}, Alerta: ${fechaAlerta.toFormat('yyyy-MM-dd HH:mm:ss')} (${this.timezone})`);
+            console.log(`📊 Debug - Usuario: ${nombreCompleto}, Fecha: ${fecha}, Alerta: ${fechaAlerta.toFormat('yyyy-MM-dd HH:mm:ss')} (${this.timezone})`);
             console.log(fechaAlerta);
             // Programar el job en Bull
             const job = await alertasQueue.add(
                 'recordatorio-salida',
                 {
-                    usuario_id: turno.usuario_id,
+                    usuario_id: usuario.usuario_id,
+                    usuario_empresa_id: turno.usuario_empresa_id,
                     email: usuario.email,
-                    nombre: usuario.nombre,
+                    nombre: nombreCompleto,
                     turno_id: turno.id,
-                    hora_salida: turno.fin,
+                    hora_salida: horaFin,
                     fecha_programada: fecha,
                     fecha_alerta: fechaAlerta.toISO(),
                     tipo: 'salida'
@@ -250,10 +311,10 @@ class AlertasService {
                 }
             );
 
-            console.log(`🚪 Alerta de SALIDA programada para ${usuario.nombre} (${usuario.email}) a las ${fechaAlerta.toFormat('HH:mm:ss')} - Job ID: ${job.id}`);
+            console.log(`🚪 Alerta de SALIDA programada para ${nombreCompleto} (${usuario.email}) a las ${fechaAlerta.toFormat('HH:mm:ss')} - Job ID: ${job.id}`);
             
             // Guardar referencia del job en Redis
-            await this.guardarReferenciaJob(usuario.id, fecha, job.id, fechaAlerta.toISO(), 'salida');
+            await this.guardarReferenciaJob(usuario.usuario_id, fecha, job.id, fechaAlerta.toISO(), 'salida');
             
         } catch (error) {
             console.error(`❌ Error programando alerta de salida para turno ${turno.id}:`, error);
@@ -264,9 +325,9 @@ class AlertasService {
     async procesarRecordatorioEntrada(data) {
         try {
             console.log(`🔔 Procesando recordatorio de ENTRADA para ${data.nombre} (${data.email})`);
-            
+          
             // Verificar si ya marcó entrada
-            const yaMarco = await this.verificarEntradaMarcada(data.usuario_id, data.fecha_programada);
+            const yaMarco = await this.verificarEntradaMarcada(data.usuario_empresa_id, data.fecha_programada);
             
             if (yaMarco) {
                 console.log(`✅ ${data.nombre} ya marcó entrada, omitiendo recordatorio`);
@@ -282,7 +343,7 @@ class AlertasService {
             
             if (resultado.success) {
                 // Registrar envío en Redis
-                await this.registrarEnvioRecordatorio(data.usuario_id, data.fecha_programada, 'entrada');
+                await this.registrarEnvioRecordatorio(data.usuario_empresa_id, data.fecha_programada, 'entrada');
                 console.log(`📧 Recordatorio de ENTRADA enviado exitosamente a ${data.email}`);
             } else {
                 console.error(`❌ Error enviando recordatorio de entrada a ${data.email}:`, resultado.error);
@@ -302,7 +363,7 @@ class AlertasService {
             console.log(`� Procesando recordatorio de SALIDA para ${data.nombre} (${data.email})`);
             
             // Verificar si ya marcó salida
-            const yaMarco = await this.verificarSalidaMarcada(data.usuario_id, data.fecha_programada);
+            const yaMarco = await this.verificarSalidaMarcada(data.usuario_empresa_id, data.fecha_programada);
             
             if (yaMarco) {
                 console.log(`✅ ${data.nombre} ya marcó salida, omitiendo recordatorio`);
@@ -314,7 +375,7 @@ class AlertasService {
             }
 
             // Verificar si marcó entrada (requisito para marcar salida)
-            const marcoEntrada = await this.verificarEntradaMarcada(data.usuario_id, data.fecha_programada);
+            const marcoEntrada = await this.verificarEntradaMarcada(data.usuario_empresa_id, data.fecha_programada);
             
             if (!marcoEntrada) {
                 console.log(`⚠️ ${data.nombre} no marcó entrada, omitiendo recordatorio de salida`);
@@ -330,7 +391,7 @@ class AlertasService {
             
             if (resultado.success) {
                 // Registrar envío en Redis
-                await this.registrarEnvioRecordatorio(data.usuario_id, data.fecha_programada, 'salida');
+                await this.registrarEnvioRecordatorio(data.usuario_empresa_id, data.fecha_programada, 'salida');
                 console.log(`📧 Recordatorio de SALIDA enviado exitosamente a ${data.email}`);
             } else {
                 console.error(`❌ Error enviando recordatorio de salida a ${data.email}:`, resultado.error);

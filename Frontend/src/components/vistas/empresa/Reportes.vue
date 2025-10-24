@@ -110,7 +110,7 @@
                 <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                   Generar
                 </button>
-                <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button @click="irReporteJornadaDiaria" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Vista Previa
                 </button>
               </div>
@@ -434,6 +434,13 @@ const irReporteAsistencia = () => {
   console.log('Navegando a Reporte de Asistencia...');
   router.push({ name: 'EmpresaReporteAsistencia' });
 };
+
+// Función para ir a la vista de Reporte de Jornada Diaria
+const irReporteJornadaDiaria = () => {
+  console.log('Navegando a Reporte de Jornada Diaria...');
+  router.push({ name: 'EmpresaReporteJornadaDiaria' });
+};
+
 
 onMounted(() => {
   console.log('Vista Reportes cargada');

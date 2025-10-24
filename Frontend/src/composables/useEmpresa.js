@@ -159,6 +159,67 @@ export function useEmpresa() {
     }
   };
 
+  const agregarAmonestacion = async (amonestacionData) => {
+    try {
+      console.log('📝 Agregando amonestación:', amonestacionData);
+      const response = await EmpresaServices.registrarAmonestacion(amonestacionData);
+      return response;
+    } catch (error) {
+      console.error("Error al agregar amonestación:", error);
+      throw error;
+    }
+  };
+
+  const obtenerAmonestaciones = async (trabajadorId = null) => {
+    try {
+      const response = await EmpresaServices.obtenerAmonestaciones(trabajadorId);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener amonestaciones:", error);
+      throw error;
+    }
+  };
+
+  const obtenerAmonestacionesPorEmpresa = async () => {
+    try {
+      const response = await EmpresaServices.obtenerAmonestacionesPorEmpresa(user.value.rut);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener amonestaciones de la empresa:", error);
+      throw error;
+    }
+  };
+
+  const actualizarAmonestacion = async (amonestacionId, datosActualizados) => {
+    try {
+      const response = await EmpresaServices.actualizarAmonestacion(amonestacionId, datosActualizados);
+      return response;
+    } catch (error) {
+      console.error("Error al actualizar amonestación:", error);
+      throw error;
+    }
+  };
+
+  const eliminarAmonestacion = async (amonestacionId) => {
+    try {
+      const response = await EmpresaServices.eliminarAmonestacion(amonestacionId);
+      return response;
+    } catch (error) {
+      console.error("Error al eliminar amonestación:", error);
+      throw error;
+    }
+  };
+
+  const obtenerReporteJornadaDiaria = async (fechaInicio, fechaFin) => {
+    try {
+      const response = await EmpresaServices.obtenerReporteJornadaDiaria(user.value.rut, fechaInicio, fechaFin);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener reporte de jornada diaria:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -173,6 +234,12 @@ export function useEmpresa() {
     obtenerHorasSemanales,
     obtenerTiposTurnos,
     crearTipoTurno,
-    eliminarTipoTurno
+    eliminarTipoTurno,
+    agregarAmonestacion,
+    obtenerAmonestaciones,
+    obtenerAmonestacionesPorEmpresa,
+    actualizarAmonestacion,
+    eliminarAmonestacion,
+    obtenerReporteJornadaDiaria
   };
 }

@@ -233,15 +233,29 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(trabajador.ultimo_acceso) }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button 
-                      @click="abrirModalDetalles(trabajador)" 
-                      class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                      </svg>
-                      Detalles
-                    </button>
+                    <div class="flex items-center justify-end space-x-2">
+                      <button 
+                        @click="abrirModalDetalles(trabajador)" 
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        title="Ver detalles"
+                      >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Detalles
+                      </button>
+                      
+                      <button 
+                        @click="abrirModalAmonestar(trabajador)" 
+                        class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        title="Amonestar trabajador"
+                      >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        Amonestar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -303,6 +317,14 @@
       :trabajador="trabajadorSeleccionado"
       @close="cerrarModalEnrolar"
       @success="onTrabajadorEnrolado"
+    />
+
+    <!-- Modal Amonestar Trabajador -->
+    <ModalAmonestarTrabajador 
+      :is-open="modalAmonestarAbierto"
+      :trabajador="trabajadorSeleccionado"
+      @close="cerrarModalAmonestar"
+      @success="onTrabajadorAmonestado"
     />
 
     <!-- Modal Lista Total de Trabajadores -->
@@ -549,7 +571,7 @@
             >
               Cerrar
             </button>
-            <button 
+            <button v-show="!trabajadorSeleccionado.esDeEst"
               @click="editarTrabajador(trabajadorSeleccionado)"
               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 flex items-center space-x-2"
             >
@@ -591,6 +613,7 @@
 import HeaderAdmin from '../../components/headerEmpresa.vue';
 import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
 import ModalEnrolarTrabajador from '../../modals/ModalEnrolarTrabajador.vue';
+import ModalAmonestarTrabajador from '../../modals/ModalAmonestarTrabajador.vue';
 import EmpresaServices from '../../../services/EmpresaService.js';
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
@@ -621,6 +644,7 @@ const mostrarNotificacion = (mensaje, tipo = 'info') => {
 const trabajadores = ref([]);
 const modalNuevoAbierto = ref(false);
 const modalEnrolarAbierto = ref(false);
+const modalAmonestarAbierto = ref(false);
 const modalTotalTrabajadoresAbierto = ref(false);
 const modalDetallesAbierto = ref(false);
 const trabajadorSeleccionado = ref(null);
@@ -746,6 +770,23 @@ const onTrabajadorEnrolado = (trabajadorEnrolado) => {
   console.log('Trabajador enrolado:', trabajadorEnrolado);
   // Recargar la lista de trabajadores
   cargarTrabajadores();
+};
+
+// Métodos para el modal de amonestación
+const abrirModalAmonestar = (trabajador) => {
+  trabajadorSeleccionado.value = trabajador;
+  modalAmonestarAbierto.value = true;
+};
+
+const cerrarModalAmonestar = () => {
+  modalAmonestarAbierto.value = false;
+  trabajadorSeleccionado.value = null;
+};
+
+const onTrabajadorAmonestado = (amonestacion) => {
+  console.log('Amonestación registrada:', amonestacion);
+  mostrarNotificacion('Amonestación registrada exitosamente', 'success');
+  // Opcionalmente recargar datos o actualizar estado
 };
 
 // Métodos para el modal de total de trabajadores

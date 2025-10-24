@@ -108,7 +108,7 @@
         <div class="mt-4 text-center">
           <p class="text-xs text-gray-500">
             ¿Eres fiscalizador? 
-            <a href="http://localhost:5000/" class="text-blue-600 hover:text-blue-500 font-medium">
+            <a :href="appFiscalizador" class="text-blue-600 hover:text-blue-500 font-medium">
               Ingresar como fiscalizador
             </a>
           </p>
@@ -139,6 +139,9 @@ const form = reactive({
   username: '',
   password: '',
 })
+
+
+const appFiscalizador = import.meta.env.VITE_APP_FISCALIZADOR_URL || 'https://localhost:5000'
 
 // Computed
 const isLoading = computed(() => authStore.isLoading)

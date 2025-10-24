@@ -169,17 +169,23 @@ router.get('/datos', async (req, res) => {
             success: true,
             data: {
                 total_usuarios: resultado.usuarios.length,
-                total_turnos: resultado.turnos.length,
+                total_asignaciones: resultado.turnos.length,
                 usuarios_sample: resultado.usuarios.slice(0, 5).map(u => ({
                     id: u.id,
                     nombre: u.nombre,
-                    email: u.email
+                    email: u.email,
+                    rut: u.rut
                 })),
-                turnos_sample: resultado.turnos.slice(0, 5).map(t => ({
+                asignaciones_sample: resultado.turnos.slice(0, 5).map(t => ({
                     id: t.id,
-                    usuario_id: t.usuario_id,
-                    inicio: t.inicio,
-                    fin: t.fin
+                    usuario_empresa_id: t.usuario_empresa_id,
+                    usuario_nombre: t.usuario_nombre,
+                    tipo_turno: t.tipo_turno_nombre,
+                    fecha_inicio: t.fecha_inicio,
+                    fecha_fin: t.fecha_fin,
+                    estado: t.estado,
+                    hora_inicio: t.hora_inicio,
+                    hora_fin: t.hora_fin
                 }))
             },
             message: 'Datos verificados exitosamente'
@@ -354,6 +360,223 @@ router.get('/logs', async (req, res) => {
         
     } catch (error) {
         console.error('Error obteniendo logs:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
+// GET /api/test/alertas/turnos-activos - Ver turnos activos del día
+router.get('/turnos-activos', async (req, res) => {
+    try {
+        const { fecha } = req.query;
+        const AsignacionTurnosModel = (await import('../model/AsignacionTurnosModel.js')).default;
+        const TurnosModel = (await import('../model/TurnosModel.js')).default;
+        const { DateTime } = await import('luxon');
+        
+        const fechaBusqueda = fecha || DateTime.now().setZone('America/Santiago').toISODate();
+        
+        // Obtener todas las asignaciones
+        const asignaciones = await TurnosModel.getAllTurnos();
+        
+        const turnosActivos = [];
+        
+        for (const asignacion of asignaciones) {
+            // Verificar si está activa
+            const fechaInicio = new Date(asignacion.fecha_inicio);
+            const fechaFin = asignacion.fecha_fin ? new Date(asignacion.fecha_fin) : null;
+            const fechaActual = new Date(fechaBusqueda);
+
+            if (fechaActual < fechaInicio || (fechaFin && fechaActual > fechaFin)) {
+                continue;
+            }
+
+            if (asignacion.estado !== 'activo') {
+                continue;
+            }
+
+            // Obtener turno activo del día
+            const turnoActivo = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(
+                asignacion.usuario_empresa_id,
+                fechaBusqueda
+            );
+
+            if (turnoActivo && turnoActivo.trabaja) {
+                turnosActivos.push({
+                    asignacion_id: asignacion.id,
+                    usuario_empresa_id: asignacion.usuario_empresa_id,
+                    usuario_nombre: asignacion.usuario_nombre,
+                    usuario_rut: asignacion.rut,
+                    empresa: asignacion.empresa_nombre,
+                    tipo_turno: asignacion.tipo_turno_nombre,
+                    dia_semana: turnoActivo.dia_semana,
+                    hora_inicio: turnoActivo.hora_inicio,
+                    hora_fin: turnoActivo.hora_fin,
+                    fecha_busqueda: fechaBusqueda
+                });
+            }
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                fecha: fechaBusqueda,
+                total_turnos_activos: turnosActivos.length,
+                total_asignaciones_revisadas: asignaciones.length,
+                turnos: turnosActivos
+            },
+            message: `Se encontraron ${turnosActivos.length} turnos activos para el ${fechaBusqueda}`
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
+// GET /api/test/alertas/usuario/:id/turnos - Ver turnos de un usuario específico
+router.get('/usuario/:id/turnos', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fecha } = req.query;
+        const pool = (await import('../config/dbconfig.js')).default;
+        const AsignacionTurnosModel = (await import('../model/AsignacionTurnosModel.js')).default;
+        const { DateTime } = await import('luxon');
+        
+        const fechaBusqueda = fecha || DateTime.now().setZone('America/Santiago').toISODate();
+        
+        // Obtener usuario_empresa_id del usuario
+        const [usuariosEmpresas] = await pool.query(`
+            SELECT ue.id, ue.empresa_id, e.emp_nombre
+            FROM usuarios_empresas ue
+            INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE ue.usuario_id = ?
+        `, [id]);
+
+        if (usuariosEmpresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Usuario no tiene empresas asignadas'
+            });
+        }
+
+        const turnosDelUsuario = [];
+
+        for (const ue of usuariosEmpresas) {
+            // Obtener todas las asignaciones
+            const asignaciones = await AsignacionTurnosModel.getByUsuarioEmpresaId(ue.id);
+            
+            for (const asignacion of asignaciones) {
+                // Verificar turno activo para la fecha
+                const turnoActivo = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(
+                    ue.id,
+                    fechaBusqueda
+                );
+
+                turnosDelUsuario.push({
+                    asignacion_id: asignacion.id,
+                    empresa: ue.emp_nombre,
+                    tipo_turno: asignacion.tipo_turno_nombre,
+                    fecha_inicio: asignacion.fecha_inicio,
+                    fecha_fin: asignacion.fecha_fin,
+                    estado: asignacion.estado,
+                    activo_para_fecha: turnoActivo ? 'Sí' : 'No',
+                    trabaja_hoy: turnoActivo?.trabaja ? 'Sí' : 'No',
+                    horario_hoy: turnoActivo?.trabaja ? 
+                        `${turnoActivo.hora_inicio} - ${turnoActivo.hora_fin}` : 
+                        'No trabaja',
+                    dia_semana: turnoActivo?.dia_semana || 'N/A'
+                });
+            }
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                usuario_id: id,
+                fecha_consulta: fechaBusqueda,
+                total_asignaciones: turnosDelUsuario.length,
+                turnos: turnosDelUsuario
+            },
+            message: 'Turnos del usuario obtenidos exitosamente'
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
+// POST /api/test/alertas/simular-dia - Simular alertas para un día específico
+router.post('/simular-dia', async (req, res) => {
+    try {
+        const { fecha, usuario_empresa_id } = req.body;
+        const { DateTime } = await import('luxon');
+        
+        const fechaSimulacion = fecha || DateTime.now().setZone('America/Santiago').toISODate();
+        
+        console.log(`\n🎭 Simulando alertas para el día: ${fechaSimulacion}`);
+        
+        if (usuario_empresa_id) {
+            // Simular para un usuario específico
+            const AsignacionTurnosModel = (await import('../model/AsignacionTurnosModel.js')).default;
+            const turnoActivo = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(
+                usuario_empresa_id,
+                fechaSimulacion
+            );
+            
+            if (!turnoActivo || !turnoActivo.trabaja) {
+                return res.json({
+                    success: false,
+                    message: `Usuario ${usuario_empresa_id} no tiene turno activo para ${fechaSimulacion}`
+                });
+            }
+            
+            // Programar alertas para este turno
+            await alertasService.programarAlertasParaTurno(turnoActivo, fechaSimulacion);
+            
+            const stats = await alertasService.obtenerEstadisticas();
+            
+            return res.json({
+                success: true,
+                data: {
+                    fecha: fechaSimulacion,
+                    usuario_empresa_id,
+                    turno: {
+                        hora_inicio: turnoActivo.hora_inicio,
+                        hora_fin: turnoActivo.hora_fin,
+                        dia_semana: turnoActivo.dia_semana
+                    },
+                    jobs_programados: stats.waiting
+                },
+                message: 'Alertas simuladas exitosamente para el usuario'
+            });
+        } else {
+            // Simular para todos los usuarios del día
+            await alertasService.programarAlertasDiarias();
+            
+            const stats = await alertasService.obtenerEstadisticas();
+            
+            return res.json({
+                success: true,
+                data: {
+                    fecha: fechaSimulacion,
+                    jobs_programados: stats.waiting,
+                    stats_completas: stats
+                },
+                message: 'Alertas simuladas exitosamente para todos los usuarios'
+            });
+        }
+        
+    } catch (error) {
         res.status(500).json({
             success: false,
             error: error.message,

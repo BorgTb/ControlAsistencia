@@ -8,6 +8,7 @@ import UserEmpresaRoutes from "./UserEmpresa.js";
 import AuditoriaRoutes from "./AuditoriaRoutes.js";
 import EstadisticasRoutes from "./EstadisticasRoutes.js";
 import FiscalizadorRoutes from "./FiscalizadorRoutes.js";
+import JustificacionesRoutes from "./JustificacionesRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -19,7 +20,8 @@ const router = {
     test: TestRoutes,
     auditoria: AuditoriaRoutes,
     estadisticas: EstadisticasRoutes,
-    fiscalizador: FiscalizadorRoutes
+    fiscalizador: FiscalizadorRoutes,
+    justificaciones: JustificacionesRoutes
 }
 
 export default router;

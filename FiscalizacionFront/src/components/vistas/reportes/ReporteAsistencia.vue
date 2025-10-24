@@ -662,8 +662,8 @@ const filters = ref({
   tipoJornada: '',
   turnoEspecifico: '',
   lugarTrabajo: '',
-  fechaDesde: '',
-  fechaHasta: '',
+  fechaDesde: new Date().toISOString().split('T')[0],
+  fechaHasta: new Date().toISOString().split('T')[0],
   periodoRapido: '',
   region: '',
   establecimiento: '',
@@ -757,7 +757,16 @@ const filteredData = computed(() => {
   
   // Filtro por turno específico
   if (filters.value.turnoEspecifico) {
-    data = data.filter(e => e.turnoEspecifico === filters.value.turnoEspecifico)
+    // Obtener el nombre del turno seleccionado sin paréntesis ni su contenido
+    const turnoSeleccionado = turnosDB.value.find(t => t.id === filters.value.turnoEspecifico)
+    if (turnoSeleccionado) {
+      const nombreTurnoSinParentesis = turnoSeleccionado.nombre.split('(')[0].trim()
+      // Filtrar comparando solo el nombre del turno sin paréntesis
+      data = data.filter(e => {
+        const nombreEmpleadoSinParentesis = e.turnoEspecifico.split('(')[0].trim()
+        return nombreEmpleadoSinParentesis === nombreTurnoSinParentesis
+      })
+    }
   }
   
   // Filtro por lugar de trabajo
@@ -841,9 +850,53 @@ const getStatusClass = (estado) => {
 }
 
 
-const applyFilters = () => {
-  // La funcionalidad de filtrado se maneja automáticamente con computed
-  console.log('Filtros aplicados según Art. 25:', filters.value)
+const cargarReporteConFiltros = async () => {
+  try {
+    console.log('🔍 Cargando datos con rango de fechas:', {
+      desde: filters.value.fechaDesde,
+      hasta: filters.value.fechaHasta
+    })
+    
+    // Solo enviar filtros de fecha al backend
+    // Los demás filtros se aplican en el frontend mediante el computed filteredData
+    const filtrosBackend = {
+      fecha_inicio: filters.value.fechaDesde,
+      fecha_fin: filters.value.fechaHasta
+    }
+    
+    // Llamar al backend solo con filtros de fecha
+    const rest = await obtenerReporteAsistencia(filtrosBackend)
+    console.log('📊 Datos recibidos de la API:', rest.data)
+    
+    // Verificar si la respuesta tiene la estructura esperada
+    if (rest?.data) {
+      // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
+      if (rest.data.trabajadores || rest.data.marcacionesAgrupadasPorUsuario) {
+        await loadData(rest.data)
+        console.log('✅ Datos cargados exitosamente:', empleados.value.length, 'registros de asistencia')
+        console.log('🎯 Los filtros de trabajador, cargo, región, etc. se aplican automáticamente en el frontend')
+      } 
+      // Estructura antigua (array directo)
+      else if (Array.isArray(rest.data)) {
+        await loadData(rest.data)
+        console.log('✅ Datos cargados exitosamente:', empleados.value.length, 'empleados')
+      } else {
+        console.warn('⚠️ Estructura de datos no reconocida')
+        await loadData()
+      }
+    } else {
+      console.warn('⚠️ No se recibieron datos válidos de la API')
+      await loadData()
+    }
+  } catch (error) {
+    console.error('❌ Error al cargar reporte con filtros:', error)
+    // En caso de error, mantener los datos actuales
+  }
+}
+
+const applyFilters = async () => {
+  // Llamar a la función empaquetada
+  await cargarReporteConFiltros()
 }
 
 const clearFilters = () => {
@@ -943,7 +996,11 @@ const loadData = async (apiData = null) => {
       
       if (datosTrabajador && datosTrabajador.marcaciones) {
         // Procesar cada fecha con datos de asistencia
-        for (const [fecha, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+        for (const [fechaISO, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+          // Convertir fecha ISO a formato local sin cambio de día
+          // La fecha viene como "2025-10-17", mantenerla tal cual
+          const fecha = fechaISO; // Ya viene en formato YYYY-MM-DD, no necesita conversión
+          
           const marcacionesArray = datosAsistencia.marcaciones || [];
           const turno = datosAsistencia.turno;
           const estadoAsistencia = datosAsistencia.estado_asistencia;
@@ -1213,10 +1270,26 @@ const formatFecha = (fecha) => {
   if (!fecha) return 'N/A'
   
   try {
+    // Si la fecha ya viene en formato YYYY-MM-DD, usarla directamente
+    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [anio, mes, dia] = fecha.split('-')
+      return `${dia}/${mes}/${anio.slice(-2)}` // Solo últimos 2 dígitos del año
+    }
+    
+    // Si viene en otro formato, convertir evitando problemas de zona horaria
+    const fechaStr = fecha.toString()
+    if (fechaStr.includes('T')) {
+      // Fecha con hora, extraer solo la parte de la fecha
+      const fechaSolo = fechaStr.split('T')[0]
+      const [anio, mes, dia] = fechaSolo.split('-')
+      return `${dia}/${mes}/${anio.slice(-2)}`
+    }
+    
+    // Último recurso: usar Date con UTC para evitar cambio de zona horaria
     const date = new Date(fecha)
-    const dia = date.getDate().toString().padStart(2, '0')
-    const mes = (date.getMonth() + 1).toString().padStart(2, '0')
-    const anio = date.getFullYear().toString().slice(-2) // Solo últimos 2 dígitos
+    const dia = date.getUTCDate().toString().padStart(2, '0')
+    const mes = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const anio = date.getUTCFullYear().toString().slice(-2)
     
     return `${dia}/${mes}/${anio}`
   } catch (error) {
@@ -1287,31 +1360,11 @@ onMounted(async () => {
     
     cargandoFiltros.value = false;
     
-    // Cargar datos de asistencia
-    const rest = await obtenerReporteAsistencia()
-    console.log('Datos recibidos de la API:', rest.data)
+    // Cargar datos iniciales de asistencia usando la función empaquetada
+    await cargarReporteConFiltros()
     
-    // Verificar si la respuesta tiene la estructura esperada
-    if (rest?.data) {
-      // Nueva estructura: { trabajadores: [], marcacionesAgrupadasPorUsuario: {} }
-      if (rest.data.trabajadores || rest.data.marcacionesAgrupadasPorUsuario) {
-        await loadData(rest.data)
-        console.log('Datos cargados exitosamente:', empleados.value.length, 'registros de asistencia')
-      } 
-      // Estructura antigua (array directo)
-      else if (Array.isArray(rest.data)) {
-        await loadData(rest.data)
-        console.log('Datos cargados exitosamente:', empleados.value.length, 'empleados')
-      } else {
-        console.warn('Estructura de datos no reconocida, usando datos de fallback')
-        await loadData()
-      }
-    } else {
-      console.warn('No se recibieron datos válidos de la API, usando datos de fallback')
-      await loadData()
-    }
   } catch (error) {
-    console.error('Error al obtener datos de asistencia:', error)
+    console.error('Error al inicializar componente:', error)
     cargandoFiltros.value = false;
     // En caso de error, cargar datos de fallback
     await loadData()

@@ -3,7 +3,8 @@ import AuthService from '../middleware/AuthMiddleWare.js';
 import UserEmpresaController from '../controllers/UserEmpresaController.js';
 import EstController from '../controllers/EstController.js';
 import LugarController from '../controllers/LugarController.js';
-
+// Importar el controlador de amonestaciones
+import AmonestacionesController from '../controllers/AmonestacionesController.js';
 
 const router = express.Router();
 
@@ -31,6 +32,9 @@ router.get('/reportes/:rut',AuthService.verifyToken, UserEmpresaController.obten
 router.post('/reportes/aprobar/:reporteId',AuthService.verifyToken, UserEmpresaController.aprobarCambioMarcacion);
 router.post('/reportes/rechazar/:reporteId',AuthService.verifyToken, UserEmpresaController.rechazarCambioMarcacion);
 
+// Ruta para reporte de jornada diaria (nueva, no modifica las existentes)
+router.get('/reporte-jornada/:rutEmpresa', AuthService.verifyToken, UserEmpresaController.obtenerReporteJornadaDiariaEmpresa);
+
 // Rutas para configuración del sistema empresarial
 router.post('/configuracion/marcaciones',AuthService.verifyToken, UserEmpresaController.configurarToleranciaHorarias); // Guardar configuración
 router.get('/configuracion',AuthService.verifyToken, UserEmpresaController.obtenerConfiguracion); // Obtener configuración
@@ -53,5 +57,18 @@ router.put('/lugares/:id', AuthService.verifyToken, LugarController.updateLugar)
 router.patch('/lugares/:id/desactivar', AuthService.verifyToken, LugarController.desactivarLugar);
 router.patch('/lugares/:id/activar', AuthService.verifyToken, LugarController.activarLugar);
 router.delete('/lugares/:id', AuthService.verifyToken, LugarController.deleteLugar);
+
+// Rutas para gestión de amonestaciones
+router.post('/amonestaciones', AuthService.verifyToken, AmonestacionesController.crear);
+router.get('/amonestaciones', AuthService.verifyToken, AmonestacionesController.obtenerTodas);
+router.get('/amonestaciones/trabajador/:trabajadorId', AuthService.verifyToken, AmonestacionesController.obtenerPorTrabajador);
+router.get('/amonestaciones/empresa/:rutEmpresa', AuthService.verifyToken, AmonestacionesController.obtenerPorEmpresa);
+router.get('/amonestaciones/estadisticas', AuthService.verifyToken, AmonestacionesController.obtenerEstadisticas);
+router.get('/amonestaciones/buscar', AuthService.verifyToken, AmonestacionesController.buscar);
+router.get('/amonestaciones/:id', AuthService.verifyToken, AmonestacionesController.obtenerPorId);
+router.put('/amonestaciones/:id', AuthService.verifyToken, AmonestacionesController.actualizar);
+router.delete('/amonestaciones/:id', AuthService.verifyToken, AmonestacionesController.eliminar);
+router.patch('/amonestaciones/:id/descargos', AuthService.verifyToken, AmonestacionesController.actualizarDescargos);
+router.patch('/amonestaciones/:id/estado', AuthService.verifyToken, AmonestacionesController.cambiarEstado);
 
 export default router;

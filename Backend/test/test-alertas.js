@@ -1,9 +1,13 @@
 import alertasService from '../jobs/Alertas.js';
 import UserModel from '../model/UserModel.js';
 import TurnosModel from '../model/TurnosModel.js';
+import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
+import pool from '../config/dbconfig.js';
+import { DateTime } from 'luxon';
 
 class TestAlertas {
     constructor() {
+        this.timezone = 'America/Santiago';
         console.log('🧪 Iniciando tests del sistema de alertas');
     }
 
@@ -87,18 +91,31 @@ class TestAlertas {
                 });
             }
             
-            // Obtener turnos
-            const turnos = await TurnosModel.getAllTurnos();
-            console.log(`✅ Turnos encontrados: ${turnos.length}`);
+            // Obtener asignaciones de turnos
+            const asignaciones = await TurnosModel.getAllTurnos();
+            console.log(`✅ Asignaciones de turnos encontradas: ${asignaciones.length}`);
             
-            if (turnos.length > 0) {
-                console.log('   Primeros turnos:');
-                turnos.slice(0, 3).forEach(turno => {
-                    console.log(`   - ID: ${turno.id}, Usuario ID: ${turno.usuario_id}, Inicio: ${turno.inicio}`);
-                });
+            if (asignaciones.length > 0) {
+                console.log('   Primeras asignaciones:');
+                const fechaHoy = DateTime.now().setZone(this.timezone).toISODate();
+                
+                for (const asignacion of asignaciones.slice(0, 3)) {
+                    // Verificar si tiene turno activo hoy
+                    const turnoActivo = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(
+                        asignacion.usuario_empresa_id,
+                        fechaHoy
+                    );
+                    
+                    const estadoHoy = turnoActivo ? '✓ Trabaja hoy' : '✗ No trabaja hoy';
+                    console.log(`   - ID: ${asignacion.id}, Usuario: ${asignacion.usuario_nombre}, Estado: ${asignacion.estado}, ${estadoHoy}`);
+                    
+                    if (turnoActivo) {
+                        console.log(`     Horario: ${turnoActivo.hora_inicio} - ${turnoActivo.hora_fin}`);
+                    }
+                }
             }
             
-            return { usuarios, turnos };
+            return { usuarios, turnos: asignaciones };
             
         } catch (error) {
             console.error('❌ Error verificando datos:', error);

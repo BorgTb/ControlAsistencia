@@ -270,6 +270,8 @@ class AuditoriaModel {
 
     // Registrar un cambio específico realizado por un usuario
     static async registrarCambio(datosDelCambio) {
+        console.log('📝 Registrando cambio:', datosDelCambio);
+
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
@@ -306,7 +308,7 @@ class AuditoriaModel {
                 (typeof datos_anteriores === 'string' ? datos_anteriores : JSON.stringify(datos_anteriores)) : null;
             const datosNuevosJson = datos_nuevos ? 
                 (typeof datos_nuevos === 'string' ? datos_nuevos : JSON.stringify(datos_nuevos)) : null;
-
+            console.log(usuario_id, accion, tabla_afectada, registro_id, descripcion, datosAnterioresJson, datosNuevosJson, ip_address);
             const [result] = await pool.execute(query, [
                 usuario_id,
                 accion,

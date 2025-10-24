@@ -115,7 +115,7 @@ class MarcacionesService {
             };
         }
     }
-
+    
     async obtenerMarcacionesPorUsuario(usuario_id, fechaInicio = null, fechaFin = null) {
         try {
             const marcaciones = await MarcacionesModel.getMarcacionesByUsuario(usuario_id, fechaInicio, fechaFin);
@@ -126,15 +126,6 @@ class MarcacionesService {
                     success: true,
                     fecha: fechaFin || new Date().toISOString().split('T')[0],
                     marcaciones: []
-                };
-            }
-
-            // Si se especificó una fecha, devolver las marcaciones directamente
-            if (fechaFin) {
-                return {
-                    success: true,
-                    fecha: fechaFin,
-                    marcaciones: marcaciones
                 };
             }
 
@@ -577,6 +568,31 @@ class MarcacionesService {
         } catch (error) {
             console.error('Error al calcular diferencia de horas:', error);
             return 0;
+        }
+    }
+
+    /**
+     * Obtener marcaciones por usuario en un rango de fechas
+     * @param {number} usuarioEmpresaId - ID del usuario-empresa
+     * @param {string} fechaInicio - Fecha inicio (YYYY-MM-DD)
+     * @param {string} fechaFin - Fecha fin (YYYY-MM-DD)
+     * @returns {Promise<Object>} - Marcaciones del usuario en el rango
+     */
+    async obtenerMarcacionesPorUsuarioYRango(usuarioEmpresaId, fechaInicio, fechaFin) {
+        try {
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorUsuarioYRangoFecha(
+                usuarioEmpresaId,
+                fechaInicio,
+                fechaFin
+            );
+
+            return {
+                success: true,
+                data: marcaciones
+            };
+        } catch (error) {
+            console.error('Error al obtener marcaciones por usuario y rango:', error);
+            throw error;
         }
     }
 

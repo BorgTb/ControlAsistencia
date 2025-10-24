@@ -77,6 +77,18 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
+            path: '/solicitudes',
+            name: 'Solicitudes',
+            component: () => import('../components/vistas/Solicitudes.vue'),
+            meta: { requiresAuth: true, requiresUser: true }
+        },
+        {
+            path: '/dias-trabajados',
+            name: 'DiasTrabajados',
+            component: () => import('../components/vistas/DiasTrabajados.vue'),
+            meta: { requiresAuth: true, requiresUser: true }
+        },
+        {
             path: '/administracion',
             name: 'Empresa',
             component: () => import('../components/vistas/Administrador.vue'),
@@ -117,6 +129,12 @@ const router = createRouter({
             path: '/empresa/reportes/asistencia',
             name: 'EmpresaReporteAsistencia',
             component: () => import('../components/vistas/empresa/ReporteAsistencia.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
+        {
+            path: '/empresa/reportes/jornada-diaria',
+            name: 'EmpresaReporteJornadaDiaria',
+            component: () => import('../components/vistas/empresa/ReporteJornadaDiaria.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
@@ -190,13 +208,16 @@ router.beforeEach((to, from, next) => {
         '/empresa/configuracion',
         '/empresa/trabajadores/asociar',
         '/empresa/historial-solicitudes',
-        '/empresa/lugares'
+        '/empresa/lugares',
+        '/empresa/reportes/jornada-diaria'
     ]
     
     const trabajadorRoutes = [
         '/dashboard',
         '/configuracion',
-        '/historial'
+        '/historial',
+        '/solicitudes',
+        '/dias-trabajados'
     ]
     
     const guestRoutes = [
