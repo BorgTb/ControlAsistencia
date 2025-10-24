@@ -496,14 +496,7 @@ const obtenerTrabajadores = async (req, res) => {
         // trabajadores que son de una est
         const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
 
-        console.log("trabajadoresDeEst:", trabajadoresDeEst);
-        console.log("trabajadores:", trabajadores);
-        
-        // Debug: verificar horas laborales en cada trabajador
-        trabajadores.forEach(trabajador => {
-            console.log(`👤 Trabajador ${trabajador.id}: ${trabajador.usuario_nombre} - Horas laborales: ${trabajador.horas_laborales || 'NO DEFINIDAS'}`);
-        });
-
+  
         // juntar ambos arrays  y a los trabajadores de est agregarle un campo est = true
         const trabajadoresMap = new Map();
 
@@ -517,9 +510,7 @@ const obtenerTrabajadores = async (req, res) => {
 
         const trabajadoresUnicos = Array.from(trabajadoresMap.values());
         console.log("trabajadoresUnicos:", trabajadoresUnicos);
-        
-        // Debug: verificar horas laborales en resultado final
-        console.log("🎯 RESULTADO FINAL - Horas laborales por trabajador:");
+     
         trabajadoresUnicos.forEach(trabajador => {
             console.log(`  - ${trabajador.usuario_nombre} (ID: ${trabajador.id}): ${trabajador.horas_laborales || 'SIN HORAS LABORALES'}`);
         });
