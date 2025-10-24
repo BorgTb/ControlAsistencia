@@ -812,6 +812,7 @@ const guardarTipoTurno = async () => {
 
 const guardarAsignacion = async () => {
   try {
+    console.log('Asignando turno con datos:', formAsignacion);
     await EmpresaServices.createTurno(formAsignacion);
     mostrarNotificacion('success', 'Turno asignado exitosamente');
     limpiarFormAsignacion();

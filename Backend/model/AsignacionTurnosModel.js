@@ -172,8 +172,13 @@ class AsignacionTurnosModel {
     }
 
     static async delete(id) {
-        const query = `DELETE FROM asignacion_turnos WHERE id = ?`;
-        const [result] = await pool.query(query, [id]);
+        const fechaActual = DateTime.now().setZone('America/Santiago').toISODate();
+        const query = `
+            UPDATE asignacion_turnos 
+            SET fecha_fin = ?, estado = 'finalizado'
+            WHERE id = ?
+        `;
+        const [result] = await pool.query(query, [fechaActual, id]);
         return result.affectedRows;
     }
 

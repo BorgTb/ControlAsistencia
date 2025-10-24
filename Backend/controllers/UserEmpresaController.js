@@ -125,9 +125,9 @@ const createTrabajador = async (req, res) => {
 const createTurno = async (req, res) => {
     try {
         const asignacionData = req.body;
-
+        console.log('Asignación de turno recibida:', asignacionData);
         // Validar campos requeridos
-        if (!asignacionData.usuario_id) {
+        if (!asignacionData.usuario_empresa_id) {
             return res.status(400).json({ 
                 success: false, 
                 message: "El usuario_id del trabajador es requerido" 
@@ -148,7 +148,7 @@ const createTurno = async (req, res) => {
 
         // Obtener información del trabajador
         
-    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_id);
+    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
         if (!trabajador) {
             return res.status(404).json({ 
                 success: false, 
