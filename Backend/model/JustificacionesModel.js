@@ -105,8 +105,8 @@ class JustificacionesModel {
         let query = `
             SELECT 
                 j.*,
-                CONCAT(u.nombre, ' ', u.apellido_pat) as usuario_nombre,
-                CONCAT(u_aprobo.nombre, ' ', u_aprobo.apellido_pat) as aprobado_por_nombre,
+                CONCAT(u.nombre, ' ', u.apellido_pat, ' ', COALESCE(u.apellido_mat, '')) as usuario_nombre,
+                CONCAT(u_aprobo.nombre, ' ', u_aprobo.apellido_pat, ' ', COALESCE(u_aprobo.apellido_mat, '')) as aprobado_por_nombre,
                 DATEDIFF(j.fecha_fin, j.fecha_inicio) + 1 as dias_totales,
                 (SELECT COUNT(*) FROM justificaciones_dias jd 
                  WHERE jd.justificacion_id = j.id) as dias_generados
@@ -167,9 +167,9 @@ class JustificacionesModel {
         const query = `
             SELECT 
                 j.*,
-                CONCAT(u.nombre, ' ', u.apellido) as usuario_nombre,
+                CONCAT(u.nombre, ' ', u.apellido_pat, ' ', COALESCE(u.apellido_mat, '')) as usuario_nombre,
                 u.rut as usuario_rut,
-                CONCAT(u_aprobo.nombre, ' ', u_aprobo.apellido) as aprobado_por_nombre,
+                CONCAT(u_aprobo.nombre, ' ', u_aprobo.apellido_pat, ' ', COALESCE(u_aprobo.apellido_mat, '')) as aprobado_por_nombre,
                 DATEDIFF(j.fecha_fin, j.fecha_inicio) + 1 as dias_totales
             FROM justificaciones_ausencias j
             INNER JOIN usuarios_empresas ue ON j.usuario_empresa_id = ue.id
@@ -331,25 +331,31 @@ class JustificacionesModel {
     /**
      * Obtener justificaciones pendientes de una empresa
      */
-    async obtenerJustificacionesPendientes(mandante_id, limit = 50) {
+    async obtenerJustificacionesPendientes(mandante_id, limit = 50, soloEPendientes = true) {
+        const limitValue = parseInt(limit, 10);
+        let whereClause = `WHERE ue.empresa_id = ?`;
+        
+        if (soloEPendientes) {
+            whereClause += ` AND j.estado = 'PENDIENTE'`;
+        }
+        
         const query = `
             SELECT 
                 j.*,
-                CONCAT(u.nombre, ' ', u.apellido) as usuario_nombre,
+                CONCAT(u.nombre, ' ', u.apellido_pat, ' ', COALESCE(u.apellido_mat, '')) as usuario_nombre,
                 u.rut as usuario_rut,
-                e.nombre as empresa_nombre,
+                e.emp_nombre as empresa_nombre,
                 DATEDIFF(j.fecha_fin, j.fecha_inicio) + 1 as dias_totales
             FROM justificaciones_ausencias j
             INNER JOIN usuarios_empresas ue ON j.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
-            INNER JOIN empresas e ON ue.empresa_id = e.id
-            WHERE ue.mandante_id = ? 
-            AND j.estado = 'PENDIENTE'
+            INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            ${whereClause}
             ORDER BY j.fecha_solicitud DESC
-            LIMIT ?
+            LIMIT ${limitValue}
         `;
         
-        const [rows] = await pool.execute(query, [mandante_id, limit]);
+        const [rows] = await pool.execute(query, [mandante_id]);
         return rows;
     }
 

@@ -8,6 +8,12 @@
           <p class="text-gray-600 mt-2">Visualiza la asistencia individual en calendario mensual o anual</p>
         </div>
         <div class="flex space-x-3">
+          <button @click="mostrarJustificaciones" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Justificaciones</span>
+          </button>
           <button @click="volverReportes" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded-md font-medium flex items-center">
             <span>Volver a Reportes</span>
           </button>
@@ -85,6 +91,7 @@
               :usuario="trabajadorSeleccionado"
               :vista="vista"
               :marcaciones="marcaciones"
+              :dias-justificados="diasJustificados"
               @hover-dia="mostrarTooltipDia"
             />
           </div>
@@ -95,6 +102,14 @@
 
       <!-- Eliminado: componentes duplicados de calendario y detalle diario -->
     </main>
+
+    <!-- Modal de Justificaciones -->
+    <div v-if="mostrarModalJustificaciones" class="fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black opacity-50" @click="cerrarJustificaciones"></div>
+      <div class="relative h-full overflow-y-auto">
+        <ListaJustificaciones @cerrar="cerrarJustificaciones" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -106,6 +121,8 @@ import { useNotification } from '../../../composables/useNotification.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 import { useAuthStore } from '../../../stores/authStore.js';
 import MarcacionesCalendario from './MarcacionesCalendario.vue';
+import ListaJustificaciones from './ListaJustificaciones.vue';
+import justificacionesService from '../../../services/JustificacionesService.js';
 // import DetalleDiarioTable from './DetalleDiarioTable.vue';
 
 const router = useRouter();
@@ -121,6 +138,8 @@ const empresaSeleccionada = ref('');
 const trabajadores = ref([]);
 const trabajadorSeleccionado = ref(null);
 const marcaciones = ref([]);
+const diasJustificados = ref([]);
+const mostrarModalJustificaciones = ref(false);
 
 const resumen = computed(() => {
   // console.log('Marcaciones para cálculo:', JSON.stringify(marcaciones.value, null, 2));
@@ -202,6 +221,14 @@ function volverReportes() {
   router.push({ name: 'EmpresaReportes' });
 }
 
+function mostrarJustificaciones() {
+  mostrarModalJustificaciones.value = true;
+}
+
+function cerrarJustificaciones() {
+  mostrarModalJustificaciones.value = false;
+}
+
 
 onMounted(async () => {
   cargando.value = true;
@@ -253,14 +280,45 @@ async function seleccionarTrabajador(trabajador) {
   trabajadorSeleccionado.value = trabajador;
   // Usar el id de la relación usuario-empresa para la consulta de marcaciones
   await cargarMarcacionesTrabajador(trabajador.id);
+  // Cargar días justificados
+  await cargarDiasJustificados(trabajador.id);
 }
 
 watch(trabajadorSeleccionado, async (nuevoTrabajador) => {
   if (nuevoTrabajador) {
     // Usar el id de la relación usuario-empresa para la consulta de marcaciones
     await cargarMarcacionesTrabajador(nuevoTrabajador.id);
+    // Cargar días justificados
+    await cargarDiasJustificados(nuevoTrabajador.id);
   }
 });
+
+// trabajadorId ahora es usuario_empresa_id
+async function cargarDiasJustificados(usuarioEmpresaId) {
+  try {
+    // Calcular rango de fechas para el año actual
+    const ahora = new Date();
+    const inicioAno = `${ahora.getFullYear()}-01-01`;
+    const finAno = `${ahora.getFullYear()}-12-31`;
+    
+    const response = await justificacionesService.obtenerDiasJustificados(
+      usuarioEmpresaId,
+      inicioAno,
+      finAno
+    );
+    
+    if (response.success) {
+      diasJustificados.value = response.data;
+      console.log('Días justificados cargados:', diasJustificados.value);
+      console.log('Estructura de cada día justificado:', response.data[0]); // Ver la estructura
+    } else {
+      diasJustificados.value = [];
+    }
+  } catch (error) {
+    console.error('Error al cargar días justificados:', error);
+    diasJustificados.value = [];
+  }
+}
 
 // trabajadorId ahora es usuario_empresa_id
 async function cargarMarcacionesTrabajador(usuarioEmpresaId) {

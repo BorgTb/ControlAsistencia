@@ -228,7 +228,7 @@ class JustificacionesController {
         try {
             const { id } = req.params;
             const { estado, observaciones } = req.body;
-            const aprobado_por = req.user.usuario_id;
+            const aprobado_por = req.user.id;
 
             // Validar estado
             const estadosValidos = ['APROBADA', 'RECHAZADA'];
@@ -348,14 +348,17 @@ class JustificacionesController {
      */
     async obtenerJustificacionesPendientes(req, res) {
         try {
-            const mandante_id = req.user.mandante_id;
-            const limit = parseInt(req.query.limit) || 50;
 
+            const mandante_id = req.user.empresa_id;
+            const limit = parseInt(req.query.limit) || 50;
+            const todas = req.query.todas === 'true'; // Nuevo parámetro para obtener todas
+            
             const justificaciones = await JustificacionesModel.obtenerJustificacionesPendientes(
                 mandante_id,
-                limit
+                limit,
+                !todas // Si todas=true, entonces soloEPendientes=false
             );
-
+            console.log(justificaciones);
             return res.status(200).json({
                 success: true,
                 data: justificaciones
@@ -440,6 +443,45 @@ class JustificacionesController {
             return res.status(500).json({
                 success: false,
                 message: 'Error al verificar día justificado',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener días justificados de un usuario en un rango de fechas
+     */
+    async obtenerDiasJustificados(req, res) {
+        try {
+            const { usuario_empresa_id, fecha_inicio, fecha_fin } = req.query;
+            
+            // Validaciones
+            if (!usuario_empresa_id || !fecha_inicio || !fecha_fin) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requieren usuario_empresa_id, fecha_inicio y fecha_fin'
+                });
+            }
+
+         
+            const diasJustificados = await JustificacionesModel.obtenerDiasJustificadosEnRango(
+                usuario_empresa_id,
+                fecha_inicio,
+                fecha_fin
+            );
+
+
+
+            return res.status(200).json({
+                success: true,
+                data: diasJustificados
+            });
+
+        } catch (error) {
+            console.error('Error al obtener días justificados:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error al obtener días justificados',
                 error: error.message
             });
         }

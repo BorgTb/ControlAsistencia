@@ -46,8 +46,10 @@ router.get(
 
 /**
  * @route GET /api/justificaciones/pendientes
- * @desc Obtener justificaciones pendientes de aprobación
+ * @desc Obtener justificaciones pendientes de aprobación (o todas si se especifica)
  * @access Admin o Fiscalizador
+ * @query {number} limit - Límite de resultados (default: 50)
+ * @query {string} todas - Si es 'true', obtiene todas las justificaciones, no solo pendientes
  */
 router.get(
     '/pendientes',
@@ -63,6 +65,19 @@ router.get(
 router.get(
     '/verificar/:fecha',
     JustificacionesController.verificarDiaJustificado
+);
+
+/**
+ * @route GET /api/justificaciones/dias-justificados
+ * @desc Obtener días justificados de un usuario en un rango de fechas
+ * @access Usuario autenticado (solo sus datos) o Admin/Fiscalizador
+ * @query {number} usuario_empresa_id - ID del usuario empresa
+ * @query {string} fecha_inicio - Fecha inicio del rango (YYYY-MM-DD)
+ * @query {string} fecha_fin - Fecha fin del rango (YYYY-MM-DD)
+ */
+router.get(
+    '/dias-justificados',
+    JustificacionesController.obtenerDiasJustificados
 );
 
 /**

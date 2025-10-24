@@ -188,12 +188,16 @@ class JustificacionesService {
   /**
    * Obtener justificaciones pendientes (Admin/Fiscalizador)
    * @param {number} limit - Límite de resultados
+   * @param {boolean} todas - Si true, obtiene todas las justificaciones, no solo pendientes
    * @returns {Promise<Array>}
    */
-  async obtenerJustificacionesPendientes(limit = 50) {
+  async obtenerJustificacionesPendientes(limit = 50, todas = false) {
     try {
       const response = await apiClient.get('/justificaciones/pendientes', {
-        params: { limit }
+        params: { 
+          limit,
+          todas: todas.toString()
+        }
       });
       return response.data;
     } catch (error) {
@@ -218,6 +222,29 @@ class JustificacionesService {
       return response.data;
     } catch (error) {
       console.error('Error al actualizar estado:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener días justificados de un usuario en un rango de fechas
+   * @param {number} usuario_empresa_id - ID del usuario empresa
+   * @param {string} fecha_inicio - Fecha inicio del rango (YYYY-MM-DD)
+   * @param {string} fecha_fin - Fecha fin del rango (YYYY-MM-DD)
+   * @returns {Promise<Array>}
+   */
+  async obtenerDiasJustificados(usuario_empresa_id, fecha_inicio, fecha_fin) {
+    try {
+      const response = await apiClient.get('/justificaciones/dias-justificados', {
+        params: {
+          usuario_empresa_id,
+          fecha_inicio,
+          fecha_fin
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener días justificados:', error);
       throw error;
     }
   }
