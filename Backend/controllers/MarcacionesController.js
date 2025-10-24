@@ -673,10 +673,10 @@ const rechazarModificacionMarcacion = async (req, res) => {
     }
 }
 
+import MarcacionesModel from '../model/MarcacionesModel.js';
 const agregarMarcacionManual = async (req, res) => {
     try {
         const { usuario_id, tipo, fecha, hora, motivo } = req.body;
-        // Validar datos requeridos
         if (!usuario_id || !tipo || !fecha || !hora || !motivo) {
             return res.status(400).json({
                 success: false,
@@ -684,12 +684,26 @@ const agregarMarcacionManual = async (req, res) => {
             });
         }
 
-        console.log(usuario_id);
+        // 1. Obtener usuario_empresa_id
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(usuario_id);
+        if (!usuarioEmpresa) {
+            return res.status(404).json({ success: false, message: 'Usuario empresa no encontrado' });
+        }
 
+        // 2. Insertar la marcación manual
+        const nuevaMarcacion = {
+            usuario_empresa_id: usuarioEmpresa.id,
+            mandante_id: null,
+            fecha,
+            hora,
+            tipo,
+            hash: null // puedes generar un hash si lo necesitas
+        };
+        const result = await MarcacionesModel.prototype.insertarMarcacionManual(nuevaMarcacion);
 
-        // Se genera una solicitud en la base de datos y se envia un correo para que el trabajador la acepte
-       const id = await ReporteMarcionesModel.createPorConfirmar({
-            marcacion_id: null,
+        // 3. Crear el reporte y enviar notificación
+        const id = await ReporteMarcionesModel.createPorConfirmar({
+            marcacion_id: result.insertId,
             usuario_id: usuario_id,
             tipo: 'agregar',
             fecha_correcta: fecha,
@@ -699,16 +713,17 @@ const agregarMarcacionManual = async (req, res) => {
             tipo_marcacion_correcta: tipo
         });
 
-
         const reporte = await ReporteMarcionesModel.findById(id);
         const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
         await NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, {tipo: 'agregar', fechaNueva: fecha, horaNueva: hora, tipoNueva: tipo, usuario: usuario});
-        
-        return res.status(501).json({
+
+        return res.status(200).json({
             success: true,
-            message: 'En desarrollo',
+            message: 'Marcación agregada correctamente y reporte generado',
+            marcacion_id: result.insertId,
+            reporte_id: id
         });
-        
+
     } catch (error) {
         console.error('Error en agregarMarcacionManual:', error);
         return res.status(500).json({

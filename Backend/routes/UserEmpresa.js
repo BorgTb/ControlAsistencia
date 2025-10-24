@@ -46,6 +46,9 @@ router.get('/est/asociaciones',AuthService.verifyToken, EstController.obtenerAso
 
 router.get('/historial-solicitudes',AuthService.verifyToken, UserEmpresaController.historialSolicitudes);
 
+// Ruta para reporte de asistencia detallado
+router.get('/reportes-asistencia-detallado',AuthService.verifyToken, UserEmpresaController.obtenerReporteAsistenciaDetallado);
+
 // Rutas para gestión de lugares
 router.post('/lugares', AuthService.verifyToken, LugarController.createLugar);
 router.get('/lugares', AuthService.verifyToken, LugarController.getAllLugares);

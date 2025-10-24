@@ -127,10 +127,10 @@ const createTurno = async (req, res) => {
         const asignacionData = req.body;
 
         // Validar campos requeridos
-        if (!asignacionData.usuario_empresa_id) {
+        if (!asignacionData.usuario_id) {
             return res.status(400).json({ 
                 success: false, 
-                message: "El ID del usuario empresa es requerido" 
+                message: "El usuario_id del trabajador es requerido" 
             });
         }
         if (!asignacionData.tipo_turno_id) {
@@ -148,7 +148,7 @@ const createTurno = async (req, res) => {
 
         // Obtener información del trabajador
         
-        const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
+    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_id);
         if (!trabajador) {
             return res.status(404).json({ 
                 success: false, 
@@ -828,7 +828,8 @@ const obtenerTurnosTrabajador = async (req, res) => {
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
+        console.log('Empresa usuario logueado:', empresa ? empresa.empresa_id : null);
+        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
             return res.status(403).json({ 
                 success: false, 
@@ -867,10 +868,12 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         console.log('🔍 Obteniendo marcaciones para trabajador ID:', id, 'Límite:', limite);
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresasUsuario = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
-        if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
+        console.log('Empresas usuario logueado:', empresasUsuario.map(e => e.empresa_id));
+        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
+        const empresasUsuarioIds = empresasUsuario.map(e => e.empresa_id);
+        if (!trabajadorEmpresa || !empresasUsuarioIds.includes(trabajadorEmpresa.empresa_id)) {
             return res.status(403).json({ 
                 success: false, 
                 message: "No tiene permisos para ver marcaciones de este trabajador" 
@@ -938,7 +941,8 @@ const actualizarHorasLaborales = async (req, res) => {
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
+        console.log('Empresa usuario logueado:', empresa ? empresa.empresa_id : null);
+        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
             return res.status(403).json({ 
                 success: false, 
@@ -1401,6 +1405,247 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
     }
 };
 
+// Función para obtener datos detallados de reporte de asistencia
+const obtenerReporteAsistenciaDetallado = async (req, res) => {
+    try {
+        const USR_PETICION = req.user;
+        const { fechaInicio, fechaFin } = req.query;
+
+        console.log('🚀 Obteniendo reporte detallado:', { fechaInicio, fechaFin, usuario: USR_PETICION.id });
+
+        // Obtener empresa del usuario
+        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresa) {
+            return res.status(404).json({
+                success: false,
+                message: "No se encontró empresa asociada al usuario"
+            });
+        }
+
+        // Obtener trabajadores
+        const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
+        
+        // Calcular fechas si no se proporcionan
+        let inicioSemana, finSemana;
+        if (fechaInicio && fechaFin) {
+            inicioSemana = fechaInicio;
+            finSemana = fechaFin;
+        } else {
+            const hoy = new Date();
+            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - hoy.getDay());
+            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - hoy.getDay() + 6);
+            inicioSemana = primerDia.toISOString().split('T')[0];
+            finSemana = ultimoDia.toISOString().split('T')[0];
+        }
+
+        console.log(`📅 Calculando para el período: ${inicioSemana} al ${finSemana}`);
+
+        // Procesar cada trabajador
+        const trabajadoresConDatos = await Promise.all(
+            trabajadores.map(async (trabajador) => {
+                try {
+                    console.log(`👤 Procesando: ${trabajador.usuario_nombre} (ID: ${trabajador.id})`);
+
+                    // Obtener marcaciones del período
+                    const marcaciones = await MarcacionesModel.obtenerMarcacionesPorPeriodo(
+                        trabajador.id, 
+                        inicioSemana, 
+                        finSemana
+                    );
+
+                    // Obtener turnos asignados
+                    const turnosAsignados = await AsignacionTurnosModel.getTurnosByUsuarioEmpresa(trabajador.id);
+                    
+                    // Calcular horas trabajadas en el período
+                    const horasCalculadas = await MarcacionesServices.calcularHorasSemanales(
+                        trabajador.id,
+                        inicioSemana,
+                        finSemana
+                    );
+
+                    // Calcular estadísticas de asistencia
+                    const estadisticasAsistencia = calcularEstadisticasAsistencia(marcaciones, inicioSemana, finSemana);
+                    
+                    // Obtener información de turnos
+                    const infoTurnos = await obtenerInformacionTurnos(turnosAsignados);
+
+                    const horasLaborales = parseInt(trabajador.horas_laborales || '45');
+                    const horasTrabajadas = horasCalculadas.totalHorasSemanales || 0;
+                    const excedeHoras = horasTrabajadas > horasLaborales;
+
+                    return {
+                        id: trabajador.id,
+                        nombre_completo: `${trabajador.usuario_nombre || ''} ${trabajador.usuario_apellido_pat || ''} ${trabajador.usuario_apellido_mat || ''}`.trim(),
+                        rut: trabajador.usuario_rut || 'Sin RUT',
+                        email: trabajador.usuario_email || 'Sin email',
+                        iniciales: `${(trabajador.usuario_nombre || '').charAt(0)}${(trabajador.usuario_apellido_pat || '').charAt(0)}`,
+                        
+                        // Horas
+                        horas_laborales_asignadas: horasLaborales,
+                        horas_trabajadas_reales: Math.round(horasTrabajadas * 100) / 100,
+                        excede_horas: excedeHoras,
+                        porcentaje_cumplimiento: horasLaborales > 0 ? Math.round((horasTrabajadas / horasLaborales) * 100) : 0,
+                        
+                        // Asistencia
+                        dias_presente: estadisticasAsistencia.diasPresente,
+                        dias_ausente: estadisticasAsistencia.diasAusente,
+                        porcentaje_asistencia: estadisticasAsistencia.porcentajeAsistencia,
+                        llegadas_tarde: estadisticasAsistencia.llegadasTarde,
+                        salidas_anticipadas: estadisticasAsistencia.salidasAnticipadas,
+                        
+                        // Turnos
+                        turnos_asignados: infoTurnos,
+                        tipo_jornada: infoTurnos.length > 0 ? infoTurnos[0].tipo_jornada : 'No asignado',
+                        
+                        // Marcaciones
+                        total_marcaciones: marcaciones.length,
+                        marcaciones_recientes: marcaciones.slice(-5).map(m => ({
+                            fecha: m.fecha,
+                            hora: m.hora,
+                            tipo: m.tipo,
+                            estado: 'normal'
+                        }))
+                    };
+
+                } catch (error) {
+                    console.error(`❌ Error procesando trabajador ${trabajador.usuario_nombre}:`, error);
+                    return {
+                        id: trabajador.id,
+                        nombre_completo: `${trabajador.usuario_nombre || ''} ${trabajador.usuario_apellido_pat || ''}`.trim(),
+                        error: 'Error al procesar datos'
+                    };
+                }
+            })
+        );
+
+        // Calcular resumen general
+        const resumenGeneral = {
+            total_trabajadores: trabajadoresConDatos.length,
+            trabajadores_dentro_limite: trabajadoresConDatos.filter(t => !t.excede_horas).length,
+            trabajadores_exceden_horas: trabajadoresConDatos.filter(t => t.excede_horas).length,
+            promedio_horas_semana: trabajadoresConDatos.length > 0 
+                ? (trabajadoresConDatos.reduce((sum, t) => sum + (t.horas_trabajadas_reales || 0), 0) / trabajadoresConDatos.length).toFixed(1)
+                : '0.0',
+            promedio_asistencia: trabajadoresConDatos.length > 0
+                ? Math.round(trabajadoresConDatos.reduce((sum, t) => sum + (t.porcentaje_asistencia || 0), 0) / trabajadoresConDatos.length)
+                : 0,
+            total_ausencias_injustificadas: trabajadoresConDatos.reduce((sum, t) => sum + (t.dias_ausente || 0), 0)
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                periodo: {
+                    fecha_inicio: inicioSemana,
+                    fecha_fin: finSemana
+                },
+                resumen: resumenGeneral,
+                trabajadores: trabajadoresConDatos
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error obteniendo reporte detallado:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error al generar reporte de asistencia",
+            error: error.message
+        });
+    }
+};
+
+// Función auxiliar para calcular estadísticas de asistencia
+function calcularEstadisticasAsistencia(marcaciones, fechaInicio, fechaFin) {
+    const diasTotales = calcularDiasLaborables(fechaInicio, fechaFin);
+    const diasConMarcaciones = new Set(marcaciones.map(m => m.fecha)).size;
+    const diasAusente = Math.max(0, diasTotales - diasConMarcaciones);
+    
+    // Calcular llegadas tarde (asumiendo horario 09:00)
+    const llegadasTarde = marcaciones.filter(m => 
+        m.tipo === 'entrada' && m.hora > '09:00:00'
+    ).length;
+    
+    // Calcular salidas anticipadas (asumiendo horario 17:00)
+    const salidasAnticipadas = marcaciones.filter(m => 
+        m.tipo === 'salida' && m.hora < '17:00:00'
+    ).length;
+    
+    return {
+        diasPresente: diasConMarcaciones,
+        diasAusente: diasAusente,
+        porcentajeAsistencia: diasTotales > 0 ? Math.round((diasConMarcaciones / diasTotales) * 100) : 0,
+        llegadasTarde: llegadasTarde,
+        salidasAnticipadas: salidasAnticipadas
+    };
+}
+
+// Función auxiliar para calcular días laborables
+function calcularDiasLaborables(fechaInicio, fechaFin) {
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    let diasLaborables = 0;
+    
+    for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
+        const diaSemana = d.getDay();
+        if (diaSemana !== 0 && diaSemana !== 6) { // No domingo ni sábado
+            diasLaborables++;
+        }
+    }
+    
+    return diasLaborables;
+}
+
+// Función auxiliar para obtener información de turnos
+async function obtenerInformacionTurnos(turnosAsignados) {
+    if (!turnosAsignados || turnosAsignados.length === 0) {
+        return [{
+            nombre: 'Turno General',
+            horario: '09:00 - 17:00',
+            tipo_jornada: 'Ordinaria',
+            dias_trabajo: 5,
+            horas_programadas: 8
+        }];
+    }
+    
+    // Obtener detalles de los turnos desde la base de datos
+    return await Promise.all(
+        turnosAsignados.map(async (turno) => {
+            try {
+                const tipoTurno = await TipoTurnosModel.findById(turno.tipo_turno_id);
+                return {
+                    nombre: tipoTurno?.nombre || 'Turno sin nombre',
+                    horario: `${tipoTurno?.hora_inicio || '09:00'} - ${tipoTurno?.hora_fin || '17:00'}`,
+                    tipo_jornada: tipoTurno?.tipo_jornada || 'Ordinaria',
+                    dias_trabajo: tipoTurno?.dias_trabajo || 5,
+                    horas_programadas: calcularHorasTurno(tipoTurno?.hora_inicio, tipoTurno?.hora_fin)
+                };
+            } catch (error) {
+                console.error('Error obteniendo tipo de turno:', error);
+                return {
+                    nombre: 'Error al cargar turno',
+                    horario: '09:00 - 17:00',
+                    tipo_jornada: 'Ordinaria',
+                    dias_trabajo: 5,
+                    horas_programadas: 8
+                };
+            }
+        })
+    );
+}
+
+// Función auxiliar para calcular horas de un turno
+function calcularHorasTurno(horaInicio, horaFin) {
+    if (!horaInicio || !horaFin) return 8;
+    
+    const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
+    const [finHoras, finMinutos] = horaFin.split(':').map(Number);
+    
+    const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
+    const finEnMinutos = finHoras * 60 + finMinutos;
+    
+    return Math.round((finEnMinutos - inicioEnMinutos) / 60 * 100) / 100;
+}
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
@@ -1423,7 +1668,9 @@ const AdminController = {
     configurarToleranciaHorarias,
     obtenerConfiguracionTolerancias,
     historialSolicitudes,
-    obtenerReporteJornadaDiariaEmpresa
+    obtenerReporteJornadaDiariaEmpresa,
+    historialSolicitudes,
+    obtenerReporteAsistenciaDetallado
 };
 
 

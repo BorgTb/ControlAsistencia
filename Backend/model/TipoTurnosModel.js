@@ -17,6 +17,11 @@ class TipoTurnosModel {
         return rows[0];
     }
 
+    // Alias para compatibilidad
+    static async findById(id) {
+        return this.getById(id);
+    }
+
     static async getByIdWithDias(id) {
         const query = `
             SELECT tt.*, 
