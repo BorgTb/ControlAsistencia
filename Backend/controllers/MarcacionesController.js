@@ -843,7 +843,6 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
 
     // Crear un mapa de días justificados para búsqueda rápida
 
-    console.log("Dias justificados:", diasJustificados);
     const mapaDiasJustificados = {};
     diasJustificados.forEach(dj => {
         const fechaStr = new Date(dj.fecha).toISOString().split('T')[0];
@@ -851,7 +850,6 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
     });
 
 
-    console.log(mapaDiasJustificados);
 
     for (let dia = 1; dia <= diasDelMes; dia++) {
         const fecha = new Date(anio, mes - 1, dia);

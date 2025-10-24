@@ -62,7 +62,6 @@ export function useJustificaciones() {
   const obtenerJustificacionPorFecha = async (fecha) => {
     isLoading.value = true;
     error.value = null;
-    
     try {
       const justificacion = await justificacionesService.obtenerJustificacionPorFecha(fecha);
       justificacionActual.value = justificacion;

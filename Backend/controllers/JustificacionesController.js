@@ -143,16 +143,18 @@ class JustificacionesController {
     async obtenerJustificaciones(req, res) {
         try {
             const usuario_empresa_id = await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id);
-            const { estado, tipo_justificacion, mes, anio, fecha_inicio, fecha_fin } = req.query;
+            const { estado, tipo_justificacion, mes, anio, fecha_inicio, fecha_fin, fecha} = req.query;
             const params = {};
-          
+
             if (estado) params.estado = estado.toUpperCase();
             if (tipo_justificacion) params.tipo_justificacion = tipo_justificacion;
-            if (mes && anio) {
+            if (fecha) {
+                // Búsqueda por fecha específica
+                params.fecha = fecha;
+            } else if (mes && anio) {
                 params.mes = parseInt(mes);
                 params.anio = parseInt(anio);
-            }
-            if (fecha_inicio && fecha_fin) {
+            } else if (fecha_inicio && fecha_fin) {
                 params.fecha_inicio = fecha_inicio;
                 params.fecha_fin = fecha_fin;
             }
@@ -161,6 +163,7 @@ class JustificacionesController {
                 usuario_empresa_id.id,
                 params
             );
+            console.log(justificaciones);
 
             return res.status(200).json({
                 success: true,

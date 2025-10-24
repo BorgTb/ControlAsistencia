@@ -130,6 +130,12 @@ class JustificacionesModel {
             values.push(params.tipo_justificacion);
         }
 
+        // Filtrar por fecha específica exacta
+        if (params.fecha) {
+            query += ` AND ? BETWEEN j.fecha_inicio AND j.fecha_fin`;
+            values.push(params.fecha);
+        }
+
         if (params.mes && params.anio) {
             // Buscar justificaciones que incluyan días del mes especificado
             query += ` AND (
