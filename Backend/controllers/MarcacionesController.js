@@ -9,6 +9,7 @@ import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
 import TipoTurnosModel from '../model/TipoTurnosModel.js';
+import JustificacionesModel from '../model/JustificacionesModel.js';
 
 
 
@@ -785,8 +786,19 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
             return res.status(500).json(marcaciones);
         }
 
+        // Obtener días justificados del mes
+        const primerDia = `${anio}-${mes.toString().padStart(2, '0')}-01`;
+        const ultimoDia = new Date(anio, mes, 0).getDate();
+        const ultimoDiaStr = `${anio}-${mes.toString().padStart(2, '0')}-${ultimoDia.toString().padStart(2, '0')}`;
+        
+        const diasJustificados = await JustificacionesModel.obtenerDiasJustificadosEnRango(
+            ueId.id,
+            primerDia,
+            ultimoDiaStr
+        );
+
         // Procesar días del mes
-        const dias = procesarDiasMes(parseInt(mes), parseInt(anio), marcaciones.marcaciones, turnos);
+        const dias = procesarDiasMes(parseInt(mes), parseInt(anio), marcaciones.marcaciones, turnos, diasJustificados, ueId.id);
 
         return res.status(200).json({
             success: true,
@@ -798,7 +810,8 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
                     diasTrabajados: dias.filter(d => d.estado === 'trabajado').length,
                     diasConIncidente: dias.filter(d => d.estado === 'incidente').length,
                     diasAusentes: dias.filter(d => d.estado === 'ausente').length,
-                    diasLibres: dias.filter(d => d.estado === 'libre').length
+                    diasLibres: dias.filter(d => d.estado === 'libre').length,
+                    diasJustificados: dias.filter(d => d.estado === 'justificado').length
                 }
             }
         });
@@ -815,12 +828,21 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
 /**
  * Procesa los días del mes con sus marcaciones y turnos
  */
-const procesarDiasMes = (mes, anio, marcaciones, turnos) => {
+/**
+ * Procesa todos los días de un mes, verificando turnos, marcaciones y justificaciones
+ */
+const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], usuarioEmpresaId) => {
     const diasDelMes = new Date(anio, mes, 0).getDate(); // Obtener cantidad de días del mes
     const dias = [];
     
     // Mapeo de días de la semana en español
     const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+    // Crear un mapa de días justificados para búsqueda rápida
+    const mapaDiasJustificados = {};
+    diasJustificados.forEach(dj => {
+        mapaDiasJustificados[dj.fecha] = dj;
+    });
 
     for (let dia = 1; dia <= diasDelMes; dia++) {
         const fecha = new Date(anio, mes - 1, dia);
@@ -833,8 +855,11 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos) => {
         // Obtener turno aplicable para este día
         const turnoDelDia = obtenerTurnoParaDia(fecha, turnos, diaSemana);
         
+        // Verificar si el día está justificado
+        const justificacion = mapaDiasJustificados[fechaStr] || null;
+        
         // Procesar el día
-        const diaInfo = procesarDia(fechaStr, marcacionesDia, turnoDelDia, diaSemana);
+        const diaInfo = procesarDia(fechaStr, marcacionesDia, turnoDelDia, diaSemana, justificacion);
         dias.push(diaInfo);
     }
     
@@ -882,7 +907,7 @@ const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
 /**
  * Procesa la información de un día específico
  */
-const procesarDia = (fecha, marcacionesDia, turno, diaSemana) => {
+const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = null) => {
     // Si no hay turno asignado, el día es libre
     if (!turno) {
         return {
@@ -898,7 +923,9 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana) => {
             horasTrabajadas: null,
             minutosRetraso: 0,
             minutosExtra: 0,
-            horasExtras: null
+            horasExtras: null,
+            justificado: false,
+            justificacion: null
         };
     }
 
@@ -918,9 +945,16 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana) => {
     let tipoIncidente = null;
 
     if (!entrada && !salida) {
-        estado = 'ausente';
-        incidente = 'Sin marcaciones registradas';
-        tipoIncidente = 'AUSENCIA_COMPLETA';
+        // Verificar si el día está justificado
+        if (justificacion) {
+            estado = 'justificado';
+            incidente = `Justificado: ${justificacion.tipo_justificacion.replace(/_/g, ' ')}`;
+            tipoIncidente = 'JUSTIFICADO';
+        } else {
+            estado = 'ausente';
+            incidente = 'Sin marcaciones registradas';
+            tipoIncidente = 'AUSENCIA_COMPLETA';
+        }
     } else if (!entrada) {
         estado = 'incidente';
         incidente = 'No marcó entrada';
@@ -978,7 +1012,12 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana) => {
         horasTrabajadas,
         minutosRetraso,
         minutosExtra,
-        horasExtras
+        horasExtras,
+        justificado: !!justificacion,
+        justificacion: justificacion ? {
+            tipo: justificacion.tipo_justificacion,
+            motivo: justificacion.motivo
+        } : null
     };
 };
 

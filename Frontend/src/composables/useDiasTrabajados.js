@@ -147,7 +147,8 @@ export function useDiasTrabajados() {
       'trabajado': 'bg-green-100 border-green-300 text-green-800',
       'libre': 'bg-blue-100 border-blue-300 text-blue-800',
       'ausente': 'bg-red-100 border-red-300 text-red-800',
-      'incidente': 'bg-yellow-100 border-yellow-300 text-yellow-800'
+      'incidente': 'bg-yellow-100 border-yellow-300 text-yellow-800',
+      'justificado': 'bg-purple-100 border-purple-300 text-purple-800'
     };
     return colores[estado] || 'bg-gray-50 border-gray-200 text-gray-500';
   };
@@ -158,7 +159,8 @@ export function useDiasTrabajados() {
       'trabajado': '✓',
       'libre': '○',
       'ausente': '✗',
-      'incidente': '⚠'
+      'incidente': '⚠',
+      'justificado': '📄'
     };
     return iconos[estado] || '';
   };
@@ -172,6 +174,7 @@ export function useDiasTrabajados() {
         libres: estadisticas.value.diasLibres || 0,
         ausentes: estadisticas.value.diasAusentes || 0,
         incidentes: estadisticas.value.diasConIncidente || 0,
+        justificados: estadisticas.value.diasJustificados || 0,
         total: estadisticas.value.totalDias || 0
       };
     }
@@ -182,6 +185,7 @@ export function useDiasTrabajados() {
       libres: 0,
       ausentes: 0,
       incidentes: 0,
+      justificados: 0,
       total: diasTrabajados.value.length
     };
 
@@ -190,6 +194,7 @@ export function useDiasTrabajados() {
       else if (dia.estado === 'libre') stats.libres++;
       else if (dia.estado === 'ausente') stats.ausentes++;
       else if (dia.estado === 'incidente') stats.incidentes++;
+      else if (dia.estado === 'justificado') stats.justificados++;
     });
 
     return stats;
