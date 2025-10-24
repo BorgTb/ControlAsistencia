@@ -769,6 +769,145 @@ class MailService {
 
         return await this.enviarCorreo(email, asunto, contenidoHTML);
     }
+
+    async enviarNotificacionAmonestacion(trabajador, amonestacion, empresa, pdfPath) {
+        /**
+        @params {object} trabajador - Objeto con los datos del trabajador
+        @params {object} amonestacion - Objeto con los datos de la amonestación
+        @params {object} empresa - Objeto con los datos de la empresa
+        @params {string} pdfPath - Ruta del archivo PDF a adjuntar
+        */
+
+        // Formatear RUT trabajador con puntos y guion
+        const rutTrabajadorFormateado = trabajador.rut
+            ? trabajador.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + trabajador.rut.slice(-1)
+            : '';
+
+        // Formatear RUT empresa con puntos y guion
+        const rutEmpresaFormateado = empresa.emp_rut
+            ? empresa.emp_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + empresa.emp_rut.slice(-1)
+            : '';
+
+        // Formatear fecha del hecho
+        const fechaHecho = amonestacion.fecha_hecho
+            ? new Date(amonestacion.fecha_hecho).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
+            : 'No especificada';
+
+        // Formatear plazo descargos
+        const plazoDescargos = amonestacion.plazo_descargos
+            ? new Date(amonestacion.plazo_descargos).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
+            : 'No especificado';
+
+        const asunto = `Notificación de Amonestación - ${empresa.emp_nombre}`;
+
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Notificación de Amonestación</title>
+            <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .amonestacion-info { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #e74c3c; }
+            .trabajador-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+            .empresa-info { background-color: #f3e5f5; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #9C27B0; }
+            .warning-box { background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #ffc107; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+            .important { color: #e74c3c; font-weight: bold; }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+            <div class="header">
+            <h1>⚠️ Notificación de Amonestación</h1>
+            </div>
+            <div class="content">
+            <h2>Estimado/a ${trabajador.nombre} ${trabajador.apellido_pat} ${trabajador.apellido_mat},</h2>
+            
+            <p>Por medio del presente correo electrónico, se le notifica que ha sido objeto de una amonestación laboral.</p>
+            
+            <div class="trabajador-info">
+                <h3>Datos del trabajador:</h3>
+                <p><strong>Nombre completo:</strong> ${trabajador.nombre} ${trabajador.apellido_pat} ${trabajador.apellido_mat}</p>
+                <p><strong>RUT:</strong> ${rutTrabajadorFormateado}</p>
+                ${amonestacion.cargo ? `<p><strong>Cargo:</strong> ${amonestacion.cargo}</p>` : ''}
+                ${amonestacion.area_departamento ? `<p><strong>Área/Departamento:</strong> ${amonestacion.area_departamento}</p>` : ''}
+            </div>
+            
+            <div class="amonestacion-info">
+                <h3>Detalles de la amonestación:</h3>
+                <p><strong>Número de documento:</strong> ${amonestacion.id}</p>
+                <p><strong>Fecha del hecho:</strong> ${fechaHecho}</p>
+                <p><strong>Tipo de falta:</strong> ${amonestacion.tipo_falta}</p>
+                <p><strong>Tipo de sanción:</strong> ${amonestacion.tipo_sancion}</p>
+                ${amonestacion.monto_multa ? `<p><strong>Monto multa:</strong> $${amonestacion.monto_multa.toLocaleString('es-CL')}</p>` : ''}
+                ${amonestacion.supervisor_responsable ? `<p><strong>Supervisor responsable:</strong> ${amonestacion.supervisor_responsable}</p>` : ''}
+            </div>
+
+            <div class="empresa-info">
+                <h3>Información de la empresa:</h3>
+                <p><strong>Empresa:</strong> ${empresa.emp_nombre}</p>
+                <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
+            </div>
+            
+            ${amonestacion.plazo_descargos ? `
+            <div class="warning-box">
+                <h3 class="important">⏰ PLAZO PARA PRESENTAR DESCARGOS</h3>
+                <p>Usted tiene hasta el <strong>${plazoDescargos}</strong> para presentar sus descargos por escrito ante la empresa.</p>
+                <p>Es importante que ejerza su derecho a defensa dentro del plazo establecido.</p>
+            </div>
+            ` : ''}
+            
+            <p><strong>📎 Documento adjunto:</strong> Se adjunta al presente correo el documento formal de amonestación en formato PDF con todos los detalles y fundamentos de esta medida disciplinaria.</p>
+            
+            <p>Para cualquier consulta o aclaración, puede contactar con el área de Recursos Humanos de la empresa.</p>
+            
+            </div>
+            <div class="footer">
+            <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+            <p>Este es un correo generado automáticamente, por favor no responder.</p>
+            </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            const mailOptions = {
+                from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: trabajador.email,
+                subject: asunto,
+                html: contenidoHTML,
+                attachments: [
+                    {
+                        filename: `Amonestacion_${amonestacion.id}_${trabajador.rut}.pdf`,
+                        path: pdfPath,
+                        contentType: 'application/pdf'
+                    }
+                ]
+            };
+
+            const info = await this.transporter.sendMail(mailOptions);
+
+            console.log('✅ Notificación de amonestación enviada:', info.messageId);
+
+            return {
+                success: true,
+                message: 'Notificación de amonestación enviada correctamente',
+                messageId: info.messageId
+            };
+        } catch (error) {
+            console.error('❌ Error enviando notificación de amonestación:', error);
+            return {
+                success: false,
+                message: 'Error al enviar la notificación de amonestación',
+                error: error.message
+            };
+        }
+    }
 }
 
 export default new MailService();
