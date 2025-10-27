@@ -218,6 +218,37 @@ class NotificacionService {
             
     }
 
+    async enviarNotificacionAmonestacion(trabajador, amonestacion, empresa, pdfPath) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+
+            // Enviar notificación con PDF adjunto
+            const estado = await MailService.enviarNotificacionAmonestacion(
+                trabajador,
+                amonestacion,
+                empresa,
+                pdfPath
+            );
+
+            return estado;
+        } catch (error) {
+            console.error('Error al enviar notificación de amonestación:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de amonestación',
+                error: error.message
+            };
+        }
+    }
+
 
 
 }

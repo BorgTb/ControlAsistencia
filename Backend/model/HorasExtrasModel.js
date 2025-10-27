@@ -20,10 +20,12 @@ class HorasExtrasModel {
                     motivo, 
                     aprobado_por, 
                     fecha_aprobacion,
+                    tipo_compensacion,
+                    dias_descanso_equivalentes,
                     created_at, 
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             `;
             
             const [result] = await connection.execute(query, [
@@ -36,7 +38,9 @@ class HorasExtrasModel {
                 horaExtraData.estado || 'PENDIENTE',
                 horaExtraData.motivo || null,
                 horaExtraData.aprobado_por || null,
-                horaExtraData.fecha_aprobacion || null
+                horaExtraData.fecha_aprobacion || null,
+                horaExtraData.tipo_compensacion || 'PAGO',
+                horaExtraData.dias_descanso_equivalentes || 0
             ]);
             
             const horaExtraId = result.insertId;
@@ -47,6 +51,10 @@ class HorasExtrasModel {
                 'SELECT * FROM horas_extras WHERE id = ?',
                 [horaExtraId]
             );
+
+
+            await this.aprobarHoraExtra(result.insertId, horaExtraData.aprobado_por);
+
             return createdRows[0] || null;
             
         } catch (error) {
@@ -76,10 +84,12 @@ class HorasExtrasModel {
                 he.created_at,
                 he.updated_at,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre,
                 ap.nombre as aprobado_por_nombre,
-                ap.apellido as aprobado_por_apellido
+                ap.apellido_pat as aprobado_por_apellido_pat,
+                ap.apellido_mat as aprobado_por_apellido_mat
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
@@ -98,10 +108,12 @@ class HorasExtrasModel {
             SELECT 
                 he.*,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre,
                 ap.nombre as aprobado_por_nombre,
-                ap.apellido as aprobado_por_apellido
+                ap.apellido_pat as aprobado_por_apellido_pat,
+                ap.apellido_mat as aprobado_por_apellido_mat
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
@@ -116,6 +128,7 @@ class HorasExtrasModel {
         }
         return rows[0];
     }
+
     
     // Obtener horas extras por usuario empresa
     static async getHorasExtrasByUsuarioEmpresa(usuario_empresa_id) {
@@ -123,7 +136,8 @@ class HorasExtrasModel {
             SELECT 
                 he.*,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
@@ -143,7 +157,8 @@ class HorasExtrasModel {
             SELECT 
                 he.*,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
@@ -163,7 +178,8 @@ class HorasExtrasModel {
             SELECT 
                 he.*,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
@@ -183,7 +199,8 @@ class HorasExtrasModel {
             SELECT 
                 he.*,
                 u.nombre as usuario_nombre,
-                u.apellido as usuario_apellido,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
                 e.emp_nombre as empresa_nombre
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
@@ -224,6 +241,8 @@ class HorasExtrasModel {
                     motivo = ?, 
                     aprobado_por = ?, 
                     fecha_aprobacion = ?,
+                    tipo_compensacion = ?,
+                    dias_descanso_equivalentes = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             `;
@@ -239,6 +258,8 @@ class HorasExtrasModel {
                 horaExtraData.motivo || null,
                 horaExtraData.aprobado_por || null,
                 horaExtraData.fecha_aprobacion || null,
+                horaExtraData.tipo_compensacion || 'PAGO',
+                horaExtraData.dias_descanso_equivalentes || 0,
                 id
             ]);
             
@@ -454,6 +475,82 @@ class HorasExtrasModel {
         const [rows] = await db.execute(query, params);
         return rows;
     }
+
+    // Obtener hora extra por marcacion_id
+    static async getHoraExtraByMarcacionId(marcacion_id) {
+        const query = `
+            SELECT 
+                he.*,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                ap.nombre as aprobado_por_nombre,
+                ap.apellido_pat as aprobado_por_apellido_pat,
+                ap.apellido_mat as aprobado_por_apellido_mat
+            FROM horas_extras he
+            INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
+            INNER JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            WHERE he.marcacion_id = ?
+        `;
+        
+        const [rows] = await db.execute(query, [marcacion_id]);
+        return rows.length > 0 ? rows[0] : null;
+    }
+
+    // Obtener horas extras por múltiples marcaciones
+    static async getHorasExtrasByMarcacionIds(marcacion_ids) {
+        if (!marcacion_ids || marcacion_ids.length === 0) {
+            return [];
+        }
+        
+        const placeholders = marcacion_ids.map(() => '?').join(',');
+        const query = `
+            SELECT 
+                he.*,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                ap.nombre as aprobado_por_nombre,
+                ap.apellido_pat as aprobado_por_apellido_pat,
+                ap.apellido_mat as aprobado_por_apellido_mat
+            FROM horas_extras he
+            INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
+            INNER JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            WHERE he.marcacion_id IN (${placeholders})
+        `;
+        
+        const [rows] = await db.execute(query, marcacion_ids);
+        return rows;
+    }
+
+    // Obtener horas extras por usuario y rango de fechas con marcaciones
+    static async getHorasExtrasByUsuarioYFechas(usuario_empresa_id, fecha_inicio, fecha_fin) {
+        const query = `
+            SELECT 
+                he.*,
+                u.nombre as usuario_nombre,
+                u.apellido_pat as usuario_apellido_pat,
+                u.apellido_mat as usuario_apellido_mat,
+                ap.nombre as aprobado_por_nombre,
+                ap.apellido_pat as aprobado_por_apellido_pat,
+                ap.apellido_mat as aprobado_por_apellido_mat
+            FROM horas_extras he
+            INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
+            INNER JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            WHERE he.usuario_empresa_id = ?
+            AND he.fecha BETWEEN ? AND ?
+            ORDER BY he.fecha DESC, he.hora_inicio DESC
+        `;
+        
+        const [rows] = await db.execute(query, [usuario_empresa_id, fecha_inicio, fecha_fin]);
+        return rows;
+    }
+
+
+
 }
 
 export default HorasExtrasModel;

@@ -9,12 +9,14 @@ import ReporteMarcacionesModel from "../model/ReportesModel.js";
 import EmpresaModel from "../model/EmpresaModel.js";
 import MarcacionesServices from "../services/MarcacionesServices.js";
 import MarcacionesModel from "../model/MarcacionesModel.js";
+import HorasExtrasModel from "../model/HorasExtrasModel.js";
 import { DateTime } from "luxon";
 import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
 import  ConfigToleranciaModel from "../model/ConfigTolerancias.js";
+
 
 
 
@@ -125,9 +127,9 @@ const createTrabajador = async (req, res) => {
 const createTurno = async (req, res) => {
     try {
         const asignacionData = req.body;
-
+        console.log('Asignación de turno recibida:', asignacionData);
         // Validar campos requeridos
-        if (!asignacionData.usuario_id) {
+        if (!asignacionData.usuario_empresa_id) {
             return res.status(400).json({ 
                 success: false, 
                 message: "El usuario_id del trabajador es requerido" 
@@ -148,7 +150,7 @@ const createTurno = async (req, res) => {
 
         // Obtener información del trabajador
         
-    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_id);
+    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
         if (!trabajador) {
             return res.status(404).json({ 
                 success: false, 
@@ -357,6 +359,116 @@ const deleteTurno = async (req, res) => {
         });
     } catch (error) {
         console.error("Error deleting turno:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error interno del servidor",
+            error: error.message 
+        });
+    }
+};
+
+// Modificar turno asignado - invalida el turno actual y crea uno nuevo
+const updateTurno = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const nuevosDatos = req.body;
+
+        // Validar que el ID del turno sea válido
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de turno inválido" 
+            });
+        }
+
+        // Validar campos requeridos para el nuevo turno
+        if (!nuevosDatos.tipo_turno_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "El tipo de turno es requerido" 
+            });
+        }
+
+        // Verificar que la asignación existe antes de modificarla
+        const asignacionExistente = await AsignacionTurnosModel.getById(id);
+        if (!asignacionExistente) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Asignación de turno no encontrada" 
+            });
+        }
+
+        // Verificar que el estado sea 'activo'
+        if (asignacionExistente.estado !== 'activo') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Solo se pueden modificar turnos activos" 
+            });
+        }
+
+        // Obtener información del nuevo tipo de turno
+        const nuevoTipoTurno = await TipoTurnosModel.getById(nuevosDatos.tipo_turno_id);
+        if (!nuevoTipoTurno) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Tipo de turno no encontrado" 
+            });
+        }
+
+        // Obtener información del trabajador usando usuario_empresa_id
+        const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionExistente.usuario_empresa_id);
+        const tipoTurnoAnterior = await TipoTurnosModel.getById(asignacionExistente.tipo_turno_id);
+
+        // Modificar el turno (invalida el anterior y crea uno nuevo)
+        const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
+        
+        // Registrar la modificación en auditoría
+        if (req.user && req.user.id) {
+            try {
+                const nombreTrabajador = trabajador ? `${trabajador.nombre} ${trabajador.apellido_pat || ''}`.trim() : 'Trabajador desconocido';
+
+                await AuditoriaModel.registrarCambio({
+                    usuario_id: req.user.id,
+                    accion: 'modificar_turno_trabajador',
+                    tabla_afectada: 'asignacion_turnos',
+                    registro_id: resultado.nuevoTurnoId,
+                    descripcion: `Turno modificado para trabajador: ${nombreTrabajador} - De ${tipoTurnoAnterior?.nombre || 'Turno anterior'} a ${nuevoTipoTurno.nombre}`,
+                    datos_anteriores: JSON.stringify({
+                        id: id,
+                        usuario_empresa_id: asignacionExistente.usuario_empresa_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo_turno_id: asignacionExistente.tipo_turno_id,
+                        tipo_turno_nombre: tipoTurnoAnterior?.nombre,
+                        fecha_inicio: asignacionExistente.fecha_inicio,
+                        fecha_fin: asignacionExistente.fecha_fin
+                    }),
+                    datos_nuevos: JSON.stringify({
+                        id: resultado.nuevoTurnoId,
+                        usuario_empresa_id: asignacionExistente.usuario_empresa_id,
+                        trabajador_nombre: nombreTrabajador,
+                        tipo_turno_id: nuevosDatos.tipo_turno_id,
+                        tipo_turno_nombre: nuevoTipoTurno.nombre,
+                        fecha_inicio: nuevosDatos.fecha_inicio,
+                        fecha_fin: nuevosDatos.fecha_fin || null
+                    }),
+                    ip_address: req.ip || req.connection.remoteAddress
+                });
+                console.log('✅ Modificación de turno registrada en auditoría');
+            } catch (auditError) {
+                console.error('⚠️ Error al registrar modificación de turno en auditoría:', auditError);
+            }
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Turno modificado exitosamente",
+            data: {
+                turnoAnteriorId: resultado.turnoAnteriorId,
+                nuevoTurnoId: resultado.nuevoTurnoId
+            }
+        });
+    } catch (error) {
+        console.error("Error modificando turno:", error);
         res.status(500).json({ 
             success: false, 
             message: "Error interno del servidor",
@@ -1343,6 +1455,24 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 fecha_fin
             );
             
+            console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
+            
+            // Obtener horas extras del trabajador en el rango de fechas
+            const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioYFechas(
+                usuarioEmpresaId,
+                fecha_inicio,
+                fecha_fin
+            );
+            console.log(`⏰ Horas extras obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, horasExtras);
+
+            // Crear un mapa de horas extras por marcacion_id para búsqueda rápida
+            const horasExtrasMap = {};
+            horasExtras.forEach(he => {
+                if (he.marcacion_id) {
+                    horasExtrasMap[he.marcacion_id] = he;
+                }
+            });
+
             // Agrupar marcaciones por fecha
             if (marcaciones && marcaciones.data && marcaciones.data.length > 0) {
                 for (const marcacion of marcaciones.data) {
@@ -1357,6 +1487,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                             fechaMarcacion
                         );
 
+                        
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion] = {
                             marcaciones: [],
                             turno: turno || null,
@@ -1366,20 +1497,45 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                         };
                     }
 
-                    // Agregar marcación al array
+                    // Verificar si esta marcación tiene hora extra asociada
+                    const horaExtra = horasExtrasMap[marcacion.id];
+
+                    // Agregar marcación al array con información de hora extra
                     marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.push({
                         id: marcacion.id,
                         hora: marcacion.hora,
                         tipo: marcacion.tipo,
                         fecha: marcacion.fecha,
-                        lugar_id: marcacion.lugar_id
+                        lugar_id: marcacion.lugar_id,
+                        hora_extra: horaExtra ? {
+                            id: horaExtra.id,
+                            estado: horaExtra.estado,
+                            total_horas: horaExtra.total_horas,
+                            motivo: horaExtra.motivo,
+                            aprobado_por: horaExtra.aprobado_por,
+                            aprobado_por_nombre: horaExtra.aprobado_por_nombre,
+                            aprobado_por_apellido_pat: horaExtra.aprobado_por_apellido_pat,
+                            aprobado_por_apellido_mat: horaExtra.aprobado_por_apellido_mat,
+                            fecha_aprobacion: horaExtra.fecha_aprobacion,
+                            tipo_compensacion: horaExtra.tipo_compensacion,
+                            dias_descanso_equivalentes: horaExtra.dias_descanso_equivalentes
+                        } : null
                     });
+                }
 
-                    // Determinar estado de asistencia
+                // Determinar estado de asistencia para cada fecha DESPUÉS de agrupar todas las marcaciones
+                for (const fechaMarcacion in marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones) {
                     const tiposMarcacion = marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.map(m => m.tipo);
+                    console.log(`Tipos de marcación para usuario_empresa_id ${usuarioEmpresaId} en ${fechaMarcacion}:`, tiposMarcacion);
                     
-                    if (tiposMarcacion.includes('entrada') || tiposMarcacion.includes('salida')) {
+                    if (tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'PRESENTE';
+                    } else if (tiposMarcacion.includes('entrada') && !tiposMarcacion.includes('salida')) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'INCOMPLETA_SALIDA';
+                    } else if (!tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'INCOMPLETA_ENTRADA';
+                    } else {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'NO';
                     }
                 }
             }
@@ -1691,6 +1847,7 @@ const AdminController = {
     enrolarTrabajador,
     createTurno,
     deleteTurno,
+    updateTurno,
     obtenerTurnos,
     obtenerTiposTurnos,
     eliminarTipoTurno,

@@ -2,6 +2,9 @@ import AmonestacionesModel from '../model/AmonestacionesModel.js';
 import AuditoriaModel from '../model/AuditoriaModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import EmpresaModel from '../model/EmpresaModel.js';
+import UserModel from '../model/UserModel.js';
+import PDFService from '../services/PDFService.js';
+import NotificacionService from '../services/NotificacionService.js';
 
 class AmonestacionesController {
     // Crear nueva amonestación
@@ -74,6 +77,57 @@ class AmonestacionesController {
             });
 
             console.log('✅ Amonestación creada con ID:', amonestacionId);
+            console.log(amonestacionData);
+            // Obtener datos completos para el PDF y notificación
+            try {
+                // Obtener datos del trabajador
+                const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(amonestacionData.trabajadorId);
+                if (!usuarioEmpresa) {
+                    console.error('⚠️ Usuario empresa no encontrado para enviar notificación');
+                } else {
+                    const trabajador = await UserModel.findById(usuarioEmpresa.usuario_id);
+                    const empresa = await EmpresaModel.getEmpresaById(usuarioEmpresa.empresa_id);
+
+                    if (trabajador && empresa) {
+                        // Agregar el ID a los datos de amonestación para el PDF
+                        const amonestacionCompleta = {
+                            id: amonestacionId,
+                            ...datosAmonestacion
+                        };
+
+                        // Generar PDF
+                        const pdfBuffer = await PDFService.generarPDFAmonestacion(
+                            amonestacionCompleta,
+                            trabajador,
+                            empresa
+                        );
+
+                        // Guardar PDF temporalmente
+                        const filename = `Amonestacion_${amonestacionId}_${trabajador.rut}.pdf`;
+                        const pdfPath = await PDFService.guardarPDFTemporal(pdfBuffer, filename);
+
+                        // Enviar notificación con PDF adjunto
+                        const resultadoNotificacion = await NotificacionService.enviarNotificacionAmonestacion(
+                            trabajador,
+                            amonestacionCompleta,
+                            empresa,
+                            pdfPath
+                        );
+
+                        // Eliminar archivo temporal
+                        await PDFService.eliminarArchivoTemporal(pdfPath);
+
+                        if (resultadoNotificacion.success) {
+                            console.log('✅ Notificación de amonestación enviada exitosamente');
+                        } else {
+                            console.error('⚠️ Error enviando notificación:', resultadoNotificacion.message);
+                        }
+                    }
+                }
+            } catch (errorNotificacion) {
+                console.error('⚠️ Error en proceso de notificación:', errorNotificacion);
+                // No fallar la respuesta principal si falla la notificación
+            }
 
             res.status(201).json({
                 success: true,

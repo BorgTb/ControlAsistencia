@@ -348,6 +348,13 @@
                       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button 
                           v-if="turno.estado === 'activo'"
+                          @click="abrirModalModificarTurno(turno)"
+                          class="text-indigo-600 hover:text-indigo-900 mr-3"
+                        >
+                          Modificar
+                        </button>
+                        <button 
+                          v-if="turno.estado === 'activo'"
                           @click="eliminarTurnoAction(turno.id)"
                           class="text-red-600 hover:text-red-900"
                         >
@@ -593,6 +600,109 @@
       </div>
     </div>
 
+    <!-- Modal: Modificar Turno Asignado -->
+    <div v-if="modalModificarTurno.mostrar" class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+      <div class="flex items-center justify-center min-h-screen px-4 py-6">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Modificar Turno
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-500">
+                    Trabajador: <span class="font-medium text-gray-900">{{ modalModificarTurno.trabajadorNombre }}</span>
+                  </p>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Turno actual: <span class="font-medium text-gray-900">{{ modalModificarTurno.tipoTurnoActual }}</span>
+                  </p>
+                </div>
+                
+                <form @submit.prevent="guardarModificacionTurno" class="mt-4 space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nuevo Tipo de Turno</label>
+                    <select 
+                      v-model="formModificarTurno.tipo_turno_id" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    >
+                      <option value="">Seleccionar tipo de turno</option>
+                      <option 
+                        v-for="tipoTurno in tiposTurnos" 
+                        :key="tipoTurno.id" 
+                        :value="tipoTurno.id"
+                      >
+                        {{ tipoTurno.nombre }} - ({{tipoTurno.hora_inicio}} - {{tipoTurno.hora_fin}})
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio del Nuevo Turno</label>
+                    <input 
+                      type="date" 
+                      v-model="formModificarTurno.fecha_inicio" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                    <p class="mt-1 text-xs text-gray-500">
+                      El turno actual se invalidará y el nuevo comenzará en esta fecha
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin (opcional)</label>
+                    <input 
+                      type="date" 
+                      v-model="formModificarTurno.fecha_fin" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                    <div class="flex">
+                      <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                      </div>
+                      <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                          Esta acción invalidará el turno actual y creará uno nuevo. El cambio quedará registrado en el historial.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              @click="guardarModificacionTurno"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Modificar Turno
+            </button>
+            <button
+              type="button"
+              @click="cerrarModalModificarTurno"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Notificaciones -->
     <div v-if="notificacion.mostrar" class="fixed bottom-4 right-4 z-50">
       <div 
@@ -630,7 +740,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import EmpresaServices from '../../../services/EmpresaService.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 
-const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno } = useEmpresa();
+const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno, modificarTurno } = useEmpresa();
 
 // Tipos de jornada disponibles
 const tiposJornada = [
@@ -667,6 +777,19 @@ const turnoSeleccionado = ref(null);
 const modalDetalleTurno = ref({
   mostrar: false,
   turno: null
+});
+
+const modalModificarTurno = ref({
+  mostrar: false,
+  turnoId: null,
+  trabajadorNombre: '',
+  tipoTurnoActual: ''
+});
+
+const formModificarTurno = reactive({
+  tipo_turno_id: '',
+  fecha_inicio: '',
+  fecha_fin: ''
 });
 
 const notificacion = ref({
@@ -812,6 +935,7 @@ const guardarTipoTurno = async () => {
 
 const guardarAsignacion = async () => {
   try {
+    console.log('Asignando turno con datos:', formAsignacion);
     await EmpresaServices.createTurno(formAsignacion);
     mostrarNotificacion('success', 'Turno asignado exitosamente');
     limpiarFormAsignacion();
@@ -835,6 +959,55 @@ const eliminarTurnoAction = async (id) => {
   } catch (error) {
     console.error('Error al eliminar turno:', error);
     mostrarNotificacion('error', 'Error al eliminar el turno');
+  }
+};
+
+const abrirModalModificarTurno = (turno) => {
+  modalModificarTurno.value = {
+    mostrar: true,
+    turnoId: turno.id,
+    trabajadorNombre: turno.trabajador.nombre,
+    tipoTurnoActual: turno.tipo
+  };
+  
+  // Pre-cargar datos actuales
+  formModificarTurno.tipo_turno_id = turno.tipo_turno_id;
+  formModificarTurno.fecha_inicio = turno.fecha_inicio;
+  formModificarTurno.fecha_fin = turno.fecha_fin || '';
+};
+
+const cerrarModalModificarTurno = () => {
+  modalModificarTurno.value = {
+    mostrar: false,
+    turnoId: null,
+    trabajadorNombre: '',
+    tipoTurnoActual: ''
+  };
+  
+  formModificarTurno.tipo_turno_id = '';
+  formModificarTurno.fecha_inicio = '';
+  formModificarTurno.fecha_fin = '';
+};
+
+const guardarModificacionTurno = async () => {
+  try {
+    if (!formModificarTurno.tipo_turno_id) {
+      mostrarNotificacion('error', 'Debe seleccionar un tipo de turno');
+      return;
+    }
+
+    if (!formModificarTurno.fecha_inicio) {
+      mostrarNotificacion('error', 'Debe especificar la fecha de inicio');
+      return;
+    }
+
+    await modificarTurno(modalModificarTurno.value.turnoId, formModificarTurno);
+    mostrarNotificacion('success', 'Turno modificado exitosamente');
+    cerrarModalModificarTurno();
+    await fetchTurnos();
+  } catch (error) {
+    console.error('Error al modificar turno:', error);
+    mostrarNotificacion('error', error.response?.data?.message || 'Error al modificar el turno');
   }
 };
 

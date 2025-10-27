@@ -39,6 +39,11 @@
               <div><b>Total Horas:</b> {{ tooltipDia.totalHoras || '-' }}</div>
               <div><b>Retraso:</b> {{ tooltipDia.retraso || '-' }}</div>
             </div>
+            <div v-else-if="dia.estado === 'justificada' && dia.justificacionDetalle">
+              <div><b>Estado:</b> Justificada</div>
+              <div><b>Tipo:</b> {{ dia.justificacionDetalle.tipo_justificacion || '-' }}</div>
+              <div><b>Motivo:</b> {{ dia.justificacionDetalle.motivo || 'Sin motivo especificado' }}</div>
+            </div>
             <div v-else>
               <div><b>Justificación:</b> {{ tooltipDia.justificacion || (dia.estado === 'justificada' ? 'Justificada' : dia.estado === 'injustificada' ? 'Injustificada' : 'Sin registro') }}</div>
             </div>
@@ -71,7 +76,11 @@ const emit = defineEmits(['hover-dia']);
 const props = defineProps({
   usuario: Object,
   vista: String,
-  marcaciones: Array
+  marcaciones: Array,
+  diasJustificados: {
+    type: Array,
+    default: () => []
+  }
 });
 
 // Configuración de horas semanales permitidas
@@ -81,6 +90,15 @@ const limiteHorasSemanales = computed(() => {
   return isNaN(n) ? 45 : n;
 });
 
+
+// Debug: Ver qué días justificados se están recibiendo
+watch(() => props.diasJustificados, (newVal) => {
+  
+  console.log('MarcacionesCalendario recibió días justificados:', newVal);
+  // Aquí puedes agregar más lógica si es necesario
+
+
+}, { immediate: true });
 const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const diasSemana = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const anioActual = new Date().getFullYear();
@@ -166,6 +184,7 @@ const primerDiaMes = computed(() => {
 const diasMes = computed(() => {
   const dias = [];
   const totalDias = new Date(anioSeleccionado.value, mesSeleccionado.value+1, 0).getDate();
+  
   // Usar directamente la estructura agrupada por día
   const marcacionesPorFecha = {};
   (props.marcaciones || []).forEach(m => {
@@ -173,9 +192,32 @@ const diasMes = computed(() => {
     const fechaKey = m.fecha ? m.fecha.split('T')[0] : '';
     marcacionesPorFecha[fechaKey] = m;
   });
+
+  // Crear un set de fechas justificadas para búsqueda rápida
+  const fechasJustificadas = new Set(
+    (props.diasJustificados || []).map(dj => {
+      // Normalizar la fecha: extraer solo YYYY-MM-DD del timestamp
+      const fecha = dj.fecha ? dj.fecha.split('T')[0] : '';
+      return fecha;
+    })
+  );
+
+  console.log('Fechas justificadas normalizadas:', Array.from(fechasJustificadas));
+  console.log('Días justificados raw:', props.diasJustificados);
+
+  console.log('Fechas justificadas (Set):', fechasJustificadas);
+  console.log('Días justificados raw:', props.diasJustificados);
+
   for(let d=1; d<=totalDias; d++) {
     const fechaStr = new Date(anioSeleccionado.value, mesSeleccionado.value, d).toISOString().split('T')[0];
     const registroDia = marcacionesPorFecha[fechaStr];
+    const esJustificado = fechasJustificadas.has(fechaStr);
+    
+    // Debug específico para días justificados
+    if (esJustificado) {
+      console.log(`✅ Día ${d} (${fechaStr}) está JUSTIFICADO`);
+    }
+    
     let entrada = registroDia && registroDia.entrada ? registroDia.entrada : undefined;
     let salida = registroDia && registroDia.salida ? registroDia.salida : undefined;
     // Determinar si el trabajador tenía turno asignado ese día
@@ -186,6 +228,16 @@ const diasMes = computed(() => {
     if (estaAsignado && (entrada || salida)) {
       estado = 'presente';
     }
+    
+    let estado;
+    if (entrada || salida) {
+      estado = 'presente';
+    } else if (esJustificado) {
+      estado = 'justificada';
+    } else {
+      estado = 'sinregistro';
+    }
+
     dias.push({
       dia: d,
       fecha: fechaStr,
@@ -196,6 +248,12 @@ const diasMes = computed(() => {
       // propagar flags si vienen
       justificada: registroDia && (registroDia.justificada || registroDia.estado === 'AUSENCIA_JUSTIFICADA'),
       injustificada: registroDia && (registroDia.injustificada || registroDia.estado === 'AUSENCIA_INJUSTIFICADA')
+      marcacionesDia: registroDia ? registroDia.registros : [],
+      justificado: esJustificado,
+      justificacionDetalle: esJustificado ? props.diasJustificados.find(dj => {
+        const fechaNormalizada = dj.fecha ? dj.fecha.split('T')[0] : '';
+        return fechaNormalizada === fechaStr;
+      }) : null
     });
   }
   // Determinar ausencias con el util: marcar días laborables sin registro como 'injustificada'
@@ -217,6 +275,10 @@ const diasMes = computed(() => {
     } catch (e) {
       return dias;
     }
+  
+  // Log para ver cómo se construye el arreglo de días
+  console.log('diasMes con justificaciones:', dias);
+  return dias;
 });
 // Ya no se usa estadoDia, el estado se calcula en diasMes
 

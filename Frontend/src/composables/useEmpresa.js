@@ -117,6 +117,16 @@ export function useEmpresa() {
     }
   };
 
+  const modificarTurno = async (turnoId, nuevosDatos) => {
+    try {
+      const response = await EmpresaServices.updateTurno(turnoId, nuevosDatos);
+      return response;
+    } catch (error) {
+      console.error("Error al modificar turno:", error);
+      throw error;
+    }
+  };
+
   const obtenerHorasSemanales = async (usuarioEmpresaId) => {
     try {
       const response = await EmpresaServices.obtenerHorasSemanales(usuarioEmpresaId);
@@ -220,6 +230,41 @@ export function useEmpresa() {
     }
   };
 
+  const aprobarHorasExtras = async (horasExtrasData) => {
+    try {
+      console.log('📝 Aprobando horas extras:', horasExtrasData);
+      const response = await EmpresaServices.aprobarHorasExtras(horasExtrasData);
+      return response;
+    } catch (error) {
+      console.error("Error al aprobar horas extras:", error);
+      throw error;
+    }
+  };
+
+  const obtenerHorasExtrasPorEmpresa = async () => {
+    try {
+      const [empresa] = await EmpresaServices.obtenerTrabajadores(user.value.rut, false);
+      if (empresa && empresa.empresa_id) {
+        const response = await EmpresaServices.obtenerHorasExtrasPorEmpresa(empresa.empresa_id);
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error al obtener horas extras de la empresa:", error);
+      throw error;
+    }
+  };
+
+  const obtenerHorasExtrasPorTrabajador = async (usuarioEmpresaId) => {
+    try {
+      const response = await EmpresaServices.obtenerHorasExtrasPorTrabajador(usuarioEmpresaId);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener horas extras del trabajador:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -231,6 +276,7 @@ export function useEmpresa() {
     modificarMarcacion,
     agregarMarcacionManual,
     eliminarTurno,
+    modificarTurno,
     obtenerHorasSemanales,
     obtenerTiposTurnos,
     crearTipoTurno,
@@ -240,6 +286,9 @@ export function useEmpresa() {
     obtenerAmonestacionesPorEmpresa,
     actualizarAmonestacion,
     eliminarAmonestacion,
-    obtenerReporteJornadaDiaria
+    obtenerReporteJornadaDiaria,
+    aprobarHorasExtras,
+    obtenerHorasExtrasPorEmpresa,
+    obtenerHorasExtrasPorTrabajador
   };
 }

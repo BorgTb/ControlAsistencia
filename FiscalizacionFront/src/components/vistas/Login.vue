@@ -117,10 +117,10 @@
         </form>
 
         <!-- Link back to regular login -->
-        <div class="mt-6 text-center">
+        <div class="mt-6 text-center" >
           <p class="text-xs text-gray-500">
             ¿Eres usuario regular? 
-            <a :href="appUrl" class="text-green-600 hover:text-green-500 font-medium">
+            <a :href="appUrl" class="text-green-600 hover:text-green-500 font-medium cursor-pointer">
               Ingresar como usuario
             </a>
           </p>

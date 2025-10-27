@@ -176,6 +176,16 @@ class EmpresaServices{
     }
   }
 
+  static async updateTurno(turnoId, nuevosDatos) {
+    try {
+      console.log('Modificando turno:', turnoId, nuevosDatos)
+      const response = await apiClient.put(`/userEmpresa/turnos/${turnoId}`, nuevosDatos)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
   static async obtenerTurnos(rut) {
     try {
       const response = await apiClient.get(`/userEmpresa/turnos/${rut}`)
@@ -487,6 +497,75 @@ class EmpresaServices{
       return response.data
     } catch (error) {
       console.error('❌ Error obteniendo reporte detallado:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Aprueba horas extras de un trabajador
+   * @param {Object} horasExtrasData - Datos de las horas extras a aprobar
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async aprobarHorasExtras(horasExtrasData) {
+    try {
+      console.log('🚀 Aprobando horas extras:', horasExtrasData)
+      const response = await apiClient.post('/userEmpresa/horas-extras/aprobar', horasExtrasData)
+      console.log('✅ Horas extras aprobadas:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error aprobando horas extras:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene horas extras por empresa
+   * @param {number} empresaId - ID de la empresa
+   * @returns {Promise} Lista de horas extras
+   */
+  static async obtenerHorasExtrasPorEmpresa(empresaId) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/horas-extras/empresa/${empresaId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo horas extras de la empresa:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene horas extras por trabajador
+   * @param {number} usuarioEmpresaId - ID del usuario_empresa
+   * @returns {Promise} Lista de horas extras del trabajador
+   */
+  static async obtenerHorasExtrasPorTrabajador(usuarioEmpresaId) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/horas-extras/trabajador/${usuarioEmpresaId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo horas extras del trabajador:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene resumen de horas extras por empresa y período
+   * @param {number} empresaId - ID de la empresa
+   * @param {string} fechaInicio - Fecha de inicio (YYYY-MM-DD)
+   * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD)
+   * @returns {Promise} Resumen de horas extras
+   */
+  static async obtenerResumenHorasExtras(empresaId, fechaInicio, fechaFin) {
+    try {
+      const response = await apiClient.get(`/userEmpresa/horas-extras/resumen/${empresaId}`, {
+        params: {
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo resumen de horas extras:', error)
       throw error
     }
   }
