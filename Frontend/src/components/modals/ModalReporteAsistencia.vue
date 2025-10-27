@@ -187,6 +187,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useNotification } from '../../composables/useNotification.js';
+import { calcularAusencias } from '../../utils/ausencias.js';
 
 const props = defineProps({
   isVisible: {
@@ -214,9 +215,7 @@ const fechaActual = computed(() => {
 
 // Watch para cargar datos cuando se abre el modal
 watch(() => props.isVisible, async (newValue) => {
-  console.log('Modal visibility changed:', newValue);
   if (newValue) {
-    console.log('Cargando datos del reporte...');
     await cargarDatosReporte();
   }
 });
@@ -227,7 +226,6 @@ const cerrarModal = () => {
 };
 
 const cargarDatosReporte = async () => {
-  console.log('Iniciando carga de datos...');
   cargando.value = true;
   
   try {
@@ -239,7 +237,6 @@ const cargarDatosReporte = async () => {
     fechaInicio.value = primerDia.toLocaleDateString('es-CL');
     fechaFin.value = ultimoDia.toLocaleDateString('es-CL');
     
-    console.log('Fechas calculadas:', fechaInicio.value, fechaFin.value);
 
     // Temporalmente usar datos de ejemplo para debug
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -270,7 +267,6 @@ const cargarDatosReporte = async () => {
       }
     ];
     
-    console.log('Datos cargados:', trabajadores.value);
 
     // Comentamos temporalmente la llamada a la API
     /*
@@ -354,7 +350,10 @@ const cargarDatosReporte = async () => {
           }) || [];
 
           // Calcular ausencias (días sin marcaciones en la semana)
-          ausencias = 5 - marcacionesDetalle.filter(m => m.hora_entrada).length;
+          // Usamos el util para obtener fechas no trabajadas y conteos
+          const resultadoAusencias = calcularAusencias(marcacionesDetalle, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: trabajador.turnos_asignados || trabajador.turnos || [] });
+          ausencias = Math.max(0, resultadoAusencias.totalAusencias);
+          // opcional: podríamos usar resultadoAusencias.fechasAusentes para mostrar detalle en la UI
         }
 
         const horasAsignadas = trabajador.horas_laborales ? parseInt(trabajador.horas_laborales) : 45;
@@ -378,7 +377,6 @@ const cargarDatosReporte = async () => {
     console.error('Error cargando reporte:', error);
     mostrarNotificacion('❌ Error al cargar el reporte', 'error');
   } finally {
-    console.log('Finalizando carga...');
     cargando.value = false;
   }
 };

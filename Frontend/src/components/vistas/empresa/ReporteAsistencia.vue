@@ -63,6 +63,9 @@
           <div class="bg-red-50 rounded-lg p-4 text-center border border-red-200">
             <div class="text-2xl font-bold text-red-600">{{ resumen.ausenciasInjustificadas }}</div>
             <div class="text-xs text-red-700 font-medium mt-1">Ausencias Injustificadas</div>
+            <div v-if="resumen.fechasNoTrabajadas && resumen.fechasNoTrabajadas.length" class="text-xs text-gray-600 mt-2">
+              Días no trabajados: {{ resumen.fechasNoTrabajadas.join(', ') }}
+            </div>
           </div>
           <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
             <div class="text-2xl font-bold text-gray-600">{{ resumen.totalHorasTrabajadas }}</div>
@@ -109,6 +112,7 @@ import { useNotification } from '../../../composables/useNotification.js';
 import { useEmpresa } from '../../../composables/useEmpresa.js';
 import { useAuthStore } from '../../../stores/authStore.js';
 import MarcacionesCalendario from './MarcacionesCalendario.vue';
+import { calcularAusencias } from '../../../utils/ausencias.js';
 // import DetalleDiarioTable from './DetalleDiarioTable.vue';
 
 const router = useRouter();
@@ -173,9 +177,21 @@ const resumen = computed(() => {
   }
   const promedioHoraEntrada = calcularPromedio(entradasTotales);
   const promedioHoraSalida = calcularPromedio(salidasTotales);
-  // Ausencias (si tuvieras flags de justificada/injustificada a nivel de día)
-  const ausenciasJustificadas = marcaciones.value.filter(m => m.justificada).length;
-  const ausenciasInjustificadas = marcaciones.value.filter(m => m.injustificada).length;
+  // Ausencias — calcular con util para devolver fechas no trabajadas y conteos
+  // Normalizar la lista que usamos en este componente para que el util entienda los campos
+  const normalizados = marcaciones.value.map(d => ({
+    fecha: d.fecha || d.fecha_marcacion,
+    hora_entrada: d.entrada || d.hora_entrada,
+    hora_salida: d.salida || d.hora_salida,
+    presente: !!d.presente,
+    justificada: !!d.justificada,
+    injustificada: !!d.injustificada
+  }));
+  const assignedShiftsForSelected = trabajadorSeleccionado.value ? (trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || []) : [];
+  const ausInfo = calcularAusencias(normalizados, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForSelected });
+  const ausenciasJustificadas = ausInfo.ausenciasJustificadas;
+  const ausenciasInjustificadas = ausInfo.ausenciasInjustificadas;
+  const fechasNoTrabajadas = ausInfo.fechasAusentes;
   return {
     totalDiasTrabajados: diasTrabajados,
     ausenciasJustificadas,
@@ -184,6 +200,7 @@ const resumen = computed(() => {
     porcentajeAsistencia,
     promedioHoraEntrada,
     promedioHoraSalida
+    ,fechasNoTrabajadas
   };
 });
 
@@ -297,7 +314,8 @@ async function cargarMarcacionesTrabajador(usuarioEmpresaId) {
     // Puedes ajustar el límite según la vista (mensual/anual)
     const limite = vista.value === 'mensual' ? 31 : 365;
     // request/response logs removed
-  const response = await import('../../../services/EmpresaService.js').then(m => m.default.obtenerMarcacionesTrabajador(usuarioEmpresaId, limite));
+  const EmpresaService = await import('../../../services/EmpresaService.js').then(m => m.default);
+  const response = await EmpresaService.obtenerMarcacionesTrabajador(usuarioEmpresaId, limite);
   
     // El backend devuelve { success, data: [...] }
     let rawMarcaciones = response.data;
@@ -334,6 +352,17 @@ async function cargarMarcacionesTrabajador(usuarioEmpresaId) {
         // Puedes agregar más campos si lo necesitas
       };
     });
+    // Intentar obtener turnos asignados para el trabajador y adjuntarlos al objeto seleccionado
+    try {
+      const turnosResp = await EmpresaService.obtenerTurnosTrabajador(usuarioEmpresaId);
+      // EmpresaService devuelve response.data en su implementación; si viene envuelto, normalizar
+      const turnos = Array.isArray(turnosResp) ? turnosResp : (turnosResp?.data || turnosResp?.turnos || []);
+      if (trabajadorSeleccionado.value) {
+        trabajadorSeleccionado.value.turnos_asignados = turnos;
+      }
+    } catch (err) {
+      console.warn('No se pudieron obtener turnos del trabajador:', err);
+    }
   
   } catch (e) {
     marcaciones.value = [];

@@ -63,6 +63,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { calcularAusencias, fechaTieneTurno } from '../../../utils/ausencias.js';
 const emit = defineEmits(['hover-dia']);
 
 
@@ -177,18 +178,45 @@ const diasMes = computed(() => {
     const registroDia = marcacionesPorFecha[fechaStr];
     let entrada = registroDia && registroDia.entrada ? registroDia.entrada : undefined;
     let salida = registroDia && registroDia.salida ? registroDia.salida : undefined;
-    const estado = (entrada || salida) ? 'presente' : 'sinregistro';
+    // Determinar si el trabajador tenía turno asignado ese día
+    const assignedShiftsForUser = props.usuario ? (props.usuario.turnos_asignados || props.usuario.turnos || props.usuario.turnosAsignados || []) : [];
+    const estaAsignado = fechaTieneTurno(fechaStr, assignedShiftsForUser);
+    // Si no estaba asignado, mostramos "sin registro" visualmente pero NO lo contaremos como ausencia
+    let estado = 'sinregistro';
+    if (estaAsignado && (entrada || salida)) {
+      estado = 'presente';
+    }
     dias.push({
       dia: d,
       fecha: fechaStr,
       estado,
       entrada: entrada,
       salida: salida,
-      marcacionesDia: registroDia ? registroDia.registros : []
+      marcacionesDia: registroDia ? registroDia.registros : [],
+      // propagar flags si vienen
+      justificada: registroDia && (registroDia.justificada || registroDia.estado === 'AUSENCIA_JUSTIFICADA'),
+      injustificada: registroDia && (registroDia.injustificada || registroDia.estado === 'AUSENCIA_INJUSTIFICADA')
     });
   }
-  // removed debug log
-  return dias;
+  // Determinar ausencias con el util: marcar días laborables sin registro como 'injustificada'
+  try {
+    const assignedShiftsForUser = props.usuario ? (props.usuario.turnos_asignados || props.usuario.turnos || props.usuario.turnosAsignados || []) : [];
+    const ausInfo = calcularAusencias(dias, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForUser });
+      const fechasAus = new Set(ausInfo.fechasAusentes || []);
+      // Mapear los días y actualizar estado si corresponde
+      const diasFinal = dias.map(d => {
+      // Solo marcar como injustificada aquellos días que están asignados y aparecen en fechasAus
+      if (d.estado === 'sinregistro' && fechasAus.has(d.fecha)) {
+        return { ...d, estado: 'injustificada' };
+      }
+      // Si viene marcado como justificada en los datos, forzar estado
+      if (d.justificada) return { ...d, estado: 'justificada' };
+      return d;
+      });
+      return diasFinal;
+    } catch (e) {
+      return dias;
+    }
 });
 // Ya no se usa estadoDia, el estado se calcula en diasMes
 

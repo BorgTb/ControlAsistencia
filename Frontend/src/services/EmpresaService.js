@@ -27,31 +27,21 @@ const apiClient = axios.create({
 // Interceptor para agregar el token y el user a las peticiones
 apiClient.interceptors.request.use(
   (config) => {
-    console.log('🔧 Interceptor request ejecutándose para:', config.url)
-    
     const authStore = useAuthStore()
     const token = authStore.getToken
     const user = authStore.getUser
 
-    console.log('🔍 Estado de autenticación:')
-    console.log('- Token presente:', !!token)
-    console.log('- Usuario presente:', !!user)
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
-      console.log('✅ Token agregado al header Authorization')
     } else {
       console.warn('⚠️ No hay token disponible')
     }
 
     if (user) {
       config.headers['X-User'] = user
-      console.log('✅ Usuario agregado al header X-User')
     } else {
       console.warn('⚠️ No hay usuario disponible')
     }
-
-    console.log('📋 Headers finales:', config.headers)
     return config
   },
   (error) => {
@@ -84,11 +74,7 @@ class EmpresaServices{
 
   static async crearTrabajador(trabajadorData) {
     try {
-      console.log('🚀 EmpresaService.crearTrabajador iniciado')
-      console.log('📤 Datos a enviar:', trabajadorData)
-      
       const response = await apiClient.post('/userEmpresa/trabajador', trabajadorData)
-      console.log('✅ Respuesta exitosa:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error en EmpresaService.crearTrabajador:', error)
@@ -110,7 +96,6 @@ class EmpresaServices{
   }
 
   static async obtenerTrabajadores(rut, enrolados = false) {
-    console.log("Obteniendo trabajadores para RUT:", rut, "Enrolados:", enrolados);
     try {
       const response = await apiClient.get(`/userEmpresa/trabajador/${rut}`, {
         params: { enrolados: enrolados }
@@ -184,7 +169,6 @@ class EmpresaServices{
   // Actualizar: createTurno ahora crea asignación
   static async createTurno(asignacionData) {
     try {
-      console.log('asignacionData', asignacionData)
       const response = await apiClient.post('/userEmpresa/turnos', asignacionData)
       return response.data
     } catch (error) {
@@ -195,7 +179,6 @@ class EmpresaServices{
   static async obtenerTurnos(rut) {
     try {
       const response = await apiClient.get(`/userEmpresa/turnos/${rut}`)
-      console.log('Turnos obtenidos:', response.data)
       return response.data
     } catch (error) {
       throw error
@@ -204,9 +187,7 @@ class EmpresaServices{
 
   static async obtenerTurnosTrabajador(trabajadorId) {
     try {
-      console.log('🚀 Obteniendo turnos para trabajador ID:', trabajadorId)
       const response = await apiClient.get(`/userEmpresa/trabajador/${trabajadorId}/turnos`)
-      console.log('✅ Turnos del trabajador obtenidos:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error obteniendo turnos del trabajador:', error)
@@ -216,11 +197,9 @@ class EmpresaServices{
 
   static async obtenerMarcacionesTrabajador(trabajadorId, limite = 10) {
     try {
-      console.log('🚀 Obteniendo marcaciones para trabajador ID:', trabajadorId)
       const response = await apiClient.get(`/userEmpresa/trabajador/${trabajadorId}/marcaciones`, {
         params: { limite }
       })
-      console.log('✅ Marcaciones del trabajador obtenidas:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error obteniendo marcaciones del trabajador:', error)
@@ -311,8 +290,6 @@ class EmpresaServices{
   }
 
   static async guardarConfiguracion(data) {
-    console.log("Guardando configuración:", data);
-
     try {
       const response = await apiClient.post('/userEmpresa/configuracion/marcaciones', data)
       return response.data
@@ -381,11 +358,9 @@ class EmpresaServices{
    */
   static async actualizarHorasLaborales(trabajadorId, horasLaborales) {
     try {
-      console.log('🚀 Actualizando horas laborales:', { trabajadorId, horasLaborales })
       const response = await apiClient.put(`/userEmpresa/trabajador/${trabajadorId}/horas-laborales`, {
         horas_laborales: horasLaborales
       })
-      console.log('✅ Horas laborales actualizadas:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error actualizando horas laborales:', error)
@@ -400,9 +375,7 @@ class EmpresaServices{
    */
   static async registrarAmonestacion(amonestacionData) {
     try {
-      console.log('🚀 Registrando amonestación:', amonestacionData)
       const response = await apiClient.post('/userEmpresa/amonestaciones', amonestacionData)
-      console.log('✅ Amonestación registrada:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error registrando amonestación:', error)
@@ -505,14 +478,12 @@ class EmpresaServices{
    */
   static async obtenerReporteAsistenciaDetallado(fechaInicio = null, fechaFin = null) {
     try {
-      console.log('🚀 Obteniendo reporte de asistencia detallado:', { fechaInicio, fechaFin })
       
       const params = {}
       if (fechaInicio) params.fechaInicio = fechaInicio
       if (fechaFin) params.fechaFin = fechaFin
       
       const response = await apiClient.get('/userEmpresa/reportes-asistencia-detallado', { params })
-      console.log('✅ Reporte detallado obtenido:', response.data)
       return response.data
     } catch (error) {
       console.error('❌ Error obteniendo reporte detallado:', error)
