@@ -225,15 +225,14 @@ const diasMes = computed(() => {
     const estaAsignado = fechaTieneTurno(fechaStr, assignedShiftsForUser);
     // Si no estaba asignado, mostramos "sin registro" visualmente pero NO lo contaremos como ausencia
     let estado = 'sinregistro';
-    if (estaAsignado && (entrada || salida)) {
-      estado = 'presente';
-    }
-    
-    let estado;
-    if (entrada || salida) {
-      estado = 'presente';
-    } else if (esJustificado) {
-      estado = 'justificada';
+    if (estaAsignado) {
+      if (entrada || salida) {
+        estado = 'presente';
+      } else if (esJustificado) {
+        estado = 'justificada';
+      } else {
+        estado = 'sinregistro';
+      }
     } else {
       estado = 'sinregistro';
     }
@@ -245,11 +244,9 @@ const diasMes = computed(() => {
       entrada: entrada,
       salida: salida,
       marcacionesDia: registroDia ? registroDia.registros : [],
-      // propagar flags si vienen
-      justificada: registroDia && (registroDia.justificada || registroDia.estado === 'AUSENCIA_JUSTIFICADA'),
-      injustificada: registroDia && (registroDia.injustificada || registroDia.estado === 'AUSENCIA_INJUSTIFICADA')
-      marcacionesDia: registroDia ? registroDia.registros : [],
-      justificado: esJustificado,
+      // flags: preferimos marcar si viene desde registro o desde la lista de justificaciones
+      justificado: !!(esJustificado || (registroDia && (registroDia.justificada || registroDia.estado === 'AUSENCIA_JUSTIFICADA'))),
+      injustificada: !!(registroDia && (registroDia.injustificada || registroDia.estado === 'AUSENCIA_INJUSTIFICADA')),
       justificacionDetalle: esJustificado ? props.diasJustificados.find(dj => {
         const fechaNormalizada = dj.fecha ? dj.fecha.split('T')[0] : '';
         return fechaNormalizada === fechaStr;
