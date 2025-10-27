@@ -67,6 +67,9 @@
           <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
             <div class="text-2xl font-bold text-gray-600">{{ resumen.totalHorasTrabajadas }}</div>
             <div class="text-xs text-gray-700 font-medium mt-1">Total Horas Trabajadas</div>
+            <div v-if="excedeHoras" class="text-xs text-red-600 mt-1">
+              ¡Se excedieron las horas laborales permitidas! <strong>Exceso:</strong> {{ excesoFormato }} ({{ excesoDecimal }} h)
+            </div>
           </div>
           <div class="bg-green-50 rounded-lg p-4 text-center border border-green-200">
             <div class="text-2xl font-bold text-green-600">{{ resumen.porcentajeAsistencia }}%</div>
@@ -123,7 +126,7 @@ const trabajadorSeleccionado = ref(null);
 const marcaciones = ref([]);
 
 const resumen = computed(() => {
-  // console.log('Marcaciones para cálculo:', JSON.stringify(marcaciones.value, null, 2));
+  
   if (!marcaciones.value.length) return {
     totalDiasTrabajados: 0,
     ausenciasJustificadas: 0,
@@ -184,6 +187,32 @@ const resumen = computed(() => {
   };
 });
 
+// Cálculos para comparar con horas laborales del trabajador
+const limiteHoras = computed(() => {
+  if (!trabajadorSeleccionado.value) return 45;
+  const raw = trabajadorSeleccionado.value.horas_laborales || trabajadorSeleccionado.value.horasLaborales || trabajadorSeleccionado.value.horas || 45;
+  const n = Number(parseFloat(raw));
+  return isNaN(n) ? 45 : n;
+});
+
+const totalHorasDecimal = computed(() => {
+  // resumen.totalHorasTrabajadas es string con 2 decimales
+  return parseFloat(resumen.value.totalHorasTrabajadas) || 0;
+});
+
+const TOLERANCIA = 0.01;
+const excesoDecimal = computed(() => {
+  const diff = totalHorasDecimal.value - limiteHoras.value;
+  return diff > TOLERANCIA ? Math.round(diff * 100) / 100 : 0;
+});
+function decimalA_HHMM(decimalHoras) {
+  const horas = Math.floor(decimalHoras);
+  const minutos = Math.round((decimalHoras - horas) * 60);
+  return `${String(horas).padStart(2,'0')}:${String(minutos).padStart(2,'0')}`;
+}
+const excesoFormato = computed(() => decimalA_HHMM(excesoDecimal.value));
+const excedeHoras = computed(() => excesoDecimal.value > 0);
+
 const filtros = ref({
   busqueda: '',
   asistencia: '',
@@ -220,9 +249,8 @@ onMounted(async () => {
 async function cargarTrabajadoresEmpresa() {
   cargando.value = true;
   try {
-    console.log('Rut de empresa usado para la petición:', empresaSeleccionada.value);
-    const lista = await obtenerTrabajadores(empresaSeleccionada.value);
-    console.log('Respuesta de la API de trabajadores:', lista);
+  // request logs removed
+  const lista = await obtenerTrabajadores(empresaSeleccionada.value);
     // Normalizar el formato de los trabajadores para soportar ambos casos
     let arr = [];
     if (Array.isArray(lista)) {
@@ -268,10 +296,9 @@ async function cargarMarcacionesTrabajador(usuarioEmpresaId) {
   try {
     // Puedes ajustar el límite según la vista (mensual/anual)
     const limite = vista.value === 'mensual' ? 31 : 365;
-    console.log('[Marcaciones] usuario_empresa_id usado en consulta:', usuarioEmpresaId);
+    // request/response logs removed
   const response = await import('../../../services/EmpresaService.js').then(m => m.default.obtenerMarcacionesTrabajador(usuarioEmpresaId, limite));
-  console.log('[Marcaciones] Respuesta cruda del backend:', response);
-  // console.log('Marcaciones crudas recibidas:', response.data);
+  
     // El backend devuelve { success, data: [...] }
     let rawMarcaciones = response.data;
     let lista = [];
@@ -307,7 +334,7 @@ async function cargarMarcacionesTrabajador(usuarioEmpresaId) {
         // Puedes agregar más campos si lo necesitas
       };
     });
-  // console.log('[Marcaciones] Array final para calendario:', marcaciones.value);
+  
   } catch (e) {
     marcaciones.value = [];
     console.error('Error obteniendo marcaciones:', e);

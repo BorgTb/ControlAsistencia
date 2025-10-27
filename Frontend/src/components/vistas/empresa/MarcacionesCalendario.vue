@@ -57,6 +57,7 @@
         </div>
       </div>
     </div>
+    <!-- indicadores principales los maneja el componente padre (ReporteAsistencia) -->
   </div>
 </template>
 
@@ -71,12 +72,86 @@ const props = defineProps({
   vista: String,
   marcaciones: Array
 });
+
+// Configuración de horas semanales permitidas
+const limiteHorasSemanales = computed(() => {
+  const raw = props.usuario && props.usuario.horas_laborales ? props.usuario.horas_laborales : 45;
+  const n = Number(parseFloat(raw));
+  return isNaN(n) ? 45 : n;
+});
+
 const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const diasSemana = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const anioActual = new Date().getFullYear();
 const anios = [anioActual-1, anioActual, anioActual+1];
 const mesSeleccionado = ref(new Date().getMonth());
 const anioSeleccionado = ref(anioActual);
+
+// Tolerancia para evitar falsos positivos por redondeo (en horas)
+const TOLERANCIA_HORAS = 0.01;
+
+// Helper: calcula horas entre dos HH:MM:SS o HH:MM strings
+function horasEntre(inicioStr, finStr) {
+  if (!inicioStr || !finStr) return 0;
+  try {
+    const [h1, m1, s1] = inicioStr.split(':').map(Number);
+    const [h2, m2, s2] = finStr.split(':').map(Number);
+    const inicio = new Date(0,0,0, h1 || 0, m1 || 0, s1 || 0);
+    const fin = new Date(0,0,0, h2 || 0, m2 || 0, s2 || 0);
+    let horas = (fin - inicio) / 1000 / 60 / 60;
+    if (horas < 0) horas += 24; // cruza medianoche
+    return Math.round(horas * 100) / 100;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// Calcular total de horas trabajadas en la semana seleccionada (robusto)
+const totalHorasSemanales = computed(() => {
+  // debug logs removed
+  let total = 0;
+  (props.marcaciones || []).forEach(m => {
+    // Preferir totalHoras si viene desde backend
+    let horasDia = 0;
+    if (m && (m.totalHoras !== undefined && m.totalHoras !== null)) {
+      const val = typeof m.totalHoras === 'string' ? parseFloat(m.totalHoras) : m.totalHoras;
+      horasDia = isNaN(val) ? 0 : val;
+    } else {
+      // Intentar obtener entrada/salida directas
+      let entrada = m && m.entrada ? m.entrada : undefined;
+      let salida = m && m.salida ? m.salida : undefined;
+      // Si no vienen como propiedades directas, buscar en registros agrupados
+      if ((!entrada || !salida) && m && Array.isArray(m.registros)) {
+        const regEntrada = m.registros.find(r => r.tipo === 'entrada');
+        const regSalida = m.registros.find(r => r.tipo === 'salida');
+        entrada = entrada || (regEntrada ? regEntrada.hora : undefined);
+        salida = salida || (regSalida ? regSalida.hora : undefined);
+      }
+      horasDia = horasEntre(entrada, salida);
+    }
+    if (!isNaN(horasDia) && horasDia > 0) total += horasDia;
+  });
+  // Redondear total a 2 decimales
+  return Math.round(total * 100) / 100;
+});
+
+// Computada para saber si se excedieron las horas (aplica tolerancia)
+const excedeHorasSemanales = computed(() => {
+  // debug logs removed
+  return (totalHorasSemanales.value - limiteHorasSemanales.value) > TOLERANCIA_HORAS;
+});
+
+// Cuánto se excede en decimal y en formato HH:MM
+const excesoHorasDecimal = computed(() => {
+  const diff = totalHorasSemanales.value - limiteHorasSemanales.value;
+  return diff > TOLERANCIA_HORAS ? Math.round(diff * 100) / 100 : 0;
+});
+function horasDecimalA_HHMM(decimalHoras) {
+  const horas = Math.floor(decimalHoras);
+  const minutos = Math.round((decimalHoras - horas) * 60);
+  return `${String(horas).padStart(2,'0')}:${String(minutos).padStart(2,'0')}`;
+}
+const excesoFormato = computed(() => horasDecimalA_HHMM(excesoHorasDecimal.value));
 
 const primerDiaMes = computed(() => {
   // getDay() devuelve 0 para domingo, 1 para lunes, etc.
@@ -112,8 +187,7 @@ const diasMes = computed(() => {
       marcacionesDia: registroDia ? registroDia.registros : []
     });
   }
-  // Log para ver cómo se construye el arreglo de días
-  console.log('diasMes:', dias);
+  // removed debug log
   return dias;
 });
 // Ya no se usa estadoDia, el estado se calcula en diasMes
