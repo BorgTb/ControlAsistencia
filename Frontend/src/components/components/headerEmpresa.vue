@@ -220,6 +220,18 @@
             <span>Reportes</span>
           </router-link>
 
+          <!-- Reporte: Domingos/Festivos (solo Admin) -->
+          <router-link v-if="isAdmin"
+            to="/empresa/reportes/domingos-festivos"
+            class="flex items-center space-x-2 px-3 py-4 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-white rounded-t-lg transition-all duration-200 whitespace-nowrap border-b-2 border-transparent hover:border-indigo-600"
+            active-class="text-indigo-600 bg-white border-indigo-600"
+          >
+            <svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>Domingo/Festivos</span>
+          </router-link>
+
     
 
           <!-- Configuración -->
@@ -253,7 +265,9 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '../../composables/useAuth.js';
 
 const router = useRouter();
-const { user, logout, isLoading: authLoading, esEst } = useAuth();
+const { user, logout, isLoading: authLoading, esEst, hasRole } = useAuth();
+
+const isAdmin = computed(() => hasRole('admin'));
 
 const userData = computed(() => {
   console.log('🏢 Datos de usuario en headerEmpresa:', user.value)

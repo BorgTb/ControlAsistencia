@@ -118,7 +118,7 @@
           </div>
 
           <!-- Reporte de Domingos/Festivos -->
-          <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+          <div v-if="isAdmin" class="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
             <div class="p-6">
               <div class="flex items-center mb-4">
                 <div class="flex-shrink-0">
@@ -135,10 +135,10 @@
                 Registro de trabajo realizado en domingos y días festivos con cálculo de recargos.
               </p>
               <div class="flex space-x-2">
-                <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <button @click="irReporteDomingosFestivos" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                   Generar
                 </button>
-                <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button @click="irReporteDomingosFestivos" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Vista Previa
                 </button>
               </div>
@@ -373,10 +373,15 @@
 
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth } from '../../../composables/useAuth.js';
 
 const router = useRouter();
+
+// Auth / roles
+const { hasRole } = useAuth();
+const isAdmin = computed(() => hasRole('admin'));
 
 // Estados reactivos
 const reportes = ref([]);
@@ -431,14 +436,17 @@ const getEstadoClass = (estado) => {
 
 // Función para ir a la vista de Reporte de Asistencia
 const irReporteAsistencia = () => {
-  console.log('Navegando a Reporte de Asistencia...');
   router.push({ name: 'EmpresaReporteAsistencia' });
 };
 
 // Función para ir a la vista de Reporte de Jornada Diaria
 const irReporteJornadaDiaria = () => {
-  console.log('Navegando a Reporte de Jornada Diaria...');
   router.push({ name: 'EmpresaReporteJornadaDiaria' });
+};
+
+// Función para ir a la vista de Reporte de Domingos/Festivos
+const irReporteDomingosFestivos = () => {
+  router.push({ name: 'EmpresaReporteDomingosFestivos' });
 };
 
 

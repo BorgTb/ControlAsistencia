@@ -68,6 +68,19 @@
             Estadísticas
           </router-link>
         </li>
+        <li v-if="isAdmin">
+          <router-link
+            to="/empresa/reportes/domingos-festivos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/empresa/reportes/domingos-festivos' ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white' : 'text-gray-500 hover:text-cyan-600'"
+            exact
+          >
+            <svg class="w-4 h-4 mr-1 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" />
+            </svg>
+            Domingos/Festivos
+          </router-link>
+        </li>
       </ul>
     </nav>
   </div>
@@ -242,8 +255,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import axios from "axios";
+import { useAuth } from '../../composables/useAuth.js';
 
 // Estados reactivos
 const estadisticas = ref({
@@ -304,6 +318,10 @@ const obtenerEstadisticas = async () => {
     cargando.value = false;
   }
 };
+
+// Roles
+const { hasRole } = useAuth();
+const isAdmin = computed(() => hasRole('admin'));
 
 // Función para cargar estadísticas por defecto en caso de error
 const cargarEstadisticasPorDefecto = () => {

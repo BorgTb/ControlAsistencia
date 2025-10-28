@@ -167,6 +167,31 @@ class ReportesService {
       }
     }
   }
+
+  /**
+   * Obtiene el reporte de domingos y festivos para una empresa
+   * @param {number|string} empresaId
+   * @param {Object} filtros - Opcional: fechaDesde, fechaHasta, trabajador, tipo
+   * @returns {Promise<Object>}
+   */
+  async obtenerReporteDomingosFestivos(empresaId, filtros = {}) {
+    try {
+      const params = { ...filtros };
+      const response = await apiClient.get(`/fiscalizador/asistencia-domingos/${empresaId}`, { params });
+      return {
+        success: true,
+        data: response.data,
+        message: response.data.message || 'Reporte de domingos y festivos obtenido correctamente'
+      }
+    } catch (error) {
+      console.error('Error obteniendo reporte domingos/festivos:', error)
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener reporte de domingos y festivos',
+        status: error.response?.status
+      }
+    }
+  }
 }
 
 // Exportar una instancia del servicio

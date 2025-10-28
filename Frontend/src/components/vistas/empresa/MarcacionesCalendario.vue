@@ -13,8 +13,8 @@
       <div class="grid grid-cols-7 gap-2">
         <div v-for="dia in diasSemana" :key="dia" class="text-center font-bold text-gray-600">{{ dia }}</div>
         <div v-for="n in primerDiaMes" :key="'empty-' + n"></div>
-        <div v-for="dia in diasMes" :key="dia.fecha" class="h-16 w-full rounded-lg flex flex-col items-center justify-center cursor-pointer relative"
-          :class="colorDia(dia.estado)"
+          <div v-for="dia in diasMes" :key="dia.fecha" class="h-16 w-full rounded-lg flex flex-col items-center justify-center cursor-pointer relative"
+          :class="colorDia(dia)"
           @mouseenter="mostrarTooltip(dia)"
           @mouseleave="ocultarTooltip"
         >
@@ -24,7 +24,12 @@
           <div><b>Salida:</b> {{ formatHora(dia.salida) }}</div>
           </div>
           <div v-else-if="dia.estado === 'justificada'" class="text-xs mt-1 text-yellow-700 text-center">
-            Justificada
+            <template v-if="dia.justificacionDetalle && (dia.justificacionDetalle.nombre || dia.justificacionDetalle.name)">
+              Feriado: {{ dia.justificacionDetalle.nombre || dia.justificacionDetalle.name }}
+            </template>
+            <template v-else>
+              Justificada
+            </template>
           </div>
           <div v-else-if="dia.estado === 'injustificada'" class="text-xs mt-1 text-red-700 text-center">
             Injustificada
@@ -40,9 +45,11 @@
               <div><b>Retraso:</b> {{ tooltipDia.retraso || '-' }}</div>
             </div>
             <div v-else-if="dia.estado === 'justificada' && dia.justificacionDetalle">
-              <div><b>Estado:</b> Justificada</div>
-              <div><b>Tipo:</b> {{ dia.justificacionDetalle.tipo_justificacion || '-' }}</div>
-              <div><b>Motivo:</b> {{ dia.justificacionDetalle.motivo || 'Sin motivo especificado' }}</div>
+              <div v-if="dia.justificacionDetalle.nombre || dia.justificacionDetalle.name"><b>Feriado:</b> {{ dia.justificacionDetalle.nombre || dia.justificacionDetalle.name }}</div>
+              <div v-else><b>Estado:</b> Justificada</div>
+              <div v-if="dia.justificacionDetalle.tipo_justificacion"><b>Tipo:</b> {{ dia.justificacionDetalle.tipo_justificacion }}</div>
+              <div v-if="dia.justificacionDetalle.motivo"><b>Motivo:</b> {{ dia.justificacionDetalle.motivo }}</div>
+              <div v-if="!dia.justificacionDetalle.tipo_justificacion && !dia.justificacionDetalle.motivo" class="text-xs text-gray-600">Sin motivo especificado</div>
             </div>
             <div v-else>
               <div><b>Justificación:</b> {{ tooltipDia.justificacion || (dia.estado === 'justificada' ? 'Justificada' : dia.estado === 'injustificada' ? 'Injustificada' : 'Sin registro') }}</div>
@@ -287,10 +294,15 @@ function mostrarTooltip(dia) {
 function ocultarTooltip() {
   tooltipDia.value = null;
 }
-function colorDia(estado) {
+function colorDia(d) {
+  // acepta tanto un objeto dia como un string estado
+  let estado = typeof d === 'string' ? d : (d && d.estado ? d.estado : 'sinregistro');
+  const isFeriado = (typeof d === 'object' && d && d.justificacionDetalle && (d.justificacionDetalle.nombre || d.justificacionDetalle.name));
   return {
     'bg-green-200': estado === 'presente',
-    'bg-yellow-200': estado === 'justificada',
+    // si es feriado, usar celeste (sky). Si es justificada sin nombre, mantener amarillo.
+    'bg-sky-200': isFeriado,
+    'bg-yellow-200': !isFeriado && estado === 'justificada',
     'bg-red-200': estado === 'injustificada',
     'bg-gray-200': estado === 'sinregistro'
   };

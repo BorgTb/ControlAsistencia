@@ -4,9 +4,16 @@
     <main class="mx-auto py-6 sm:px-6 lg:px-8">
       <div class="px-4 py-6 sm:px-0">
         <!-- Page Header -->
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">Reporte Jornada Diaria</h1>
-          <p class="mt-2 text-gray-600">Control de horas trabajadas y cumplimiento de jornada laboral</p>
+        <div class="mb-8 flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Reporte Jornada Diaria</h1>
+            <p class="mt-2 text-gray-600">Control de horas trabajadas y cumplimiento de jornada laboral</p>
+          </div>
+          <div>
+            <button @click="volverReportes" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md font-medium">
+              ← Volver a Reportes
+            </button>
+          </div>
         </div>
 
         <!-- Filtros Básicos (Solo Rango de Fechas) -->
@@ -471,11 +478,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useEmpresa } from '../../../composables/useEmpresa'
 import { useAuth } from '../../../composables/useAuth'
 
 const { obtenerReporteJornadaDiaria, aprobarHorasExtras } = useEmpresa()
 const { user } = useAuth()
+
+const router = useRouter()
+
+function volverReportes() {
+  router.push({ name: 'EmpresaReportes' })
+}
 
 const filters = ref({
   trabajadorNombre: '',

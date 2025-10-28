@@ -39,7 +39,12 @@ export function useAuth() {
 
   // Utilidades
   const hasRole = (role) => {
-    return user.value?.roles?.includes(role) || false
+     // Support both 'roles' (array) and 'rol' (string or array) fields returned by backend
+     const rolesField = user.value?.roles ?? user.value?.rol
+     if (!rolesField) return false
+     if (Array.isArray(rolesField)) return rolesField.includes(role) || rolesField.includes(role.toLowerCase())
+     if (typeof rolesField === 'string') return rolesField === role || rolesField === role.toLowerCase()
+     return false
   }
 
 
@@ -66,6 +71,8 @@ export function useAuth() {
     
     // Utilidades
     hasRole,
+      // convenience
+      esAdmin: computed(() => hasRole('admin')),
     hasPermission
   }
 }

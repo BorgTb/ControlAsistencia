@@ -68,6 +68,19 @@
             Estadísticas
           </router-link>
         </li>
+        <li v-if="isAdmin">
+          <router-link
+            to="/empresa/reportes/domingos-festivos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/empresa/reportes/domingos-festivos' ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white' : 'text-gray-500 hover:text-cyan-600'"
+            exact
+          >
+            <svg class="w-4 h-4 mr-1 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" />
+            </svg>
+            Domingos/Festivos
+          </router-link>
+        </li>
       </ul>
     </nav>
   </div>
@@ -208,68 +221,7 @@
       </div>
     </div>
   </div>
-
-  <!-- Modal para unir trabajador a empresa -->
-  <!-- Este modal permite asignar un trabajador sin empresa a una empresa existente -->
-  <!-- Se activa solo para usuarios con rol "trabajador" que no tengan empresa asignada -->
-  <div v-if="mostrarModalUnirEmpresa" class="fixed inset-0 flex items-center justify-center z-50" @click.self="cerrarModalUnirEmpresa">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">Unir trabajador a empresa</h3>
-        <button @click="cerrarModalUnirEmpresa" class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Información del trabajador seleccionado -->
-      <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-        <p class="text-sm text-gray-700">
-          <span class="font-medium">Trabajador:</span> {{ usuarioSeleccionado?.nombre }} {{ usuarioSeleccionado?.apellido_pat }}
-        </p>
-        <p class="text-sm text-gray-700">
-          <span class="font-medium">RUT:</span> {{ usuarioSeleccionado?.rut }}
-        </p>
-        <p class="text-sm text-gray-700">
-          <span class="font-medium">Email:</span> {{ usuarioSeleccionado?.email }}
-        </p>
-      </div>
-
-      <!-- Selector de empresa -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Empresa</label>
-        <select 
-          v-model="empresaSeleccionada" 
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          :disabled="cargandoEmpresas"
-        >
-          <option value="">Seleccione una empresa</option>
-          <option v-for="empresa in empresasDisponibles" :key="empresa.id" :value="empresa.id">
-            {{ empresa.nombre }} ({{ empresa.rut }})
-          </option>
-        </select>
-        <p v-if="cargandoEmpresas" class="text-sm text-gray-500 mt-1">Cargando empresas...</p>
-      </div>
-
-      <!-- Botones de acción -->
-      <div class="flex justify-end gap-3">
-        <button 
-          @click="cerrarModalUnirEmpresa"
-          class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          Cancelar
-        </button>
-        <button 
-          @click="unirTrabajadorAEmpresa"
-          :disabled="!empresaSeleccionada || cargandoUnion"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ cargandoUnion ? 'Uniendo...' : 'Unir' }}
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Se eliminó el bloque de UI "Unir trabajador a empresa" por petición del usuario -->
 </template>
 
 
@@ -277,6 +229,7 @@
 
 import { ref, onMounted, computed } from "vue";
 import { useNotification } from "../../composables/useNotification.js";
+import { useAuth } from '../../composables/useAuth.js';
 import axios from "axios";
 
 // ========== VARIABLES REACTIVAS ==========
@@ -311,6 +264,10 @@ const usuariosFiltrados = computed(() => {
            estado.includes(textoBusqueda);
   });
 });
+
+// Roles
+const { hasRole } = useAuth();
+const isAdmin = computed(() => hasRole('admin'));
 
 // ========== COMPOSABLES ==========
 const { showSuccess, showError } = useNotification();
