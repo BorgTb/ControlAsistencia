@@ -107,7 +107,7 @@
         <div class="bg-white shadow rounded-lg p-6">
           <!-- Panel para agregar feriados manualmente (oculto por defecto, se muestra al presionar Añadir Feriado) -->
           <div v-show="showFeriadoPanel">
-            <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
               <label class="block text-sm font-medium text-gray-700">Fecha feriado</label>
               <input v-model="nuevoFeriadoFecha" type="date" class="w-full px-3 py-2 border rounded" />
@@ -115,6 +115,12 @@
             <div>
               <label class="block text-sm font-medium text-gray-700">Nombre (opcional)</label>
               <input v-model="nuevoFeriadoNombre" type="text" placeholder="Ej: Fiestas Patrias" class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div class="flex items-center">
+              <label class="inline-flex items-center">
+                <input type="checkbox" v-model="nuevoFeriadoIrrenunciable" class="form-checkbox h-4 w-4 text-cyan-600" />
+                <span class="ml-2 text-sm text-gray-700">Irrenunciable</span>
+              </label>
             </div>
             <div>
               <button @click="addFeriado" class="w-full bg-blue-600 text-white px-4 py-2 rounded">➕ Agregar feriado</button>
@@ -128,6 +134,7 @@
                 <div>
                   <div class="text-sm font-semibold">{{ formatFecha(f.fecha) }}</div>
                   <div class="text-xs text-gray-600">{{ f.nombre || 'Feriado' }}</div>
+                  <div v-if="f.irrenunciable" class="text-xs text-emerald-600 font-medium">Irrenunciable</div>
                 </div>
                 <button @click="removeFeriado(idx)" class="ml-2 text-red-600 hover:text-red-800">Eliminar</button>
               </div>
@@ -135,8 +142,36 @@
             </div>
           </div>
 
-          <!-- Renderizar el calendario pasando los feriados como "dias justificados" -->
-          <MarcacionesCalendario :usuario="usuario" vista="mensual" :marcaciones="[]" :dias-justificados="feriados" />
+          <!-- Nuevo calendario embebido (creado desde 0) -->
+          <div class="mb-4 flex items-center justify-between">
+            <h4 class="font-semibold">Calendario Mensual</h4>
+            <div class="flex items-center gap-2">
+              <select v-model="mesSeleccionado" class="border rounded px-2 py-1">
+                <option v-for="(m, idx) in meses" :key="idx" :value="idx">{{ m }}</option>
+              </select>
+              <select v-model="anioSeleccionado" class="border rounded px-2 py-1">
+                <option v-for="a in anios" :key="a" :value="a">{{ a }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-2">
+            <div v-for="d in diasSemana" :key="d" class="text-center font-bold text-gray-600">{{ d }}</div>
+
+            <!-- espacios vacíos al inicio del mes -->
+            <div v-for="n in primerDiaMes" :key="'empty-' + n"></div>
+
+            <!-- días del mes -->
+      <div v-for="dia in diasMes" :key="dia.fecha" class="h-16 w-full rounded-lg flex flex-col items-center justify-center relative bg-gray-100 px-3 py-2"
+        :class="dayClasses(dia)">
+              <span class="font-semibold">{{ dia.dia }}</span>
+              <div v-if="dia.estado === 'feriado'" class="text-xs mt-1 text-teal-700 text-center">
+                {{ dia.nombreFeriado ? dia.nombreFeriado : 'Feriado' }}
+              </div>
+              <div v-else-if="dia.estado === 'finsemana'" class="text-xs mt-1 text-transparent">&nbsp;</div>
+              <div v-else class="text-xs mt-1 text-transparent">&nbsp;</div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -147,8 +182,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useAuth } from '../../../composables/useAuth.js';
+import feriadosService from '../../../services/feriadosService.js';
 import { useRouter } from 'vue-router';
-import MarcacionesCalendario from './MarcacionesCalendario.vue';
 
 const router = useRouter();
 function volverReportes() {
@@ -162,28 +197,19 @@ const usuario = ref({});
 const feriados = ref([]);
 const nuevoFeriadoFecha = ref('');
 const nuevoFeriadoNombre = ref('');
-
-const STORAGE_KEY = 'reportes-feriados';
+const nuevoFeriadoIrrenunciable = ref(false);
 
 // Mostrar/ocultar panel de feriados
 const showFeriadoPanel = ref(false);
 
-function saveFeriados() {
+// Cargar feriados desde API
+async function loadFeriados() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(feriados.value));
+    const data = await feriadosService.list();
+    // data = [{ id, fecha: 'YYYY-MM-DD', nombre }, ...]
+  feriados.value = (data || []).map(f => ({ id: f.id, fecha: f.fecha, nombre: f.nombre, irrenunciable: !!f.irrenunciable }));
   } catch (e) {
-    console.error('Error saving feriados to localStorage', e);
-  }
-}
-
-function loadFeriados() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      feriados.value = JSON.parse(raw) || [];
-    }
-  } catch (e) {
-    console.error('Error loading feriados from localStorage', e);
+    console.error('Error loading feriados from API', e);
     feriados.value = [];
   }
 }
@@ -196,27 +222,80 @@ onMounted(() => {
 const { esEst, hasRole } = useAuth();
 const isAdmin = computed(() => hasRole('admin'));
 
-function addFeriado() {
+// Calendario embebido (variables y helpers)
+const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const diasSemana = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const anioActual = new Date().getFullYear();
+const anios = [anioActual-1, anioActual, anioActual+1];
+const mesSeleccionado = ref(new Date().getMonth());
+const anioSeleccionado = ref(anioActual);
+
+const primerDiaMes = computed(() => {
+  const fecha = new Date(anioSeleccionado.value, mesSeleccionado.value, 1);
+  let diaSemana = fecha.getDay();
+  // ajustar para que lunes sea 0
+  diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
+  return diaSemana;
+});
+
+const diasMes = computed(() => {
+  const totalDias = new Date(anioSeleccionado.value, mesSeleccionado.value + 1, 0).getDate();
+  const arr = [];
+  for (let d = 1; d <= totalDias; d++) {
+    const fechaObj = new Date(anioSeleccionado.value, mesSeleccionado.value, d);
+    const fechaStr = fechaObj.toISOString().split('T')[0];
+    const isWeekend = fechaObj.getDay() === 0 || fechaObj.getDay() === 6; // domingo=0, sabado=6
+    const fer = feriados.value.find(f => (f.fecha || '').split('T')[0] === fechaStr);
+    // Solo usar feriados y fin de semana; no referenciar 'marcaciones' ni estados de presencia
+    const estado = fer ? 'feriado' : (isWeekend ? 'finsemana' : 'normal');
+    arr.push({ dia: d, fecha: fechaStr, estado, nombreFeriado: fer ? (fer.nombre || '') : '' });
+  }
+  return arr;
+});
+
+function dayClasses(dia) {
+  // Mantener el mismo diseño de caja (bg-gray-100, rounded) para todos.
+  // Solo añadimos un borde/halo cuando es feriado para destacarlo.
+  return {
+    'ring-2 ring-teal-200': dia.estado === 'feriado'
+  };
+}
+
+// toggleFeriado removed — feriados solo se gestionan vía panel
+
+async function addFeriado() {
   if (!nuevoFeriadoFecha.value) {
     alert('Selecciona una fecha para el feriado');
     return;
   }
   const fecha = nuevoFeriadoFecha.value; // YYYY-MM-DD
-  // evitar duplicados
   if (feriados.value.some(f => f.fecha === fecha)) {
     alert('Ese feriado ya fue agregado');
     return;
   }
-  feriados.value.push({ fecha, nombre: nuevoFeriadoNombre.value || '' });
-  // limpiar inputs
+  try {
+  const created = await feriadosService.create({ fecha, nombre: nuevoFeriadoNombre.value || '', irrenunciable: nuevoFeriadoIrrenunciable.value ? 1 : 0 });
+  if (created) feriados.value.push({ id: created.id, fecha: created.fecha, nombre: created.nombre, irrenunciable: created.irrenunciable });
   nuevoFeriadoFecha.value = '';
   nuevoFeriadoNombre.value = '';
-  saveFeriados();
+  nuevoFeriadoIrrenunciable.value = false;
+  } catch (e) {
+    console.error('Error creando feriado via API', e);
+    alert('Error creando el feriado');
+  }
 }
 
-function removeFeriado(idx) {
-  feriados.value.splice(idx, 1);
-  saveFeriados();
+async function removeFeriado(idx) {
+  const f = feriados.value[idx];
+  if (!f) return;
+  try {
+    if (f.id) await feriadosService.removeById(f.id);
+    else await feriadosService.removeByFecha(f.fecha);
+    feriados.value.splice(idx, 1);
+  } catch (e) {
+    console.error('Error borrando feriado via API', e);
+    alert('Error borrando el feriado');
+  }
 }
 
 function formatFecha(fechaStr) {

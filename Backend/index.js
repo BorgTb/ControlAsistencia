@@ -33,6 +33,7 @@ app.use('/api/auditoria', router.auditoria);
 app.use('/api/estadisticas', router.estadisticas);
 app.use('/api/fiscalizador', router.fiscalizador);
 app.use('/api/justificaciones', router.justificaciones);
+app.use('/api/feriados', router.feriados);
 
 
 
