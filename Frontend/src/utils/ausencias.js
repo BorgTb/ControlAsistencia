@@ -97,8 +97,13 @@ export function calcularAusencias(dias = [], options = {}) {
     const estaPresente = d.presente;
     if (!estaPresente) {
       fechasAusentes.push(d.fecha);
-      if (d.justificada) ausenciasJustificadas++;
-      else if (d.injustificada) ausenciasInjustificadas++;
+      // Si está marcada como justificada, contar como justificada.
+      // En caso contrario (no presente y no justificada) contar como injustificada.
+      if (d.justificada) {
+        ausenciasJustificadas++;
+      } else {
+        ausenciasInjustificadas++;
+      }
     }
   });
 

@@ -91,15 +91,31 @@
         </div>
         <!-- Calendario -->
         <div class="px-4 mb-8">
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold mb-4">Calendario de Marcaciones</h2>
-            <MarcacionesCalendario
-              :usuario="trabajadorSeleccionado"
-              :vista="vista"
-              :marcaciones="marcaciones"
-              :dias-justificados="diasJustificados"
-              @hover-dia="mostrarTooltipDia"
-            />
+          <div class="relative">
+            <!-- Leyenda posicionada fuera del flujo para no reducir el ancho del calendario -->
+            <aside class="absolute -left-72 top-6 hidden md:block">
+              <div class="bg-white border rounded p-3 shadow-sm w-56">
+                <h4 class="font-semibold mb-2">Leyenda</h4>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-green-200 border"></span>Presente</li>
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-sky-200 border"></span>Feriado</li>
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-rose-600 border"></span>Irrenunciable</li>
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-yellow-200 border"></span>Justificada</li>
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-red-200 border"></span>Injustificada</li>
+                  <li class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gray-200 border"></span>Sin registro</li>
+                </ul>
+              </div>
+            </aside>
+            <div id="reporte-calendario" class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-semibold mb-4">Calendario de Marcaciones</h2>
+              <MarcacionesCalendario
+                :usuario="trabajadorSeleccionado"
+                :vista="vista"
+                :marcaciones="marcaciones"
+                :dias-justificados="diasJustificados"
+                @hover-dia="mostrarTooltipDia"
+              />
+            </div>
           </div>
         </div>
         <!-- Tabla detalle diario -->
@@ -149,8 +165,8 @@ const diasJustificados = ref([]);
 const mostrarModalJustificaciones = ref(false);
 
 const resumen = computed(() => {
-  
-  if (!marcaciones.value.length) return {
+  // Si no hay trabajador seleccionado, devolver valores por defecto
+  if (!trabajadorSeleccionado.value) return {
     totalDiasTrabajados: 0,
     ausenciasJustificadas: 0,
     ausenciasInjustificadas: 0,
@@ -159,16 +175,46 @@ const resumen = computed(() => {
     promedioHoraEntrada: '--:--',
     promedioHoraSalida: '--:--'
   };
-  // Usar directamente los campos entrada/salida de cada día
+
+  // Determinar mes/año a evaluar: preferir mes presente en las marcaciones (si existen), si no usar mes actual
+  let mes = new Date().getMonth();
+  let anio = new Date().getFullYear();
+  if (marcaciones.value && marcaciones.value.length) {
+    const anyFecha = (marcaciones.value[0].fecha || marcaciones.value[0].fecha_marcacion || '').split('T')[0];
+    if (anyFecha) {
+      const d = new Date(anyFecha);
+      mes = d.getMonth(); anio = d.getFullYear();
+    }
+  }
+
+  const inicio = new Date(anio, mes, 1);
+  const fin = new Date(anio, mes + 1, 0);
+
+  // Construir array completo de días del mes
+  const diasMesArray = [];
+  for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
+    const fechaStr = d.toISOString().split('T')[0];
+    const registro = (marcaciones.value || []).find(x => ((x.fecha || x.fecha_marcacion || '').split('T')[0]) === fechaStr);
+    const entrada = registro ? (registro.entrada || registro.hora_entrada) : null;
+    const salida = registro ? (registro.salida || registro.hora_salida) : null;
+    const presente = !!(registro && (entrada || salida));
+    const justificada = !!((diasJustificados.value || []).find(j => ((j.fecha || '').split('T')[0]) === fechaStr));
+    diasMesArray.push({ fecha: fechaStr, hora_entrada: entrada, hora_salida: salida, presente, justificada });
+  }
+
+  // Usar util para calcular ausencias en este rango completo
+  const assignedShiftsForSelected = trabajadorSeleccionado.value ? (trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || []) : [];
+  const ausInfo = calcularAusencias(diasMesArray, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForSelected });
+
+  // Calcular métricas de presencia y horas (se mantienen con los datos de marcaciones)
   let sumaHoras = 0;
-  let entradasTotales = [];
-  let salidasTotales = [];
+  const entradasTotales = [];
+  const salidasTotales = [];
   let diasTrabajados = 0;
-  marcaciones.value.forEach(dia => {
+  (marcaciones.value || []).forEach(dia => {
     if (dia.entrada && dia.salida) {
       entradasTotales.push(dia.entrada);
       salidasTotales.push(dia.salida);
-      // Calcular diferencia en horas
       const [h1, m1, s1] = dia.entrada.split(':').map(Number);
       const [h2, m2, s2] = dia.salida.split(':').map(Number);
       const minEntrada = h1 * 60 + m1 + (s1 || 0) / 60;
@@ -180,11 +226,10 @@ const resumen = computed(() => {
     }
   });
   const totalHorasTrabajadas = sumaHoras.toFixed(2);
-  const porcentajeAsistencia = marcaciones.value.length ? Math.round((diasTrabajados / marcaciones.value.length) * 100) : 0;
-  // Promedio de entrada/salida (mediana)
+  const porcentajeAsistencia = diasMesArray.length ? Math.round((diasTrabajados / diasMesArray.length) * 100) : 0;
+
   function calcularPromedio(horasArray) {
     if (!horasArray.length) return '--:--';
-    // Convertir a minutos para ordenar
     const minutos = horasArray.map(h => {
       const [hh, mm, ss] = h.split(':').map(Number);
       return hh * 60 + mm + (ss || 0) / 60;
@@ -194,32 +239,19 @@ const resumen = computed(() => {
     const mm = Math.floor(medianaMin % 60).toString().padStart(2, '0');
     return `${hh}:${mm}`;
   }
+
   const promedioHoraEntrada = calcularPromedio(entradasTotales);
   const promedioHoraSalida = calcularPromedio(salidasTotales);
-  // Ausencias — calcular con util para devolver fechas no trabajadas y conteos
-  // Normalizar la lista que usamos en este componente para que el util entienda los campos
-  const normalizados = marcaciones.value.map(d => ({
-    fecha: d.fecha || d.fecha_marcacion,
-    hora_entrada: d.entrada || d.hora_entrada,
-    hora_salida: d.salida || d.hora_salida,
-    presente: !!d.presente,
-    justificada: !!d.justificada,
-    injustificada: !!d.injustificada
-  }));
-  const assignedShiftsForSelected = trabajadorSeleccionado.value ? (trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || []) : [];
-  const ausInfo = calcularAusencias(normalizados, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForSelected });
-  const ausenciasJustificadas = ausInfo.ausenciasJustificadas;
-  const ausenciasInjustificadas = ausInfo.ausenciasInjustificadas;
-  const fechasNoTrabajadas = ausInfo.fechasAusentes;
+
   return {
     totalDiasTrabajados: diasTrabajados,
-    ausenciasJustificadas,
-    ausenciasInjustificadas,
+    ausenciasJustificadas: ausInfo.ausenciasJustificadas,
+    ausenciasInjustificadas: ausInfo.ausenciasInjustificadas,
     totalHorasTrabajadas,
     porcentajeAsistencia,
     promedioHoraEntrada,
-    promedioHoraSalida
-    ,fechasNoTrabajadas
+    promedioHoraSalida,
+    fechasNoTrabajadas: ausInfo.fechasAusentes
   };
 });
 
@@ -357,7 +389,36 @@ function mostrarTooltipDia(dia) {
 }
 
 function exportarReporte() {
-  mostrarNotificacion('📄 Exportando reporte a PDF...', 'info');
+  try {
+    mostrarNotificacion('📄 Exportando reporte a PDF...', 'info');
+    const node = document.getElementById('reporte-calendario');
+    if (!node) {
+      mostrarNotificacion('❌ No se encontró el contenido para exportar', 'error');
+      return;
+    }
+    const trabajador = trabajadorSeleccionado.value || {};
+    const titulo = `Reporte de Marcaciones - ${trabajador.nombre || trabajador.usuario_nombre || ''}`;
+    const estilo = `
+      body{ font-family: Arial, Helvetica, sans-serif; padding: 20px; color: #111827 }
+      .card{ background: #fff; border-radius: 8px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+      h1{ font-size:18px; margin-bottom:8px }
+      .meta{ font-size:13px; color:#374151; margin-bottom:12px }
+    `;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title><style>${estilo}</style></head><body><div class="card"><h1>${titulo}</h1><div class="meta">Generado: ${new Date().toLocaleString()}</div>${node.innerHTML}</div></body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) {
+      mostrarNotificacion('❌ El navegador bloqueó la apertura de la ventana para imprimir. Permite popups e inténtalo de nuevo.', 'error');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    // dar tiempo a que cargue
+    setTimeout(() => { w.focus(); w.print(); /* opcional: w.close(); */ }, 700);
+  } catch (e) {
+    console.error('Error exportando PDF:', e);
+    mostrarNotificacion('❌ Error al exportar el reporte', 'error');
+  }
 }
 
 function volverReportes() {
