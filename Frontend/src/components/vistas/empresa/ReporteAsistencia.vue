@@ -74,10 +74,10 @@
             </div>
           </div>
           <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
-            <div class="text-2xl font-bold text-gray-600">{{ resumen.totalHorasTrabajadas }}</div>
-            <div class="text-xs text-gray-700 font-medium mt-1">Total Horas Trabajadas</div>
+            <div class="text-2xl font-bold text-gray-600">{{ totalHorasDecimal.toFixed(2) }}</div>
+            <div class="text-xs text-gray-700 font-medium mt-1">Total Horas (esta semana)</div>
             <div v-if="excedeHoras" class="text-xs text-red-600 mt-1">
-              ¡Se excedieron las horas laborales permitidas! <strong>Exceso:</strong> {{ excesoFormato }} ({{ excesoDecimal }} h)
+              ¡Se excedieron las horas laborales permitidas esta semana! <strong>Exceso:</strong> {{ excesoFormato }} ({{ excesoDecimal }} h)
             </div>
           </div>
           <div class="bg-green-50 rounded-lg p-4 text-center border border-green-200">
@@ -231,16 +231,113 @@ const limiteHoras = computed(() => {
   return isNaN(n) ? 45 : n;
 });
 
+// Total horas trabajadas en la SEMANA ACTUAL (lunes-domingo) calculadas a partir de marcaciones cargadas
 const totalHorasDecimal = computed(() => {
-  // resumen.totalHorasTrabajadas es string con 2 decimales
-  return parseFloat(resumen.value.totalHorasTrabajadas) || 0;
+  try {
+    if (!marcaciones.value || !marcaciones.value.length) return 0;
+    // calcular inicio y fin de la semana actual
+    const hoy = new Date();
+    const dia = hoy.getDay();
+    const diffToMonday = dia === 0 ? -6 : 1 - dia;
+    const monday = new Date(hoy);
+    monday.setDate(hoy.getDate() + diffToMonday);
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23,59,59,999);
+    const startStr = monday.toISOString().split('T')[0];
+    const endStr = sunday.toISOString().split('T')[0];
+    let suma = 0;
+    marcaciones.value.forEach(d => {
+      const fecha = (d.fecha || d.fecha_marcacion || '').split('T')[0];
+      if (!fecha) return;
+      if (fecha < startStr || fecha > endStr) return;
+      if (d.entrada && d.salida) {
+        const [h1, m1, s1] = d.entrada.split(':').map(Number);
+        const [h2, m2, s2] = d.salida.split(':').map(Number);
+        const minEntrada = (h1||0) * 60 + (m1||0) + ((s1||0)/60);
+        const minSalida = (h2||0) * 60 + (m2||0) + ((s2||0)/60);
+        let horas = (minSalida - minEntrada) / 60;
+        if (horas < 0) horas = 0;
+        suma += horas;
+      } else if (d.totalHoras !== undefined && d.totalHoras !== null) {
+        const val = typeof d.totalHoras === 'string' ? parseFloat(d.totalHoras) : d.totalHoras;
+        if (!isNaN(val)) suma += val;
+      }
+    });
+    return Math.round(suma * 100) / 100;
+  } catch (e) {
+    return 0;
+  }
 });
 
+// Helpers para días laborales a partir de turnos asignados
+function normalizeWeekday(s) {
+  if (!s) return '';
+  return String(s).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').slice(0,3);
+}
+function getWorkingDaysSetFromShifts(assignedShifts = []) {
+  const defaultDays = new Set(['lun','mar','mie','jue','vie']);
+  if (!assignedShifts || !assignedShifts.length) return defaultDays;
+  const days = new Set();
+  let foundAny = false;
+  for (const t of assignedShifts) {
+    if (t.dias && Array.isArray(t.dias) && t.dias.length) {
+      foundAny = true;
+      t.dias.forEach(dn => days.add(normalizeWeekday(dn)));
+    }
+  }
+  return foundAny ? days : defaultDays;
+}
+
+function countWorkingDaysBetween(startDateStr, endDateStr, workingDaysSet) {
+  try {
+    const parseLocal = (s) => {
+      const [y,m,d] = s.split('-').map(Number);
+      return new Date(y, m-1, d);
+    };
+    let start = parseLocal(startDateStr);
+    let end = parseLocal(endDateStr);
+    let count = 0;
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const weekdayFull = d.toLocaleDateString('es-CL', { weekday: 'long' }).toLowerCase();
+      const wk = normalizeWeekday(weekdayFull);
+      if (workingDaysSet.has(wk)) count++;
+    }
+    return count;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// Calcular límite de horas para la semana actual basado en los turnos del trabajador
 const TOLERANCIA = 0.01;
+const limiteHorasSemanaActual = computed(() => {
+  if (!trabajadorSeleccionado.value) return limiteHoras.value;
+  const assigned = trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || [];
+  const workingDaysSet = getWorkingDaysSetFromShifts(assigned);
+  const diasPorSemana = workingDaysSet.size || 5;
+  const horasSemanales = limiteHoras.value; // e.g., 45
+  const horasDiariasEsperadas = horasSemanales / diasPorSemana;
+  // calcular fecha inicio y fin de la semana actual (lunes-domingo)
+  const hoy = new Date();
+  const dia = hoy.getDay(); // 0 domingo, 1 lunes
+  const diffToMonday = dia === 0 ? -6 : 1 - dia; // shift to Monday
+  const monday = new Date(hoy);
+  monday.setDate(hoy.getDate() + diffToMonday);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const startStr = monday.toISOString().split('T')[0];
+  const endStr = sunday.toISOString().split('T')[0];
+  const workingDaysThisWeek = countWorkingDaysBetween(startStr, endStr, workingDaysSet);
+  return Math.round(horasDiariasEsperadas * workingDaysThisWeek * 100) / 100;
+});
+
 const excesoDecimal = computed(() => {
-  const diff = totalHorasDecimal.value - limiteHoras.value;
+  const diff = totalHorasDecimal.value - limiteHorasSemanaActual.value;
   return diff > TOLERANCIA ? Math.round(diff * 100) / 100 : 0;
 });
+
 function decimalA_HHMM(decimalHoras) {
   const horas = Math.floor(decimalHoras);
   const minutos = Math.round((decimalHoras - horas) * 60);

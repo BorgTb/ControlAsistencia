@@ -241,23 +241,38 @@ const primerDiaMes = computed(() => {
 const diasMes = computed(() => {
   const totalDias = new Date(anioSeleccionado.value, mesSeleccionado.value + 1, 0).getDate();
   const arr = [];
+  // Crear un map de feriados por fecha para soportar múltiples feriados el mismo día
+  const feriadosMap = new Map();
+  (feriados.value || []).forEach(f => {
+    const k = (f.fecha || '').split('T')[0];
+    if (!feriadosMap.has(k)) feriadosMap.set(k, []);
+    feriadosMap.get(k).push(f);
+  });
   for (let d = 1; d <= totalDias; d++) {
     const fechaObj = new Date(anioSeleccionado.value, mesSeleccionado.value, d);
     const fechaStr = fechaObj.toISOString().split('T')[0];
     const isWeekend = fechaObj.getDay() === 0 || fechaObj.getDay() === 6; // domingo=0, sabado=6
-    const fer = feriados.value.find(f => (f.fecha || '').split('T')[0] === fechaStr);
-    // Solo usar feriados y fin de semana; no referenciar 'marcaciones' ni estados de presencia
-    const estado = fer ? 'feriado' : (isWeekend ? 'finsemana' : 'normal');
-    arr.push({ dia: d, fecha: fechaStr, estado, nombreFeriado: fer ? (fer.nombre || '') : '' });
+    const ferArr = feriadosMap.get(fechaStr) || [];
+    const esFeriado = ferArr.length > 0;
+    const anyIrr = ferArr.some(f => !!f.irrenunciable);
+    const nombreComb = ferArr.map(f => f.nombre).filter(Boolean).join(' / ');
+    const estado = esFeriado ? 'feriado' : (isWeekend ? 'finsemana' : 'normal');
+    arr.push({ dia: d, fecha: fechaStr, estado, nombreFeriado: esFeriado ? (nombreComb || 'Feriado') : '', irrenunciable: anyIrr });
   }
   return arr;
 });
 
 function dayClasses(dia) {
-  // Mantener el mismo diseño de caja (bg-gray-100, rounded) para todos.
-  // Solo añadimos un borde/halo cuando es feriado para destacarlo.
+  // Prioridad visual:
+  // - Feriado irrenunciable -> color de alerta (rosa claro)
+  // - Feriado normal -> celeste (sky)
+  // - Fin de semana -> sutil gris
+  // - Normal -> gris claro
   return {
-    'ring-2 ring-teal-200': dia.estado === 'feriado'
+    'bg-rose-200 text-rose-800 ring-2 ring-rose-300': dia.estado === 'feriado' && dia.irrenunciable,
+    'bg-sky-200 text-sky-800 ring-2 ring-sky-300': dia.estado === 'feriado' && !dia.irrenunciable,
+    'bg-gray-50 text-gray-400': dia.estado === 'finsemana',
+    'bg-gray-100 text-gray-800': dia.estado === 'normal'
   };
 }
 
@@ -269,8 +284,9 @@ async function addFeriado() {
     return;
   }
   const fecha = nuevoFeriadoFecha.value; // YYYY-MM-DD
-  if (feriados.value.some(f => f.fecha === fecha)) {
-    alert('Ese feriado ya fue agregado');
+  // Allow multiple feriados on same date (DB may store several types). Only block exact duplicate name+date.
+  if (feriados.value.some(f => f.fecha === fecha && (f.nombre || '') === (nuevoFeriadoNombre.value || ''))) {
+    alert('Ese feriado ya fue agregado (mismo nombre y fecha)');
     return;
   }
   try {
