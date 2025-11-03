@@ -72,7 +72,7 @@ const createTrabajador = async (req, res) => {
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
             try {
-                console.log('🔄 Registrando creación de trabajador por empleador (UserEmpresaController):', req.user.id);
+                
                 
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
@@ -93,7 +93,7 @@ const createTrabajador = async (req, res) => {
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                console.log('✅ Cambio de creación de trabajador registrado en auditoría (UserEmpresaController)');
+                
             } catch (auditError) {
                 console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
             }
@@ -267,7 +267,7 @@ const createTurno = async (req, res) => {
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                console.log('✅ Asignación de turno registrada en auditoría');
+                
             } catch (auditError) {
                 console.error('⚠️ Error al registrar asignación de turno en auditoría:', auditError);
             }
@@ -347,7 +347,7 @@ const deleteTurno = async (req, res) => {
                     datos_nuevos: null,
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                console.log('✅ Eliminación de turno registrada en auditoría');
+                
             } catch (auditError) {
                 console.error('⚠️ Error al registrar eliminación de turno en auditoría:', auditError);
             }
@@ -501,8 +501,7 @@ const guardarConfiguracion = async (req, res) => {
         }
 
         // Por ahora simularemos el guardado - aquí se implementaría el guardado real en BD
-        console.log('Guardando configuración para empresa:', empresa.empresa_id);
-        console.log('Configuración recibida:', configuracionData);
+        
 
         // Registrar el cambio en auditoría - permite seguimiento de configuraciones
         if (USR_PETICION.id) {
@@ -517,7 +516,7 @@ const guardarConfiguracion = async (req, res) => {
                     datos_nuevos: JSON.stringify(configuracionData),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                console.log('✅ Cambio de configuración registrado en auditoría');
+                
             } catch (auditError) {
                 console.error('⚠️ Error al registrar cambio de configuración en auditoría:', auditError);
             }
@@ -621,11 +620,7 @@ const obtenerTrabajadores = async (req, res) => {
         );
 
         const trabajadoresUnicos = Array.from(trabajadoresMap.values());
-        console.log("trabajadoresUnicos:", trabajadoresUnicos);
-     
-        trabajadoresUnicos.forEach(trabajador => {
-            console.log(`  - ${trabajador.usuario_nombre} (ID: ${trabajador.id}): ${trabajador.horas_laborales || 'SIN HORAS LABORALES'}`);
-        });
+        
 
         res.status(200).json({ success: true, data: trabajadoresUnicos });
     } catch (error) {
@@ -644,35 +639,66 @@ const obtenerTurnos = async (req, res) => {
         const estActiva = await EstAsignacionesModel.getEstInfoByUsuariaRut(rut);
         // para cada est activa obtener sus asignaciones
         for (let est of estActiva) {
-            console.log("Obteniendo turnos para est activa:", est);
             const asignacion  = await AsignacionTurnosModel.getByEmpresaRut(est.emp_rut);
-            console.log("Asignaciones obtenidas para est:", asignacion);
             asignaciones.push(...asignacion);
         }
     
         
 
         
-        // Formatear las 1 con información completa
-        const turnosFormateados = asignaciones.map(asignacion => ({
-            id: asignacion.id,
-            usuario_empresa_id: asignacion.usuario_empresa_id,
-            tipo_turno_id: asignacion.tipo_turno_id,
-            fecha_inicio: asignacion.fecha_inicio,
-            fecha_fin: asignacion.fecha_fin,
-            estado: asignacion.estado,
-            tipo: asignacion.tipo_turno_nombre,
-            inicio: asignacion.hora_inicio,
-            fin: asignacion.hora_fin,
-            colacion_inicio: asignacion.colacion_inicio,
-            colacion_fin: asignacion.colacion_fin,
-            trabajador: {
-                id: asignacion.usuario_empresa_id,
-                nombre: asignacion.usuario_nombre,
-                apellido_pat: asignacion.usuario_apellido_pat,
-                apellido_mat: asignacion.usuario_apellido_mat,
-                rut: asignacion.usuario_rut,
-                iniciales: asignacion.usuario_nombre.charAt(0) + (asignacion.usuario_apellido_pat ? asignacion.usuario_apellido_pat.charAt(0) : '')
+        // Formatear las asignaciones con información completa (incluir días del tipo de turno)
+        const turnosFormateados = await Promise.all(asignaciones.map(async (asignacion) => {
+            try {
+                // Obtener tipo de turno con detalle de días
+                const tipoTurno = await TipoTurnosModel.getByIdWithDias(asignacion.tipo_turno_id);
+                const diasArray = Array.isArray(tipoTurno?.dias) ? tipoTurno.dias.map(d => d.dia_semana) : [];
+
+                return {
+                    id: asignacion.id,
+                    usuario_empresa_id: asignacion.usuario_empresa_id,
+                    tipo_turno_id: asignacion.tipo_turno_id,
+                    fecha_inicio: asignacion.fecha_inicio,
+                    fecha_fin: asignacion.fecha_fin,
+                    estado: asignacion.estado,
+                    tipo: asignacion.tipo_turno_nombre,
+                    inicio: asignacion.hora_inicio,
+                    fin: asignacion.hora_fin,
+                    colacion_inicio: asignacion.colacion_inicio,
+                    colacion_fin: asignacion.colacion_fin,
+                    dias: diasArray,
+                    trabajador: {
+                        id: asignacion.usuario_empresa_id,
+                        nombre: asignacion.usuario_nombre,
+                        apellido_pat: asignacion.usuario_apellido_pat,
+                        apellido_mat: asignacion.usuario_apellido_mat,
+                        rut: asignacion.usuario_rut,
+                        iniciales: asignacion.usuario_nombre.charAt(0) + (asignacion.usuario_apellido_pat ? asignacion.usuario_apellido_pat.charAt(0) : '')
+                    }
+                };
+            } catch (err) {
+                console.error('Error al obtener tipoTurno en obtenerTurnosTrabajador:', err);
+                return {
+                    id: asignacion.id,
+                    usuario_empresa_id: asignacion.usuario_empresa_id,
+                    tipo_turno_id: asignacion.tipo_turno_id,
+                    fecha_inicio: asignacion.fecha_inicio,
+                    fecha_fin: asignacion.fecha_fin,
+                    estado: asignacion.estado,
+                    tipo: asignacion.tipo_turno_nombre,
+                    inicio: asignacion.hora_inicio,
+                    fin: asignacion.hora_fin,
+                    colacion_inicio: asignacion.colacion_inicio,
+                    colacion_fin: asignacion.colacion_fin,
+                    dias: [],
+                    trabajador: {
+                        id: asignacion.usuario_empresa_id,
+                        nombre: asignacion.usuario_nombre,
+                        apellido_pat: asignacion.usuario_apellido_pat,
+                        apellido_mat: asignacion.usuario_apellido_mat,
+                        rut: asignacion.usuario_rut,
+                        iniciales: asignacion.usuario_nombre.charAt(0) + (asignacion.usuario_apellido_pat ? asignacion.usuario_apellido_pat.charAt(0) : '')
+                    }
+                };
             }
         }));
         
@@ -752,7 +778,7 @@ const obtenerReportesMarcaciones = async (req, res) => {
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
 
             if (!marcacion || !marcacion.data) {
-                console.log("No se encontró la marcación para el reporte:", reporte);
+                
                 continue; // saltar si no se encuentra la marcación
             }
             reporte.nombreTrabajador = marcacion.data.nombre;
@@ -784,7 +810,7 @@ const aprobarCambioMarcacion = async (req, res) => {
         const { reporteId } = req.params;
         // obtener reporte
         let reporte = await ReporteMarcacionesModel.findById(reporteId);
-        console.log("reporte a aprobar:", reporte);
+        
         if (!reporte) {
             return res.status(404).json({ success: false, message: "Reporte no encontrado" });
         }
@@ -887,7 +913,7 @@ const historialSolicitudes = async (req, res) => {
             }
         }
 
-        console.log("historial:", historial);
+        
         res.status(200).json({ success: true, data: historial });
     }
     catch (error) {
@@ -935,13 +961,12 @@ const obtenerTurnosTrabajador = async (req, res) => {
         const { id } = req.params; // ID del trabajador
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        console.log('🔍 Obteniendo turnos para trabajador ID:', id);
+        
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        console.log('Empresa usuario logueado:', empresa ? empresa.empresa_id : null);
-        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
+        
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
             return res.status(403).json({ 
                 success: false, 
@@ -950,9 +975,23 @@ const obtenerTurnosTrabajador = async (req, res) => {
         }
 
         // Obtener turnos del trabajador
-        const turnos = await TurnosModel.getTurnosByUsuarioId(id);
+        const turnosRaw = await TurnosModel.getTurnosByUsuarioId(id);
 
-        console.log('✅ Turnos encontrados:', turnos.length);
+        
+
+        // Enriquecer cada turno con el detalle de días del tipo de turno (si está disponible)
+        const turnos = await Promise.all(turnosRaw.map(async (t) => {
+            try {
+                const tipo = await TipoTurnosModel.getByIdWithDias(t.tipo_turno_id);
+                const diasArray = Array.isArray(tipo?.dias) ? tipo.dias.map(d => d.dia_semana) : [];
+                return { ...t, dias: diasArray };
+            } catch (err) {
+                console.error('Error enriqueciendo turno con dias:', err);
+                return { ...t, dias: [] };
+            }
+        }));
+
+        
 
         res.status(200).json({
             success: true,
@@ -977,13 +1016,12 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         const { limite = 10 } = req.query; // Límite de marcaciones a obtener
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        console.log('🔍 Obteniendo marcaciones para trabajador ID:', id, 'Límite:', limite);
+        
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const empresasUsuario = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        console.log('Empresas usuario logueado:', empresasUsuario.map(e => e.empresa_id));
-        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
+        
         const empresasUsuarioIds = empresasUsuario.map(e => e.empresa_id);
         if (!trabajadorEmpresa || !empresasUsuarioIds.includes(trabajadorEmpresa.empresa_id)) {
             return res.status(403).json({ 
@@ -999,7 +1037,7 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         // Aplicar límite manualmente ya que la función no lo tiene
         const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
 
-        console.log('✅ Marcaciones encontradas:', marcaciones.length, 'de', marcacionesCompletas.length, 'totales');
+        
 
         // Formatear marcaciones para el frontend
         const marcacionesFormateadas = marcaciones.map(marcacion => ({
@@ -1035,11 +1073,7 @@ const actualizarHorasLaborales = async (req, res) => {
         const { horas_laborales } = req.body; // Nuevas horas laborales
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        console.log('🔄 Actualizando horas laborales:', { 
-            trabajadorId: id, 
-            horasLaborales: horas_laborales,
-            usuarioEmpresa: USR_PETICION.id 
-        });
+        
 
         // Validar que las horas laborales sean válidas
         const horasValidas = ['44', '45', '54'];
@@ -1053,8 +1087,7 @@ const actualizarHorasLaborales = async (req, res) => {
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        console.log('Empresa usuario logueado:', empresa ? empresa.empresa_id : null);
-        console.log('Empresa trabajador:', trabajadorEmpresa ? trabajadorEmpresa.empresa_id : null);
+        
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
             return res.status(403).json({ 
                 success: false, 
@@ -1083,7 +1116,7 @@ const actualizarHorasLaborales = async (req, res) => {
         //     req.get('User-Agent')
         // );
 
-        console.log('✅ Horas laborales actualizadas exitosamente');
+        
 
         res.status(200).json({
             success: true,
@@ -1108,15 +1141,13 @@ const actualizarHorasLaborales = async (req, res) => {
 // Nuevo: Obtener tipos de turno disponibles para la empresa del usuario
 const obtenerTiposTurnos = async (req, res) => {
     try {
-        console.log(req.user);
+        
         const empresa_id = req.user.empresa_id
         // Obtener solo los tipos de turno de la empresa
         const tiposTurnos = await TipoTurnosModel.getByEmpresaId(empresa_id);
         // para cada tipo de turno agregarle los dias en que aplica
 
-        console.log("Obteniendo tipos de turnos para empresa ID:", empresa_id);
-        const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
-        console.log("Tipos de turnos obtenidos:", tiposConDias);
+    const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
         res.status(200).json({
             success: true,
             data: tiposConDias,
@@ -1173,7 +1204,7 @@ const eliminarTipoTurno = async (req, res) => {
                     datos_nuevos: null,
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                console.log('✅ Eliminación de tipo de turno registrada en auditoría');
+                
             } catch (auditError) {
                 console.error('⚠️ Error al registrar eliminación de tipo de turno en auditoría:', auditError);
             }
@@ -1278,7 +1309,7 @@ const actualizarTrabajador = async (req, res) => {
         const { nombre, apellido, rut, email } = req.body;
         const USR_PETICION = req.user;
 
-        console.log('🔄 Actualizando trabajador:', { id, nombre, apellido, rut, email });
+        
 
         // Validaciones
         if (!nombre || !apellido || !rut) {
@@ -1377,12 +1408,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         const { rutEmpresa } = req.params;
         const { fecha_inicio, fecha_fin } = req.query;
 
-        console.log('📊 Obteniendo reporte de jornada diaria:', {
-            rutEmpresa,
-            fecha_inicio,
-            fecha_fin,
-            usuario: req.user
-        });
+        
 
         // Validar fechas
         if (!fecha_inicio || !fecha_fin) {
@@ -1405,7 +1431,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         
         // Obtener trabajadores de empresas EST asociadas
         const trabajadoresEST = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
-        console.log(trabajadoresEST);
+        
         // Combinar todos los trabajadores
         const todosTrabajadores = [...trabajadoresDirectos, ...trabajadoresEST];
 
@@ -1428,6 +1454,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 fecha_inicio,
                 fecha_fin
             );
+            
             console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
             
             // Obtener horas extras del trabajador en el rango de fechas
@@ -1530,7 +1557,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             empresa_rut: t.empresa_rut || empresa.emp_rut
         }));
 
-        console.log(marcacionesAgrupadasPorUsuario);
+        
 
         res.status(200).json({
             success: true,
@@ -1566,7 +1593,7 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
         const USR_PETICION = req.user;
         const { fechaInicio, fechaFin } = req.query;
 
-        console.log('🚀 Obteniendo reporte detallado:', { fechaInicio, fechaFin, usuario: USR_PETICION.id });
+        
 
         // Obtener empresa del usuario
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
@@ -1593,13 +1620,13 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
             finSemana = ultimoDia.toISOString().split('T')[0];
         }
 
-        console.log(`📅 Calculando para el período: ${inicioSemana} al ${finSemana}`);
+        
 
         // Procesar cada trabajador
         const trabajadoresConDatos = await Promise.all(
             trabajadores.map(async (trabajador) => {
                 try {
-                    console.log(`👤 Procesando: ${trabajador.usuario_nombre} (ID: ${trabajador.id})`);
+                    
 
                     // Obtener marcaciones del período
                     const marcaciones = await MarcacionesModel.obtenerMarcacionesPorPeriodo(
@@ -1766,12 +1793,20 @@ async function obtenerInformacionTurnos(turnosAsignados) {
     return await Promise.all(
         turnosAsignados.map(async (turno) => {
             try {
-                const tipoTurno = await TipoTurnosModel.findById(turno.tipo_turno_id);
+                // use the helper that returns the tipo turno along with its 'dias' (detalle de días)
+                const tipoTurno = await TipoTurnosModel.getByIdWithDias(turno.tipo_turno_id);
+
+                // map dias (detalle) a un array simple de nombres de día si existe
+                const diasArray = Array.isArray(tipoTurno?.dias)
+                    ? tipoTurno.dias.map(d => d.dia_semana)
+                    : [];
+
                 return {
                     nombre: tipoTurno?.nombre || 'Turno sin nombre',
                     horario: `${tipoTurno?.hora_inicio || '09:00'} - ${tipoTurno?.hora_fin || '17:00'}`,
                     tipo_jornada: tipoTurno?.tipo_jornada || 'Ordinaria',
                     dias_trabajo: tipoTurno?.dias_trabajo || 5,
+                    dias: diasArray,
                     horas_programadas: calcularHorasTurno(tipoTurno?.hora_inicio, tipoTurno?.hora_fin)
                 };
             } catch (error) {
@@ -1781,6 +1816,7 @@ async function obtenerInformacionTurnos(turnosAsignados) {
                     horario: '09:00 - 17:00',
                     tipo_jornada: 'Ordinaria',
                     dias_trabajo: 5,
+                    dias: [],
                     horas_programadas: 8
                 };
             }

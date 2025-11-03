@@ -68,6 +68,19 @@
             Estadísticas
           </router-link>
         </li>
+        <li v-if="isAdmin">
+          <router-link
+            to="/empresa/reportes/domingos-festivos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/empresa/reportes/domingos-festivos' ? 'bg-white border-b-2 border-cyan-500 text-cyan-600 shadow-sm' : 'text-gray-500 hover:text-cyan-600 hover:bg-white'"
+            exact
+          >
+            <svg class="w-4 h-4 mr-1 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" />
+            </svg>
+            Domingos/Festivos
+          </router-link>
+        </li>
       </ul>
     </nav>
   </div>
@@ -250,73 +263,12 @@
     </main>
   </div>
 
-  <!-- Modal Unir Trabajador -->
-  <div v-if="showUnirTrabajadorModal" class="fixed inset-0 flex items-center justify-center z-50" style="background:rgba(255,255,255,0.01);">
-    <div class="modal-card max-w-lg w-full p-8">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold modal-title">Unir trabajador a empresa</h2>
-        <button @click="closeUnirTrabajadorModal" class="text-gray-500 hover:text-blue-700 text-xl"><i class="fas fa-times"></i></button>
-      </div>
-      <div v-if="unirError" class="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm">{{ unirError }}</div>
-      <form @submit.prevent="unirTrabajador" class="flex flex-col gap-4">
-        <div>
-          <label class="empresa-label">Buscar por RUT</label>
-          <div class="flex gap-2 mt-1">
-            <input 
-              v-model="rutBusqueda" 
-              @keyup.enter="buscarPorRut"
-              class="input flex-1 px-2 py-1" 
-              placeholder="Ej: 12345678-9 o 12345678K" 
-              maxlength="12"
-            />
-            <button 
-              type="button" 
-              @click="buscarPorRut" 
-              :disabled="!rutBusqueda || rutBusqueda.trim() === ''"
-              class="btn-primary px-4 py-1 rounded transition-all duration-200"
-              :class="{ 'opacity-50 cursor-not-allowed': !rutBusqueda || rutBusqueda.trim() === '' }"
-            >
-              🔍 Buscar
-            </button>
-          </div>
-          <p class="text-xs text-gray-500 mt-1">Presiona Enter o haz clic en Buscar para encontrar el usuario</p>
-        </div>
-        <div>
-          <label class="empresa-label">O seleccionar usuario</label>
-          <select 
-            v-model="usuarioSeleccionado" 
-            class="select w-full px-2 py-1 mt-1"
-            :class="{ 'border-green-500 bg-green-50': usuarioSeleccionado && unirError && unirError.startsWith('✅') }"
-          >
-            <option value="">Seleccione un usuario</option>
-            <option v-for="usuario in listaUsuarios" :key="usuario.id" :value="usuario.id">
-              {{ usuario.nombre }} {{ usuario.apellido_pat }} ({{ usuario.rut }})
-            </option>
-          </select>
-          <p v-if="usuarioSeleccionado" class="text-xs text-green-600 mt-1">
-            ✓ Usuario seleccionado
-          </p>
-        </div>
-        <div>
-          <label class="empresa-label">Empresa</label>
-          <select v-model="empresaSeleccionada" class="select w-full px-2 py-1 mt-1">
-            <option value="">Seleccione una empresa</option>
-            <option v-for="empresa in empresas" :key="empresa.empresa_id" :value="empresa.empresa_id">
-              {{ empresa.emp_nombre }}
-            </option>
-          </select>
-        </div>
-        <div class="flex justify-end mt-4 gap-2">
-          <button type="button" @click="closeUnirTrabajadorModal" class="px-4 py-2 border rounded-md text-base text-blue-700 border-blue-200 hover:bg-blue-50 font-semibold">Cancelar</button>
-          <button type="submit" :disabled="submitting" class="btn-primary px-6 py-2 rounded-md text-base font-semibold">Unir</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Modal 'Unir trabajador' eliminado por petición del usuario -->
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '../../composables/useAuth.js';
 // Se reemplaza el uso directo de axios por el servicio AdminServices
 import AdminServices from '../../services/AdminService.js'
 import * as XLSX from 'xlsx'
@@ -387,6 +339,10 @@ async function fetchEmpresas() {
   // mientras que el servicio AdminServices sí lo agrega automáticamente mediante un interceptor.
   // Así se evita el error 401 (Unauthorized) y se mantiene la consistencia de la autenticación.
 }
+
+// Roles
+const { hasRole } = useAuth();
+const isAdmin = computed(() => hasRole('admin'));
 
 function openModal() {
   showModal.value = true

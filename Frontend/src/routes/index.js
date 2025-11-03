@@ -138,6 +138,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
+            path: '/empresa/reportes/domingos-festivos',
+            name: 'EmpresaReporteDomingosFestivos',
+            component: () => import('../components/vistas/empresa/ReportesDomingosFestivos.vue'),
+            meta: { requiresAuth: true, requiresAdmin: true }
+        },
+        {
             path: '/empresa/configuracion',
             name: 'EmpresaConfiguracion',
             component: () => import('../components/vistas/empresa/Configuracion.vue'),
@@ -192,6 +198,7 @@ router.beforeEach((to, from, next) => {
     const adminRoutes = [
         '/administrarempresa',
         '/RolAdministracion', 
+        '/empresa/reportes/domingos-festivos',
         '/usuarios-permisos',
         '/estadisticas',
         '/fiscalizacion'

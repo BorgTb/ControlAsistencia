@@ -61,9 +61,7 @@ class ReportesService {
    */
   async enviarReporte(reporteData) {
     try {
-      console.log('=== REPORTES SERVICE - DATOS A ENVIAR ===')
-      console.log('Datos completos del reporte:', JSON.stringify(reporteData, null, 2))
-      console.log('========================================')
+      
 
       // Si hay archivos, usar FormData para multipart
       if (reporteData.archivos && reporteData.archivos.length > 0) {
@@ -87,9 +85,7 @@ class ReportesService {
           formData.append(`archivo_${index}`, archivo)
         })
         
-        console.log('=== ENVIANDO CON ARCHIVOS (FormData) ===')
-        console.log('Número de archivos:', reporteData.archivos.length)
-        console.log('======================================')
+        
 
         // Cambiar el content-type para multipart
         const response = await apiClient.post('/user/reportes/', formData, {
@@ -104,16 +100,7 @@ class ReportesService {
           message: response.data.message || 'Reporte enviado correctamente'
         }
       } else {
-        console.log('=== ENVIANDO SIN ARCHIVOS (JSON) ===')
-        console.log('Datos JSON:', {
-          marcacion_id: reporteData.marcacion_id,
-          tipo_problema: reporteData.tipo_problema,
-          descripcion: reporteData.descripcion,
-          fecha_correcta: reporteData.fecha_correcta || null,
-          hora_correcta: reporteData.hora_correcta || null,
-          tipo: reporteData.tipo || null
-        })
-        console.log('==================================')
+        
 
         // Sin archivos, usar JSON normal
         const response = await apiClient.post('/user/reportes/', {
@@ -149,9 +136,7 @@ class ReportesService {
    */
   async enviarSolicitudMarcacion(solicitudData) {
     try {
-      console.log('=== REPORTES SERVICE - SOLICITUD MARCACIÓN ===')
-      console.log('Datos de la solicitud:', JSON.stringify(solicitudData, null, 2))
-      console.log('=============================================')
+      
 
       const response = await apiClient.post('/user/reportes/solicitud', {
         tipo: solicitudData.tipo,
@@ -178,6 +163,31 @@ class ReportesService {
       return {
         success: false,
         error: error.response?.data?.message || 'Error al enviar solicitud de marcación',
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Obtiene el reporte de domingos y festivos para una empresa
+   * @param {number|string} empresaId
+   * @param {Object} filtros - Opcional: fechaDesde, fechaHasta, trabajador, tipo
+   * @returns {Promise<Object>}
+   */
+  async obtenerReporteDomingosFestivos(empresaId, filtros = {}) {
+    try {
+      const params = { ...filtros };
+      const response = await apiClient.get(`/fiscalizador/asistencia-domingos/${empresaId}`, { params });
+      return {
+        success: true,
+        data: response.data,
+        message: response.data.message || 'Reporte de domingos y festivos obtenido correctamente'
+      }
+    } catch (error) {
+      console.error('Error obteniendo reporte domingos/festivos:', error)
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener reporte de domingos y festivos',
         status: error.response?.status
       }
     }

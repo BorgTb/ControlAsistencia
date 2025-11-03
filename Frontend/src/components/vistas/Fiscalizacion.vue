@@ -70,6 +70,19 @@
             Estadísticas
           </router-link>
         </li>
+        <li v-if="isAdmin">
+          <router-link
+            to="/empresa/reportes/domingos-festivos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200 focus:outline-none"
+            :class="$route.path === '/empresa/reportes/domingos-festivos' ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white' : 'text-gray-500 hover:text-cyan-600'"
+            exact
+          >
+            <svg class="w-4 h-4 mr-1 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z" />
+            </svg>
+            Domingos/Festivos
+          </router-link>
+        </li>
       </ul>
     </nav>
   </div>
@@ -385,6 +398,11 @@ const {
 
 // ========== COMPOSABLE DE NOTIFICACIONES ==========
 const { showSuccess, showError } = useNotification()
+
+// Roles
+import { useAuth } from '../../composables/useAuth.js'
+const { hasRole } = useAuth()
+const isAdmin = computed(() => hasRole('admin'))
 
 // ========== ESTADO PARA MODAL DE CAMBIOS ==========
 // Variables reactivas para controlar el modal de cambios de usuario
