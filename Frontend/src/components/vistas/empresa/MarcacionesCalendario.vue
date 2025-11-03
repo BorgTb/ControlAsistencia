@@ -140,6 +140,11 @@ const props = defineProps({
     type: Array,
     default: () => []
   }
+  ,
+  ausencias: {
+    type: Array,
+    default: () => []
+  }
 });
 
 // Feriados cargados desde la API (BD)

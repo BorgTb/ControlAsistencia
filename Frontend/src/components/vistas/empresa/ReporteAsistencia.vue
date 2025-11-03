@@ -69,8 +69,40 @@
           <div class="bg-red-50 rounded-lg p-4 text-center border border-red-200">
             <div class="text-2xl font-bold text-red-600">{{ resumen.ausenciasInjustificadas }}</div>
             <div class="text-xs text-red-700 font-medium mt-1">Ausencias Injustificadas</div>
-            <div v-if="resumen.fechasNoTrabajadas && resumen.fechasNoTrabajadas.length" class="text-xs text-gray-600 mt-2">
-              Días no trabajados: {{ resumen.fechasNoTrabajadas.join(', ') }}
+
+            <!-- Toggle para mostrar/ocultar los días ausentes -->
+            <div class="mt-2">
+              <button
+                @click="toggleVerAusencias"
+                class="text-xs text-gray-600 hover:text-gray-800 focus:outline-none"
+                :aria-expanded="verAusencias.toString()"
+                aria-controls="lista-ausencias"
+              >
+                {{ verAusencias ? 'Ocultar días' : `Mostrar días (${resumen.fechasNoTrabajadas ? resumen.fechasNoTrabajadas.length : 0})` }}
+              </button>
+            </div>
+
+            <div v-if="verAusencias && resumen.fechasNoTrabajadas && resumen.fechasNoTrabajadas.length" class="mt-2">
+              <div class="text-xs text-gray-600 mb-1">Días no trabajados:</div>
+              <div class="flex flex-wrap items-center">
+                <span
+                  v-for="(f, idx) in fechasAusenciasVisibles"
+                    :key="f + '-' + idx"
+                    :title="formatFechaLong(f)"
+                    class="inline-flex items-center bg-red-50 text-red-600 border border-red-100 text-xs rounded-full px-2 py-0.5 mr-2 mb-2"
+                >
+                  {{ formatFechaSimple(f) }}
+                </span>
+
+                <button
+                  v-if="resumen.fechasNoTrabajadas.length > MAX_AUSENCIAS_VISIBLE"
+                  @click="toggleMostrarTodasAusencias"
+                  class="text-xs text-gray-500 hover:text-gray-700 ml-1 focus:outline-none"
+                  :aria-expanded="mostrarTodasAusencias.toString()"
+                >
+                  {{ mostrarTodasAusencias ? 'Mostrar menos' : `Mostrar ${resumen.fechasNoTrabajadas.length - MAX_AUSENCIAS_VISIBLE} más` }}
+                </button>
+              </div>
             </div>
           </div>
           <div class="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
@@ -113,6 +145,7 @@
                 :vista="vista"
                 :marcaciones="marcaciones"
                 :dias-justificados="diasJustificados"
+                :ausencias="ausenciasParaCalendario"
                 @hover-dia="mostrarTooltipDia"
               />
             </div>
@@ -163,6 +196,112 @@ const trabajadorSeleccionado = ref(null);
 const marcaciones = ref([]);
 const diasJustificados = ref([]);
 const mostrarModalJustificaciones = ref(false);
+
+// Control para mostrar/ocultar la lista completa de ausencias y utilidades de formato
+const mostrarTodasAusencias = ref(false);
+const MAX_AUSENCIAS_VISIBLE = 6; // número máximo de chips a mostrar antes de truncar
+const fechasAusenciasVisibles = computed(() => {
+  const arr = resumen.value.fechasNoTrabajadas || [];
+  return mostrarTodasAusencias.value ? arr : arr.slice(0, MAX_AUSENCIAS_VISIBLE);
+});
+function toggleMostrarTodasAusencias() { mostrarTodasAusencias.value = !mostrarTodasAusencias.value; }
+
+// Mostrar/ocultar por completo la sección de días (por defecto oculta)
+const verAusencias = ref(false);
+function toggleVerAusencias() { verAusencias.value = !verAusencias.value; }
+
+function formatFechaSimple(f) {
+  try {
+    const d = new Date(f);
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
+  } catch (e) {
+    return f;
+  }
+}
+function formatFechaLong(f) {
+  try {
+    const d = new Date(f);
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+  } catch (e) {
+    return f;
+  }
+}
+
+// Mantener ausencias por trabajador para que cada trabajador tenga sus propias fechas calculadas
+const ausenciasPorTrabajador = ref({});
+
+function actualizarAusenciasParaTrabajador(usuarioEmpresaId) {
+  try {
+    if (!usuarioEmpresaId) return;
+    // Determinar rango a evaluar: preferir la fecha de ingreso del trabajador si está disponible,
+    // si no usar la primera marcación disponible; finalmente, fallback al inicio del mes actual.
+    const trabajador = trabajadorSeleccionado.value || {};
+    const possibleStartKeys = ['fecha_inicio','fechaInicio','fecha_ingreso','fechaIngreso','fecha_alta','fechaAlta','ingreso','created_at','createdAt'];
+    function parseDateOnly(s) {
+      if (!s) return null;
+      if (typeof s === 'string') {
+        const only = s.split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(only)) {
+          const [y,m,d] = only.split('-').map(Number);
+          return new Date(y, m-1, d);
+        }
+        // try Date parse as fallback
+        const parsed = new Date(s);
+        if (!isNaN(parsed)) return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+        return null;
+      }
+      if (s instanceof Date && !isNaN(s)) return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+      return null;
+    }
+
+    let inicioDate = null;
+    for (const k of possibleStartKeys) {
+      if (trabajador[k]) { inicioDate = parseDateOnly(trabajador[k]); break; }
+    }
+    // si no hay fecha de ingreso, intentar usar la primera marcación disponible
+    if (!inicioDate && marcaciones.value && marcaciones.value.length) {
+      // buscar la marcación con fecha mínima
+      let minFecha = null;
+      marcaciones.value.forEach(m => {
+        const f = (m.fecha || m.fecha_marcacion || '').split('T')[0];
+        if (!f) return;
+        if (!minFecha || f < minFecha) minFecha = f;
+      });
+      if (minFecha) inicioDate = parseDateOnly(minFecha);
+    }
+    // fallback al primer día del mes actual
+    if (!inicioDate) {
+      const hoy = new Date(); inicioDate = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    }
+
+    const finDate = new Date(); // hasta hoy
+
+    // Construir array completo de días desde inicioDate hasta finDate a partir de marcaciones actuales y justificaciones
+    const diasMesArray = [];
+    for (let d = new Date(inicioDate); d <= finDate; d.setDate(d.getDate() + 1)) {
+      const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0');
+      const fechaStr = `${y}-${m}-${dd}`;
+      const registro = (marcaciones.value || []).find(x => ((x.fecha || x.fecha_marcacion || '').split('T')[0]) === fechaStr);
+      const entrada = registro ? (registro.entrada || registro.hora_entrada || registro.hora) : null;
+      const salida = registro ? (registro.salida || registro.hora_salida || registro.hora) : null;
+      const presente = !!(registro && (entrada || salida));
+      const justificada = !!((diasJustificados.value || []).find(j => ((j.fecha || '').split('T')[0]) === fechaStr));
+      diasMesArray.push({ fecha: fechaStr, hora_entrada: entrada, hora_salida: salida, presente, justificada });
+    }
+
+    const assignedShiftsForSelected = trabajadorSeleccionado.value ? (trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || []) : [];
+    const ausInfo = calcularAusencias(diasMesArray, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForSelected });
+    ausenciasPorTrabajador.value = { ...(ausenciasPorTrabajador.value || {}), [usuarioEmpresaId]: ausInfo.fechasAusentes || [] };
+  } catch (e) {
+    console.error('Error actualizando ausencias por trabajador:', e);
+  }
+}
+
+// Prop para pasar al calendario: ausencias precomputadas para el trabajador seleccionado
+const ausenciasParaCalendario = computed(() => {
+  if (!trabajadorSeleccionado.value) return [];
+  return ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id] || [];
+});
 
 const resumen = computed(() => {
   // Si no hay trabajador seleccionado, devolver valores por defecto
@@ -243,7 +382,7 @@ const resumen = computed(() => {
   const promedioHoraEntrada = calcularPromedio(entradasTotales);
   const promedioHoraSalida = calcularPromedio(salidasTotales);
 
-  return {
+    return {
     totalDiasTrabajados: diasTrabajados,
     ausenciasJustificadas: ausInfo.ausenciasJustificadas,
     ausenciasInjustificadas: ausInfo.ausenciasInjustificadas,
@@ -251,7 +390,7 @@ const resumen = computed(() => {
     porcentajeAsistencia,
     promedioHoraEntrada,
     promedioHoraSalida,
-    fechasNoTrabajadas: ausInfo.fechasAusentes
+    fechasNoTrabajadas: (trabajadorSeleccionado.value && ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id]) ? ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id] : ausInfo.fechasAusentes
   };
 });
 
@@ -485,6 +624,8 @@ async function seleccionarTrabajador(trabajador) {
   await cargarMarcacionesTrabajador(trabajador.id);
   // Cargar días justificados
   await cargarDiasJustificados(trabajador.id);
+  // Actualizar ausencias calculadas para este trabajador (se asocia por id)
+  try { actualizarAusenciasParaTrabajador(trabajador.id); } catch (e) { /* noop */ }
 }
 
 watch(trabajadorSeleccionado, async (nuevoTrabajador) => {
@@ -493,6 +634,8 @@ watch(trabajadorSeleccionado, async (nuevoTrabajador) => {
     await cargarMarcacionesTrabajador(nuevoTrabajador.id);
     // Cargar días justificados
     await cargarDiasJustificados(nuevoTrabajador.id);
+    // Actualizar ausencias al cambiar trabajador
+    try { actualizarAusenciasParaTrabajador(nuevoTrabajador.id); } catch (e) { /* noop */ }
   }
 });
 
