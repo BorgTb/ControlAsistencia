@@ -519,6 +519,46 @@ class EmpresaServices{
   }
 
   /**
+   * Aprueba una hora extra específica que está PENDIENTE por su ID
+   * @param {number} horaExtraId - ID de la hora extra pendiente
+   * @param {string} motivo - Motivo de la aprobación (opcional)
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async aprobarHoraExtraPendiente(horaExtraId, motivo = null) {
+    try {
+      console.log('🚀 Aprobando hora extra pendiente:', horaExtraId)
+      const response = await apiClient.patch(`/userEmpresa/horas-extras/${horaExtraId}/aprobar`, {
+        motivo: motivo
+      })
+      console.log('✅ Hora extra pendiente aprobada:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error aprobando hora extra pendiente:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Rechaza una hora extra específica que está PENDIENTE por su ID
+   * @param {number} horaExtraId - ID de la hora extra pendiente
+   * @param {string} motivoRechazo - Motivo del rechazo
+   * @returns {Promise} Respuesta de la operación
+   */
+  static async rechazarHoraExtraPendiente(horaExtraId, motivoRechazo) {
+    try {
+      console.log('🚀 Rechazando hora extra pendiente:', horaExtraId)
+      const response = await apiClient.patch(`/userEmpresa/horas-extras/${horaExtraId}/rechazar`, {
+        motivo_rechazo: motivoRechazo
+      })
+      console.log('✅ Hora extra pendiente rechazada:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error rechazando hora extra pendiente:', error)
+      throw error
+    }
+  }
+
+  /**
    * Obtiene horas extras por empresa
    * @param {number} empresaId - ID de la empresa
    * @returns {Promise} Lista de horas extras

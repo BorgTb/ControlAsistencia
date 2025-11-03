@@ -52,8 +52,8 @@ class HorasExtrasModel {
                 [horaExtraId]
             );
 
-
-            await this.aprobarHoraExtra(result.insertId, horaExtraData.aprobado_por);
+            // Comentado: Auto-aprobación puede causar problemas si no hay aprobado_por
+            // await this.aprobarHoraExtra(result.insertId, horaExtraData.aprobado_por);
 
             return createdRows[0] || null;
             
@@ -228,49 +228,94 @@ class HorasExtrasModel {
         try {
             await connection.beginTransaction();
             
-            const query = `
-                UPDATE horas_extras 
-                SET 
-                    usuario_empresa_id = ?, 
-                    asignacion_turno_id = ?, 
-                    marcacion_id = ?, 
-                    fecha = ?, 
-                    hora_inicio = ?, 
-                    hora_fin = ?, 
-                    estado = ?, 
-                    motivo = ?, 
-                    aprobado_por = ?, 
-                    fecha_aprobacion = ?,
-                    tipo_compensacion = ?,
-                    dias_descanso_equivalentes = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `;
+            // Construir la consulta dinámicamente solo con los campos que se van a actualizar
+            const updateFields = [];
+            const updateValues = [];
             
-            await connection.execute(query, [
-                horaExtraData.usuario_empresa_id,
-                horaExtraData.asignacion_turno_id || null,
-                horaExtraData.marcacion_id || null,
-                horaExtraData.fecha,
-                horaExtraData.hora_inicio,
-                horaExtraData.hora_fin,
-                horaExtraData.estado,
-                horaExtraData.motivo || null,
-                horaExtraData.aprobado_por || null,
-                horaExtraData.fecha_aprobacion || null,
-                horaExtraData.tipo_compensacion || 'PAGO',
-                horaExtraData.dias_descanso_equivalentes || 0,
-                id
-            ]);
+            if (horaExtraData.usuario_empresa_id !== undefined) {
+                updateFields.push('usuario_empresa_id = ?');
+                updateValues.push(horaExtraData.usuario_empresa_id);
+            }
             
+            if (horaExtraData.asignacion_turno_id !== undefined) {
+                updateFields.push('asignacion_turno_id = ?');
+                updateValues.push(horaExtraData.asignacion_turno_id);
+            }
+            
+            if (horaExtraData.marcacion_id !== undefined) {
+                updateFields.push('marcacion_id = ?');
+                updateValues.push(horaExtraData.marcacion_id);
+            }
+            
+            if (horaExtraData.fecha !== undefined) {
+                updateFields.push('fecha = ?');
+                updateValues.push(horaExtraData.fecha);
+            }
+            
+            if (horaExtraData.hora_inicio !== undefined) {
+                updateFields.push('hora_inicio = ?');
+                updateValues.push(horaExtraData.hora_inicio);
+            }
+            
+            if (horaExtraData.hora_fin !== undefined) {
+                updateFields.push('hora_fin = ?');
+                updateValues.push(horaExtraData.hora_fin);
+            }
+            
+            if (horaExtraData.estado !== undefined) {
+                updateFields.push('estado = ?');
+                updateValues.push(horaExtraData.estado);
+            }
+            
+            if (horaExtraData.motivo !== undefined) {
+                updateFields.push('motivo = ?');
+                updateValues.push(horaExtraData.motivo);
+            }
+            
+            if (horaExtraData.aprobado_por !== undefined) {
+                updateFields.push('aprobado_por = ?');
+                updateValues.push(horaExtraData.aprobado_por);
+            }
+            
+            if (horaExtraData.fecha_aprobacion !== undefined) {
+                updateFields.push('fecha_aprobacion = ?');
+                updateValues.push(horaExtraData.fecha_aprobacion);
+            }
+            
+            if (horaExtraData.tipo_compensacion !== undefined) {
+                updateFields.push('tipo_compensacion = ?');
+                updateValues.push(horaExtraData.tipo_compensacion);
+            }
+            
+            if (horaExtraData.dias_descanso_equivalentes !== undefined) {
+                updateFields.push('dias_descanso_equivalentes = ?');
+                updateValues.push(horaExtraData.dias_descanso_equivalentes);
+            }
+            
+            // Siempre actualizar updated_at
+            updateFields.push('updated_at = CURRENT_TIMESTAMP');
+            
+            // Si no hay campos para actualizar, retornar null
+            if (updateFields.length === 1) { // Solo updated_at
+                await connection.rollback();
+                return null;
+            }
+            
+            const query = `UPDATE horas_extras SET ${updateFields.join(', ')} WHERE id = ?`;
+            updateValues.push(id);
+            
+            const [result] = await connection.execute(query, updateValues);
             await connection.commit();
             
-            // Recuperar y devolver la fila actualizada
-            const [updatedRows] = await connection.execute(
-                'SELECT * FROM horas_extras WHERE id = ?', 
-                [id]
-            );
-            return updatedRows[0] || null;
+            if (result.affectedRows > 0) {
+                // Recuperar y devolver la fila actualizada
+                const [updatedRows] = await connection.execute(
+                    'SELECT * FROM horas_extras WHERE id = ?', 
+                    [id]
+                );
+                return updatedRows[0] || null;
+            }
+            return null;
             
         } catch (error) {
             await connection.rollback();

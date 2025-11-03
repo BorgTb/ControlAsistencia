@@ -79,7 +79,10 @@ router.patch('/amonestaciones/:id/estado', AuthService.verifyToken, Amonestacion
 
 // Rutas para gestión de horas extras
 router.post('/horas-extras/aprobar', AuthService.verifyToken, HorasExtrasController.aprobarHorasExtras);
+router.patch('/horas-extras/:id/aprobar', AuthService.verifyToken, HorasExtrasController.aprobarHoraExtraPendiente);
+router.patch('/horas-extras/:id/rechazar', AuthService.verifyToken, HorasExtrasController.rechazarHoraExtraPendiente);
 router.get('/horas-extras/empresa/:empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPorEmpresa);
+router.get('/horas-extras/empresa/:empresa_id/pendientes', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPendientes);
 router.get('/horas-extras/trabajador/:usuario_empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPorTrabajador);
 router.get('/horas-extras/resumen/:empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerResumenHorasExtras);
 

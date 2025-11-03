@@ -241,6 +241,28 @@ export function useEmpresa() {
     }
   };
 
+  const aprobarHoraExtraPendiente = async (horaExtraId, motivo = null) => {
+    try {
+      console.log('📝 Aprobando hora extra pendiente:', horaExtraId);
+      const response = await EmpresaServices.aprobarHoraExtraPendiente(horaExtraId, motivo);
+      return response;
+    } catch (error) {
+      console.error("Error al aprobar hora extra pendiente:", error);
+      throw error;
+    }
+  };
+
+  const rechazarHoraExtraPendiente = async (horaExtraId, motivoRechazo) => {
+    try {
+      console.log('📝 Rechazando hora extra pendiente:', horaExtraId);
+      const response = await EmpresaServices.rechazarHoraExtraPendiente(horaExtraId, motivoRechazo);
+      return response;
+    } catch (error) {
+      console.error("Error al rechazar hora extra pendiente:", error);
+      throw error;
+    }
+  };
+
   const obtenerHorasExtrasPorEmpresa = async () => {
     try {
       const [empresa] = await EmpresaServices.obtenerTrabajadores(user.value.rut, false);
@@ -288,6 +310,8 @@ export function useEmpresa() {
     eliminarAmonestacion,
     obtenerReporteJornadaDiaria,
     aprobarHorasExtras,
+    aprobarHoraExtraPendiente,
+    rechazarHoraExtraPendiente,
     obtenerHorasExtrasPorEmpresa,
     obtenerHorasExtrasPorTrabajador
   };

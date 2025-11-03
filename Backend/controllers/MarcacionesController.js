@@ -10,6 +10,7 @@ import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
 import TipoTurnosModel from '../model/TipoTurnosModel.js';
 import JustificacionesModel from '../model/JustificacionesModel.js';
+import HorasExtrasModel from '../model/HorasExtrasModel.js';
 
 
 
@@ -65,6 +66,53 @@ function calcularDiferenciaHoras(hora1, hora2) {
         return segundosAHora(diferencia);
     } catch (error) {
         return { error: error.message };
+    }
+}
+
+/**
+ * Calcula las horas extras en base a la hora de salida y la configuración de tolerancias
+ * @param {string} horaSalida - Hora de salida real (HH:mm:ss)
+ * @param {string} horaFinTurno - Hora de fin del turno (HH:mm:ss)
+ * @param {number} toleranciaSalida - Tolerancia en minutos para la salida
+ * @returns {Object|null} - Objeto con hora_inicio y hora_fin de las horas extras o null si no hay
+ */
+function calcularHorasExtras(horaSalida, horaFinTurno, toleranciaSalida = 0) {
+    // Función auxiliar para convertir hh:mm:ss a minutos totales
+    function horaAMinutos(horaStr) {
+        const [horas, minutos, segundos = 0] = horaStr.split(':').map(Number);
+        return horas * 60 + minutos + Math.floor(segundos / 60);
+    }
+
+    // Función auxiliar para convertir minutos a formato hh:mm:ss
+    function minutosAHora(minutosTotales) {
+        const horas = Math.floor(minutosTotales / 60);
+        const minutos = minutosTotales % 60;
+        return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00`;
+    }
+
+    try {
+        const salidaEnMinutos = horaAMinutos(horaSalida);
+        const finTurnoEnMinutos = horaAMinutos(horaFinTurno);
+        
+        // Calcular el fin del turno con tolerancia
+        const finTurnoConTolerancia = finTurnoEnMinutos + toleranciaSalida;
+        
+        // Si la salida es después del fin del turno + tolerancia, hay horas extras
+        if (salidaEnMinutos > finTurnoConTolerancia) {
+            const horaInicioExtras = minutosAHora(finTurnoConTolerancia);
+            const horaFinExtras = horaSalida;
+            
+            return {
+                hora_inicio: horaInicioExtras,
+                hora_fin: horaFinExtras,
+                minutos_extras: salidaEnMinutos - finTurnoConTolerancia
+            };
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error calculando horas extras:', error);
+        return null;
     }
 }
 
@@ -196,6 +244,62 @@ const registrarMarcacion = async (req, res) => {
                 lugar = null; // si se agrega un domicilio de prestación, no es necesario enviar el lugar aproximado
             } else if (lugar && lugar.lugar_id) {
                 MarcacionesService.agregarLugarMarcacion(result.data.id, lugar.lugar_id);
+            }
+        }
+
+        // Lógica específica para salida (calcular horas extras)
+        if (tipo === 'salida') {
+            try {
+                // Obtener configuración de tolerancias de la empresa
+                const configTolerancia = await ConfigToleranciaModel.findByEmpresaId(usuarioEmpresa.empresa_id);
+                const toleranciaSalida = configTolerancia ? configTolerancia.tolerancia_salida : 0;
+                
+                // Calcular si hay horas extras
+                const horasExtras = calcularHorasExtras(marcacion.data.hora, turno.hora_fin, toleranciaSalida);
+                
+                if (horasExtras) {
+                    console.log('🕐 Detectadas horas extras:', horasExtras);
+                    
+                    // Crear registro de horas extras
+                    const horaExtraData = {
+                        usuario_empresa_id: usuarioEmpresa.id,
+                        marcacion_id: result.data.id,
+                        fecha: fechaHoy,
+                        hora_inicio: horasExtras.hora_inicio,
+                        hora_fin: horasExtras.hora_fin,
+                        estado: 'PENDIENTE',
+                        motivo: `Horas extras por salida tardía. Exceso de ${horasExtras.minutos_extras} minutos sobre la tolerancia de ${toleranciaSalida} minutos.`,
+                        tipo_compensacion: 'PAGO'
+                    };
+                    
+                    // Crear la hora extra de forma asíncrona para no bloquear la respuesta
+                    HorasExtrasModel.createHoraExtra(horaExtraData)
+                        .then(horaExtraCreada => {
+                            if (horaExtraCreada) {
+                                console.log('✅ Hora extra creada exitosamente:', horaExtraCreada.id);
+                                result.horas_extras_detectadas = {
+                                    id: horaExtraCreada.id,
+                                    minutos: horasExtras.minutos_extras,
+                                    hora_inicio: horasExtras.hora_inicio,
+                                    hora_fin: horasExtras.hora_fin
+                                };
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Error creando hora extra:', error);
+                        });
+                    
+                    // Agregar información de horas extras a la respuesta
+                    result.horas_extras_detectadas = {
+                        minutos: horasExtras.minutos_extras,
+                        hora_inicio: horasExtras.hora_inicio,
+                        hora_fin: horasExtras.hora_fin,
+                        estado: 'PENDIENTE'
+                    };
+                }
+            } catch (error) {
+                console.error('Error procesando horas extras:', error);
+                // No interrumpir el flujo principal si hay error en horas extras
             }
         }
 

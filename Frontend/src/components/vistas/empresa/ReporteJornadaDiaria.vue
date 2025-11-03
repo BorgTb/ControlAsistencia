@@ -270,10 +270,10 @@
                           <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                           </svg>
-                          Aprobadas
+                          ✅ Aprobadas
                         </span>
                         <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500">
-                          {{ registro.horaExtraInfo.total_horas }} hrs
+                          {{ registro.horaExtraInfo.total_horas || registro.tiempoExtra }} hrs
                           <span v-if="registro.horaExtraInfo.tipo_compensacion === 'DESCANSO'" class="text-blue-600">(Descanso)</span>
                           <span v-else class="text-green-600">(Pago)</span>
                         </span>
@@ -284,15 +284,38 @@
                       
                       <!-- Horas extras pendientes -->
                       <div v-else-if="registro.horasExtrasPendientes" class="flex flex-col space-y-1">
-                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md">
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md mb-2">
                           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
-                          Pendientes
+                          ⏳ Pendientes
                         </span>
-                        <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500">
-                          {{ registro.horaExtraInfo.total_horas }} hrs
+                        <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500 mb-2">
+                          {{ registro.horaExtraInfo.total_horas || registro.tiempoExtra }} hrs
                         </span>
+                        <!-- Botones de acción para horas extras pendientes -->
+                        <div class="flex space-x-1">
+                          <button
+                            @click="abrirModalAprobarHorasExtrasPendientes(registro, 'aprobar')"
+                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
+                            title="Aprobar horas extras pendientes"
+                          >
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Aprobar
+                          </button>
+                          <button
+                            @click="abrirModalAprobarHorasExtrasPendientes(registro, 'rechazar')"
+                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-md transition-colors"
+                            title="Rechazar horas extras pendientes"
+                          >
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                            Rechazar
+                          </button>
+                        </div>
                       </div>
                       
                       <!-- Horas extras rechazadas -->
@@ -301,7 +324,7 @@
                           <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                           </svg>
-                          Rechazadas
+                          ❌ Rechazadas
                         </span>
                         <span v-if="registro.horaExtraInfo && registro.horaExtraInfo.motivo" class="text-xs text-gray-500">
                           {{ registro.horaExtraInfo.motivo }}
@@ -387,14 +410,18 @@
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-[10000] relative">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div class="sm:flex sm:items-start">
-              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10"
+                   :class="accionModal === 'rechazar' ? 'bg-red-100' : 'bg-blue-100'">
+                <svg v-if="accionModal === 'rechazar'" class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <svg v-else class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                  Aprobar Horas Extras
+                  {{ accionModal === 'rechazar' ? 'Rechazar Horas Extras' : 'Aprobar Horas Extras' }}
                 </h3>
                 <div class="mt-4 space-y-3">
                   <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
@@ -434,14 +461,15 @@
                   
                   <div>
                     <label for="motivo-horas-extras" class="block text-sm font-medium text-gray-700 mb-1">
-                      Motivo (opcional)
+                      {{ accionModal === 'rechazar' ? 'Motivo del rechazo (requerido)' : 'Motivo (opcional)' }}
                     </label>
                     <textarea
                       id="motivo-horas-extras"
                       v-model="motivoHorasExtras"
                       rows="3"
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      placeholder="Ej: Horas extras trabajadas por demanda excepcional"
+                      :placeholder="accionModal === 'rechazar' ? 'Ej: Horas no autorizadas por supervisor' : 'Ej: Horas extras trabajadas por demanda excepcional'"
+                      :required="accionModal === 'rechazar'"
                     ></textarea>
                   </div>
                 </div>
@@ -452,14 +480,15 @@
             <button
               type="button"
               @click="confirmarAprobarHorasExtras"
-              :disabled="procesandoAprobacion"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="procesandoAprobacion || (accionModal === 'rechazar' && !motivoHorasExtras.trim())"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="accionModal === 'rechazar' ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'"
             >
               <svg v-if="procesandoAprobacion" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {{ procesandoAprobacion ? 'Aprobando...' : 'Aprobar Horas Extras' }}
+              {{ procesandoAprobacion ? (accionModal === 'rechazar' ? 'Rechazando...' : 'Aprobando...') : (accionModal === 'rechazar' ? 'Rechazar Horas Extras' : 'Aprobar Horas Extras') }}
             </button>
             <button
               type="button"
@@ -482,7 +511,7 @@ import { useRouter } from 'vue-router'
 import { useEmpresa } from '../../../composables/useEmpresa'
 import { useAuth } from '../../../composables/useAuth'
 
-const { obtenerReporteJornadaDiaria, aprobarHorasExtras } = useEmpresa()
+const { obtenerReporteJornadaDiaria, aprobarHorasExtras, aprobarHoraExtraPendiente, rechazarHoraExtraPendiente } = useEmpresa()
 const { user } = useAuth()
 
 const router = useRouter()
@@ -506,6 +535,7 @@ const modalAprobarHorasExtras = ref(false)
 const registroSeleccionado = ref(null)
 const motivoHorasExtras = ref('')
 const procesandoAprobacion = ref(false)
+const accionModal = ref('aprobar') // 'aprobar', 'rechazar', 'aprobar-pendiente', 'rechazar-pendiente'
 
 // Computed para estadísticas
 const stats = computed(() => {
@@ -999,8 +1029,25 @@ const abrirModalAprobarHorasExtras = (registro) => {
   console.log('🔵 Abriendo modal para aprobar horas extras:', registro)
   registroSeleccionado.value = registro
   motivoHorasExtras.value = `Horas extras del ${formatearFecha(registro.fecha)} - ${registro.tiempoExtra}`
+  accionModal.value = 'aprobar'
   modalAprobarHorasExtras.value = true
   console.log('🔵 Modal abierto:', modalAprobarHorasExtras.value)
+}
+
+// Función para abrir modal de horas extras pendientes (aprobar o rechazar)
+const abrirModalAprobarHorasExtrasPendientes = (registro, accion) => {
+  console.log(`🔵 Abriendo modal para ${accion} horas extras pendientes:`, registro)
+  registroSeleccionado.value = registro
+  accionModal.value = accion
+  
+  if (accion === 'aprobar') {
+    motivoHorasExtras.value = `Horas extras aprobadas para ${registro.nombre} - ${formatearFecha(registro.fecha)}`
+  } else if (accion === 'rechazar') {
+    motivoHorasExtras.value = ''
+  }
+  
+  modalAprobarHorasExtras.value = true
+  console.log('🔵 Modal abierto con acción:', accionModal.value)
 }
 
 const cerrarModalAprobarHorasExtras = () => {
@@ -1008,68 +1055,147 @@ const cerrarModalAprobarHorasExtras = () => {
   modalAprobarHorasExtras.value = false
   registroSeleccionado.value = null
   motivoHorasExtras.value = ''
+  accionModal.value = 'aprobar'
 }
 
 const confirmarAprobarHorasExtras = async () => {
   if (!registroSeleccionado.value) return
   
+  // Validar que hay motivo para rechazos
+  if (accionModal.value === 'rechazar' && !motivoHorasExtras.value.trim()) {
+    alert('❌ El motivo del rechazo es requerido')
+    return
+  }
+  
   try {
     procesandoAprobacion.value = true
     
-    // Calcular hora de inicio de horas extras (hora fin del turno pactado)
-    // Calcular hora de fin de horas extras (hora real de salida)
-    // Las horas extras son desde que termina el turno hasta que marcó la salida
-    
-    // Extraer hora fin del turno pactado
-    let horaInicioHorasExtras = registroSeleccionado.value.entrada
-    
-    // Si hay jornada pactada, usar la hora de fin del turno como inicio de horas extras
-    if (registroSeleccionado.value.jornadaPactada && registroSeleccionado.value.jornadaPactada !== 'N/A') {
-      const partes = registroSeleccionado.value.jornadaPactada.split(' - ')
-      if (partes.length === 2) {
-        horaInicioHorasExtras = partes[1].trim() // Hora fin del turno
+    if (accionModal.value === 'aprobar') {
+      // Lógica para aprobar horas extras pendientes específicas
+      if (registroSeleccionado.value.horaExtraInfo && registroSeleccionado.value.horaExtraInfo.id) {
+        const response = await aprobarHoraExtraPendiente(
+          registroSeleccionado.value.horaExtraInfo.id, 
+          motivoHorasExtras.value || `Horas extras aprobadas para ${registroSeleccionado.value.nombre} - ${formatearFecha(registroSeleccionado.value.fecha)}`
+        )
+        
+        if (response && response.success) {
+          console.log('✅ Hora extra pendiente aprobada exitosamente')
+          
+          // Actualizar el estado en la interfaz
+          const index = registros.value.findIndex(r => 
+            r.usuario_empresa_id === registroSeleccionado.value.usuario_empresa_id && 
+            r.fecha === registroSeleccionado.value.fecha
+          )
+          
+          if (index !== -1) {
+            registros.value[index].horasExtrasAprobadas = true
+            registros.value[index].horasExtrasPendientes = false
+            registros.value[index].horaExtraInfo = response.data
+          }
+          
+          alert(`✅ Horas extras aprobadas exitosamente\n\nTrabajador: ${registroSeleccionado.value.nombre}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\n\nLas horas extras han pasado de PENDIENTE a APROBADA`)
+          
+        } else {
+          throw new Error(response?.message || 'Error al aprobar horas extras')
+        }
+      } else {
+        // Lógica original para crear nuevas horas extras
+        // Calcular hora de inicio de horas extras (hora fin del turno pactado)
+        let horaInicioHorasExtras = registroSeleccionado.value.entrada
+        
+        // Si hay jornada pactada, usar la hora de fin del turno como inicio de horas extras
+        if (registroSeleccionado.value.jornadaPactada && registroSeleccionado.value.jornadaPactada !== 'N/A') {
+          const partes = registroSeleccionado.value.jornadaPactada.split(' - ')
+          if (partes.length === 2) {
+            horaInicioHorasExtras = partes[1].trim() // Hora fin del turno
+          }
+        }
+        
+        // Datos para aprobar horas extras
+        const horasExtrasData = {
+          usuario_empresa_id: registroSeleccionado.value.usuario_empresa_id,
+          fecha: registroSeleccionado.value.fecha,
+          hora_inicio: horaInicioHorasExtras, // Desde que termina el turno
+          hora_fin: registroSeleccionado.value.salida, // Hasta que marcó la salida
+          motivo: motivoHorasExtras.value || `Horas extras del ${formatearFecha(registroSeleccionado.value.fecha)}`,
+          asignacion_turno_id: registroSeleccionado.value.asignacion_turno_id || null,
+          marcacion_id: registroSeleccionado.value.marcacion_id || null
+        }
+        
+        console.log('📤 Enviando datos de aprobación:', horasExtrasData)
+        
+        const response = await aprobarHorasExtras(horasExtrasData)
+        
+        if (response && response.success) {
+          console.log('✅ Horas extras procesadas exitosamente:', response)
+          
+          // Actualizar el registro según la acción realizada
+          const index = registros.value.findIndex(r => 
+            r.usuario_empresa_id === registroSeleccionado.value.usuario_empresa_id && 
+            r.fecha === registroSeleccionado.value.fecha
+          )
+          
+          if (index !== -1) {
+            // Actualizar estado según la respuesta del backend
+            if (response.accion === 'aprobar_existente') {
+              registros.value[index].horasExtrasAprobadas = true
+              registros.value[index].horasExtrasPendientes = false
+              registros.value[index].horaExtraInfo = response.data
+            } else if (response.accion === 'crear_nueva') {
+              registros.value[index].horasExtrasAprobadas = true
+              registros.value[index].horaExtraInfo = response.data
+            }
+          }
+          
+          // Mostrar mensaje específico según la acción
+          let mensaje = ''
+          if (response.accion === 'aprobar_existente') {
+            mensaje = `✅ Horas extras pendientes aprobadas exitosamente para ${registroSeleccionado.value.nombre}\n\nLas horas extras que estaban PENDIENTES ahora están APROBADAS\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}`
+          } else {
+            mensaje = `✅ Horas extras creadas y aprobadas exitosamente para ${registroSeleccionado.value.nombre}\n\nSe creó un nuevo registro de horas extras\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}`
+          }
+          
+          alert(mensaje)
+        } else {
+          throw new Error(response?.message || 'Error al aprobar horas extras')
+        }
+      }
+    } else if (accionModal.value === 'rechazar') {
+      // Lógica para rechazar horas extras pendientes
+      if (!registroSeleccionado.value.horaExtraInfo || !registroSeleccionado.value.horaExtraInfo.id) {
+        alert('❌ Error: No se encontró la información de la hora extra pendiente')
+        return
+      }
+      
+      const response = await rechazarHoraExtraPendiente(registroSeleccionado.value.horaExtraInfo.id, motivoHorasExtras.value)
+      
+      if (response && response.success) {
+        console.log('✅ Hora extra pendiente rechazada exitosamente')
+        
+        // Actualizar el estado en la interfaz
+        const index = registros.value.findIndex(r => 
+          r.usuario_empresa_id === registroSeleccionado.value.usuario_empresa_id && 
+          r.fecha === registroSeleccionado.value.fecha
+        )
+        
+        if (index !== -1) {
+          registros.value[index].horasExtrasRechazadas = true
+          registros.value[index].horasExtrasPendientes = false
+          registros.value[index].horaExtraInfo = response.data
+        }
+        
+        alert(`✅ Horas extras rechazadas exitosamente\n\nTrabajador: ${registroSeleccionado.value.nombre}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\nMotivo: ${motivoHorasExtras.value}\n\nLas horas extras han pasado de PENDIENTE a RECHAZADA`)
+        
+      } else {
+        throw new Error(response?.message || 'Error al rechazar horas extras')
       }
     }
     
-    // Datos para aprobar horas extras
-    const horasExtrasData = {
-      usuario_empresa_id: registroSeleccionado.value.usuario_empresa_id,
-      fecha: registroSeleccionado.value.fecha,
-      hora_inicio: horaInicioHorasExtras, // Desde que termina el turno
-      hora_fin: registroSeleccionado.value.salida, // Hasta que marcó la salida
-      motivo: motivoHorasExtras.value || `Horas extras del ${formatearFecha(registroSeleccionado.value.fecha)}`,
-      asignacion_turno_id: registroSeleccionado.value.asignacion_turno_id || null,
-      marcacion_id: registroSeleccionado.value.marcacion_id || null
-    }
-    
-    console.log('📤 Enviando datos de aprobación:', horasExtrasData)
-    
-    const response = await aprobarHorasExtras(horasExtrasData)
-    
-    if (response && response.success) {
-      console.log('✅ Horas extras aprobadas exitosamente')
-      
-      // Marcar el registro como aprobado
-      const index = registros.value.findIndex(r => 
-        r.usuario_empresa_id === registroSeleccionado.value.usuario_empresa_id && 
-        r.fecha === registroSeleccionado.value.fecha
-      )
-      
-      if (index !== -1) {
-        registros.value[index].horasExtrasAprobadas = true
-      }
-      
-      // Mostrar mensaje de éxito
-      alert(`✅ Horas extras aprobadas exitosamente para ${registroSeleccionado.value.nombre}\n\nHoras extras: ${registroSeleccionado.value.tiempoExtra}\nFecha: ${formatearFecha(registroSeleccionado.value.fecha)}`)
-      
-      cerrarModalAprobarHorasExtras()
-    } else {
-      throw new Error(response?.message || 'Error al aprobar horas extras')
-    }
+    cerrarModalAprobarHorasExtras()
     
   } catch (error) {
-    console.error('❌ Error al aprobar horas extras:', error)
-    alert(`❌ Error al aprobar horas extras: ${error.message || 'Error desconocido'}`)
+    console.error('❌ Error al procesar horas extras:', error)
+    alert(`❌ Error al ${accionModal.value === 'rechazar' ? 'rechazar' : 'aprobar'} horas extras: ${error.message || 'Error desconocido'}`)
   } finally {
     procesandoAprobacion.value = false
   }
