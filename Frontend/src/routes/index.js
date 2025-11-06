@@ -138,6 +138,12 @@ const router = createRouter({
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {
+            path: '/empresa/reportes/marcaciones-diarias',
+            name: 'EmpresaReporteMarcacionesDiarias',
+            component: () => import('../components/vistas/empresa/MarcacionesDiariasReporte.vue'),
+            meta: { requiresAuth: true, requiresEmpresa: true }
+        },
+        {
             path: '/empresa/reportes/domingos-festivos',
             name: 'EmpresaReporteDomingosFestivos',
             component: () => import('../components/vistas/empresa/ReportesDomingosFestivos.vue'),
@@ -211,6 +217,7 @@ router.beforeEach((to, from, next) => {
         '/empresa/turnos',
         '/empresa/marcaciones',
         '/empresa/reportes',
+        '/empresa/reportes/marcaciones-diarias',
         '/empresa/reportes/asistencia',
         '/empresa/configuracion',
         '/empresa/trabajadores/asociar',

@@ -171,6 +171,7 @@
                 </button>
               </div>
             </div>
+            
           </div>
 
           <!-- Reporte de Marcaciones Diarias -->
@@ -194,7 +195,7 @@
                 <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                   Generar
                 </button>
-                <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button @click="irReporteMarcacionesDiarias" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Vista Previa
                 </button>
               </div>
@@ -413,6 +414,9 @@ const turnos = ref([]);
 // Historial de reportes generados
 // Debe recibir: [{ id: string|number, tipo: string, periodo: string, generadoPor: string, fechaGeneracion: string, horaGeneracion: string, formatos: string[], estado: string }]
 const historialReportes = ref([]);
+
+// Función para ir a la vista de Marcaciones Diarias (vista completa, no modal)
+const irReporteMarcacionesDiarias = () => { router.push({ name: 'EmpresaReporteMarcacionesDiarias' }); };
 
 // Funciones auxiliares para clases CSS
 const getFormatoClass = (formato) => {

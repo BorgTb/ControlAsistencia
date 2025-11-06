@@ -128,7 +128,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import feriadosService from '../../../services/feriadosService.js';
 import { calcularAusencias, fechaTieneTurno } from '../../../utils/ausencias.js';
-const emit = defineEmits(['hover-dia']);
+const emit = defineEmits(['hover-dia', 'mes-change']);
 
 
 
@@ -186,6 +186,16 @@ const anioActual = new Date().getFullYear();
 const anios = [anioActual-1, anioActual, anioActual+1];
 const mesSeleccionado = ref(new Date().getMonth());
 const anioSeleccionado = ref(anioActual);
+
+// Emitir cuando el mes o año seleccionado cambian para que el padre pueda reaccionar
+watch([mesSeleccionado, anioSeleccionado], ([m, a]) => {
+  try {
+    // emitir un evento con el mes (0-based) y año
+    emit('mes-change', { mes: Number(m), anio: Number(a) });
+  } catch (e) {
+    console.warn('Error emitiendo mes-change:', e);
+  }
+});
 
 // Tolerancia para evitar falsos positivos por redondeo (en horas)
 const TOLERANCIA_HORAS = 0.01;
