@@ -1,5 +1,6 @@
 import HorasExtrasModel from "../model/HorasExtrasModel.js";
 import UsuarioEmpresaModel from "../model/UsuarioEmpresaModel.js";
+import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
 import { DateTime } from "luxon";
 
@@ -20,7 +21,7 @@ class HorasExtrasController {
             } = req.body;
             console.log('🔵 Datos recibidos para aprobar horas extras:', req.body);
             console.log('⏰ Hora inicio (fin del turno):', hora_inicio);
-            console.log('⏰ Hora fin (salida real):', hora_fin);
+        console.log('⏰ Hora fin (salida real):', hora_fin);
             
             const USR_PETICION = req.user; // Usuario que aprueba (empresa)
             
@@ -118,6 +119,11 @@ class HorasExtrasController {
                 // NOTA: hora_inicio debe ser la hora de fin del turno pactado
                 //       hora_fin debe ser la hora real de salida del trabajador
                 //       Las horas extras se calculan automáticamente por la BD como: hora_fin - hora_inicio
+                
+                // Obtener la preferencia de compensación activa del trabajador
+                console.log('🔍 Obteniendo preferencia de compensación del trabajador ID:', trabajador);
+                const preferencia = await PreferenciasCompensacionModel.obtenerPorTrabajador(trabajador.usuario_id);
+                
                 const horaExtraData = {
                     usuario_empresa_id,
                     asignacion_turno_id: asignacion_turno_id || null,
@@ -129,7 +135,7 @@ class HorasExtrasController {
                     motivo: motivo || 'Horas extras aprobadas por la empresa',
                     aprobado_por: USR_PETICION.id,
                     fecha_aprobacion: DateTime.now().setZone("America/Santiago").toISO(),
-                    tipo_compensacion: 'DESCANSO',
+                    id_preferencia: preferencia ? preferencia.id_preferencia : null,
                     dias_descanso_equivalentes: 0
                 };
 

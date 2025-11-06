@@ -20,7 +20,7 @@ class HorasExtrasModel {
                     motivo, 
                     aprobado_por, 
                     fecha_aprobacion,
-                    tipo_compensacion,
+                    id_preferencia,
                     dias_descanso_equivalentes,
                     created_at, 
                     updated_at
@@ -39,7 +39,7 @@ class HorasExtrasModel {
                 horaExtraData.motivo || null,
                 horaExtraData.aprobado_por || null,
                 horaExtraData.fecha_aprobacion || null,
-                horaExtraData.tipo_compensacion || 'PAGO',
+                horaExtraData.id_preferencia || null,
                 horaExtraData.dias_descanso_equivalentes || 0
             ]);
             
@@ -81,6 +81,7 @@ class HorasExtrasModel {
                 he.motivo,
                 he.aprobado_por,
                 he.fecha_aprobacion,
+                he.id_preferencia,
                 he.created_at,
                 he.updated_at,
                 u.nombre as usuario_nombre,
@@ -89,12 +90,14 @@ class HorasExtrasModel {
                 e.emp_nombre as empresa_nombre,
                 ap.nombre as aprobado_por_nombre,
                 ap.apellido_pat as aprobado_por_apellido_pat,
-                ap.apellido_mat as aprobado_por_apellido_mat
+                ap.apellido_mat as aprobado_por_apellido_mat,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
             LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             ORDER BY he.created_at DESC
         `;
         
@@ -113,12 +116,14 @@ class HorasExtrasModel {
                 e.emp_nombre as empresa_nombre,
                 ap.nombre as aprobado_por_nombre,
                 ap.apellido_pat as aprobado_por_apellido_pat,
-                ap.apellido_mat as aprobado_por_apellido_mat
+                ap.apellido_mat as aprobado_por_apellido_mat,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
             LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.id = ?
         `;
         
@@ -138,11 +143,13 @@ class HorasExtrasModel {
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
                 u.apellido_mat as usuario_apellido_mat,
-                e.emp_nombre as empresa_nombre
+                e.emp_nombre as empresa_nombre,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.usuario_empresa_id = ?
             ORDER BY he.fecha DESC, he.hora_inicio DESC
         `;
@@ -159,11 +166,13 @@ class HorasExtrasModel {
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
                 u.apellido_mat as usuario_apellido_mat,
-                e.emp_nombre as empresa_nombre
+                e.emp_nombre as empresa_nombre,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE ue.empresa_id = ?
             ORDER BY he.fecha DESC, he.hora_inicio DESC
         `;
@@ -180,11 +189,13 @@ class HorasExtrasModel {
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
                 u.apellido_mat as usuario_apellido_mat,
-                e.emp_nombre as empresa_nombre
+                e.emp_nombre as empresa_nombre,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.estado = ?
             ORDER BY he.fecha DESC, he.hora_inicio DESC
         `;
@@ -201,11 +212,13 @@ class HorasExtrasModel {
                 u.nombre as usuario_nombre,
                 u.apellido_pat as usuario_apellido_pat,
                 u.apellido_mat as usuario_apellido_mat,
-                e.emp_nombre as empresa_nombre
+                e.emp_nombre as empresa_nombre,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             INNER JOIN empresa e ON ue.empresa_id = e.empresa_id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.fecha BETWEEN ? AND ?
         `;
         
@@ -282,9 +295,9 @@ class HorasExtrasModel {
                 updateValues.push(horaExtraData.fecha_aprobacion);
             }
             
-            if (horaExtraData.tipo_compensacion !== undefined) {
-                updateFields.push('tipo_compensacion = ?');
-                updateValues.push(horaExtraData.tipo_compensacion);
+            if (horaExtraData.id_preferencia !== undefined) {
+                updateFields.push('id_preferencia = ?');
+                updateValues.push(horaExtraData.id_preferencia);
             }
             
             if (horaExtraData.dias_descanso_equivalentes !== undefined) {
@@ -531,11 +544,13 @@ class HorasExtrasModel {
                 u.apellido_mat as usuario_apellido_mat,
                 ap.nombre as aprobado_por_nombre,
                 ap.apellido_pat as aprobado_por_apellido_pat,
-                ap.apellido_mat as aprobado_por_apellido_mat
+                ap.apellido_mat as aprobado_por_apellido_mat,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.marcacion_id = ?
         `;
         
@@ -558,11 +573,13 @@ class HorasExtrasModel {
                 u.apellido_mat as usuario_apellido_mat,
                 ap.nombre as aprobado_por_nombre,
                 ap.apellido_pat as aprobado_por_apellido_pat,
-                ap.apellido_mat as aprobado_por_apellido_mat
+                ap.apellido_mat as aprobado_por_apellido_mat,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.marcacion_id IN (${placeholders})
         `;
         
@@ -580,11 +597,13 @@ class HorasExtrasModel {
                 u.apellido_mat as usuario_apellido_mat,
                 ap.nombre as aprobado_por_nombre,
                 ap.apellido_pat as aprobado_por_apellido_pat,
-                ap.apellido_mat as aprobado_por_apellido_mat
+                ap.apellido_mat as aprobado_por_apellido_mat,
+                pc.tipo_compensacion as preferencia_tipo_compensacion
             FROM horas_extras he
             INNER JOIN usuarios_empresas ue ON he.usuario_empresa_id = ue.id
             INNER JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN usuarios ap ON he.aprobado_por = ap.id
+            LEFT JOIN preferencias_compensacion pc ON he.id_preferencia = pc.id_preferencia
             WHERE he.usuario_empresa_id = ?
             AND he.fecha BETWEEN ? AND ?
             ORDER BY he.fecha DESC, he.hora_inicio DESC
