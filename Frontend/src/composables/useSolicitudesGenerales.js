@@ -44,7 +44,7 @@ export const useSolicitudesGenerales = () => {
       descripcion: 'Solicitar intercambio o modificación de turno',
       icono: 'refresh-cw',
       requiereDocumento: false,
-      campos: ['fecha_actual', 'turno_actual', 'fecha_nueva', 'turno_nuevo', 'motivo', 'usuario_intercambio']
+      campos: ['fecha_inicio', 'turno_actual', 'fecha_fin', 'turno_nuevo', 'motivo', 'usuario_intercambio']
     },
     {
       id: 'nuevo_ciclo',
@@ -111,11 +111,11 @@ export const useSolicitudesGenerales = () => {
       const formData = new FormData();
       
       // Agregar datos de la solicitud
-      formData.append('tipo_solicitud', tipoSolicitud);
-      formData.append('datos_solicitud', JSON.stringify(datos));
-      // Agregar archivo si existe
+      formData.append('tipo', tipoSolicitud);
+      formData.append('datos', JSON.stringify(datos));
+      // Agregar archivo si existe - nombre DEBE ser 'archivo' para que multer lo reconozca
       if (archivo) {
-        formData.append('documento', archivo);
+        formData.append('archivo', archivo);
       }
       const response = await SolicitudesGeneralesService.crearSolicitud(formData);
       

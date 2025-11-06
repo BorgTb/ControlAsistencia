@@ -367,9 +367,9 @@ const crearNuevaSolicitud = async (datosSolicitud) => {
       datosSolicitud.datos, 
       datosSolicitud.archivo
     );
-    mostrarModalNuevaSolicitud.value = false;
+   // mostrarModalNuevaSolicitud.value = false;
     // Recargar la lista
-    await aplicarFiltros();
+    //await aplicarFiltros();
   } catch (err) {
     console.error('Error al crear solicitud:', err);
   }

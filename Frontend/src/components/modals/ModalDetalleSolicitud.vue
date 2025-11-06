@@ -108,10 +108,10 @@
               </template>
 
               <template v-if="solicitud.tipo_solicitud === 'cambio_turno'">
-                <div v-if="solicitud.fecha_actual" class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div v-if="solicitud.fecha_inicio" class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt class="text-sm font-medium text-gray-500">Turno Actual</dt>
                   <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {{ formatearFecha(solicitud.fecha_actual) }}
+                    {{ formatearFecha(solicitud.fecha_inicio) }}
                     <span v-if="solicitud.turno_actual" class="text-gray-500 ml-2">
                       - {{ solicitud.turno_actual }}
                     </span>
@@ -120,7 +120,7 @@
                 <div v-if="solicitud.fecha_nueva" class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt class="text-sm font-medium text-gray-500">Nuevo Turno</dt>
                   <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {{ formatearFecha(solicitud.fecha_nueva) }}
+                    {{ formatearFecha(solicitud.fecha_fin) }}
                     <span v-if="solicitud.turno_nuevo" class="text-gray-500 ml-2">
                       - {{ solicitud.turno_nuevo }}
                     </span>

@@ -3,10 +3,12 @@
 import express from 'express';
 import AuthService from '../middleware/AuthMiddleWare.js';
 import UserController from '../controllers/UserController.js';
-import multer from 'multer';
-
+import FileUploadService from '../services/FileUploadService.js';
 
 const router = express.Router();
+
+// Crear instancia de multer para solicitudes
+const uploadSolicitudes = FileUploadService.createUpload('solicitudes');
 
 // Endpoint para actualizar el rol de un usuario por id
 // Permite modificar el campo 'rol' desde el frontend de forma segura y controlada
@@ -52,7 +54,7 @@ router.post('/usuarios-empresas', AuthService.verifyToken, AuthService.isAdmin, 
 
 
 //Rutas para las solicitudes de los usuarios
-router.post('/solicitudes', AuthService.verifyToken, UserController.createSolicitud);
+router.post('/solicitudes', AuthService.verifyToken, uploadSolicitudes.single('archivo'), UserController.createSolicitud);
 
 
 export default router;
