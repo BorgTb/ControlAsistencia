@@ -2034,14 +2034,13 @@ async function rechazarSolicitud(req, res) {
                 message: "Esta solicitud no pertenece a tu empresa"
             });
         }
-
         // Actualizar estado a RECHAZADA
         const resultado = await SolicitudesUsuariosModel.actualizarEstado(
             id, 
             'RECHAZADA',
             {
                 motivo: motivo || 'Sin especificar',
-                observaciones: observaciones || null,
+                observaciones: motivo || null,
                 fecha_respuesta: new Date(),
                 rechazado_por: user.id
             }
