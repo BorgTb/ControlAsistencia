@@ -217,6 +217,71 @@
               </div>
             </div>
 
+            <!-- Preferencias de Compensación -->
+            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 class="text-lg font-medium text-gray-900 mb-4">Preferencias de Compensación de Horas Extras</h4>
+              
+              <div class="space-y-4">
+                <!-- Tipo de Compensación -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Compensación *
+                  </label>
+                  <select
+                    v-model="trabajador.preferenciasCompensacion.tipo_compensacion"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="PAGO">Pago en dinero</option>
+                    <option value="DESCANSO">Descanso compensatorio</option>
+                    <option value="mixto">Mixto (Pago + Descanso)</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">
+                    • Pago en dinero: Recibe pago por horas extras
+                    • Descanso: Recibe días de descanso equivalentes
+                    • Mixto: Combinación de ambas opciones
+                  </p>
+                  <span v-if="errors.preferenciasCompensacion.tipo_compensacion" class="text-red-500 text-xs mt-1">{{ errors.preferenciasCompensacion.tipo_compensacion }}</span>
+                </div>
+
+                <!-- Porcentaje de Pago (solo para mixto) -->
+                <div v-if="trabajador.preferenciasCompensacion.tipo_compensacion === 'mixto'">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Porcentaje en Pago % *
+                  </label>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model.number="trabajador.preferenciasCompensacion.porcentaje_pago"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Ej: 70"
+                    />
+                    <span class="text-sm text-gray-700">%</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">
+                    El resto ({{ 100 - (trabajador.preferenciasCompensacion.porcentaje_pago || 0) }}%) se recibirá como descanso
+                  </p>
+                  <span v-if="errors.preferenciasCompensacion.porcentaje_pago" class="text-red-500 text-xs mt-1">{{ errors.preferenciasCompensacion.porcentaje_pago }}</span>
+                </div>
+
+                <!-- Fecha de Inicio -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Inicio de Preferencia
+                  </label>
+                  <input
+                    v-model="trabajador.preferenciasCompensacion.fecha_inicio"
+                    type="date"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">A partir de cuándo será válida esta preferencia</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Mensaje de Error General -->
             <div v-if="errorGeneral" class="bg-red-50 border border-red-200 rounded-md p-3">
               <div class="flex">
@@ -291,7 +356,12 @@ const trabajador = reactive({
   estado: true,
   sistemaExcepcional: false,
   numeroResolucion: '',
-  fechaResolucion: ''
+  fechaResolucion: '',
+  preferenciasCompensacion: {
+    tipo_compensacion: 'PAGO',
+    porcentaje_pago: 0,
+    fecha_inicio: new Date().toISOString().split('T')[0]
+  }
 })
 
 // Errores de validación
@@ -304,7 +374,11 @@ const errors = reactive({
   rol: '',
   rut: '',
   numeroResolucion: '',
-  fechaResolucion: ''
+  fechaResolucion: '',
+  preferenciasCompensacion: {
+    tipo_compensacion: '',
+    porcentaje_pago: ''
+  }
 })
 
 // Métodos
@@ -345,10 +419,19 @@ const resetForm = () => {
   trabajador.sistemaExcepcional = false
   trabajador.numeroResolucion = ''
   trabajador.fechaResolucion = ''
+  trabajador.preferenciasCompensacion.tipo_compensacion = 'PAGO'
+  trabajador.preferenciasCompensacion.porcentaje_pago = 0
+  trabajador.preferenciasCompensacion.fecha_inicio = new Date().toISOString().split('T')[0]
   
   // Resetear errores
   Object.keys(errors).forEach(key => {
-    errors[key] = ''
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = ''
+      })
+    } else {
+      errors[key] = ''
+    }
   })
   
   errorGeneral.value = ''
@@ -361,7 +444,13 @@ const validateForm = () => {
   
   // Resetear errores
   Object.keys(errors).forEach(key => {
-    errors[key] = ''
+    if (typeof errors[key] === 'object') {
+      Object.keys(errors[key]).forEach(subKey => {
+        errors[key][subKey] = ''
+      })
+    } else {
+      errors[key] = ''
+    }
   })
   
   // Validar campos requeridos
@@ -415,6 +504,20 @@ const validateForm = () => {
     
     if (!trabajador.fechaResolucion.trim()) {
       errors.fechaResolucion = 'La fecha de resolución es requerida'
+      isValid = false
+    }
+  }
+
+  // Validar preferencias de compensación
+  if (!trabajador.preferenciasCompensacion.tipo_compensacion) {
+    errors.preferenciasCompensacion.tipo_compensacion = 'El tipo de compensación es requerido'
+    isValid = false
+  }
+
+  if (trabajador.preferenciasCompensacion.tipo_compensacion === 'mixto') {
+    const porcentaje = parseFloat(trabajador.preferenciasCompensacion.porcentaje_pago)
+    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+      errors.preferenciasCompensacion.porcentaje_pago = 'El porcentaje debe estar entre 0 y 100'
       isValid = false
     }
   }

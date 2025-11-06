@@ -16,6 +16,7 @@ import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
 import  ConfigToleranciaModel from "../model/ConfigTolerancias.js";
+import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
 
 
 
@@ -112,6 +113,32 @@ const createTrabajador = async (req, res) => {
                 resolucion_numero: userData.numeroResolucion || 'EX-2024-00001',
                 resolucion_fecha: userData.fechaResolucion || DateTime.now().setZone("America/Santiago").toISODate()
             });
+        }
+
+        // Crear preferencia de compensación si se proporciona
+        if (userData.preferenciasCompensacion) {
+            try {
+                const preferenciaData = {
+                    id_trabajador: newUserEmpresa.id,
+                    tipo_compensacion: userData.preferenciasCompensacion.tipo_compensacion,
+                    porcentaje_pago: userData.preferenciasCompensacion.porcentaje_pago || null,
+                    fecha_inicio: userData.preferenciasCompensacion.fecha_inicio || DateTime.now().setZone("America/Santiago").toISODate(),
+                    fecha_fin: userData.preferenciasCompensacion.fecha_fin || null,
+                    activo: true
+                };
+
+                // Validar que el tipo de compensación sea válido
+                const tiposValidos = ['PAGO', 'DESCANSO', 'mixto'];
+                if (!tiposValidos.includes(preferenciaData.tipo_compensacion)) {
+                    console.warn('⚠️ Tipo de compensación inválido:', preferenciaData.tipo_compensacion);
+                } else {
+                    const id_preferencia = await PreferenciasCompensacionModel.crear(preferenciaData);
+                    console.log('✅ Preferencia de compensación creada:', id_preferencia);
+                }
+            } catch (prefError) {
+                console.error('⚠️ Error al crear preferencia de compensación:', prefError);
+                // No bloqueamos la creación del trabajador si hay error en la preferencia
+            }
         }  
             
 

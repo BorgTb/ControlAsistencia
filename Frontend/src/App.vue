@@ -20,7 +20,7 @@ import { computed } from 'vue'
 
 const route = useRoute()
 const hiddenRoutes = ['/', '/empresa/historial-solicitudes', '/empresa/turnos', '/empresa/dashboard', '/empresa/trabajadores', '/empresa/turnos', '/empresa/marcaciones', '/empresa/reportes', '/empresa/configuracion', '/empresa/trabajadores/asociar', '/administracion',
-  '/empresa/lugares'
+  '/empresa/lugares','/empresa/solicitudes-trabajadores'
 ]
 const showHeader = computed(() => !hiddenRoutes.includes(route.path))
 

@@ -1,322 +1,317 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Backdrop -->
-      <div class="fixed inset-0  transition-opacity" @click="$emit('cerrar')"></div>
+  <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center" aria-labelledby="modal-title" role="dialog" aria-modal="true" @click="cerrarAlHacerClickEnBackdrop">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 transition-opacity"></div>
 
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    <!-- Modal Panel -->
+    <div 
+      class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full max-h-[90vh]"
+      @click.stop
+    >
+      <!-- Modal Content with Scroll -->
+      <div class="flex flex-col max-h-[90vh]">
+        <!-- Header - Fixed -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            Nueva Solicitud
+          </h3>
+          <button 
+            @click="$emit('cerrar')"
+            class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md p-1"
+          >
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
 
-      <!-- Modal Panel -->
-      <div 
-        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full max-h-[90vh]"
-        @click.stop
-      >
-        <!-- Modal Content with Scroll -->
-        <div class="flex flex-col max-h-[90vh]">
-          <!-- Header - Fixed -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
-              Nueva Solicitud
-            </h3>
-            <button 
-              @click="$emit('cerrar')"
-              class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md p-1"
-            >
-              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Body - Scrollable -->
-          <div class="flex-1 overflow-y-auto px-6 py-4 modal-body">
-            <form @submit.prevent="enviarSolicitud" class="space-y-6">
-              <!-- Selección de tipo de solicitud -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Solicitud *
-                </label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div 
-                    v-for="tipo in tiposSolicitudes" 
-                    :key="tipo.id"
-                    @click="seleccionarTipo(tipo)"
-                    :class="[
-                      'relative rounded-lg border p-4 cursor-pointer hover:bg-gray-50 transition-colors',
-                      tipoSeleccionado?.id === tipo.id 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-gray-300'
-                    ]"
-                  >
-                    <div class="flex items-start">
-                      <div class="flex items-center h-5">
-                        <input
-                          :id="tipo.id"
-                          :value="tipo.id"
-                          v-model="formulario.tipo_solicitud"
-                          name="tipo_solicitud"
-                          type="radio"
-                          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                        />
-                      </div>
-                      <div class="ml-3">
-                        <label :for="tipo.id" class="font-medium text-gray-900 cursor-pointer">
-                          {{ tipo.nombre }}
-                        </label>
-                        <p class="text-sm text-gray-500">{{ tipo.descripcion }}</p>
-                        <p v-if="tipo.requiereDocumento" class="text-xs text-amber-600 mt-1">
-                          * Requiere documento adjunto
-                        </p>
-                      </div>
+        <!-- Body - Scrollable -->
+        <div class="flex-1 overflow-y-auto px-6 py-4 modal-body">
+          <form @submit.prevent="enviarSolicitud" class="space-y-6">
+            <!-- Selección de tipo de solicitud -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Solicitud *
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div 
+                  v-for="tipo in tiposSolicitudes" 
+                  :key="tipo.id"
+                  @click="seleccionarTipo(tipo)"
+                  :class="[
+                    'relative rounded-lg border p-4 cursor-pointer hover:bg-gray-50 transition-colors',
+                    tipoSeleccionado?.id === tipo.id 
+                      ? 'border-indigo-500 bg-indigo-50' 
+                      : 'border-gray-300'
+                  ]"
+                >
+                  <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                      <input
+                        :id="tipo.id"
+                        :value="tipo.id"
+                        v-model="formulario.tipo_solicitud"
+                        name="tipo_solicitud"
+                        type="radio"
+                        class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                      />
+                    </div>
+                    <div class="ml-3">
+                      <label :for="tipo.id" class="font-medium text-gray-900 cursor-pointer">
+                        {{ tipo.nombre }}
+                      </label>
+                      <p class="text-sm text-gray-500">{{ tipo.descripcion }}</p>
+                      <p v-if="tipo.requiereDocumento" class="text-xs text-amber-600 mt-1">
+                        * Requiere documento adjunto
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Campos específicos según el tipo -->
-              <div v-if="tipoSeleccionado" class="space-y-4">
-                
-                <!-- Campos para Feriado -->
-                <template v-if="tipoSeleccionado.id === 'feriado'">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de inicio *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_inicio"
-                        type="date"
-                        required
-                        :min="fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de fin *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_fin"
-                        type="date"
-                        required
-                        :min="formulario.fecha_inicio || fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p class="text-sm text-gray-600" v-if="diasSolicitados > 0">
-                      Días solicitados: {{ diasSolicitados }}
-                    </p>
-                  </div>
-                </template>
-
-                <!-- Campos para Permisos -->
-                <template v-if="tipoSeleccionado.id.includes('permiso')">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de inicio *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_inicio"
-                        type="date"
-                        required
-                        :min="fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de fin *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_fin"
-                        type="date"
-                        required
-                        :min="formulario.fecha_inicio || fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
+            <!-- Campos específicos según el tipo -->
+            <div v-if="tipoSeleccionado" class="space-y-4">
+              
+              <!-- Campos para Feriado -->
+              <template v-if="tipoSeleccionado.id === 'feriado'">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Tipo de permiso *
-                    </label>
-                    <select
-                      v-model="formulario.tipo_permiso"
-                      required
-                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      <option value="medico">Médico</option>
-                      <option value="familiar">Familiar</option>
-                      <option value="personal">Personal</option>
-                      <option value="capacitacion">Capacitación</option>
-                      <option value="otro">Otro</option>
-                    </select>
-                  </div>
-                </template>
-
-                <!-- Campos para Compensación de Horas -->
-                <template v-if="tipoSeleccionado.id === 'compensacion_horas'">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Horas extras a compensar *
-                    </label>
-                    <select
-                      v-model="formulario.horas_extras_id"
-                      required
-                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="">Seleccionar horas extras</option>
-                      <option 
-                        v-for="he in horasExtrasDisponibles" 
-                        :key="he.id" 
-                        :value="he.id"
-                      >
-                        {{ he.fecha }} - {{ he.total_horas }}h ({{ he.motivo }})
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha de compensación *
+                      Fecha de inicio *
                     </label>
                     <input
-                      v-model="formulario.fecha_compensacion"
+                      v-model="formulario.fecha_inicio"
                       type="date"
                       required
                       :min="fechaMinima"
                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
-                </template>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de fin *
+                    </label>
+                    <input
+                      v-model="formulario.fecha_fin"
+                      type="date"
+                      required
+                      :min="formulario.fecha_inicio || fechaMinima"
+                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600" v-if="diasSolicitados > 0">
+                    Días solicitados: {{ diasSolicitados }}
+                  </p>
+                </div>
+              </template>
 
-                <!-- Campos para Cambio de Turno -->
-                <template v-if="tipoSeleccionado.id === 'cambio_turno'">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha actual *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_actual"
-                        type="date"
-                        required
-                        :min="fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha nueva *
-                      </label>
-                      <input
-                        v-model="formulario.fecha_nueva"
-                        type="date"
-                        required
-                        :min="fechaMinima"
-                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
+              <!-- Campos para Permisos -->
+              <template v-if="tipoSeleccionado.id.includes('permiso')">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de inicio *
+                    </label>
+                    <input
+                      v-model="formulario.fecha_inicio"
+                      type="date"
+                      required
+                      :min="fechaMinima"
+                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Usuario para intercambio
+                      Fecha de fin *
                     </label>
-                    <select
-                      v-model="formulario.usuario_intercambio"
+                    <input
+                      v-model="formulario.fecha_fin"
+                      type="date"
+                      required
+                      :min="formulario.fecha_inicio || fechaMinima"
                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="">Seleccionar compañero (opcional)</option>
-                      <option 
-                        v-for="usuario in usuariosIntercambio" 
-                        :key="usuario.id" 
-                        :value="usuario.id"
-                      >
-                        {{ usuario.nombre }} {{ usuario.apellido }}
-                      </option>
-                    </select>
+                    />
                   </div>
-                </template>
-
-                <!-- Motivo (común para todos) -->
+                </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Motivo *
+                    Tipo de permiso *
                   </label>
-                  <textarea
-                    v-model="formulario.motivo"
+                  <select
+                    v-model="formulario.tipo_permiso"
                     required
-                    rows="3"
-                    placeholder="Describe el motivo de tu solicitud..."
                     class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  ></textarea>
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="medico">Médico</option>
+                    <option value="familiar">Familiar</option>
+                    <option value="personal">Personal</option>
+                    <option value="capacitacion">Capacitación</option>
+                    <option value="otro">Otro</option>
+                  </select>
                 </div>
+              </template>
 
-                <!-- Subir documento -->
-                <div v-if="tipoSeleccionado.requiereDocumento">
+              <!-- Campos para Compensación de Horas -->
+              <template v-if="tipoSeleccionado.id === 'compensacion_horas'">
+                <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Documento adjunto *
+                    Horas extras a compensar *
                   </label>
-                  <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                    <div class="space-y-1 text-center">
-                      <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                      <div class="flex text-sm text-gray-600">
-                        <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                          <span>Subir archivo</span>
-                          <input 
-                            id="file-upload" 
-                            name="file-upload" 
-                            type="file" 
-                            class="sr-only" 
-                            @change="manejarArchivo"
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            :required="tipoSeleccionado.requiereDocumento"
-                          />
-                        </label>
-                        <p class="pl-1">o arrastra aquí</p>
-                      </div>
-                      <p class="text-xs text-gray-500">
-                        PDF, DOC, DOCX, JPG, PNG hasta 10MB
-                      </p>
-                    </div>
+                  <select
+                    v-model="formulario.horas_extras_id"
+                    required
+                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Seleccionar horas extras</option>
+                    <option 
+                      v-for="he in horasExtrasDisponibles" 
+                      :key="he.id" 
+                      :value="he.id"
+                    >
+                      {{ he.fecha }} - {{ he.total_horas }}h ({{ he.motivo }})
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha de compensación *
+                  </label>
+                  <input
+                    v-model="formulario.fecha_compensacion"
+                    type="date"
+                    required
+                    :min="fechaMinima"
+                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </template>
+
+              <!-- Campos para Cambio de Turno -->
+              <template v-if="tipoSeleccionado.id === 'cambio_turno'">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha actual *
+                    </label>
+                    <input
+                      v-model="formulario.fecha_actual"
+                      type="date"
+                      required
+                      :min="fechaMinima"
+                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
-                  <div v-if="archivoSeleccionado" class="mt-2 text-sm text-green-600">
-                    Archivo seleccionado: {{ archivoSeleccionado.name }}
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha nueva *
+                    </label>
+                    <input
+                      v-model="formulario.fecha_nueva"
+                      type="date"
+                      required
+                      :min="fechaMinima"
+                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
                 </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Usuario para intercambio
+                  </label>
+                  <select
+                    v-model="formulario.usuario_intercambio"
+                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Seleccionar compañero (opcional)</option>
+                    <option 
+                      v-for="usuario in usuariosIntercambio" 
+                      :key="usuario.id" 
+                      :value="usuario.id"
+                    >
+                      {{ usuario.nombre }} {{ usuario.apellido }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+
+              <!-- Motivo (común para todos) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Motivo *
+                </label>
+                <textarea
+                  v-model="formulario.motivo"
+                  required
+                  rows="3"
+                  placeholder="Describe el motivo de tu solicitud..."
+                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                ></textarea>
               </div>
 
-            </form>
-          </div>
-
-          <!-- Footer - Fixed -->
-          <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
-            <div class="flex justify-end space-x-3">
-              <button
-                type="button"
-                @click="$emit('cerrar')"
-                class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                @click="enviarSolicitud"
-                :disabled="!formularioValido || enviando"
-                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg v-if="enviando" class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ enviando ? 'Enviando...' : 'Crear Solicitud' }}
-              </button>
+              <!-- Subir documento -->
+              <div v-if="tipoSeleccionado.requiereDocumento">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Documento adjunto *
+                </label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                  <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-600">
+                      <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                        <span>Subir archivo</span>
+                        <input 
+                          id="file-upload" 
+                          name="file-upload" 
+                          type="file" 
+                          class="sr-only" 
+                          @change="manejarArchivo"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          :required="tipoSeleccionado.requiereDocumento"
+                        />
+                      </label>
+                      <p class="pl-1">o arrastra aquí</p>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                      PDF, DOC, DOCX, JPG, PNG hasta 10MB
+                    </p>
+                  </div>
+                </div>
+                <div v-if="archivoSeleccionado" class="mt-2 text-sm text-green-600">
+                  Archivo seleccionado: {{ archivoSeleccionado.name }}
+                </div>
+              </div>
             </div>
+          </form>
+        </div>
+
+        <!-- Footer - Fixed -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
+          <div class="flex justify-end space-x-3">
+            <button
+              type="button"
+              @click="$emit('cerrar')"
+              class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              @click="enviarSolicitud"
+              :disabled="!formularioValido || enviando"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="enviando" class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ enviando ? 'Enviando...' : 'Crear Solicitud' }}
+            </button>
           </div>
         </div>
       </div>
@@ -416,6 +411,13 @@ const formularioValido = computed(() => {
 });
 
 // Métodos
+const cerrarAlHacerClickEnBackdrop = (event) => {
+  // Solo cerrar si el clic es directamente en el contenedor externo (backdrop), no en el modal
+  if (event.target === event.currentTarget) {
+    emit('cerrar');
+  }
+};
+
 const seleccionarTipo = (tipo) => {
   formulario.value.tipo_solicitud = tipo.id;
   

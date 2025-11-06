@@ -274,7 +274,7 @@
                         </span>
                         <span v-if="registro.horaExtraInfo" class="text-xs text-gray-500">
                           {{ registro.horaExtraInfo.total_horas || registro.tiempoExtra }} hrs
-                          <span v-if="registro.horaExtraInfo.tipo_compensacion === 'DESCANSO'" class="text-blue-600">(Descanso)</span>
+                          <span v-if="registro.horaExtraInfo.preferencia_tipo_compensacion === 'DESCANSO'" class="text-blue-600">(Descanso)</span>
                           <span v-else class="text-green-600">(Pago)</span>
                         </span>
                         <span v-if="registro.horaExtraInfo && registro.horaExtraInfo.aprobado_por_nombre" class="text-xs text-gray-400">

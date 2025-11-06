@@ -1,6 +1,10 @@
 import axios from 'axios';
+import { useAuthStore } from '../stores/authStore.js'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/';
 
 // Crear instancia de axios con interceptores para autenticación
 const apiClient = axios.create({
@@ -14,7 +18,8 @@ const apiClient = axios.create({
 // Interceptor para agregar token de autenticación
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+   const authStore = useAuthStore()
+  const token = authStore.getToken
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,8 +36,8 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expirado o inválido
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      //localStorage.removeItem('token');
+      //window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -50,7 +55,7 @@ class SolicitudesGeneralesService {
    */
   async crearSolicitud(formData) {
     try {
-      const response = await apiClient.post('/solicitudes', formData, {
+      const response = await apiClient.post('/user/solicitudes', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

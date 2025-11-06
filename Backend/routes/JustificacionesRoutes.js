@@ -1,8 +1,12 @@
 import express from 'express';
-import JustificacionesController, { upload } from '../controllers/JustificacionesController.js';
+import JustificacionesController from '../controllers/JustificacionesController.js';
+import FileUploadService from '../services/FileUploadService.js';
 import AuthService from '../middleware/AuthMiddleWare.js';
 
 const router = express.Router();
+
+// Crear instancia de multer para justificaciones
+const uploadJustificaciones = FileUploadService.createUpload('justificaciones');
 
 // Rutas protegidas - requieren autenticación
 router.use(AuthService.verifyToken);
@@ -14,7 +18,7 @@ router.use(AuthService.verifyToken);
  */
 router.post(
     '/',
-    upload.single('archivo'),
+    uploadJustificaciones.single('archivo'),
     JustificacionesController.crearJustificacion
 );
 

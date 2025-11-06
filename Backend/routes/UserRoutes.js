@@ -3,6 +3,8 @@
 import express from 'express';
 import AuthService from '../middleware/AuthMiddleWare.js';
 import UserController from '../controllers/UserController.js';
+import multer from 'multer';
+
 
 const router = express.Router();
 
@@ -47,5 +49,10 @@ router.get('/usuarios-empresas', AuthService.verifyToken, AuthService.isAdmin, U
 // Permite crear una nueva relación usuario-empresa
 // Se usa cuando se une un trabajador a una empresa desde el frontend
 router.post('/usuarios-empresas', AuthService.verifyToken, AuthService.isAdmin, UserController.createUsuarioEmpresa);
+
+
+//Rutas para las solicitudes de los usuarios
+router.post('/solicitudes', AuthService.verifyToken, UserController.createSolicitud);
+
 
 export default router;

@@ -1,51 +1,6 @@
 import JustificacionesModel from '../model/JustificacionesModel.js';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Configurar multer para subida de archivos
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../uploads/justificaciones');
-        
-        // Crear directorio si no existe
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, 'justificacion-' + uniqueSuffix + ext);
-    }
-});
-
-const fileFilter = (req, file, cb) => {
-    // Permitir solo ciertos tipos de archivo
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-    
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes (JPG, PNG) y PDF.'), false);
-    }
-};
-
-export const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB máximo
-    }
-});
+import FileUploadService from '../services/FileUploadService.js';
 
 class JustificacionesController {
     /**
@@ -108,10 +63,11 @@ class JustificacionesController {
                 tipo_justificacion
             };
 
-            // Si hay archivo adjunto
+            // Si hay archivo adjunto - Usar FileUploadService
             if (req.file) {
-                data.archivo_url = `/uploads/justificaciones/${req.file.filename}`;
-                data.archivo_nombre = req.file.originalname;
+                const fileInfo = FileUploadService.getFileInfo(req.file, 'justificaciones');
+                data.archivo_url = fileInfo.url;
+                data.archivo_nombre = fileInfo.nombre;
             }
 
             // Crear justificación
@@ -317,12 +273,9 @@ class JustificacionesController {
                 });
             }
 
-            // Eliminar archivo si existe
+            // Eliminar archivo si existe - Usar FileUploadService
             if (justificacion.archivo_url) {
-                const filePath = path.join(__dirname, '..', justificacion.archivo_url);
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
-                }
+                FileUploadService.deleteFile(justificacion.archivo_url);
             }
 
             // Eliminar justificación (CASCADE eliminará los días automáticamente)

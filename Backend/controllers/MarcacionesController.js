@@ -11,6 +11,7 @@ import AsignacionTurnosModel from '../model/AsignacionTurnosModel.js';
 import TipoTurnosModel from '../model/TipoTurnosModel.js';
 import JustificacionesModel from '../model/JustificacionesModel.js';
 import HorasExtrasModel from '../model/HorasExtrasModel.js';
+import PreferenciasCompensacionModel from '../model/PreferenciasCompensacionModel.js';
 
 
 
@@ -95,7 +96,7 @@ function calcularHorasExtras(horaSalida, horaFinTurno, toleranciaSalida = 0) {
         const finTurnoEnMinutos = horaAMinutos(horaFinTurno);
         
         // Calcular el fin del turno con tolerancia
-        const finTurnoConTolerancia = finTurnoEnMinutos + toleranciaSalida;
+        const finTurnoConTolerancia = finTurnoEnMinutos + toleranciaSalida; //esto se debe acmbiar revisar logica proximanete
         
         // Si la salida es después del fin del turno + tolerancia, hay horas extras
         if (salidaEnMinutos > finTurnoConTolerancia) {
@@ -260,6 +261,9 @@ const registrarMarcacion = async (req, res) => {
                 if (horasExtras) {
                     console.log('🕐 Detectadas horas extras:', horasExtras);
                     
+                    // Obtener la preferencia de compensación activa del trabajador
+                    const preferencia = await PreferenciasCompensacionModel.obtenerPorTrabajador(usuarioEmpresa.id);
+                    
                     // Crear registro de horas extras
                     const horaExtraData = {
                         usuario_empresa_id: usuarioEmpresa.id,
@@ -269,7 +273,7 @@ const registrarMarcacion = async (req, res) => {
                         hora_fin: horasExtras.hora_fin,
                         estado: 'PENDIENTE',
                         motivo: `Horas extras por salida tardía. Exceso de ${horasExtras.minutos_extras} minutos sobre la tolerancia de ${toleranciaSalida} minutos.`,
-                        tipo_compensacion: 'PAGO'
+                        id_preferencia: preferencia ? preferencia.id_preferencia : null
                     };
                     
                     // Crear la hora extra de forma asíncrona para no bloquear la respuesta
