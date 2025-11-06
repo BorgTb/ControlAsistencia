@@ -14,20 +14,37 @@ export const useSolicitudesGenerales = () => {
   // Tipos de solicitudes disponibles
   const tiposSolicitudes = ref([
     {
-      id: 'cambio_turno',
-      nombre: 'Cambio de Turno',
-      descripcion: 'Solicitar intercambio o modificación de turno',
-      icono: 'refresh-cw',
-      requiereDocumento: false,
-      campos: ['fecha_actual', 'turno_actual', 'fecha_nueva', 'turno_nuevo', 'motivo', 'usuario_intercambio']
-    },
-    {
       id: 'amonestacion',
       nombre: 'Amonestación',
       descripcion: 'Gestión de amonestaciones',
       icono: 'alert-circle',
       requiereDocumento: true,
       campos: ['fecha', 'motivo', 'descripcion']
+    },
+    
+    {
+      id: 'permiso_con_goce',
+      nombre: 'Permiso con Goce de Remuneración',
+      descripcion: 'Permisos especiales con mantención de sueldo',
+      icono: 'user-check',
+      requiereDocumento: true,
+      campos: ['fecha_inicio', 'fecha_fin', 'motivo', 'tipo_permiso']
+    },
+    {
+      id: 'permiso_sin_goce',
+      nombre: 'Permiso sin Goce de Remuneración',
+      descripcion: 'Permisos especiales sin mantención de sueldo',
+      icono: 'user-x',
+      requiereDocumento: true,
+      campos: ['fecha_inicio', 'fecha_fin', 'motivo', 'tipo_permiso']
+    },
+      {
+      id: 'cambio_turno',
+      nombre: 'Cambio de Turno',
+      descripcion: 'Solicitar intercambio o modificación de turno',
+      icono: 'refresh-cw',
+      requiereDocumento: false,
+      campos: ['fecha_actual', 'turno_actual', 'fecha_nueva', 'turno_nuevo', 'motivo', 'usuario_intercambio']
     },
     {
       id: 'nuevo_ciclo',
@@ -44,22 +61,6 @@ export const useSolicitudesGenerales = () => {
       icono: 'calendar',
       requiereDocumento: false,
       campos: ['fecha_inicio', 'fecha_fin', 'dias_solicitados', 'motivo']
-    },
-    {
-      id: 'permiso_con_goce',
-      nombre: 'Permiso con Goce de Remuneración',
-      descripcion: 'Permisos especiales con mantención de sueldo',
-      icono: 'user-check',
-      requiereDocumento: true,
-      campos: ['fecha_inicio', 'fecha_fin', 'motivo', 'tipo_permiso']
-    },
-    {
-      id: 'permiso_sin_goce',
-      nombre: 'Permiso sin Goce de Remuneración',
-      descripcion: 'Permisos especiales sin mantención de sueldo',
-      icono: 'user-x',
-      requiereDocumento: true,
-      campos: ['fecha_inicio', 'fecha_fin', 'motivo', 'tipo_permiso']
     },
     {
       id: 'compensacion_horas',
