@@ -784,6 +784,31 @@ const createUsuarioEmpresa = async (req, res) => {
     }
 };
 
+
+
+const createSolicitud = async (req, res) => {
+    try {
+
+        console.log('📥 Recibiendo formData en createSolicitud:', req.body);
+        // Aquí puedes procesar el formData según tus necesidades
+        // Ejemplo de procesamiento básico:
+        
+        res.status(501).json({
+            success: true,
+            message: 'FormData recibido correctamente',
+        });
+        
+    } catch (error) {
+        console.error('Error procesando formData:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al procesar la solicitud',
+            error: error.message
+        });
+    }
+}
+
+
 const UserController = {
     updateEmail,
     updatePassword,
@@ -800,7 +825,8 @@ const UserController = {
     getUsuariosEmpresas, // Obtener relaciones usuario-empresa
     createUsuarioEmpresa, // Crear relación usuario-empresa
     listAdmins,
-    createSolicitudMarcacion
+    createSolicitudMarcacion,
+    createSolicitud
 }
 
 export default UserController;

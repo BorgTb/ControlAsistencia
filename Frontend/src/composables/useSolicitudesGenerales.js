@@ -14,7 +14,31 @@ export const useSolicitudesGenerales = () => {
   // Tipos de solicitudes disponibles
   const tiposSolicitudes = ref([
     {
-      id: 'feriado',
+      id: 'cambio_turno',
+      nombre: 'Cambio de Turno',
+      descripcion: 'Solicitar intercambio o modificación de turno',
+      icono: 'refresh-cw',
+      requiereDocumento: false,
+      campos: ['fecha_actual', 'turno_actual', 'fecha_nueva', 'turno_nuevo', 'motivo', 'usuario_intercambio']
+    },
+    {
+      id: 'amonestacion',
+      nombre: 'Amonestación',
+      descripcion: 'Gestión de amonestaciones',
+      icono: 'alert-circle',
+      requiereDocumento: true,
+      campos: ['fecha', 'motivo', 'descripcion']
+    },
+    {
+      id: 'nuevo_ciclo',
+      nombre: 'Nuevo Ciclo',
+      descripcion: 'Solicitud de nuevo ciclo de trabajo',
+      icono: 'repeat',
+      requiereDocumento: false,
+      campos: ['fecha_inicio', 'descripcion']
+    },
+    {
+      id: 'uso_feriado',
       nombre: 'Uso de Feriado',
       descripcion: 'Solicitar días de feriado legal',
       icono: 'calendar',
@@ -46,12 +70,12 @@ export const useSolicitudesGenerales = () => {
       campos: ['horas_extras_id', 'fecha_compensacion', 'motivo']
     },
     {
-      id: 'cambio_turno',
-      nombre: 'Cambio de Turno',
-      descripcion: 'Solicitar intercambio o modificación de turno',
-      icono: 'refresh-cw',
+      id: 'otro',
+      nombre: 'Otro',
+      descripcion: 'Otras solicitudes',
+      icono: 'more-horizontal',
       requiereDocumento: false,
-      campos: ['fecha_actual', 'turno_actual', 'fecha_nueva', 'turno_nuevo', 'motivo', 'usuario_intercambio']
+      campos: ['descripcion', 'motivo']
     }
   ]);
 
@@ -88,12 +112,10 @@ export const useSolicitudesGenerales = () => {
       // Agregar datos de la solicitud
       formData.append('tipo_solicitud', tipoSolicitud);
       formData.append('datos_solicitud', JSON.stringify(datos));
-      
       // Agregar archivo si existe
       if (archivo) {
         formData.append('documento', archivo);
       }
-
       const response = await SolicitudesGeneralesService.crearSolicitud(formData);
       
       // Actualizar la lista local
