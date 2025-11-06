@@ -866,6 +866,26 @@ const createSolicitud = async (req, res) => {
     }
 }
 
+const getSolicitudes = async (req, res) => {
+    try {
+        const user = req.user;
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const solicitudes = await SolicitudesUsuariosModel.obtenerPorUsuarioEmpresa(userEmpresa.id);
+        console.log('📋 Solicitudes obtenidas para usuario_empresa_id', userEmpresa.id, ':', solicitudes);
+        //console.log('✅ Solicitudes obtenidas:', solicitudes);
+        res.status(200).json({
+            success: true,
+            data: solicitudes
+        });
+    } catch (error) {
+        console.error('Error obteniendo solicitudes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las solicitudes',
+            error: error.message
+        });
+    }
+}
 
 const UserController = {
     updateEmail,
@@ -884,7 +904,8 @@ const UserController = {
     createUsuarioEmpresa, // Crear relación usuario-empresa
     listAdmins,
     createSolicitudMarcacion,
-    createSolicitud
+    createSolicitud,
+    getSolicitudes
 }
 
 export default UserController;

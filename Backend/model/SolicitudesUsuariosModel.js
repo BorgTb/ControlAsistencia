@@ -7,7 +7,10 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la inserción
      */
     static async crear(data) {
+        const connection = await db.getConnection();
         try {
+            await connection.beginTransaction();
+            
             const query = `
                 INSERT INTO solicitudes_usuarios (
                     id_usuario_empresa,
@@ -22,8 +25,10 @@ class SolicitudesUsuariosModel {
                     requiere_firma,
                     metodo_firma,
                     documento_adjunto,
-                    observaciones
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    observaciones,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             `;
 
             const values = [
@@ -42,19 +47,24 @@ class SolicitudesUsuariosModel {
                 data.observaciones || null
             ];
 
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al crear solicitud:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            const [result] = await connection.execute(query, values);
+            const solicitudId = result.insertId;
+            
+            await connection.commit();
+            
+            // Devolver la fila creada
+            const [createdRows] = await connection.execute(
+                'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                [solicitudId]
+            );
+
+            return createdRows[0] || null;
+            
         } catch (error) {
-            console.error('Error en crear solicitud:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 
@@ -64,37 +74,24 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Datos de la solicitud
      */
     static async obtenerPorId(id) {
-        try {
-            const query = `
-                SELECT 
-                    s.*,
-                    ue.usuario_id,
-                    ue.empresa_id,
-                    u.nombre as usuario_nombre,
-                    u.apellido_pat,
-                    u.apellido_mat,
-                    e.emp_nombre as empresa_nombre
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-                LEFT JOIN usuarios u ON ue.usuario_id = u.id
-                LEFT JOIN empresas e ON ue.empresa_id = e.id
-                WHERE s.id_solicitud = ?
-            `;
+        const query = `
+            SELECT 
+                s.*,
+                ue.usuario_id,
+                ue.empresa_id,
+                u.nombre as usuario_nombre,
+                u.apellido_pat,
+                u.apellido_mat,
+                e.emp_nombre as empresa_nombre
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE s.id_solicitud = ?
+        `;
 
-            return new Promise((resolve, reject) => {
-                db.query(query, [id], (error, results) => {
-                    if (error) {
-                        console.error('Error al obtener solicitud:', error);
-                        reject(error);
-                    } else {
-                        resolve(results[0] || null);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en obtenerPorId:', error);
-            throw error;
-        }
+        const [rows] = await db.execute(query, [id]);
+        return rows.length > 0 ? rows[0] : null;
     }
 
     /**
@@ -104,62 +101,49 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Lista de solicitudes
      */
     static async obtenerPorUsuarioEmpresa(idUsuarioEmpresa, filtros = {}) {
-        try {
-            let query = `
-                SELECT 
-                    s.*,
-                    ue.usuario_id,
-                    ue.empresa_id,
-                    u.nombre as usuario_nombre,
-                    u.apellido_pat,
-                    u.apellido_mat,
-                    e.emp_nombre as empresa_nombre
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-                LEFT JOIN usuarios u ON ue.usuario_id = u.id
-                LEFT JOIN empresas e ON ue.empresa_id = e.id
-                WHERE s.id_usuario_empresa = ?
-            `;
+        let query = `
+            SELECT 
+                s.*,
+                ue.usuario_id,
+                ue.empresa_id,
+                u.nombre as usuario_nombre,
+                u.apellido_pat,
+                u.apellido_mat,
+                e.emp_nombre as empresa_nombre
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE s.id_usuario_empresa = ?
+        `;
 
-            const values = [idUsuarioEmpresa];
+        const values = [idUsuarioEmpresa];
 
-            // Aplicar filtros
-            if (filtros.tipo) {
-                query += ` AND s.tipo = ?`;
-                values.push(filtros.tipo);
-            }
-
-            if (filtros.subtipo) {
-                query += ` AND s.subtipo = ?`;
-                values.push(filtros.subtipo);
-            }
-
-            if (filtros.estado) {
-                query += ` AND s.estado = ?`;
-                values.push(filtros.estado);
-            }
-
-            if (filtros.fecha_inicio && filtros.fecha_fin) {
-                query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
-                values.push(filtros.fecha_inicio, filtros.fecha_fin);
-            }
-
-            query += ` ORDER BY s.fecha_emision DESC`;
-
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al obtener solicitudes del usuario:', error);
-                        reject(error);
-                    } else {
-                        resolve(results || []);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en obtenerPorUsuarioEmpresa:', error);
-            throw error;
+        // Aplicar filtros
+        if (filtros.tipo) {
+            query += ` AND s.tipo = ?`;
+            values.push(filtros.tipo);
         }
+
+        if (filtros.subtipo) {
+            query += ` AND s.subtipo = ?`;
+            values.push(filtros.subtipo);
+        }
+
+        if (filtros.estado) {
+            query += ` AND s.estado = ?`;
+            values.push(filtros.estado);
+        }
+
+        if (filtros.fecha_inicio && filtros.fecha_fin) {
+            query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
+            values.push(filtros.fecha_inicio, filtros.fecha_fin);
+        }
+
+        query += ` ORDER BY s.fecha_emision DESC`;
+
+        const [rows] = await db.execute(query, values);
+        return rows || [];
     }
 
     /**
@@ -169,51 +153,38 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Lista de solicitudes pendientes
      */
     static async obtenerPendientesPorEmpresa(empresaId, filtros = {}) {
-        try {
-            let query = `
-                SELECT 
-                    s.*,
-                    ue.usuario_id,
-                    u.nombre as usuario_nombre,
-                    u.apellido_pat,
-                    u.apellido_mat,
-                    e.emp_nombre as empresa_nombre
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-                LEFT JOIN usuarios u ON ue.usuario_id = u.id
-                LEFT JOIN empresas e ON ue.empresa_id = e.id
-                WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
-            `;
+        let query = `
+            SELECT 
+                s.*,
+                ue.usuario_id,
+                u.nombre as usuario_nombre,
+                u.apellido_pat,
+                u.apellido_mat,
+                e.emp_nombre as empresa_nombre
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
+        `;
 
-            const values = [empresaId];
+        const values = [empresaId];
 
-            // Aplicar filtros
-            if (filtros.subtipo) {
-                query += ` AND s.subtipo = ?`;
-                values.push(filtros.subtipo);
-            }
-
-            if (filtros.fecha_inicio && filtros.fecha_fin) {
-                query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
-                values.push(filtros.fecha_inicio, filtros.fecha_fin);
-            }
-
-            query += ` ORDER BY s.fecha_emision ASC`;
-
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al obtener solicitudes pendientes:', error);
-                        reject(error);
-                    } else {
-                        resolve(results || []);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en obtenerPendientesPorEmpresa:', error);
-            throw error;
+        // Aplicar filtros
+        if (filtros.subtipo) {
+            query += ` AND s.subtipo = ?`;
+            values.push(filtros.subtipo);
         }
+
+        if (filtros.fecha_inicio && filtros.fecha_fin) {
+            query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
+            values.push(filtros.fecha_inicio, filtros.fecha_fin);
+        }
+
+        query += ` ORDER BY s.fecha_emision ASC`;
+
+        const [rows] = await db.execute(query, values);
+        return rows || [];
     }
 
     /**
@@ -224,47 +195,59 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la actualización
      */
     static async actualizarEstado(id, nuevoEstado, datosAdicionales = {}) {
+        const connection = await db.getConnection();
         try {
-            let query = `
-                UPDATE solicitudes_usuarios 
-                SET estado = ?, 
-                    fecha_respuesta = NOW()
-            `;
-
-            const values = [nuevoEstado];
+            await connection.beginTransaction();
+            
+            const updateFields = [];
+            const updateValues = [];
+            
+            // Estado siempre se actualiza
+            updateFields.push('estado = ?');
+            updateValues.push(nuevoEstado);
+            
+            // Siempre actualizar fecha_respuesta
+            updateFields.push('fecha_respuesta = NOW()');
 
             // Agregar campos adicionales si existen
             if (datosAdicionales.observaciones) {
-                query += `, observaciones = ?`;
-                values.push(datosAdicionales.observaciones);
+                updateFields.push('observaciones = ?');
+                updateValues.push(datosAdicionales.observaciones);
             }
 
             if (datosAdicionales.firma_trabajador) {
-                query += `, firma_trabajador = ?`;
-                values.push(datosAdicionales.firma_trabajador);
+                updateFields.push('firma_trabajador = ?');
+                updateValues.push(datosAdicionales.firma_trabajador);
             }
 
             if (datosAdicionales.firma_empleador) {
-                query += `, firma_empleador = ?`;
-                values.push(datosAdicionales.firma_empleador);
+                updateFields.push('firma_empleador = ?');
+                updateValues.push(datosAdicionales.firma_empleador);
             }
+            
+            // Siempre actualizar updated_at
+            updateFields.push('updated_at = CURRENT_TIMESTAMP');
 
-            query += ` WHERE id_solicitud = ?`;
-            values.push(id);
+            const query = `UPDATE solicitudes_usuarios SET ${updateFields.join(', ')} WHERE id_solicitud = ?`;
+            updateValues.push(id);
 
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al actualizar estado:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            const [result] = await connection.execute(query, updateValues);
+            await connection.commit();
+            
+            if (result.affectedRows > 0) {
+                const [updatedRows] = await connection.execute(
+                    'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                    [id]
+                );
+                return updatedRows[0] || null;
+            }
+            return null;
+            
         } catch (error) {
-            console.error('Error en actualizarEstado:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 
@@ -276,28 +259,35 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la actualización
      */
     static async agregarFirma(id, tipoFirma, firma) {
+        const connection = await db.getConnection();
         try {
+            await connection.beginTransaction();
+            
             const campo = tipoFirma === 'trabajador' ? 'firma_trabajador' : 'firma_empleador';
             
             const query = `
                 UPDATE solicitudes_usuarios 
-                SET ${campo} = ?
+                SET ${campo} = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id_solicitud = ?
             `;
 
-            return new Promise((resolve, reject) => {
-                db.query(query, [firma, id], (error, results) => {
-                    if (error) {
-                        console.error('Error al agregar firma:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            const [result] = await connection.execute(query, [firma, id]);
+            await connection.commit();
+            
+            if (result.affectedRows > 0) {
+                const [updatedRows] = await connection.execute(
+                    'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                    [id]
+                );
+                return updatedRows[0] || null;
+            }
+            return null;
+            
         } catch (error) {
-            console.error('Error en agregarFirma:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 
@@ -308,26 +298,33 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la actualización
      */
     static async actualizarDocumento(id, documentoUrl) {
+        const connection = await db.getConnection();
         try {
+            await connection.beginTransaction();
+            
             const query = `
                 UPDATE solicitudes_usuarios 
-                SET documento_adjunto = ?
+                SET documento_adjunto = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id_solicitud = ?
             `;
 
-            return new Promise((resolve, reject) => {
-                db.query(query, [documentoUrl, id], (error, results) => {
-                    if (error) {
-                        console.error('Error al actualizar documento:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            const [result] = await connection.execute(query, [documentoUrl, id]);
+            await connection.commit();
+            
+            if (result.affectedRows > 0) {
+                const [updatedRows] = await connection.execute(
+                    'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                    [id]
+                );
+                return updatedRows[0] || null;
+            }
+            return null;
+            
         } catch (error) {
-            console.error('Error en actualizarDocumento:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 
@@ -337,22 +334,33 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la eliminación
      */
     static async eliminar(id) {
+        const connection = await db.getConnection();
         try {
-            const query = `DELETE FROM solicitudes_usuarios WHERE id_solicitud = ?`;
-
-            return new Promise((resolve, reject) => {
-                db.query(query, [id], (error, results) => {
-                    if (error) {
-                        console.error('Error al eliminar solicitud:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            await connection.beginTransaction();
+            
+            // Obtener la fila antes de eliminar
+            const [rowsBefore] = await connection.execute(
+                'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                [id]
+            );
+            
+            if (rowsBefore.length === 0) {
+                throw new Error('Solicitud no encontrada');
+            }
+            
+            const rowBefore = rowsBefore[0];
+            
+            // Eliminar solicitud
+            await connection.execute('DELETE FROM solicitudes_usuarios WHERE id_solicitud = ?', [id]);
+            await connection.commit();
+            
+            return rowBefore;
+            
         } catch (error) {
-            console.error('Error en eliminar:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 
@@ -362,39 +370,26 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Estadísticas de solicitudes
      */
     static async obtenerEstadisticas(empresaId = null) {
-        try {
-            let query = `
-                SELECT 
-                    s.estado,
-                    s.subtipo,
-                    COUNT(*) as cantidad
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-            `;
+        let query = `
+            SELECT 
+                s.estado,
+                s.subtipo,
+                COUNT(*) as cantidad
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+        `;
 
-            const values = [];
+        const values = [];
 
-            if (empresaId) {
-                query += ` WHERE ue.empresa_id = ?`;
-                values.push(empresaId);
-            }
-
-            query += ` GROUP BY s.estado, s.subtipo`;
-
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al obtener estadísticas:', error);
-                        reject(error);
-                    } else {
-                        resolve(results || []);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en obtenerEstadisticas:', error);
-            throw error;
+        if (empresaId) {
+            query += ` WHERE ue.empresa_id = ?`;
+            values.push(empresaId);
         }
+
+        query += ` GROUP BY s.estado, s.subtipo`;
+
+        const [rows] = await db.execute(query, values);
+        return rows || [];
     }
 
     /**
@@ -403,28 +398,15 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Cantidad de solicitudes pendientes
      */
     static async contarPendientes(empresaId) {
-        try {
-            const query = `
-                SELECT COUNT(*) as cantidad
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-                WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
-            `;
+        const query = `
+            SELECT COUNT(*) as cantidad
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+            WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
+        `;
 
-            return new Promise((resolve, reject) => {
-                db.query(query, [empresaId], (error, results) => {
-                    if (error) {
-                        console.error('Error al contar pendientes:', error);
-                        reject(error);
-                    } else {
-                        resolve(results[0]?.cantidad || 0);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en contarPendientes:', error);
-            throw error;
-        }
+        const [rows] = await db.execute(query, [empresaId]);
+        return rows[0]?.cantidad || 0;
     }
 
     /**
@@ -435,73 +417,60 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Lista de solicitudes
      */
     static async obtenerTodas(filtros = {}, limit = 50, offset = 0) {
-        try {
-            let query = `
-                SELECT 
-                    s.*,
-                    ue.usuario_id,
-                    ue.empresa_id,
-                    u.nombre as usuario_nombre,
-                    u.apellido_pat,
-                    u.apellido_mat,
-                    e.emp_nombre as empresa_nombre
-                FROM solicitudes_usuarios s
-                LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-                LEFT JOIN usuarios u ON ue.usuario_id = u.id
-                LEFT JOIN empresas e ON ue.empresa_id = e.id
-                WHERE 1=1
-            `;
+        let query = `
+            SELECT 
+                s.*,
+                ue.usuario_id,
+                ue.empresa_id,
+                u.nombre as usuario_nombre,
+                u.apellido_pat,
+                u.apellido_mat,
+                e.emp_nombre as empresa_nombre
+            FROM solicitudes_usuarios s
+            LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
+            LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE 1=1
+        `;
 
-            const values = [];
+        const values = [];
 
-            // Aplicar filtros
-            if (filtros.estado) {
-                query += ` AND s.estado = ?`;
-                values.push(filtros.estado);
-            }
-
-            if (filtros.subtipo) {
-                query += ` AND s.subtipo = ?`;
-                values.push(filtros.subtipo);
-            }
-
-            if (filtros.tipo) {
-                query += ` AND s.tipo = ?`;
-                values.push(filtros.tipo);
-            }
-
-            if (filtros.empresa_id) {
-                query += ` AND ue.empresa_id = ?`;
-                values.push(filtros.empresa_id);
-            }
-
-            if (filtros.usuario_id) {
-                query += ` AND ue.usuario_id = ?`;
-                values.push(filtros.usuario_id);
-            }
-
-            if (filtros.fecha_inicio && filtros.fecha_fin) {
-                query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
-                values.push(filtros.fecha_inicio, filtros.fecha_fin);
-            }
-
-            query += ` ORDER BY s.fecha_emision DESC LIMIT ? OFFSET ?`;
-            values.push(limit, offset);
-
-            return new Promise((resolve, reject) => {
-                db.query(query, values, (error, results) => {
-                    if (error) {
-                        console.error('Error al obtener solicitudes:', error);
-                        reject(error);
-                    } else {
-                        resolve(results || []);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error en obtenerTodas:', error);
-            throw error;
+        // Aplicar filtros
+        if (filtros.estado) {
+            query += ` AND s.estado = ?`;
+            values.push(filtros.estado);
         }
+
+        if (filtros.subtipo) {
+            query += ` AND s.subtipo = ?`;
+            values.push(filtros.subtipo);
+        }
+
+        if (filtros.tipo) {
+            query += ` AND s.tipo = ?`;
+            values.push(filtros.tipo);
+        }
+
+        if (filtros.empresa_id) {
+            query += ` AND ue.empresa_id = ?`;
+            values.push(filtros.empresa_id);
+        }
+
+        if (filtros.usuario_id) {
+            query += ` AND ue.usuario_id = ?`;
+            values.push(filtros.usuario_id);
+        }
+
+        if (filtros.fecha_inicio && filtros.fecha_fin) {
+            query += ` AND DATE(s.fecha_emision) BETWEEN ? AND ?`;
+            values.push(filtros.fecha_inicio, filtros.fecha_fin);
+        }
+
+        query += ` ORDER BY s.fecha_emision DESC LIMIT ? OFFSET ?`;
+        values.push(limit, offset);
+
+        const [rows] = await db.execute(query, values);
+        return rows || [];
     }
 
     /**
@@ -511,28 +480,36 @@ class SolicitudesUsuariosModel {
      * @returns {Promise} Resultado de la actualización
      */
     static async actualizarObservaciones(id, observaciones) {
+        const connection = await db.getConnection();
         try {
+            await connection.beginTransaction();
+            
             const query = `
                 UPDATE solicitudes_usuarios 
-                SET observaciones = ?
+                SET observaciones = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id_solicitud = ?
             `;
 
-            return new Promise((resolve, reject) => {
-                db.query(query, [observaciones, id], (error, results) => {
-                    if (error) {
-                        console.error('Error al actualizar observaciones:', error);
-                        reject(error);
-                    } else {
-                        resolve(results);
-                    }
-                });
-            });
+            const [result] = await connection.execute(query, [observaciones, id]);
+            await connection.commit();
+            
+            if (result.affectedRows > 0) {
+                const [updatedRows] = await connection.execute(
+                    'SELECT * FROM solicitudes_usuarios WHERE id_solicitud = ?',
+                    [id]
+                );
+                return updatedRows[0] || null;
+            }
+            return null;
+            
         } catch (error) {
-            console.error('Error en actualizarObservaciones:', error);
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release();
         }
     }
 }
+
 
 export default SolicitudesUsuariosModel;

@@ -119,10 +119,11 @@ export const useSolicitudesGenerales = () => {
       }
       const response = await SolicitudesGeneralesService.crearSolicitud(formData);
       
-      // Actualizar la lista local
-      await cargarSolicitudes();
+      // Transformar respuesta y actualizar la lista local
+      const solicitudCreada = transformarSolicitud(response);
+      solicitudes.value.push(solicitudCreada);
       
-      return response;
+      return solicitudCreada;
     } catch (err) {
       error.value = err.message || 'Error al crear la solicitud';
       console.error('Error en crearSolicitud:', err);
@@ -141,8 +142,15 @@ export const useSolicitudesGenerales = () => {
 
     try {
       const data = await SolicitudesGeneralesService.obtenerSolicitudes(filtros);
-      solicitudes.value = data;
-      return data;
+      console.log('Datos cargados en cargarSolicitudes:', data);
+      // Transformar datos al formato esperado por el frontend
+      const solicitudesTransformadas = Array.isArray(data) 
+        ? data.map(s => transformarSolicitud(s))
+        : [transformarSolicitud(data)];
+      
+      console.log('Solicitudes transformadas:', solicitudesTransformadas);
+      solicitudes.value = solicitudesTransformadas;
+      return solicitudes.value;
     } catch (err) {
       error.value = err.message || 'Error al cargar las solicitudes';
       console.error('Error en cargarSolicitudes:', err);
@@ -161,8 +169,8 @@ export const useSolicitudesGenerales = () => {
 
     try {
       const data = await SolicitudesGeneralesService.obtenerSolicitudPorId(id);
-      solicitudActual.value = data;
-      return data;
+      solicitudActual.value = transformarSolicitud(data);
+      return solicitudActual.value;
     } catch (err) {
       error.value = err.message || 'Error al cargar la solicitud';
       console.error('Error en cargarSolicitudPorId:', err);
@@ -272,6 +280,76 @@ export const useSolicitudesGenerales = () => {
   };
 
   /**
+   * Transformar datos del backend al formato esperado por el frontend
+   */
+  const transformarSolicitud = (solicitudBackend) => {
+    // Crear array de documentos si existe documento_adjunto
+    const documentos = [];
+    if (solicitudBackend.documento_adjunto) {
+      documentos.push({
+        id: 1,
+        nombre_original: solicitudBackend.documento_adjunto.split('/').pop(),
+        url: solicitudBackend.documento_adjunto
+      });
+    }
+
+    return {
+      // Información básica
+      id: solicitudBackend.id_solicitud,
+      id_solicitud: solicitudBackend.id_solicitud,
+      id_usuario_empresa: solicitudBackend.id_usuario_empresa,
+      tipo_solicitud: solicitudBackend.subtipo, // El tipo real está en subtipo
+      tipo: solicitudBackend.tipo,
+      subtipo: solicitudBackend.subtipo,
+      
+      // Información de texto
+      titulo: solicitudBackend.titulo,
+      descripcion: solicitudBackend.descripcion,
+      motivo: solicitudBackend.descripcion, // Usar descripción como motivo
+      observaciones: solicitudBackend.observaciones,
+      
+      // Fechas principales
+      fecha_inicio: solicitudBackend.fecha_inicio,
+      fecha_fin: solicitudBackend.fecha_fin,
+      dias_solicitados: solicitudBackend.dias_totales,
+      
+      // Fechas de sistema
+      fecha_emision: solicitudBackend.fecha_emision,
+      fecha_respuesta: solicitudBackend.fecha_respuesta,
+      created_at: solicitudBackend.fecha_emision,
+      updated_at: solicitudBackend.fecha_respuesta || solicitudBackend.fecha_emision,
+      
+      // Estado y firmas
+      estado: solicitudBackend.estado?.toUpperCase() || 'PENDIENTE',
+      requiere_firma: solicitudBackend.requiere_firma,
+      metodo_firma: solicitudBackend.metodo_firma,
+      firma_trabajador: solicitudBackend.firma_trabajador,
+      firma_empleador: solicitudBackend.firma_empleador,
+      
+      // Documento adjunto
+      documento_adjunto: solicitudBackend.documento_adjunto,
+      
+      // Información del usuario
+      usuario_id: solicitudBackend.usuario_id,
+      usuario_nombre: solicitudBackend.usuario_nombre,
+      apellido_pat: solicitudBackend.apellido_pat,
+      apellido_mat: solicitudBackend.apellido_mat,
+      
+      // Información de la empresa
+      empresa_id: solicitudBackend.empresa_id,
+      empresa_nombre: solicitudBackend.empresa_nombre,
+      
+      // Información adicional que puede venir del backend
+      aprobado_por: solicitudBackend.aprobado_por,
+      fecha_aprobacion: solicitudBackend.fecha_aprobacion,
+      
+      // Arrays que pueden venir del backend
+      documentos: documentos,
+      historial: solicitudBackend.historial || []
+    };
+  };
+
+  /**
    * Utilidades para formateo
    */
   const formatearFecha = (fecha) => {
@@ -333,6 +411,7 @@ export const useSolicitudesGenerales = () => {
 
     // Utilidades
     resetear,
+    transformarSolicitud,
     formatearFecha,
     formatearFechaHora,
     obtenerColorEstado,

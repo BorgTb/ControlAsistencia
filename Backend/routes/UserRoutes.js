@@ -55,6 +55,6 @@ router.post('/usuarios-empresas', AuthService.verifyToken, AuthService.isAdmin, 
 
 //Rutas para las solicitudes de los usuarios
 router.post('/solicitudes', AuthService.verifyToken, uploadSolicitudes.single('archivo'), UserController.createSolicitud);
-
+router.get('/solicitudes', AuthService.verifyToken, UserController.getSolicitudes);
 
 export default router;
