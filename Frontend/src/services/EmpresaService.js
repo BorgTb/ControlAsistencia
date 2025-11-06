@@ -610,6 +610,80 @@ class EmpresaServices{
     }
   }
 
+  /**
+   * Obtiene las solicitudes de usuarios de una empresa
+   * Incluye solicitudes de trabajadores regulares y EST
+   * @returns {Promise} Lista de solicitudes de la empresa
+   */
+  static async obtenerSolicitudesUsuarios() {
+    try {
+      const response = await apiClient.get('/userEmpresa/solicitudes-usuarios')
+      console.log('✅ Solicitudes de usuarios obtenidas:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo solicitudes de usuarios:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Obtiene las solicitudes pendientes de usuarios de una empresa
+   * @param {Object} filtros - Filtros opcionales (tipo, subtipo, etc.)
+   * @returns {Promise} Lista de solicitudes pendientes
+   */
+  static async obtenerSolicitudesPendientes(filtros = {}) {
+    try {
+      const response = await apiClient.get('/userEmpresa/solicitudes-usuarios/pendientes', {
+        params: filtros
+      })
+      console.log('✅ Solicitudes pendientes obtenidas:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error obteniendo solicitudes pendientes:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Aprueba una solicitud de usuario
+   * @param {number} solicitudId - ID de la solicitud
+   * @param {Object} datos - Datos de la aprobación (observaciones, etc.)
+   * @returns {Promise} Resultado de la operación
+   */
+  static async aprobarSolicitud(solicitudId, datos = {}) {
+    try {
+      const response = await apiClient.patch(
+        `/userEmpresa/solicitudes-usuarios/${solicitudId}/aprobar`,
+        datos
+      )
+      console.log('✅ Solicitud aprobada:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error aprobando solicitud:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Rechaza una solicitud de usuario
+   * @param {number} solicitudId - ID de la solicitud
+   * @param {Object} datos - Datos del rechazo (motivo, observaciones, etc.)
+   * @returns {Promise} Resultado de la operación
+   */
+  static async rechazarSolicitud(solicitudId, datos = {}) {
+    try {
+      const response = await apiClient.patch(
+        `/userEmpresa/solicitudes-usuarios/${solicitudId}/rechazar`,
+        datos
+      )
+      console.log('✅ Solicitud rechazada:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error rechazando solicitud:', error)
+      throw error
+    }
+  }
+
 }
 
 export default EmpresaServices;

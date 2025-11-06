@@ -40,7 +40,7 @@ class SolicitudesUsuariosModel {
                 data.fecha_inicio || null,
                 data.fecha_fin || null,
                 data.fecha_emision || new Date(),
-                data.estado || 'pendiente',
+                data.estado || 'PENDIENTE',
                 data.requiere_firma !== undefined ? data.requiere_firma : 1,
                 data.metodo_firma || 'login',
                 data.documento_adjunto || null,
@@ -165,10 +165,16 @@ class SolicitudesUsuariosModel {
             LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
-            WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
+            WHERE ue.empresa_id = ?
         `;
 
         const values = [empresaId];
+
+        // Si se especifica estado en filtros, usarlo, sino traer todas
+        if (filtros.estado) {
+            query += ` AND s.estado = ?`;
+            values.push(filtros.estado);
+        }
 
         // Aplicar filtros
         if (filtros.subtipo) {
@@ -181,7 +187,7 @@ class SolicitudesUsuariosModel {
             values.push(filtros.fecha_inicio, filtros.fecha_fin);
         }
 
-        query += ` ORDER BY s.fecha_emision ASC`;
+        query += ` ORDER BY s.fecha_emision DESC`;
 
         const [rows] = await db.execute(query, values);
         return rows || [];
@@ -402,7 +408,7 @@ class SolicitudesUsuariosModel {
             SELECT COUNT(*) as cantidad
             FROM solicitudes_usuarios s
             LEFT JOIN usuarios_empresas ue ON s.id_usuario_empresa = ue.id
-            WHERE ue.empresa_id = ? AND s.estado = 'pendiente'
+            WHERE ue.empresa_id = ? AND s.estado = 'PENDIENTE'
         `;
 
         const [rows] = await db.execute(query, [empresaId]);

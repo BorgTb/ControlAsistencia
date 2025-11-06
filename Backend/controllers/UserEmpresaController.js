@@ -15,8 +15,9 @@ import ReportesModel from "../model/ReportesModel.js";
 import EstAsignacionesModel from "../model/EstAsignacionesModel.js";
 import NotificacionService from "../services/NotificacionService.js";
 import AuditoriaModel from "../model/AuditoriaModel.js";
-import  ConfigToleranciaModel from "../model/ConfigTolerancias.js";
+import ConfigToleranciaModel from "../model/ConfigTolerancias.js";
 import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
+import SolicitudesUsuariosModel from "../model/SolicitudesUsuariosModel.js";
 
 
 
@@ -1864,6 +1865,203 @@ function calcularHorasTurno(horaInicio, horaFin) {
     return Math.round((finEnMinutos - inicioEnMinutos) / 60 * 100) / 100;
 }
 
+
+async function obtenerSolicitudesUsuarios(req,res) {
+    try {
+        const user = req.user;
+        console.log("Usuario que realiza la solicitud:", user);
+        console.log("empresa_id del usuario:", user.empresa_id);
+        
+        // Validar que el usuario tenga empresa_id (es una empresa, no un trabajador)
+        if (!user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permisos para acceder a este recurso"
+            });
+        }
+
+        // Obtener todas las solicitudes de la empresa
+        // usando el método obtenerPendientesPorEmpresa del modelo
+        const solicitudes = await SolicitudesUsuariosModel.obtenerPendientesPorEmpresa(user.empresa_id);
+        
+        console.log("Solicitudes obtenidas:", solicitudes.length);
+        console.log("Solicitudes:", solicitudes);
+
+        res.status(200).json({
+            success: true,
+            data: solicitudes,
+            cantidad: solicitudes.length
+        });
+    } catch (error) {
+        console.error("Error al obtener solicitudes de usuarios:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener solicitudes",
+            error: error.message
+        });
+    }
+}
+
+async function obtenerSolicitudesPendientes(req, res) {
+    try {
+        const user = req.user;
+        console.log("Usuario que realiza la solicitud:", user);
+        
+        // Validar que el usuario tenga empresa_id
+        if (!user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permisos para acceder a este recurso"
+            });
+        }
+
+        // Obtener filtros del query
+        const filtros = {};
+        if (req.query.subtipo) filtros.subtipo = req.query.subtipo;
+        if (req.query.fecha_inicio && req.query.fecha_fin) {
+            filtros.fecha_inicio = req.query.fecha_inicio;
+            filtros.fecha_fin = req.query.fecha_fin;
+        }
+
+        // Obtener solicitudes pendientes con filtros
+        const solicitudes = await SolicitudesUsuariosModel.obtenerPendientesPorEmpresa(user.empresa_id, filtros);
+
+        res.status(200).json({
+            success: true,
+            data: solicitudes,
+            cantidad: solicitudes.length
+        });
+    } catch (error) {
+        console.error("Error al obtener solicitudes pendientes:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener solicitudes pendientes",
+            error: error.message
+        });
+    }
+}
+
+async function aprobarSolicitud(req, res) {
+    try {
+        const id = parseInt(req.params.id); // Convertir a número
+        const { observaciones } = req.body;
+        const user = req.user;
+
+        console.log("Aprobando solicitud:", id, "por usuario:", user.id);
+        console.log("Estado del usuario:", user);
+
+        // Validar que el usuario tenga empresa_id
+        if (!user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permisos para aprobar solicitudes"
+            });
+        }
+
+        // Obtener la solicitud para verificar que pertenece a la empresa
+        const solicitud = await SolicitudesUsuariosModel.obtenerPorId(id);
+        
+        if (!solicitud) {
+            return res.status(404).json({
+                success: false,
+                message: "Solicitud no encontrada"
+            });
+        }
+
+        if (solicitud.empresa_id !== user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "Esta solicitud no pertenece a tu empresa"
+            });
+        }
+
+        // Actualizar estado a ACEPTADA
+        const resultado = await SolicitudesUsuariosModel.actualizarEstado(
+            id, 
+            'ACEPTADA',
+            {
+                observaciones: observaciones || null,
+                fecha_respuesta: new Date(),
+                aprobado_por: user.id
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Solicitud aprobada correctamente",
+            data: resultado
+        });
+    } catch (error) {
+        console.error("Error al aprobar solicitud:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al aprobar solicitud",
+            error: error.message
+        });
+    }
+}
+
+async function rechazarSolicitud(req, res) {
+    try {
+        const id = parseInt(req.params.id); // Convertir a número
+        const { motivo, observaciones } = req.body;
+        const user = req.user;
+
+        console.log("Rechazando solicitud:", id, "por usuario:", user.id);
+        console.log("Estado del usuario:", user);
+
+        // Validar que el usuario tenga empresa_id
+        if (!user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permisos para rechazar solicitudes"
+            });
+        }
+
+        // Obtener la solicitud para verificar que pertenece a la empresa
+        const solicitud = await SolicitudesUsuariosModel.obtenerPorId(id);
+        
+        if (!solicitud) {
+            return res.status(404).json({
+                success: false,
+                message: "Solicitud no encontrada"
+            });
+        }
+
+        if (solicitud.empresa_id !== user.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "Esta solicitud no pertenece a tu empresa"
+            });
+        }
+
+        // Actualizar estado a RECHAZADA
+        const resultado = await SolicitudesUsuariosModel.actualizarEstado(
+            id, 
+            'RECHAZADA',
+            {
+                motivo: motivo || 'Sin especificar',
+                observaciones: observaciones || null,
+                fecha_respuesta: new Date(),
+                rechazado_por: user.id
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Solicitud rechazada correctamente",
+            data: resultado
+        });
+    } catch (error) {
+        console.error("Error al rechazar solicitud:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al rechazar solicitud",
+            error: error.message
+        });
+    }
+}
+
 const AdminController = {
     createTrabajador,
     obtenerTrabajadores,
@@ -1889,7 +2087,11 @@ const AdminController = {
     historialSolicitudes,
     obtenerReporteJornadaDiariaEmpresa,
     historialSolicitudes,
-    obtenerReporteAsistenciaDetallado
+    obtenerReporteAsistenciaDetallado,
+    obtenerSolicitudesUsuarios,
+    obtenerSolicitudesPendientes,
+    aprobarSolicitud,
+    rechazarSolicitud
 };
 
 

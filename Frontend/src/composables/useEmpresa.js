@@ -287,6 +287,49 @@ export function useEmpresa() {
     }
   };
 
+  const obtenerSolicitudesUsuarios = async () => {
+    try {
+      const response = await EmpresaServices.obtenerSolicitudesUsuarios();
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener solicitudes de usuarios:", error);
+      throw error;
+    }
+  };
+
+  const obtenerSolicitudesPendientes = async (filtros = {}) => {
+    try {
+      console.log('📋 Obteniendo solicitudes pendientes con filtros:', filtros);
+      const response = await EmpresaServices.obtenerSolicitudesPendientes(filtros);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener solicitudes pendientes:", error);
+      throw error;
+    }
+  };
+
+  const aprobarSolicitud = async (solicitudId, datos = {}) => {
+    try {
+      console.log('✅ Aprobando solicitud:', solicitudId, datos);
+      const response = await EmpresaServices.aprobarSolicitud(solicitudId, datos);
+      return response.data;
+    } catch (error) {
+      console.error("Error al aprobar solicitud:", error);
+      throw error;
+    }
+  };
+
+  const rechazarSolicitud = async (solicitudId, datos = {}) => {
+    try {
+      console.log('❌ Rechazando solicitud:', solicitudId, datos);
+      const response = await EmpresaServices.rechazarSolicitud(solicitudId, datos);
+      return response.data;
+    } catch (error) {
+      console.error("Error al rechazar solicitud:", error);
+      throw error;
+    }
+  };
+
   return {
     obtenerTrabajadores,
     obtenerTurnos,
@@ -313,6 +356,10 @@ export function useEmpresa() {
     aprobarHoraExtraPendiente,
     rechazarHoraExtraPendiente,
     obtenerHorasExtrasPorEmpresa,
-    obtenerHorasExtrasPorTrabajador
+    obtenerHorasExtrasPorTrabajador,
+    obtenerSolicitudesUsuarios,
+    obtenerSolicitudesPendientes,
+    aprobarSolicitud,
+    rechazarSolicitud
   };
 }
