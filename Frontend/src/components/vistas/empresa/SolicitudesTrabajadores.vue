@@ -199,7 +199,7 @@
                       <div class="mt-2 flex items-center text-sm text-gray-500">
                         <!-- TODO: Tipo de solicitud (Feriado, Permiso con goce, etc.) -->
                         <p class="mr-4">
-                          <span class="font-medium">Tipo:</span> {{ solicitud.tipo_solicitud || 'Tipo de solicitud' }}
+                          <span class="font-medium">Tipo:</span> {{ obtenerNombreTipo(solicitud.subtipo) || 'Tipo de solicitud' }}
                         </p>
                         <!-- TODO: Período solicitado (fecha inicio - fecha fin) -->
                         <p>
@@ -271,9 +271,46 @@
           </p>
         </div>
         
-        <div class="px-6 py-4">
+        <div class="px-6 py-4 space-y-4">
+          <!-- Advertencia si la solicitud no es de tipo permiso, feriado o compensación -->
+          <div 
+            v-if="!esPermisoCambioOCompensacion(solicitudSeleccionada?.subtipo)"
+            class="p-4 bg-red-50 border-l-4 border-red-500 rounded"
+          >
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  ⚠️ ¡ATENCIÓN! Cambio Irreversible
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <p class="font-semibold mb-2">Este cambio NO se puede deshacer</p>
+                  <p>Estás a punto de aprobar una solicitud de tipo <strong>{{ obtenerNombreTipo(solicitudSeleccionada?.subtipo) }}</strong> que implica cambios significativos en el sistema.</p>
+                  <p class="mt-2">Asegúrate de haber realizado y leído todos los cambios antes de confirmar.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Checkbox de confirmación -->
+            <div class="mt-4 flex items-center">
+              <input 
+                id="confirmacion-cambio"
+                v-model="confirmarCambioIrreversible"
+                type="checkbox"
+                class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <label for="confirmacion-cambio" class="ml-2 block text-sm font-medium text-red-800">
+                Confirmo que deseo realizar este cambio irreversible
+              </label>
+            </div>
+          </div>
+
           <!-- TODO: Campo opcional para agregar observaciones/comentarios sobre la aceptación -->
-          <div class="mb-4">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones (Opcional)</label>
             <textarea
               v-model="observacionesAceptar"
@@ -293,8 +330,8 @@
           </button>
           <button
             @click="aceptarSolicitud"
-            :disabled="procesando"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+            :disabled="procesando || !puedoAceptarSolicitud()"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <!-- TODO: Enviar acción de aceptación al backend -->
             <span v-if="!procesando">Aceptar</span>
@@ -468,6 +505,7 @@ const filtroEstado = ref('');
 
 // Datos para aceptar
 const observacionesAceptar = ref('');
+const confirmarCambioIrreversible = ref(false);
 
 // Datos para rechazar
 const razonRechazo = ref('');
@@ -491,27 +529,27 @@ const solicitudesFiltradas = computed(() => {
 
 // Computeds para estadísticas
 const solicitudesPendientes = computed(() => {
-  return solicitudes.value.filter(s => s.estado === 'PENDIENTE').length;
+  return solicitudes.value.filter(s => s.estado === 'pendiente').length;
 });
 
 const solicitudesAceptadas = computed(() => {
-  return solicitudes.value.filter(s => s.estado === 'ACEPTADA').length;
+  return solicitudes.value.filter(s => s.estado === 'aceptada').length;
 });
 
 const solicitudesRechazadas = computed(() => {
-  return solicitudes.value.filter(s => s.estado === 'RECHAZADA').length;
+  return solicitudes.value.filter(s => s.estado === 'rechazada').length;
 });
 
 const solicitudesEnApelacion = computed(() => {
-  return solicitudes.value.filter(s => s.estado === 'EN_APELACION').length;
+  return solicitudes.value.filter(s => s.estado === 'cancelada').length;
 });
 
 // Estados para estadísticas
 const estadosSolicitud = [
-  { id: 'PENDIENTE', nombre: 'Pendiente', color: 'yellow' },
-  { id: 'ACEPTADA', nombre: 'Aceptada', color: 'green' },
-  { id: 'RECHAZADA', nombre: 'Rechazada', color: 'red' },
-  { id: 'EN_APELACION', nombre: 'En Apelación', color: 'blue' }
+  { id: 'pendiente', nombre: 'Pendiente', color: 'yellow' },
+  { id: 'aceptada', nombre: 'Aceptada', color: 'green' },
+  { id: 'rechazada', nombre: 'Rechazada', color: 'red' },
+  { id: 'cancelada', nombre: 'En Apelación', color: 'blue' }
 ];
 
 const solicitudesPorEstado = computed(() => {
@@ -601,12 +639,28 @@ const cerrarModalDetalle = () => {
 const abrirModalAceptar = (solicitud) => {
   solicitudSeleccionada.value = solicitud;
   observacionesAceptar.value = '';
+  confirmarCambioIrreversible.value = false;
   mostrarModalAceptar.value = true;
 };
 
 const cerrarModalAceptar = () => {
   mostrarModalAceptar.value = false;
   observacionesAceptar.value = '';
+  confirmarCambioIrreversible.value = false;
+};
+
+const esPermisoCambioOCompensacion = (subtipo) => {
+  const tiposPermitidos = ['permiso_con_goce', 'permiso_sin_goce', 'compensacion_horas'];
+  return tiposPermitidos.includes(subtipo);
+};
+
+const puedoAceptarSolicitud = () => {
+  // Si es permiso, feriado o compensación, no requiere confirmación
+  if (esPermisoCambioOCompensacion(solicitudSeleccionada.value?.subtipo)) {
+    return true;
+  }
+  // Si NO es permiso/feriado/compensación, requiere que confirme
+  return confirmarCambioIrreversible.value;
 };
 
 const aceptarSolicitud = async () => {

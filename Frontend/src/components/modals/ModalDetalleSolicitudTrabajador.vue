@@ -42,7 +42,7 @@
             <div>
               <p class="text-sm font-medium text-gray-500">Tipo de Solicitud</p>
               <p class="mt-1 text-sm text-gray-900">
-                {{ formatearTipoSolicitud(solicitud.tipo_solicitud) }}
+                {{ formatearTipoSolicitud(solicitud.subtipo) }}
               </p>
             </div>
 
