@@ -373,7 +373,6 @@
               <option value="">Selecciona un rol</option>
               <option value="admin">Administrador</option>
               <option value="empleador">Empleador</option>
-              <option value="fiscalizador">Fiscalizador</option>
               <option value="trabajador">Trabajador</option>
             </select>
           </div>
