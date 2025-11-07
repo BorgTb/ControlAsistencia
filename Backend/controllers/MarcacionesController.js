@@ -363,6 +363,19 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fecha);
         // si tiene entrada y salida, devolver que 
 
+
+    
+        // si tiene turno nocturno buscar las marcaciones del dia anterior 
+        //fecha anterior
+        const fechaAnterior = fechaActual.minus({ days: 1 }).toISODate();
+        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(userEmpresa.id, fecha);
+        
+        if (turno.tipo_jornada_nombre === 'Nocturna') {
+            const resultAnterior =  await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fechaAnterior);
+            return res.status(200).json(resultAnterior);
+        }
+
+
         if (result.success) {
             return res.status(200).json(result);
         } else {
@@ -397,7 +410,7 @@ const obtenerHorarioHoy = async (req, res) => {
 
         // obtener turno asignado para el usuario en la fecha actual
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-        console.log("Turno encontrado", turno);
+        
         if (!turno) {
             return res.status(200).json({
                 success: true,
@@ -405,7 +418,6 @@ const obtenerHorarioHoy = async (req, res) => {
                 message: 'No hay horario asignado para hoy'
             });
         }
-        console.log(turno);
         return res.status(200).json({
             success: true,
             data: {
@@ -417,7 +429,8 @@ const obtenerHorarioHoy = async (req, res) => {
                 colacion_inicio: turno.colacion_inicio,
                 colacion_fin: turno.colacion_fin,
                 dias_trabajo: turno.dias_trabajo,
-                dias_descanso: turno.dias_descanso
+                dias_descanso: turno.dias_descanso,
+                tipo_jornada_nombre: turno.tipo_jornada_nombre
             },
             message: 'Horario obtenido correctamente'
         });

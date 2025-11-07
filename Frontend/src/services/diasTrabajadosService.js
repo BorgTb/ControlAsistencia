@@ -158,7 +158,7 @@ class DiasTrabajadosService {
    */
   async getHorasExtrasMes(mes, anio) {
     try {
-      const response = await apiClient.get(`/horas-extras`, {
+      const response = await apiClient.get(`/user/horas-extras`, {
         params: { mes, anio }
       })
       return response.data

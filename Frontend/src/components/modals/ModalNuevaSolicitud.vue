@@ -74,7 +74,7 @@
             <div v-if="tipoSeleccionado" class="space-y-4">
               
               <!-- Campos para Feriado -->
-              <template v-if="tipoSeleccionado.id === 'feriado'">
+              <template v-if="tipoSeleccionado.id === 'uso_feriado'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -172,7 +172,7 @@
                       :key="he.id" 
                       :value="he.id"
                     >
-                      {{ he.fecha }} - {{ he.total_horas }}h ({{ he.motivo }})
+                      {{ he}}
                     </option>
                   </select>
                 </div>
@@ -383,7 +383,7 @@ const formularioValido = computed(() => {
   const requeridos = ['motivo'];
   
   // Validar campos específicos según el tipo
-  if (tipoSeleccionado.value.id === 'feriado') {
+  if (tipoSeleccionado.value.id === 'uso_feriado') {
     requeridos.push('fecha_inicio', 'fecha_fin');
   }
   
@@ -416,6 +416,38 @@ const cerrarAlHacerClickEnBackdrop = (event) => {
   }
 };
 
+const convertirFormatoHoras = (horasFormato) => {
+  if (!horasFormato) return '0h';
+  
+  // Si es string en formato HH:MM o HH:SS
+  if (typeof horasFormato === 'string') {
+    const partes = horasFormato.split(':');
+    if (partes.length >= 2) {
+      const horas = parseInt(partes[0]);
+      const minutos = parseInt(partes[1]);
+      
+      if (minutos > 0) {
+        return `${horas}h ${minutos}m`;
+      }
+      return `${horas}h`;
+    }
+    return horasFormato;
+  }
+  
+  // Si es número
+  if (typeof horasFormato === 'number') {
+    const horas = Math.floor(horasFormato);
+    const minutos = Math.round((horasFormato - horas) * 60);
+    
+    if (minutos > 0) {
+      return `${horas}h ${minutos}m`;
+    }
+    return `${horas}h`;
+  }
+  
+  return horasFormato;
+};
+
 const seleccionarTipo = (tipo) => {
   formulario.value.tipo_solicitud = tipo.id;
   
@@ -444,9 +476,19 @@ const manejarArchivo = (event) => {
 
 const cargarHorasExtras = async () => {
   try {
-    horasExtrasDisponibles.value = await obtenerHorasExtrasDisponibles();
+    const horas = await obtenerHorasExtrasDisponibles();
+    // Asegurar que sea un array
+    if (Array.isArray(horas)) {
+      horasExtrasDisponibles.value = horas;
+    } else if (horas) {
+      // Si es un objeto único, convertirlo a array
+      horasExtrasDisponibles.value = [horas];
+    } else {
+      horasExtrasDisponibles.value = [];
+    }
   } catch (error) {
     console.error('Error al cargar horas extras:', error);
+    horasExtrasDisponibles.value = [];
   }
 };
 
@@ -503,7 +545,7 @@ watch(() => props.visible, (visible) => {
 // Validación de feriados
 watch([() => formulario.value.fecha_inicio, () => formulario.value.fecha_fin], 
   async ([fechaInicio, fechaFin]) => {
-    if (tipoSeleccionado.value?.id === 'feriado' && fechaInicio && fechaFin) {
+    if (tipoSeleccionado.value?.id === 'uso_feriado' && fechaInicio && fechaFin) {
       try {
         await validarDiasFeriado(fechaInicio, fechaFin);
       } catch (error) {

@@ -18,6 +18,7 @@ import AuditoriaModel from "../model/AuditoriaModel.js";
 import ConfigToleranciaModel from "../model/ConfigTolerancias.js";
 import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
 import SolicitudesUsuariosModel from "../model/SolicitudesUsuariosModel.js";
+import JustificacionesModel from "../model/JustificacionesModel.js";
 
 
 
@@ -447,8 +448,22 @@ const updateTurno = async (req, res) => {
         const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionExistente.usuario_empresa_id);
         const tipoTurnoAnterior = await TipoTurnosModel.getById(asignacionExistente.tipo_turno_id);
 
+
+        // validar si se está intentando asignar el mismo tipo de turno
+        if (asignacionExistente.tipo_turno_id === nuevosDatos.tipo_turno_id) {
+            return res.status(400).json({
+                success: false,
+                message: "El nuevo tipo de turno debe ser diferente al actual"
+            });
+        }
+
         // Modificar el turno (invalida el anterior y crea uno nuevo)
         const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
+
+        
+
+        NotificacionService.enviarNotificacionCambioTurno(trabajador, tipoTurnoAnterior, nuevoTipoTurno);
+        
         
         // Registrar la modificación en auditoría
         if (req.user && req.user.id) {
@@ -486,6 +501,9 @@ const updateTurno = async (req, res) => {
                 console.error('⚠️ Error al registrar modificación de turno en auditoría:', auditError);
             }
         }
+
+        
+        
 
         res.status(200).json({ 
             success: true, 
@@ -1428,8 +1446,100 @@ const actualizarTrabajador = async (req, res) => {
 };
 
 /**
+ * Detectar si un turno es nocturno (cruza medianoche)
+ * Un turno es nocturno cuando hora_fin < hora_inicio
+ */
+function esturnoNocturno(turno) {
+    if (!turno || !turno.hora_inicio || !turno.hora_fin) {
+        return false;
+    }
+    
+    const [inicioHoras, inicioMinutos] = turno.hora_inicio.split(':').map(Number);
+    const [finHoras, finMinutos] = turno.hora_fin.split(':').map(Number);
+    
+    const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
+    const finEnMinutos = finHoras * 60 + finMinutos;
+    
+    return finEnMinutos < inicioEnMinutos;
+}
+
+/**
+ * Para turnos nocturnos, obtener la fecha "lógica" de la jornada
+ * Si es entrada nocturna antes de medianoche, la jornada corresponde al día anterior
+ * Si es salida nocturna después de medianoche, la jornada corresponde al día anterior
+ * 
+ * IMPORTANTE: Si el día actual NO tiene turno asignado pero hay un turno nocturno el día anterior,
+ * entonces cualquier marcación se agrupa como parte de ese turno anterior.
+ */
+function obtenerFechaLogicaJornada(fechaMarcacion, horaMarcacion, tipoMarcacion, turno, turnoAnterior = null) {
+    // Caso 1: El día de la marcación NO tiene turno asignado
+    // pero el día anterior SÍ tiene un turno nocturno
+    if (!turno && turnoAnterior && esturnoNocturno(turnoAnterior)) {
+        // La marcación pertenece al turno nocturno anterior
+        const fechaAnterior = new Date(fechaMarcacion);
+        fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+        return fechaAnterior.toISOString().split('T')[0];
+    }
+    
+    // Caso 2: El día de la marcación SÍ tiene un turno nocturno
+    if (esturnoNocturno(turno)) {
+        const [hora, minutos] = horaMarcacion.split(':').map(Number);
+        const [inicioHoras] = turno.hora_inicio.split(':').map(Number);
+        
+        // Si es una marcación después de medianoche (hora < hora_inicio del turno)
+        // pertenece a la jornada anterior
+        if (hora < inicioHoras) {
+            const fechaAnterior = new Date(fechaMarcacion);
+            fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+            return fechaAnterior.toISOString().split('T')[0];
+        }
+    }
+    
+    return fechaMarcacion;
+}
+
+/**
+ * Calcular diferencia de horas entre entrada y salida
+ * Considerando correctamente turnos nocturnos que cruzan medianoche
+ */
+function calcularDiferenciaHorasNocturna(horaEntrada, horaSalida, esNocturno) {
+    const [entradaH, entradaM, entradaS] = horaEntrada.split(':').map(Number);
+    const [salidaH, salidaM, salidaS] = horaSalida.split(':').map(Number);
+    
+    const entradaEnMinutos = entradaH * 60 + entradaM;
+    const salidaEnMinutos = salidaH * 60 + salidaM;
+    
+    let diferencia = salidaEnMinutos - entradaEnMinutos;
+    
+    // Si es un turno nocturno y la salida es menor que la entrada
+    // significa que la salida es al día siguiente (después de medianoche)
+    if (esNocturno && diferencia < 0) {
+        diferencia += 24 * 60; // Agregar 24 horas
+    }
+    
+    // Convertir minutos a horas decimales
+    const horas = Math.floor(diferencia / 60);
+    const minutos = diferencia % 60;
+    const segundos = salidaS - entradaS;
+    
+    // Formato: "HH:MM:SS"
+    const horasFormato = String(horas).padStart(2, '0');
+    const minutosFormato = String(minutos).padStart(2, '0');
+    const segundosFormato = String(Math.abs(segundos)).padStart(2, '0');
+    
+    return {
+        formato: `${horasFormato}:${minutosFormato}:${segundosFormato}`,
+        decimal: (diferencia + segundos / 60) / 60,
+        horas: horas,
+        minutos: minutos,
+        segundos: segundos
+    };
+}
+
+/**
  * Obtener reporte de jornada diaria con marcaciones agrupadas por usuario
  * Similar al reporte de asistencia pero específico para empresas
+ * Maneja correctamente turnos nocturnos agrupando entrada del día reportado con salida del día siguiente
  */
 const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
     try {
@@ -1477,10 +1587,19 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             };
 
             // Obtener marcaciones del trabajador en el rango de fechas
+            // Para turnos nocturnos, necesitamos un día adicional antes Y después
+            const fechaInicioBusqueda = new Date(fecha_inicio);
+            fechaInicioBusqueda.setDate(fechaInicioBusqueda.getDate() - 1);
+            const fechaInicioBusquedaStr = fechaInicioBusqueda.toISOString().split('T')[0];
+            
+            const fechaFinBusqueda = new Date(fecha_fin);
+            fechaFinBusqueda.setDate(fechaFinBusqueda.getDate() + 1);
+            const fechaFinBusquedaStr = fechaFinBusqueda.toISOString().split('T')[0];
+            
             const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
                 usuarioEmpresaId,
-                fecha_inicio,
-                fecha_fin
+                fechaInicioBusquedaStr,
+                fechaFinBusquedaStr
             );
             
             console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
@@ -1488,8 +1607,8 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             // Obtener horas extras del trabajador en el rango de fechas
             const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioYFechas(
                 usuarioEmpresaId,
-                fecha_inicio,
-                fecha_fin
+                fechaInicioBusquedaStr,
+                fechaFinBusquedaStr
             );
             console.log(`⏰ Horas extras obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, horasExtras);
 
@@ -1508,17 +1627,47 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                         .setZone('America/Santiago')
                         .toISODate();
 
-                    if (!marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion]) {
-                        // Obtener turno del trabajador para esa fecha
-                        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
-                            usuarioEmpresaId,
-                            fechaMarcacion
-                        );
+                    // Obtener turno del trabajador para esa fecha
+                    const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
+                        usuarioEmpresaId,
+                        fechaMarcacion
+                    );
 
-                        
-                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion] = {
+                    // Obtener turno del día anterior para validar agrupación de turnos nocturnos
+                    const fechaAnterior = new Date(fechaMarcacion);
+                    fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+                    const fechaAnteriorStr = fechaAnterior.toISOString().split('T')[0];
+                    
+                    const turnoAnterior = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
+                        usuarioEmpresaId,
+                        fechaAnteriorStr
+                    );
+
+                    // Para turnos nocturnos, calcular la fecha lógica de la jornada
+                    let fechaAgrupacion = fechaMarcacion;
+                    
+                    // Verificar si hay agrupación por turno nocturno
+                    if ((turno && esturnoNocturno(turno)) || (turnoAnterior && esturnoNocturno(turnoAnterior))) {
+                        fechaAgrupacion = obtenerFechaLogicaJornada(
+                            fechaMarcacion,
+                            marcacion.hora,
+                            marcacion.tipo,
+                            turno,
+                            turnoAnterior
+                        );
+                        const razon = !turno && turnoAnterior && esturnoNocturno(turnoAnterior) 
+                            ? '(sin turno hoy, agrupada con turno nocturno anterior)' 
+                            : turno && esturnoNocturno(turno)
+                            ? '(turno nocturno detectado)'
+                            : '';
+                        console.log(`🌙 Marcación para ${usuarioEmpresaId} - Fecha original: ${fechaMarcacion} → Agrupada como: ${fechaAgrupacion} ${razon}`);
+                    }
+
+                    if (!marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion]) {
+                        marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion] = {
                             marcaciones: [],
-                            turno: turno || null,
+                            turno: turno || turnoAnterior || null,
+                            es_turno_nocturno: (turno && esturnoNocturno(turno)) || (turnoAnterior && esturnoNocturno(turnoAnterior)) || false,
                             estado_asistencia: 'NO_ASISTE',
                             atraso: null,
                             salida: null
@@ -1529,11 +1678,12 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                     const horaExtra = horasExtrasMap[marcacion.id];
 
                     // Agregar marcación al array con información de hora extra
-                    marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.push({
+                    marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion].marcaciones.push({
                         id: marcacion.id,
                         hora: marcacion.hora,
                         tipo: marcacion.tipo,
                         fecha: marcacion.fecha,
+                        fecha_marcacion_real: fechaMarcacion,
                         lugar_id: marcacion.lugar_id,
                         hora_extra: horaExtra ? {
                             id: horaExtra.id,
@@ -1569,6 +1719,47 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             }
         }
 
+        // Filtrar marcaciones para que solo muestren fechas dentro del rango solicitado
+        // (ya que obtuvimos un día adicional para turnos nocturnos)
+        const marcacionesFiltradasPorUsuario = {};
+        // Calcular diferencia de horas para cada jornada (considerando turnos nocturnos)
+        for (const usuarioId in marcacionesFiltradasPorUsuario) {
+            for (const fecha in marcacionesFiltradasPorUsuario[usuarioId].marcaciones) {
+                const datosJornada = marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha];
+                const marcaciones = datosJornada.marcaciones;
+                
+                if (marcaciones.length >= 2) {
+                    const entrada = marcaciones.find(m => m.tipo === 'entrada');
+                    const salida = marcaciones.find(m => m.tipo === 'salida');
+                    
+                    if (entrada && salida) {
+                        // Calcular diferencia de horas considerando turnos nocturnos
+                        const diferenciaHoras = calcularDiferenciaHorasNocturna(
+                            entrada.hora,
+                            salida.hora,
+                            datosJornada.es_turno_nocturno
+                        );
+                        datosJornada.horas_trabajadas = diferenciaHoras;
+                    }
+                }
+            }
+        }
+        
+        for (const usuarioId in marcacionesAgrupadasPorUsuario) {
+            marcacionesFiltradasPorUsuario[usuarioId] = {
+                trabajador_id: marcacionesAgrupadasPorUsuario[usuarioId].trabajador_id,
+                marcaciones: {}
+            };
+            
+            // Filtrar solo fechas dentro del rango
+            for (const fecha in marcacionesAgrupadasPorUsuario[usuarioId].marcaciones) {
+                if (fecha >= fecha_inicio && fecha <= fecha_fin) {
+                    marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha] = 
+                        marcacionesAgrupadasPorUsuario[usuarioId].marcaciones[fecha];
+                }
+            }
+        }
+
         // Formatear respuesta con información de trabajadores
         const trabajadoresFormateados = todosTrabajadores.map(t => ({
             id: t.id,
@@ -1591,7 +1782,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             success: true,
             data: {
                 trabajadores: trabajadoresFormateados,
-                marcacionesAgrupadasPorUsuario,
+                marcacionesAgrupadasPorUsuario: marcacionesFiltradasPorUsuario,
                 empresa: {
                     id: empresa.id,
                     nombre: empresa.emp_nombre,
@@ -1883,9 +2074,15 @@ async function obtenerSolicitudesUsuarios(req,res) {
         // Obtener todas las solicitudes de la empresa
         // usando el método obtenerPendientesPorEmpresa del modelo
         const solicitudes = await SolicitudesUsuariosModel.obtenerPendientesPorEmpresa(user.empresa_id);
+
+        // la url del documento adjunto debe ser solo el nombre del archivo, no la ruta completa
+        solicitudes.forEach(solicitud => {
+            if (solicitud.documento_adjunto) {
+                const partesRuta = solicitud.documento_adjunto.split('/');
+                solicitud.documento_adjunto = partesRuta[partesRuta.length - 1];
+            }
+        });
         
-        console.log("Solicitudes obtenidas:", solicitudes.length);
-        console.log("Solicitudes:", solicitudes);
 
         res.status(200).json({
             success: true,
@@ -1975,6 +2172,33 @@ async function aprobarSolicitud(req, res) {
             });
         }
 
+
+
+        // chequear que tipo es si corresponde a una para justificar dias, es decir permisos con o sin goce de sueldo, sea otra se debe realizar algo mas a futuro se debe verificar que se agreguen vacaciones
+
+        if (solicitud.subtipo === 'permiso_con_goce' || solicitud.subtipo === 'permiso_sin_goce' || solicitud.subtipo === 'uso_feriado') {
+            // Llamar a la función para justificar ausencias
+            let urlDocumento = null;
+            if (solicitud.documento_adjunto){
+                urlDocumento = solicitud.documento_adjunto;
+            }
+
+            console.log(solicitud);
+
+            
+
+            const result = await JustificacionesModel.crearJustificacion({
+                usuario_empresa_id: solicitud.id_usuario_empresa,
+                fecha_inicio: solicitud.fecha_inicio,
+                fecha_fin: solicitud.fecha_fin,
+                tipo_justificacion: solicitud.subtipo,
+                archivo_url: urlDocumento,
+            })
+
+            await JustificacionesModel.actualizarEstadoJustificacion(result.insertId, 'APROBADA', user.id);
+        }
+
+
         // Actualizar estado a ACEPTADA
         const resultado = await SolicitudesUsuariosModel.actualizarEstado(
             id, 
@@ -1985,6 +2209,16 @@ async function aprobarSolicitud(req, res) {
                 aprobado_por: user.id
             }
         );
+
+        // Enviar correo de aprobación
+        try {
+            console.log('📧 Enviando correo de aprobación de solicitud...');
+            await NotificacionService.enviarNotificacionAprobacionSolicitud(solicitud, user, observaciones);
+            console.log('✅ Correo de aprobación enviado exitosamente');
+        } catch (emailError) {
+            console.error('⚠️ Error enviando correo de aprobación:', emailError);
+            // No bloqueamos la respuesta si falla el envío de correo
+        }
 
         res.status(200).json({
             success: true,
@@ -2004,9 +2238,9 @@ async function aprobarSolicitud(req, res) {
 async function rechazarSolicitud(req, res) {
     try {
         const id = parseInt(req.params.id); // Convertir a número
-        const { motivo, observaciones } = req.body;
+        const { motivo, observaciones, plazo_apelacion, instancia_apelacion} = req.body;
         const user = req.user;
-
+        console.log(req.body);
         console.log("Rechazando solicitud:", id, "por usuario:", user.id);
         console.log("Estado del usuario:", user);
 
@@ -2045,6 +2279,25 @@ async function rechazarSolicitud(req, res) {
                 rechazado_por: user.id
             }
         );
+
+        // Enviar correo de rechazo con detalles completos
+        try {
+            console.log('📧 Enviando correo de rechazo de solicitud...');
+            await NotificacionService.enviarNotificacionRechazosolicitud(
+                solicitud, 
+                user, 
+                {
+                    motivo: motivo || 'Sin especificar',
+                    observaciones: observaciones || null,
+                    plazo_apelacion: plazo_apelacion || null,
+                    instancia_apelacion: instancia_apelacion || null
+                }
+            );
+            console.log('✅ Correo de rechazo enviado exitosamente');
+        } catch (emailError) {
+            console.error('⚠️ Error enviando correo de rechazo:', emailError);
+            // No bloqueamos la respuesta si falla el envío de correo
+        }
 
         res.status(200).json({
             success: true,

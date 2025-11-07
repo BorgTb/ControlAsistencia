@@ -103,12 +103,12 @@
                 <p class="text-xs text-gray-500">PDF o documento adjunto</p>
               </div>
               <a
-                :href="solicitud.documento_adjunto"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="ml-4 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded"
+                @click.prevent="descargarArchivoSolicitud"
+                :disabled="cargando"
+                href="#"
+                class="ml-4 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                Descargar
+                {{ cargando ? 'Descargando...' : 'Descargar' }}
               </a>
             </div>
           </div>
@@ -185,7 +185,11 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, ref } from 'vue';
+import { useDocumentos } from '../../composables/useDocumentos';
+
+const { descargarPorURL, cargando } = useDocumentos();
+const descargandoDocumento = ref(false);
 
 const props = defineProps({
   visible: {
@@ -266,6 +270,16 @@ const obtenerNombreArchivo = (ruta) => {
   if (!ruta) return 'archivo.pdf';
   const partes = ruta.split('/');
   return partes[partes.length - 1] || 'archivo.pdf';
+};
+
+const descargarArchivoSolicitud = async () => {
+  try {
+    const nombreArchivo = obtenerNombreArchivo(props.solicitud.documento_adjunto);
+    // Pasar 'solicitud' como tipo por defecto para solicitudes
+    await descargarPorURL(props.solicitud.documento_adjunto, nombreArchivo, 'solicitud');
+  } catch (error) {
+    console.error('Error al descargar archivo:', error);
+  }
 };
 </script>
 

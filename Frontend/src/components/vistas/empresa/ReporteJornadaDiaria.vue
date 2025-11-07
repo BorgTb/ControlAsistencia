@@ -864,7 +864,6 @@ const loadData = async (apiData = null) => {
             colacionInicio = colaciones[0].hora
             colacionFin = colaciones[1].hora
           }
-          
           registrosProcessed.push({
             id: `${trabajador.id}-${fecha}`,
             trabajador_id: trabajador.id,
@@ -901,7 +900,7 @@ const loadData = async (apiData = null) => {
     }
     
     registros.value = registrosProcessed
-    console.log('✅ Registros procesados:', registros.value.length)
+    console.log('✅ Registros procesados:', registros.value)
   } else {
     // Sin datos
     registros.value = []

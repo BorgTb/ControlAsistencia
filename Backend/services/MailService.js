@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import AuthService from './authservice.js';
+import UserModel from '../model/UserModel.js';
 
 dotenv.config();
 
@@ -908,6 +909,542 @@ class MailService {
             };
         }
     }
-}
 
+
+    async enviarNotificacionCambioTurno(usuario, tipoTurnoAnterior, nuevoTipoTurno, pdfPath) {
+        /**
+        @params {object} usuario - Objeto con los datos del usuario y empresa
+        @params {object} tipoTurnoAnterior - Objeto con los datos del turno anterior
+        @params {object} nuevoTipoTurno - Objeto con los datos del nuevo turno
+        @params {string} pdfPath - Ruta del archivo PDF a adjuntar
+        */
+
+        // Formatear RUT trabajador con puntos y guion
+        const rutTrabajadorFormateado = usuario.usuario_rut
+            ? usuario.usuario_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + usuario.usuario_rut.slice(-1)
+            : '';
+
+        // Formatear RUT empresa con puntos y guion
+        const rutEmpresaFormateado = usuario.empresa_rut
+            ? usuario.empresa_rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + usuario.empresa_rut.slice(-1)
+            : '';
+
+        // Formatear fechas
+        const fechaInicio = usuario.fecha_inicio
+            ? new Date(usuario.fecha_inicio).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
+            : 'No especificada';
+
+        const asunto = `Notificación de Cambio de Turno - ${usuario.empresa_nombre}`;
+
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Notificación de Cambio de Turno</title>
+            <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #3f51b5; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .turno-anterior { background-color: #ffebee; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #f44336; }
+            .turno-nuevo { background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4caf50; }
+            .trabajador-info { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3; }
+            .empresa-info { background-color: #f3e5f5; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #9C27B0; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+            .important { color: #3f51b5; font-weight: bold; }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+            <div class="header">
+            <h1>📅 Notificación de Cambio de Turno</h1>
+            </div>
+            <div class="content">
+            <h2>Estimado/a ${usuario.usuario_nombre} ${usuario.usuario_apellido_pat} ${usuario.usuario_apellido_mat},</h2>
+            
+            <p>Por medio del presente correo electrónico, se le notifica que ha sido asignado a un nuevo turno de trabajo.</p>
+            
+            <div class="trabajador-info">
+                <h3>Datos del trabajador:</h3>
+                <p><strong>Nombre completo:</strong> ${usuario.usuario_nombre} ${usuario.usuario_apellido_pat} ${usuario.usuario_apellido_mat}</p>
+                <p><strong>RUT:</strong> ${rutTrabajadorFormateado}</p>
+                <p><strong>Email:</strong> ${usuario.usuario_email}</p>
+                <p><strong>Rol en empresa:</strong> ${usuario.rol_en_empresa}</p>
+                <p><strong>Fecha de inicio en empresa:</strong> ${fechaInicio}</p>
+            </div>
+            
+            <div class="turno-anterior">
+                <h3>📋 Turno anterior:</h3>
+                <p><strong>Nombre:</strong> ${tipoTurnoAnterior.nombre}</p>
+                ${tipoTurnoAnterior.descripcion ? `<p><strong>Descripción:</strong> ${tipoTurnoAnterior.descripcion}</p>` : ''}
+                <p><strong>Horario:</strong> ${tipoTurnoAnterior.hora_inicio} - ${tipoTurnoAnterior.hora_fin}</p>
+                ${tipoTurnoAnterior.colacion_inicio && tipoTurnoAnterior.colacion_fin ? 
+                    `<p><strong>Horario de colación:</strong> ${tipoTurnoAnterior.colacion_inicio} - ${tipoTurnoAnterior.colacion_fin}</p>` : ''}
+                <p><strong>Días de trabajo:</strong> ${tipoTurnoAnterior.dias_trabajo} días</p>
+                <p><strong>Días de descanso:</strong> ${tipoTurnoAnterior.dias_descanso} días</p>
+            </div>
+
+            <div class="turno-nuevo">
+                <h3>✅ Nuevo turno asignado:</h3>
+                <p><strong>Nombre:</strong> ${nuevoTipoTurno.nombre}</p>
+                ${nuevoTipoTurno.descripcion ? `<p><strong>Descripción:</strong> ${nuevoTipoTurno.descripcion}</p>` : ''}
+                <p><strong>Horario:</strong> ${nuevoTipoTurno.hora_inicio} - ${nuevoTipoTurno.hora_fin}</p>
+                ${nuevoTipoTurno.colacion_inicio && nuevoTipoTurno.colacion_fin ? 
+                    `<p><strong>Horario de colación:</strong> ${nuevoTipoTurno.colacion_inicio} - ${nuevoTipoTurno.colacion_fin}</p>` : ''}
+                <p><strong>Días de trabajo:</strong> ${nuevoTipoTurno.dias_trabajo} días</p>
+                <p><strong>Días de descanso:</strong> ${nuevoTipoTurno.dias_descanso} días</p>
+            </div>
+
+            <div class="empresa-info">
+                <h3>Información de la empresa:</h3>
+                <p><strong>Empresa:</strong> ${usuario.empresa_nombre}</p>
+                <p><strong>RUT:</strong> ${rutEmpresaFormateado}</p>
+            </div>
+            
+            <p><strong>📎 Documento adjunto:</strong> Se adjunta al presente correo el documento formal de cambio de turno en formato PDF con todos los detalles de la modificación.</p>
+            
+            <p>Para cualquier consulta o aclaración sobre este cambio de turno, puede contactar con el área de Recursos Humanos de la empresa.</p>
+            
+            </div>
+            <div class="footer">
+            <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+            <p>Este es un correo generado automáticamente, por favor no responder.</p>
+            </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            const mailOptions = {
+                from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: usuario.usuario_email,
+                subject: asunto,
+                html: contenidoHTML,
+                attachments: [
+                    {
+                        filename: `CambioTurno_${usuario.usuario_rut}_${new Date().toISOString().split('T')[0]}.pdf`,
+                        path: pdfPath,
+                        contentType: 'application/pdf'
+                    }
+                ]
+            };
+
+            const info = await this.transporter.sendMail(mailOptions);
+
+            console.log('✅ Notificación de cambio de turno enviada:', info.messageId);
+
+            return {
+                success: true,
+                message: 'Notificación de cambio de turno enviada correctamente',
+                messageId: info.messageId
+            };
+        } catch (error) {
+            console.error('❌ Error enviando notificación de cambio de turno:', error);
+            return {
+                success: false,
+                message: 'Error al enviar la notificación de cambio de turno',
+                error: error.message
+            };
+        }
+    }
+
+    async enviarNotificacionAprobacionSolicitud(usuarioSolicitante, solicitud, usuarioQueAprueba, empresa, observaciones = null) {
+        const asunto = `✅ Solicitud Aprobada - ${solicitud.tipo}`;
+        
+        const tiposDescripcion = {
+            'permiso_con_goce': 'Permiso con goce de sueldo',
+            'permiso_sin_goce': 'Permiso sin goce de sueldo',
+            'uso_feriado': 'Uso de feriado',
+            'licencia_medica': 'Licencia médica',
+            'otro': 'Solicitud'
+        };
+
+        const tipoDescripcion = tiposDescripcion[solicitud.subtipo] || solicitud.subtipo;
+        console.log(usuarioQueAprueba);
+        const usuarioAprobadorData = await UserModel.findById(usuarioQueAprueba.id);
+        console.log(usuarioAprobadorData);
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Solicitud Aprobada</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 4px 4px 0 0; }
+                .content { padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; }
+                .alert-success { background-color: #d4edda; color: #155724; padding: 12px; border-left: 4px solid #4CAF50; margin: 15px 0; }
+                .info-box { background-color: #e7f3ff; padding: 15px; border-left: 4px solid #2196F3; margin: 15px 0; }
+                .details { margin: 20px 0; }
+                .detail-row { display: flex; margin: 10px 0; padding: 8px; background-color: white; border-radius: 4px; }
+                .detail-label { font-weight: bold; width: 150px; color: #666; }
+                .detail-value { flex: 1; }
+                .observaciones { margin-top: 15px; padding: 12px; background-color: #fffbcc; border-left: 4px solid #ff9800; border-radius: 4px; }
+                .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+                <div class="header">
+                <h1>✅ Solicitud Aprobada</h1>
+                </div>
+                <div class="content">
+                <h2>Hola ${usuarioSolicitante.nombre} ${usuarioSolicitante.apellido_pat},</h2>
+                
+                <div class="alert-success">
+                    <strong>Tu solicitud ha sido APROBADA correctamente</strong>
+                </div>
+
+                <div class="details">
+                    <h3>Detalles de la Solicitud</h3>
+                    <div class="detail-row">
+                    <span class="detail-label">Tipo de solicitud:</span>
+                    <span class="detail-value">${tipoDescripcion}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Período:</span>
+                    <span class="detail-value">Desde ${new Date(solicitud.fecha_inicio).toLocaleDateString('es-CL')} hasta ${new Date(solicitud.fecha_fin).toLocaleDateString('es-CL')}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Empresa:</span>
+                    <span class="detail-value">${empresa.emp_nombre}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Aprobado por:</span>
+                    <span class="detail-value">${usuarioAprobadorData.nombre} ${usuarioAprobadorData.apellido_pat}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Fecha de aprobación:</span>
+                    <span class="detail-value">${new Date().toLocaleDateString('es-CL')}</span>
+                    </div>
+                </div>
+
+                ${observaciones ? `
+                    <div class="observaciones">
+                    <strong>📝 Observaciones:</strong>
+                    <p>${observaciones}</p>
+                    </div>
+                ` : ''}
+
+                <div class="info-box">
+                    <strong>ℹ️ Información importante:</strong>
+                    <p>Tu solicitud ha sido procesada y aprobada. Por favor, asegúrate de que esta información esté registrada en tus registros personales.</p>
+                </div>
+
+                <p>Si tienes alguna pregunta, contacta con el área de Recursos Humanos de tu empresa.</p>
+                </div>
+                <div class="footer">
+                <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                <p>Este es un correo generado automáticamente, por favor no responder.</p>
+                </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            const mailOptions = {
+                from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: usuarioSolicitante.email,
+                subject: asunto,
+                html: contenidoHTML
+            };
+
+            const info = await this.transporter.sendMail(mailOptions);
+
+            console.log('✅ Notificación de aprobación de solicitud enviada:', info.messageId);
+
+            return {
+                success: true,
+                message: 'Notificación de aprobación enviada correctamente',
+                messageId: info.messageId
+            };
+        } catch (error) {
+            console.error('❌ Error enviando notificación de aprobación:', error);
+            return {
+                success: false,
+                message: 'Error al enviar la notificación de aprobación',
+                error: error.message
+            };
+        }
+    }
+
+    async enviarNotificacionRechazosolicitud(usuarioSolicitante, solicitud, usuarioQueRechaza, empresa, datosRechazo = {}) {
+        const asunto = `❌ Solicitud Rechazada - ${solicitud.tipo}`;
+        
+        const tiposDescripcion = {
+            'permiso_con_goce': 'Permiso con goce de sueldo',
+            'permiso_sin_goce': 'Permiso sin goce de sueldo',
+            'uso_feriado': 'Uso de feriado',
+            'licencia_medica': 'Licencia médica',
+            'otro': 'Solicitud'
+        };
+
+        const tipoDescripcion = tiposDescripcion[solicitud.subtipo] || solicitud.subtipo;
+        console.log(usuarioQueRechaza);
+        const usuarioAprobadorData = await UserModel.findById(usuarioQueRechaza.id);
+        console.log(usuarioAprobadorData);
+
+        const contenidoHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Solicitud Rechazada</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #f44336; color: white; padding: 20px; text-align: center; border-radius: 4px 4px 0 0; }
+                .content { padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; }
+                .alert-danger { background-color: #f8d7da; color: #721c24; padding: 12px; border-left: 4px solid #f44336; margin: 15px 0; }
+                .info-box { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ff9800; margin: 15px 0; }
+                .details { margin: 20px 0; }
+                .detail-row { display: flex; margin: 10px 0; padding: 8px; background-color: white; border-radius: 4px; }
+                .detail-label { font-weight: bold; width: 150px; color: #666; }
+                .detail-value { flex: 1; }
+                .motivo { margin-top: 15px; padding: 12px; background-color: #ffe6e6; border-left: 4px solid #f44336; border-radius: 4px; }
+                .apelacion { margin-top: 15px; padding: 12px; background-color: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px; }
+                .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+                <div class="header">
+                <h1>❌ Solicitud Rechazada</h1>
+                </div>
+                <div class="content">
+                <h2>Hola ${usuarioSolicitante.nombre} ${usuarioSolicitante.apellido_pat},</h2>
+                
+                <div class="alert-danger">
+                    <strong>Tu solicitud ha sido RECHAZADA</strong>
+                </div>
+
+                <div class="details">
+                    <h3>Detalles de la Solicitud</h3>
+                    <div class="detail-row">
+                    <span class="detail-label">Tipo de solicitud:</span>
+                    <span class="detail-value">${tipoDescripcion}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Período:</span>
+                    <span class="detail-value">Desde ${new Date(solicitud.fecha_inicio).toLocaleDateString('es-CL', { year: '2-digit', month: '2-digit', day: '2-digit' })} hasta ${new Date(solicitud.fecha_fin).toLocaleDateString('es-CL', { year: '2-digit', month: '2-digit', day: '2-digit' })}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Empresa:</span>
+                    <span class="detail-value">${empresa.emp_nombre}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Rechazado por:</span>
+                    <span class="detail-value">${usuarioAprobadorData.nombre} ${usuarioAprobadorData.apellido_pat}</span>
+                    </div>
+                    <div class="detail-row">
+                    <span class="detail-label">Fecha de rechazo:</span>
+                    <span class="detail-value">${new Date().toLocaleDateString('es-CL', { year: '2-digit', month: '2-digit', day: '2-digit' })}</span>
+                    </div>
+                </div>
+
+                ${datosRechazo.motivo ? `
+                    <div class="motivo">
+                    <strong>❌ Motivo del Rechazo:</strong>
+                    <p>${datosRechazo.motivo}</p>
+                    </div>
+                ` : ''}
+
+                ${datosRechazo.observaciones ? `
+                    <div class="info-box">
+                    <strong>📝 Observaciones adicionales:</strong>
+                    <p>${datosRechazo.observaciones}</p>
+                    </div>
+                ` : ''}
+
+                ${datosRechazo.plazo_apelacion || datosRechazo.instancia_apelacion ? `
+                    <div class="apelacion">
+                    <strong>📋 Información de Apelación:</strong>
+                    ${datosRechazo.plazo_apelacion ? `<p><strong>Plazo para apelar:</strong> ${datosRechazo.plazo_apelacion}</p>` : ''}
+                    ${datosRechazo.instancia_apelacion ? `<p><strong>Instancia de apelación:</strong> ${datosRechazo.instancia_apelacion}</p>` : ''}
+                    <p>Puedes presentar una apelación dentro del plazo indicado ante la instancia especificada si consideras que hay motivos válidos.</p>
+                    </div>
+                ` : ''}
+
+                <div class="info-box">
+                    <strong>ℹ️ Próximos pasos:</strong>
+                    <p>Si deseas más información sobre este rechazo o si tienes dudas, contacta con el área de Recursos Humanos o la instancia indicada.</p>
+                </div>
+                </div>
+                <div class="footer">
+                <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                <p>Este es un correo generado automáticamente, por favor no responder.</p>
+                </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            const mailOptions = {
+                from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: usuarioSolicitante.email,
+                subject: asunto,
+                html: contenidoHTML
+            };
+
+            const info = await this.transporter.sendMail(mailOptions);
+
+            console.log('✅ Notificación de rechazo de solicitud enviada:', info.messageId);
+
+            return {
+                success: true,
+                message: 'Notificación de rechazo enviada correctamente',
+                messageId: info.messageId
+            };
+        } catch (error) {
+            console.error('❌ Error enviando notificación de rechazo:', error);
+            return {
+                success: false,
+                message: 'Error al enviar la notificación de rechazo',
+                error: error.message
+            };
+        }
+
+    }
+
+    async enviarNotificacionAprobacionSolicitudCopiaEmpleador(usuarioSolicitante, solicitud, usuarioQueAprueba, empresa) {
+            const asunto = `✅ Copia de Solicitud Aprobada - ${solicitud.tipo}`;
+            
+            const tiposDescripcion = {
+                'permiso_con_goce': 'Permiso con goce de sueldo',
+                'permiso_sin_goce': 'Permiso sin goce de sueldo',
+                'uso_feriado': 'Uso de feriado',
+                'licencia_medica': 'Licencia médica',
+                'otro': 'Solicitud'
+            };
+
+            const tipoDescripcion = tiposDescripcion[solicitud.subtipo] || solicitud.subtipo;
+            const usuarioAprobadorData = await UserModel.findById(usuarioQueAprueba.id);
+            
+            const contenidoHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta charset="UTF-8">
+                <title>Copia de Solicitud Aprobada</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; border-radius: 4px 4px 0 0; }
+                    .content { padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; }
+                    .alert-success { background-color: #d4edda; color: #155724; padding: 12px; border-left: 4px solid #4CAF50; margin: 15px 0; }
+                    .info-box { background-color: #e7f3ff; padding: 15px; border-left: 4px solid #2196F3; margin: 15px 0; }
+                    .trabajador-info { background-color: #e8f5e8; padding: 15px; border-left: 4px solid #4CAF50; margin: 15px 0; }
+                    .details { margin: 20px 0; }
+                    .detail-row { display: flex; margin: 10px 0; padding: 8px; background-color: white; border-radius: 4px; }
+                    .detail-label { font-weight: bold; width: 150px; color: #666; }
+                    .detail-value { flex: 1; }
+                    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; }
+                    .copia-info { background-color: #f3e5f5; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #9C27B0; font-style: italic; }
+                </style>
+                </head>
+                <body>
+                <div class="container">
+                    <div class="header">
+                    <h1>📋 Copia de Solicitud Aprobada</h1>
+                    </div>
+                    <div class="content">
+                    <h2>Estimado Empleador,</h2>
+                    
+                    <div class="copia-info">
+                        <p><strong>📋 Información:</strong> Esta es una copia informativa de una solicitud que ha sido aprobada para uno de sus trabajadores en el Sistema de Control de Asistencia.</p>
+                    </div>
+
+                    <div class="alert-success">
+                        <strong>La siguiente solicitud ha sido APROBADA</strong>
+                    </div>
+
+                    <div class="trabajador-info">
+                        <h3>Datos del Trabajador</h3>
+                        <div class="detail-row">
+                            <span class="detail-label">Nombre completo:</span>
+                            <span class="detail-value">${usuarioSolicitante.nombre} ${usuarioSolicitante.apellido_pat} ${usuarioSolicitante.apellido_mat}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">RUT:</span>
+                            <span class="detail-value">${usuarioSolicitante.rut.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}-${usuarioSolicitante.rut.slice(-1)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value">${usuarioSolicitante.email}</span>
+                        </div>
+                    </div>
+
+                    <div class="details">
+                        <h3>Detalles de la Solicitud Aprobada</h3>
+                        <div class="detail-row">
+                        <span class="detail-label">Tipo de solicitud:</span>
+                        <span class="detail-value">${tipoDescripcion}</span>
+                        </div>
+                        <div class="detail-row">
+                        <span class="detail-label">Período:</span>
+                        <span class="detail-value">Desde ${new Date(solicitud.fecha_inicio).toLocaleDateString('es-CL')} hasta ${new Date(solicitud.fecha_fin).toLocaleDateString('es-CL')}</span>
+                        </div>
+                        <div class="detail-row">
+                        <span class="detail-label">Empresa:</span>
+                        <span class="detail-value">${empresa.emp_nombre}</span>
+                        </div>
+                        <div class="detail-row">
+                        <span class="detail-label">Aprobado por:</span>
+                        <span class="detail-value">${usuarioAprobadorData.nombre} ${usuarioAprobadorData.apellido_pat}</span>
+                        </div>
+                        <div class="detail-row">
+                        <span class="detail-label">Fecha de aprobación:</span>
+                        <span class="detail-value">${new Date().toLocaleDateString('es-CL')}</span>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>ℹ️ Información para el empleador:</strong>
+                        <p>Esta notificación se envía como respaldo de la gestión de solicitudes de su trabajador. El empleado ha sido notificado por separado de la aprobación de su solicitud.</p>
+                        <p>Para cualquier consulta o aclaración sobre esta solicitud, puede contactar directamente con el trabajador o con el administrador del sistema.</p>
+                    </div>
+                    </div>
+                    <div class="footer">
+                    <p>© 2025 Sistema de Control de Asistencia. Todos los derechos reservados.</p>
+                    <p>Este es un correo generado automáticamente, por favor no responder.</p>
+                    </div>
+                </div>
+                </body>
+                </html>
+            `;
+
+            try {
+                const mailOptions = {
+                    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+                    to: usuarioAprobadorData.email,
+                    subject: asunto,
+                    html: contenidoHTML
+                };
+
+                const info = await this.transporter.sendMail(mailOptions);
+
+                console.log('✅ Copia de notificación de aprobación enviada al empleador:', info.messageId);
+
+                return {
+                    success: true,
+                    message: 'Copia de notificación enviada al empleador correctamente',
+                    messageId: info.messageId
+                };
+            } catch (error) {
+                console.error('❌ Error enviando copia al empleador:', error);
+                return {
+                    success: false,
+                    message: 'Error al enviar la copia al empleador',
+                    error: error.message
+                };
+            }
+    }
+
+}
+        
 export default new MailService();

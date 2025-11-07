@@ -208,7 +208,8 @@ export const useSolicitudesGenerales = () => {
    */
   const obtenerHorasExtrasDisponibles = async () => {
     try {
-      return await SolicitudesGeneralesService.obtenerHorasExtrasDisponibles();
+      const response = await SolicitudesGeneralesService.obtenerHorasExtrasDisponibles();
+      return response.horasAprobadas;
     } catch (err) {
       error.value = err.message || 'Error al cargar horas extras';
       console.error('Error en obtenerHorasExtrasDisponibles:', err);
