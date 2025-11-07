@@ -564,11 +564,33 @@ const tieneColacionActiva = computed(() => {
 
 // Computed para verificar si puede marcar entrada
 const puedeMarcarEntrada = computed(() => {
+  // Si es una jornada nocturna o no tiene turno asignado, permitir múltiples marcaciones
+  const esJornadaNocturna = horarioHoy.value?.tipo_jornada_nombre === 'Nocturna'
+  const sinTurnoAsignado = !horarioHoy.value
+  
+  // Para usuarios nocturnos o sin turno: solo verificar que no tenga entrada sin salida
+  if (esJornadaNocturna || sinTurnoAsignado) {
+    return !tieneEntradaSinSalida.value
+  }
+  
+  // Para usuarios diurnos: no permitir si ya tiene entrada y salida completas
+  if (tieneEntradaYSalida.value) {
+    return false
+  }
+  
   return !tieneEntradaSinSalida.value
 })
 
 // Computed para verificar si puede marcar salida
 const puedeMarcarSalida = computed(() => {
+  // Si ya tiene entrada y salida completas en usuario diurno, no permitir
+  const esJornadaNocturna = horarioHoy.value?.tipo_jornada_nombre === 'Nocturna'
+  const sinTurnoAsignado = !horarioHoy.value
+  
+  if (!esJornadaNocturna && !sinTurnoAsignado && tieneEntradaYSalida.value) {
+    return false
+  }
+  
   return tieneEntradaSinSalida.value && !tieneColacionActiva.value
 })
 
