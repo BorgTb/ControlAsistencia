@@ -898,7 +898,7 @@ const getHorasExtrasUsuario = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: {horasAprobadas: aprobadas, horasAcumuladas: sumTotalHoras - aprobadas, horasExtras},
+            data: {horasAprobadas: aprobadas, horasAcumuladas: sumTotalHoras - aprobadas},
         });
     }
     catch (error) {

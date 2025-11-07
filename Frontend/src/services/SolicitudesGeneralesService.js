@@ -121,7 +121,7 @@ class SolicitudesGeneralesService {
    */
   async obtenerHorasExtrasDisponibles() {
     try {
-      const response = await apiClient.get('/solicitudes/horas-extras-disponibles');
+      const response = await apiClient.get('/user/horas-extras');
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error al obtener horas extras:', error);

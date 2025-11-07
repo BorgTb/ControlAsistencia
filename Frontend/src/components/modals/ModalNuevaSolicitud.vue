@@ -172,7 +172,7 @@
                       :key="he.id" 
                       :value="he.id"
                     >
-                      {{ he.fecha }} - {{ he.total_horas }}h ({{ he.motivo }})
+                      {{ he}}
                     </option>
                   </select>
                 </div>
@@ -416,6 +416,38 @@ const cerrarAlHacerClickEnBackdrop = (event) => {
   }
 };
 
+const convertirFormatoHoras = (horasFormato) => {
+  if (!horasFormato) return '0h';
+  
+  // Si es string en formato HH:MM o HH:SS
+  if (typeof horasFormato === 'string') {
+    const partes = horasFormato.split(':');
+    if (partes.length >= 2) {
+      const horas = parseInt(partes[0]);
+      const minutos = parseInt(partes[1]);
+      
+      if (minutos > 0) {
+        return `${horas}h ${minutos}m`;
+      }
+      return `${horas}h`;
+    }
+    return horasFormato;
+  }
+  
+  // Si es número
+  if (typeof horasFormato === 'number') {
+    const horas = Math.floor(horasFormato);
+    const minutos = Math.round((horasFormato - horas) * 60);
+    
+    if (minutos > 0) {
+      return `${horas}h ${minutos}m`;
+    }
+    return `${horas}h`;
+  }
+  
+  return horasFormato;
+};
+
 const seleccionarTipo = (tipo) => {
   formulario.value.tipo_solicitud = tipo.id;
   
@@ -444,9 +476,19 @@ const manejarArchivo = (event) => {
 
 const cargarHorasExtras = async () => {
   try {
-    horasExtrasDisponibles.value = await obtenerHorasExtrasDisponibles();
+    const horas = await obtenerHorasExtrasDisponibles();
+    // Asegurar que sea un array
+    if (Array.isArray(horas)) {
+      horasExtrasDisponibles.value = horas;
+    } else if (horas) {
+      // Si es un objeto único, convertirlo a array
+      horasExtrasDisponibles.value = [horas];
+    } else {
+      horasExtrasDisponibles.value = [];
+    }
   } catch (error) {
     console.error('Error al cargar horas extras:', error);
+    horasExtrasDisponibles.value = [];
   }
 };
 
