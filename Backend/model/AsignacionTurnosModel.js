@@ -86,10 +86,12 @@ class AsignacionTurnosModel {
                 dd.dia_semana,
                 dd.trabaja,
                 dd.hora_inicio as dia_hora_inicio,
-                dd.hora_fin as dia_hora_fin
+                dd.hora_fin as dia_hora_fin,
+                tj.nombre as tipo_jornada_nombre
             FROM asignacion_turnos at
             INNER JOIN tipo_turnos tt ON at.tipo_turno_id = tt.id
             LEFT JOIN detalle_dias_turno dd ON tt.id = dd.tipo_turno_id
+            LEFT JOIN tipo_jornada tj on tt.tipo_jornada_id = tj.id
             WHERE at.usuario_empresa_id = ?
             AND at.estado = 'activo'
             AND at.fecha_inicio <= ?

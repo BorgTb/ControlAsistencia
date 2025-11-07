@@ -166,7 +166,7 @@
                 <div class="space-y-3">
           <button
             @click="preConfirm('entrada')"
-                    :disabled="botonesMarcacionDeshabilitados || currentStatus === 'dentro'"
+                    :disabled="!puedeMarcarEntrada || isRegistering"
                     class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg v-if="isRegistering && pendingAction === 'entrada'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -401,15 +401,39 @@ const statusColor = computed(() => {
 const estadoCalculado = computed(() => {
   if (marcacionesHoy.value.length === 0) return 'fuera'
   
-  // Ordenar marcaciones por hora (más reciente primero)
+  const esJornadaNocturna = horarioHoy.value?.tipo_jornada_nombre === 'Nocturna'
+  
+  // Ordenar marcaciones
   const marcacionesOrdenadas = [...marcacionesHoy.value].sort((a, b) => {
-    const horaA = a.hora || '00:00:00'
-    const horaB = b.hora || '00:00:00'
-    return horaB.localeCompare(horaA)
+    try {
+      if (esJornadaNocturna) {
+        // Para jornadas nocturnas: ordenar por fecha y hora (para soportar entrada día anterior, salida día actual)
+        const fechaA = a.fecha.includes('T') ? a.fecha.split('T')[0] : a.fecha
+        const fechaB = b.fecha.includes('T') ? b.fecha.split('T')[0] : b.fecha
+        const horaA = a.hora || '00:00:00'
+        const horaB = b.hora || '00:00:00'
+        
+        const dateTimeA = new Date(`${fechaA}T${horaA}`)
+        const dateTimeB = new Date(`${fechaB}T${horaB}`)
+        
+        return dateTimeA.getTime() - dateTimeB.getTime()
+      } else {
+        // Para jornadas diurnas: ordenar solo por hora (mismo día)
+        const horaA = a.hora || '00:00:00'
+        const horaB = b.hora || '00:00:00'
+        
+        return horaA.localeCompare(horaB)
+      }
+    } catch (error) {
+      console.error('Error ordenando marcaciones:', error)
+      return 0
+    }
   })
   
-  // La última marcación determina el estado
-  const ultimaMarcacion = marcacionesOrdenadas[0]
+  console.log(`🕒 Marcaciones ordenadas (${esJornadaNocturna ? 'Nocturna' : 'Diurna'}):`, marcacionesOrdenadas)
+  
+  // La última marcación ordenada determina el estado actual
+  const ultimaMarcacion = marcacionesOrdenadas[marcacionesOrdenadas.length - 1]
   
   if (!ultimaMarcacion) return 'fuera'
   
@@ -422,8 +446,9 @@ const estadoCalculado = computed(() => {
     return 'fuera'
   }
   
-  // Para colación y descanso, buscar la última entrada/salida
-  for (const marcacion of marcacionesOrdenadas) {
+  // Para colación y descanso, buscar la última entrada/salida en orden
+  for (let i = marcacionesOrdenadas.length - 1; i >= 0; i--) {
+    const marcacion = marcacionesOrdenadas[i]
     if (marcacion.tipo === 'entrada') {
       return 'dentro'
     } else if (marcacion.tipo === 'salida') {
@@ -503,14 +528,26 @@ const tiempoTrabajado = computed(() => {
   return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`
 })
 
-// Computed para verificar si ya tiene entrada y salida completas
+// Computed para verificar si hay una entrada sin salida correspondiente (jornada en progreso)
+const tieneEntradaSinSalida = computed(() => {
+  if (marcacionesHoy.value.length === 0) return false
+  
+  // Contar entradas y salidas
+  const entradas = marcacionesHoy.value.filter(m => m.tipo === 'entrada').length
+  const salidas = marcacionesHoy.value.filter(m => m.tipo === 'salida').length
+  
+  // Si hay más entradas que salidas, hay una entrada sin salida
+  return entradas > salidas
+})
+
+// Computed para verificar si ya tiene entrada y salida completas (para mostrar mensaje informativo)
 const tieneEntradaYSalida = computed(() => {
   if (marcacionesHoy.value.length === 0) return false
   
   const tieneEntrada = marcacionesHoy.value.some(m => m.tipo === 'entrada')
   const tieneSalida = marcacionesHoy.value.some(m => m.tipo === 'salida')
   
-  return tieneEntrada && tieneSalida
+  return tieneEntrada && tieneSalida && estadoCalculado.value === 'fuera'
 })
 
 // Computed para verificar si hay una colación activa
@@ -527,12 +564,12 @@ const tieneColacionActiva = computed(() => {
 
 // Computed para verificar si puede marcar entrada
 const puedeMarcarEntrada = computed(() => {
-  return currentStatus.value === 'fuera' && !tieneEntradaYSalida.value
+  return !tieneEntradaSinSalida.value
 })
 
 // Computed para verificar si puede marcar salida
 const puedeMarcarSalida = computed(() => {
-  return currentStatus.value === 'dentro' && !tieneColacionActiva.value
+  return tieneEntradaSinSalida.value && !tieneColacionActiva.value
 })
 
 // Computed para verificar si puede marcar colación
@@ -547,7 +584,7 @@ const puedeTerminarColacion = computed(() => {
 
 // Computed para determinar si los botones deben estar deshabilitados
 const botonesMarcacionDeshabilitados = computed(() => {
-  return isRegistering.value || tieneEntradaYSalida.value
+  return isRegistering.value
 })
 
 // Función para recargar todos los datos
@@ -926,7 +963,7 @@ const cargarMarcacionesHoy = async () => {
         const todasLasMarcaciones = Object.values(result.data).flat()
         marcacionesHoy.value = todasLasMarcaciones || []
         
-        console.log('📋 Marcaciones cargadas:', todasLasMarcaciones.length, 'registros')
+        console.log('📋 Marcaciones cargadas:', todasLasMarcaciones)
       } else {
         // Formato antiguo (array directo) - por compatibilidad
         marcacionesHoy.value = result.data || []
