@@ -85,9 +85,9 @@
     </nav>
   </div>
 
-  <!-- Buscador -->
-  <div class="mt-4 flex justify-center">
-    <div class="flex items-center border border-gray-300 rounded-lg px-4 py-2 shadow-sm">
+  <!-- Buscador único -->
+  <div class="mt-6 flex justify-center">
+    <div class="flex items-center border border-gray-300 rounded-lg px-4 py-2 shadow-sm w-96">
       <input
         v-model="filtroBusqueda"
         type="text"
@@ -115,54 +115,69 @@
       <p class="text-gray-600">No hay registros disponibles.</p>
     </div>
     <div v-else class="max-w-7xl">
-      <!-- Renderizar tarjetas por usuario -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="(registrosUsuario, usuario) in registrosFiltrados" :key="usuario" class="p-4 bg-white shadow-lg rounded-lg border border-gray-200">
-          <h3 class="text-lg font-bold text-gray-800 mb-2">{{ usuario }}</h3>
-          <p class="text-sm text-gray-600">Registros: {{ registrosUsuario.length }}</p>
+      <!-- Renderizar tarjetas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <div
+          v-for="(registrosUsuario, usuario) in registrosFiltrados"
+          :key="usuario"
+          class="p-5 bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-all duration-300 hover:border-green-300"
+        >
+          <h3 class="text-lg font-bold text-gray-800 mb-1">{{ usuario }}</h3>
+          <p class="text-sm text-gray-600 mb-3">Registros: <span class="font-semibold">{{ registrosUsuario.length }}</span></p>
           <button
-            @click="mostrarTabla(usuario)"
-            class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-sm font-medium"
+            @click="abrirModalDetalles(usuario)"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-sm font-medium"
           >
             Ver Detalles
           </button>
         </div>
       </div>
 
-      <!-- Tabla de detalles por usuario -->
-      <div v-if="usuarioSeleccionado.nombre" class="mt-8">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Detalles de {{ usuarioSeleccionado.nombre }}</h3>
-        <table class="w-full text-xs border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
-          <thead class="sticky top-0 z-10 shadow-sm">
-            <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
-              <th class="px-3 py-2 font-semibold text-left">Email</th>
-              <th class="px-3 py-2 font-semibold text-left">Rol</th>
-              <th class="px-3 py-2 font-semibold text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="registro in registrosAgrupados[usuarioSeleccionado.nombre]" :key="registro.id" class="transition border-b border-gray-100 hover:bg-green-100 text-xs h-8 align-middle">
-              <td class="px-3 py-1 text-gray-600 align-middle">{{ registro.email }}</td>
-              <td class="px-3 py-1 align-middle">
-                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
-                  {{ registro.rol }}
-                </span>
-              </td>
-              <td class="px-3 py-1 text-center align-middle">
-                <button
-                  @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
-                  class="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 transition text-xs shadow-sm mx-auto"
-                  title="Ver cambios realizados por este usuario"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                  </svg>
-                  <span class="hidden sm:inline">Ver Cambios</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Modal Detalles por usuario -->
+      <div v-if="mostrarModalDetalles" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-5xl">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Detalles de {{ usuarioSeleccionado.nombre }}</h3>
+            <button @click="cerrarModalDetalles" class="text-gray-600 hover:text-gray-800">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="overflow-y-auto max-h-96">
+            <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+              <thead class="sticky top-0 z-10 shadow-sm">
+                <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
+                  <th class="px-4 py-3 font-semibold text-left">Email</th>
+                  <th class="px-4 py-3 font-semibold text-left">Rol</th>
+                  <th class="px-4 py-3 font-semibold text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="registro in registrosAgrupados[usuarioSeleccionado.nombre]" :key="registro.id" class="transition border-b border-gray-100 hover:bg-green-100 text-sm h-10 align-middle">
+                  <td class="px-4 py-2 text-gray-600 align-middle">{{ registro.email }}</td>
+                  <td class="px-4 py-2 align-middle">
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
+                      {{ registro.rol }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 text-center align-middle">
+                    <button
+                      @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
+                      class="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 transition text-sm shadow-sm mx-auto"
+                      title="Ver cambios realizados por este usuario"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                      </svg>
+                      <span class="hidden sm:inline">Ver Cambios</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -176,47 +191,20 @@
 </template>
 
 <script setup>
-// Importaciones necesarias
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuditoria } from '../../composables/useAuditoria.js'
 import { useNotification } from '../../composables/useNotification.js'
 import ModalCambiosUsuario from '../modals/ModalCambiosUsuario.vue'
 import { useAuth } from '../../composables/useAuth.js'
 
-const {
-  registros,
-  estadisticasCalculadas,
-  loading,
-  error,
-  filtros,
-  cargarRegistros,
-  cargarEstadisticas,
-  cerrarSesionUsuario,
-  actualizarFiltros
-} = useAuditoria()
-
-const { showSuccess, showError } = useNotification()
+const { registros, loading, error, cargarRegistros, cargarEstadisticas } = useAuditoria()
 const { hasRole } = useAuth()
 const isAdmin = computed(() => hasRole('admin'))
 
 const mostrarModalCambios = ref(false)
+const mostrarModalDetalles = ref(false)
 const usuarioSeleccionado = ref({ id: null, nombre: '', rol: '' })
 const filtroBusqueda = ref('')
-
-const registrosFiltrados = computed(() => {
-  if (!filtroBusqueda.value) return registrosAgrupados.value
-  const filtro = filtroBusqueda.value.toLowerCase()
-  return Object.keys(registrosAgrupados.value).reduce((acc, usuario) => {
-    if (usuario.toLowerCase().includes(filtro)) {
-      acc[usuario] = registrosAgrupados.value[usuario]
-    }
-    return acc
-  }, {})
-})
-
-const limpiarBusqueda = () => {
-  filtroBusqueda.value = ''
-}
 
 const registrosAgrupados = computed(() =>
   registros.value.reduce((acc, registro) => {
@@ -227,13 +215,24 @@ const registrosAgrupados = computed(() =>
   }, {})
 )
 
+const registrosFiltrados = computed(() => {
+  if (!filtroBusqueda.value) return registrosAgrupados.value
+  const filtro = filtroBusqueda.value.toLowerCase()
+  return Object.keys(registrosAgrupados.value).reduce((acc, usuario) => {
+    if (usuario.toLowerCase().includes(filtro)) acc[usuario] = registrosAgrupados.value[usuario]
+    return acc
+  }, {})
+})
+
+const limpiarBusqueda = () => (filtroBusqueda.value = '')
+const abrirModalDetalles = (usuario) => {
+  usuarioSeleccionado.value.nombre = usuario
+  mostrarModalDetalles.value = true
+}
+const cerrarModalDetalles = () => (mostrarModalDetalles.value = false)
 const abrirModalCambios = (usuarioId, nombre, apellido, rol) => {
   usuarioSeleccionado.value = { id: usuarioId, nombre: `${nombre} ${apellido}`, rol }
   mostrarModalCambios.value = true
-}
-
-function mostrarTabla(usuario) {
-  usuarioSeleccionado.value.nombre = usuario
 }
 
 onMounted(async () => {
