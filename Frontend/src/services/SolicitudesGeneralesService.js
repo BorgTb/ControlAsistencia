@@ -74,9 +74,10 @@ class SolicitudesGeneralesService {
    */
   async obtenerSolicitudes(filtros = {}) {
     try {
-      const response = await apiClient.get('/solicitudes', {
+      const response = await apiClient.get('/user/solicitudes', {
         params: filtros
       });
+      console.log('Respuesta de obtenerSolicitudes:', response);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error al obtener solicitudes:', error);

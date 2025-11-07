@@ -198,7 +198,7 @@
                       Fecha actual *
                     </label>
                     <input
-                      v-model="formulario.fecha_actual"
+                      v-model="formulario.fecha_inicio"
                       type="date"
                       required
                       :min="fechaMinima"
@@ -210,7 +210,7 @@
                       Fecha nueva *
                     </label>
                     <input
-                      v-model="formulario.fecha_nueva"
+                      v-model="formulario.fecha_fin"
                       type="date"
                       required
                       :min="fechaMinima"
@@ -348,8 +348,6 @@ const formulario = ref({
   tipo_permiso: '',
   horas_extras_id: '',
   fecha_compensacion: '',
-  fecha_actual: '',
-  fecha_nueva: '',
   usuario_intercambio: ''
 });
 
@@ -398,7 +396,7 @@ const formularioValido = computed(() => {
   }
   
   if (tipoSeleccionado.value.id === 'cambio_turno') {
-    requeridos.push('fecha_actual', 'fecha_nueva');
+    requeridos.push('fecha_inicio', 'fecha_fin');
   }
   
   // Verificar que todos los campos requeridos estén llenos
@@ -490,8 +488,6 @@ const limpiarFormulario = () => {
     tipo_permiso: '',
     horas_extras_id: '',
     fecha_compensacion: '',
-    fecha_actual: '',
-    fecha_nueva: '',
     usuario_intercambio: ''
   };
   archivoSeleccionado.value = null;

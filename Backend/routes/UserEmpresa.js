@@ -86,4 +86,11 @@ router.get('/horas-extras/empresa/:empresa_id/pendientes', AuthService.verifyTok
 router.get('/horas-extras/trabajador/:usuario_empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerHorasExtrasPorTrabajador);
 router.get('/horas-extras/resumen/:empresa_id', AuthService.verifyToken, HorasExtrasController.obtenerResumenHorasExtras);
 
+
+//Rutas para la gestion de solicitudes de usuarios
+router.get('/solicitudes-usuarios',AuthService.verifyToken, UserEmpresaController.obtenerSolicitudesUsuarios);
+router.get('/solicitudes-usuarios/pendientes',AuthService.verifyToken, UserEmpresaController.obtenerSolicitudesPendientes);
+router.patch('/solicitudes-usuarios/:id/aprobar',AuthService.verifyToken, UserEmpresaController.aprobarSolicitud);
+router.patch('/solicitudes-usuarios/:id/rechazar',AuthService.verifyToken, UserEmpresaController.rechazarSolicitud);
+
 export default router;

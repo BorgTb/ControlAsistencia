@@ -4,6 +4,8 @@ import {DateTime} from 'luxon';
 import ReportesModel from '../model/ReportesModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import AuditoriaModel from '../model/AuditoriaModel.js';
+import FileUploadService from '../services/FileUploadService.js';
+import SolicitudesUsuariosModel from '../model/SolicitudesUsuariosModel.js';
 
 /**
  * Actualiza el rol de un usuario por su id.
@@ -788,18 +790,74 @@ const createUsuarioEmpresa = async (req, res) => {
 
 const createSolicitud = async (req, res) => {
     try {
-
         console.log('📥 Recibiendo formData en createSolicitud:', req.body);
-        // Aquí puedes procesar el formData según tus necesidades
-        // Ejemplo de procesamiento básico:
+        console.log('📎 Archivo recibido:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'No hay archivo');
+        
+
+        const user = req.user;
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+
+
+        // Validar que se recibieron los datos necesarios
+        const { tipo, datos } = req.body;
+        if (!tipo || !datos) {
+            return res.status(400).json({
+                success: false,
+                message: 'Se requiere tipo y datos de la solicitud'
+            });
+        }
+
+        // Procesar datos (parsear si es string)
+        let datosProcessados = datos;
+        if (typeof datos === 'string') {
+            try {
+                datosProcessados = JSON.parse(datos);
+            } catch (error) {
+                console.error('Error al parsear datos:', error);
+                datosProcessados = datos;
+            }
+        }
+
+
+        console.log(datosProcessados);
+
+        // Preparar objeto de solicitud
+        const solicitud = {
+            id_usuario_empresa: userEmpresa ? userEmpresa.id : null,
+            tipo: 'solicitud',
+            subtipo: tipo,
+            titulo: `Solicitud de tipo: ${tipo}, por usuario ${userEmpresa.usuario_nombre}`,
+            descripcion: datosProcessados.motivo || 'Sin motivo especificado',
+            fecha_inicio: datosProcessados.fecha_inicio || null,
+            fecha_fin: datosProcessados.fecha_fin || null,
+        };
+
+
+
+
+        // Si hay archivo adjunto - usar FileUploadService
+        if (req.file) {
+            const fileInfo = FileUploadService.getFileInfo(req.file, 'solicitudes');
+            solicitud.documento_adjunto = fileInfo.url;
+            solicitud.archivo_nombre = fileInfo.nombre;
+            solicitud.archivo_tamaño = fileInfo.tamaño;
+            solicitud.archivo_mimetype = fileInfo.mimetype;
+        }
+
+        
+
+        console.log('✅ Solicitud procesada:', solicitud);
+        
+        await SolicitudesUsuariosModel.crear(solicitud);
         
         res.status(501).json({
             success: true,
-            message: 'FormData recibido correctamente',
+            message: 'Solicitud recibida correctamente',
+            data: solicitud
         });
         
     } catch (error) {
-        console.error('Error procesando formData:', error);
+        console.error('Error procesando solicitud:', error);
         res.status(500).json({
             success: false,
             message: 'Error al procesar la solicitud',
@@ -808,6 +866,26 @@ const createSolicitud = async (req, res) => {
     }
 }
 
+const getSolicitudes = async (req, res) => {
+    try {
+        const user = req.user;
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const solicitudes = await SolicitudesUsuariosModel.obtenerPorUsuarioEmpresa(userEmpresa.id);
+        console.log('📋 Solicitudes obtenidas para usuario_empresa_id', userEmpresa.id, ':', solicitudes);
+        //console.log('✅ Solicitudes obtenidas:', solicitudes);
+        res.status(200).json({
+            success: true,
+            data: solicitudes
+        });
+    } catch (error) {
+        console.error('Error obteniendo solicitudes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las solicitudes',
+            error: error.message
+        });
+    }
+}
 
 const UserController = {
     updateEmail,
@@ -826,7 +904,8 @@ const UserController = {
     createUsuarioEmpresa, // Crear relación usuario-empresa
     listAdmins,
     createSolicitudMarcacion,
-    createSolicitud
+    createSolicitud,
+    getSolicitudes
 }
 
 export default UserController;

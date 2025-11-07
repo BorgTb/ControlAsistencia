@@ -187,7 +187,7 @@
                       <div class="flex items-center">
                         <!-- TODO: Mostrar nombre del trabajador -->
                         <p class="text-sm font-medium text-indigo-600">
-                          {{ solicitud.nombre_trabajador || 'Nombre del Trabajador' }}
+                          {{ solicitud.usuario_nombre || 'Nombre del Trabajador' }}
                         </p>
                         <!-- TODO: Badge con estado de la solicitud -->
                         <span 
@@ -199,7 +199,7 @@
                       <div class="mt-2 flex items-center text-sm text-gray-500">
                         <!-- TODO: Tipo de solicitud (Feriado, Permiso con goce, etc.) -->
                         <p class="mr-4">
-                          <span class="font-medium">Tipo:</span> {{ solicitud.tipo_solicitud || 'Tipo de solicitud' }}
+                          <span class="font-medium">Tipo:</span> {{ obtenerNombreTipo(solicitud.subtipo) || 'Tipo de solicitud' }}
                         </p>
                         <!-- TODO: Período solicitado (fecha inicio - fecha fin) -->
                         <p>
@@ -226,7 +226,7 @@
                     
                     <!-- TODO: Botones de acción (Aceptar/Rechazar) - solo mostrar si estado es PENDIENTE -->
                     <button
-                      v-if="solicitud.estado === 'PENDIENTE'"
+                      v-if="solicitud.estado === 'pendiente'"
                       @click="abrirModalAceptar(solicitud)"
                       :disabled="procesando"
                       class="inline-flex items-center px-3 py-1 border border-green-300 shadow-sm text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 disabled:opacity-50"
@@ -235,7 +235,7 @@
                     </button>
 
                     <button
-                      v-if="solicitud.estado === 'PENDIENTE'"
+                      v-if="solicitud.estado === 'pendiente'"
                       @click="abrirModalRechazar(solicitud)"
                       :disabled="procesando"
                       class="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
@@ -256,6 +256,8 @@
       :visible="mostrarModalDetalle"
       :solicitud="solicitudSeleccionada"
       @cerrar="cerrarModalDetalle"
+      @aceptar="manejarAceptarDelModal"
+      @rechazar="manejarRechazarDelModal"
     />
 
     <!-- Modal Aceptar Solicitud -->
@@ -265,13 +267,50 @@
           <h3 class="text-lg font-medium text-gray-900">Aceptar Solicitud</h3>
           <p class="mt-1 text-sm text-gray-500">
             <!-- TODO: Confirmar si se acepta la solicitud del trabajador -->
-            ¿Deseas aceptar la solicitud de {{ solicitudSeleccionada?.nombre_trabajador }}?
+            ¿Deseas aceptar la solicitud de {{ solicitudSeleccionada?.usuario_nombre }}?
           </p>
         </div>
         
-        <div class="px-6 py-4">
+        <div class="px-6 py-4 space-y-4">
+          <!-- Advertencia si la solicitud no es de tipo permiso, feriado o compensación -->
+          <div 
+            v-if="!esPermisoCambioOCompensacion(solicitudSeleccionada?.subtipo)"
+            class="p-4 bg-red-50 border-l-4 border-red-500 rounded"
+          >
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  ⚠️ ¡ATENCIÓN! Cambio Irreversible
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <p class="font-semibold mb-2">Este cambio NO se puede deshacer</p>
+                  <p>Estás a punto de aprobar una solicitud de tipo <strong>{{ obtenerNombreTipo(solicitudSeleccionada?.subtipo) }}</strong> que implica cambios significativos en el sistema.</p>
+                  <p class="mt-2">Asegúrate de haber realizado y leído todos los cambios antes de confirmar.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Checkbox de confirmación -->
+            <div class="mt-4 flex items-center">
+              <input 
+                id="confirmacion-cambio"
+                v-model="confirmarCambioIrreversible"
+                type="checkbox"
+                class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <label for="confirmacion-cambio" class="ml-2 block text-sm font-medium text-red-800">
+                Confirmo que deseo realizar este cambio irreversible
+              </label>
+            </div>
+          </div>
+
           <!-- TODO: Campo opcional para agregar observaciones/comentarios sobre la aceptación -->
-          <div class="mb-4">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones (Opcional)</label>
             <textarea
               v-model="observacionesAceptar"
@@ -291,8 +330,8 @@
           </button>
           <button
             @click="aceptarSolicitud"
-            :disabled="procesando"
-            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+            :disabled="procesando || !puedoAceptarSolicitud()"
+            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <!-- TODO: Enviar acción de aceptación al backend -->
             <span v-if="!procesando">Aceptar</span>
@@ -309,7 +348,7 @@
           <h3 class="text-lg font-medium text-gray-900">Rechazar Solicitud</h3>
           <p class="mt-1 text-sm text-gray-500">
             <!-- TODO: Confirmar rechazo de la solicitud -->
-            Completa los detalles para rechazar la solicitud de {{ solicitudSeleccionada?.nombre_trabajador }}
+            Completa los detalles para rechazar la solicitud de {{ solicitudSeleccionada?.usuario_nombre }}
           </p>
         </div>
         
@@ -383,7 +422,7 @@
             Cancelar
           </button>
           <button
-            @click="rechazarSolicitud"
+            @click="rechazarSolicitudAction"
             :disabled="procesando || !validarFormularioRechazo()"
             class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
           >
@@ -430,36 +469,29 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-// TODO: Importar composable para cargar solicitudes de trabajadores
-// import { useSolicitudesTrabajadores } from '../../composables/useSolicitudesTrabajadores';
-// TODO: Importar componente modal para detalles
-// import ModalDetalleSolicitudTrabajador from '../modals/ModalDetalleSolicitudTrabajador.vue';
+import { useEmpresa } from '../../../composables/useEmpresa';
+import ModalDetalleSolicitudTrabajador from '../../modals/ModalDetalleSolicitudTrabajador.vue';
 
-// TODO: Usar composable para lógica de datos
-// const {
-//   loading,
-//   error,
-//   solicitudes,
-//   procesando,
-//   tiposSolicitudes,
-//   cargarSolicitudes,
-//   aceptarSolicitud,
-//   rechazarSolicitud,
-//   formatearFecha
-// } = useSolicitudesTrabajadores();
+// Composable
+const {
+  obtenerSolicitudesUsuarios,
+  obtenerSolicitudesPendientes,
+  aprobarSolicitud,
+  rechazarSolicitud: rechazarSolicitudAPI
+} = useEmpresa();
 
 // Estado local
 const loading = ref(false);
 const error = ref(null);
 const procesando = ref(false);
 const solicitudes = ref([]);
-const tiposSolicitudes = ref([]);
-
-// Estadísticas
-const solicitudesPendientes = ref(0);
-const solicitudesAceptadas = ref(0);
-const solicitudesRechazadas = ref(0);
-const solicitudesEnApelacion = ref(0);
+const tiposSolicitudes = ref([
+  { id: 'permiso_con_goce', nombre: 'Permiso con Goce' },
+  { id: 'permiso_sin_goce', nombre: 'Permiso sin Goce' },
+  { id: 'cambio_turno', nombre: 'Cambio de Turno' },
+  { id: 'uso_feriado', nombre: 'Uso de Feriado' },
+  { id: 'compensacion_horas', nombre: 'Compensación de Horas' }
+]);
 
 // Modales
 const mostrarModalDetalle = ref(false);
@@ -473,6 +505,7 @@ const filtroEstado = ref('');
 
 // Datos para aceptar
 const observacionesAceptar = ref('');
+const confirmarCambioIrreversible = ref(false);
 
 // Datos para rechazar
 const razonRechazo = ref('');
@@ -484,27 +517,95 @@ const solicitudesFiltradas = computed(() => {
   let resultado = [...solicitudes.value];
   
   if (filtroTipo.value) {
-    // TODO: Filtrar por tipo de solicitud
     resultado = resultado.filter(s => s.tipo_solicitud === filtroTipo.value);
   }
   
   if (filtroEstado.value) {
-    // TODO: Filtrar por estado de la solicitud
     resultado = resultado.filter(s => s.estado === filtroEstado.value);
   }
   
-  // TODO: Ordenar por fecha de creación descendente
   return resultado.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 });
 
+// Computeds para estadísticas
+const solicitudesPendientes = computed(() => {
+  return solicitudes.value.filter(s => s.estado === 'pendiente').length;
+});
+
+const solicitudesAceptadas = computed(() => {
+  return solicitudes.value.filter(s => s.estado === 'aceptada').length;
+});
+
+const solicitudesRechazadas = computed(() => {
+  return solicitudes.value.filter(s => s.estado === 'rechazada').length;
+});
+
+const solicitudesEnApelacion = computed(() => {
+  return solicitudes.value.filter(s => s.estado === 'cancelada').length;
+});
+
+// Estados para estadísticas
+const estadosSolicitud = [
+  { id: 'pendiente', nombre: 'Pendiente', color: 'yellow' },
+  { id: 'aceptada', nombre: 'Aceptada', color: 'green' },
+  { id: 'rechazada', nombre: 'Rechazada', color: 'red' },
+  { id: 'cancelada', nombre: 'En Apelación', color: 'blue' }
+];
+
+const solicitudesPorEstado = computed(() => {
+  return estadosSolicitud.map(estado => ({
+    ...estado,
+    cantidad: solicitudes.value.filter(s => s.estado === estado.id).length
+  }));
+});
+
 // Métodos
-const aplicarFiltros = () => {
-  // TODO: Llamar al composable con los filtros
-  console.log('Filtros aplicados:', { tipo: filtroTipo.value, estado: filtroEstado.value });
+const cargarSolicitudes = async () => {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const datos = await obtenerSolicitudesUsuarios();
+    console.log('📋 Datos crudos del backend:', datos);
+    solicitudes.value = Array.isArray(datos) ? datos : [];
+    console.log('✅ Solicitudes cargadas:', solicitudes.value);
+    console.log('📊 Total de solicitudes:', solicitudes.value.length);
+    
+    // Log detallado de la primera solicitud para debug
+    if (solicitudes.value.length > 0) {
+      console.log('🔍 Primera solicitud:', solicitudes.value[0]);
+      console.log('🔑 ID de la primera solicitud:', solicitudes.value[0].id_solicitud);
+    }
+  } catch (err) {
+    console.error('❌ Error al cargar solicitudes:', err);
+    error.value = err.message || 'Error al cargar solicitudes';
+    solicitudes.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+const aplicarFiltros = async () => {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const filtros = {};
+    if (filtroTipo.value) filtros.subtipo = filtroTipo.value;
+    if (filtroEstado.value) filtros.estado = filtroEstado.value;
+
+    const datos = await obtenerSolicitudesPendientes(filtros);
+    solicitudes.value = Array.isArray(datos) ? datos : [];
+    console.log('✅ Filtros aplicados, solicitudes:', solicitudes.value);
+  } catch (err) {
+    console.error('❌ Error al aplicar filtros:', err);
+    error.value = err.message || 'Error al aplicar filtros';
+  } finally {
+    loading.value = false;
+  }
 };
 
 const obtenerClaseEstado = (estado) => {
-  // TODO: Retornar clase CSS según el estado
   const clases = {
     'PENDIENTE': 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800',
     'ACEPTADA': 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800',
@@ -515,13 +616,17 @@ const obtenerClaseEstado = (estado) => {
 };
 
 const formatearFecha = (fecha) => {
-  // TODO: Formatear fecha según el formato local (ej: 15/11/2025)
   if (!fecha) return 'N/A';
   return new Date(fecha).toLocaleDateString('es-ES');
 };
 
+const obtenerNombreTipo = (tipo) => {
+  const tipoObj = tiposSolicitudes.value.find(t => t.id === tipo);
+  return tipoObj?.nombre || tipo;
+};
+
 const verDetalleSolicitud = (solicitud) => {
-  // TODO: Abrir modal con detalles completos de la solicitud
+  console.log('📋 Viendo detalle de solicitud:', solicitud);
   solicitudSeleccionada.value = solicitud;
   mostrarModalDetalle.value = true;
 };
@@ -532,34 +637,49 @@ const cerrarModalDetalle = () => {
 };
 
 const abrirModalAceptar = (solicitud) => {
-  // TODO: Abrir modal de aceptación
   solicitudSeleccionada.value = solicitud;
   observacionesAceptar.value = '';
+  confirmarCambioIrreversible.value = false;
   mostrarModalAceptar.value = true;
 };
 
 const cerrarModalAceptar = () => {
   mostrarModalAceptar.value = false;
   observacionesAceptar.value = '';
+  confirmarCambioIrreversible.value = false;
+};
+
+const esPermisoCambioOCompensacion = (subtipo) => {
+  const tiposPermitidos = ['permiso_con_goce', 'permiso_sin_goce', 'compensacion_horas'];
+  return tiposPermitidos.includes(subtipo);
+};
+
+const puedoAceptarSolicitud = () => {
+  // Si es permiso, feriado o compensación, no requiere confirmación
+  if (esPermisoCambioOCompensacion(solicitudSeleccionada.value?.subtipo)) {
+    return true;
+  }
+  // Si NO es permiso/feriado/compensación, requiere que confirme
+  return confirmarCambioIrreversible.value;
 };
 
 const aceptarSolicitud = async () => {
   try {
     procesando.value = true;
-    // TODO: Llamar al servicio/composable para aceptar la solicitud
-    // Parámetros a enviar:
-    // - id de la solicitud
-    // - observaciones (opcional)
-    console.log('Aceptando solicitud:', {
-      id: solicitudSeleccionada.value.id,
+    console.log('🟢 ACEPTAR - Solicitud seleccionada:', solicitudSeleccionada.value);
+    console.log('🟢 ACEPTAR - ID a enviar:', solicitudSeleccionada.value.id_solicitud);
+    console.log('🟢 ACEPTAR - Observaciones:', observacionesAceptar.value);
+    
+    const resultado = await aprobarSolicitud(solicitudSeleccionada.value.id_solicitud, {
       observaciones: observacionesAceptar.value
     });
     
-    // TODO: Mostrar mensaje de éxito
+    console.log('🟢 ACEPTAR - Resultado del backend:', resultado);
+    error.value = null;
     cerrarModalAceptar();
-    await aplicarFiltros();
+    await cargarSolicitudes();
   } catch (err) {
-    console.error('Error al aceptar solicitud:', err);
+    console.error('❌ Error al aceptar solicitud:', err);
     error.value = err.message || 'Error al aceptar la solicitud';
   } finally {
     procesando.value = false;
@@ -567,7 +687,6 @@ const aceptarSolicitud = async () => {
 };
 
 const abrirModalRechazar = (solicitud) => {
-  // TODO: Abrir modal de rechazo
   solicitudSeleccionada.value = solicitud;
   razonRechazo.value = '';
   plazoApelacion.value = null;
@@ -583,21 +702,19 @@ const cerrarModalRechazar = () => {
 };
 
 const validarFormularioRechazo = () => {
-  // TODO: Validar que todos los campos requeridos estén completos
   return razonRechazo.value.trim().length > 0 && 
          plazoApelacion.value > 0 && 
          instanciaApelacion.value !== '';
 };
 
 const calcularFechaApelacion = (dias) => {
-  // TODO: Calcular la fecha límite para apelar sumando el plazo a la fecha actual
   if (dias <= 0) return '';
   const fecha = new Date();
   fecha.setDate(fecha.getDate() + dias);
   return fecha.toLocaleDateString('es-ES');
 };
 
-const rechazarSolicitud = async () => {
+const rechazarSolicitudAction = async () => {
   try {
     if (!validarFormularioRechazo()) {
       error.value = 'Por favor completa todos los campos requeridos';
@@ -605,25 +722,24 @@ const rechazarSolicitud = async () => {
     }
 
     procesando.value = true;
-    // TODO: Llamar al servicio/composable para rechazar la solicitud
-    // Parámetros a enviar:
-    // - id de la solicitud
-    // - razón del rechazo
-    // - plazo para apelación (en días)
-    // - instancia a la que va dirigida la apelación
-    console.log('Rechazando solicitud:', {
-      id: solicitudSeleccionada.value.id,
-      razon: razonRechazo.value,
-      plazoApelacion: plazoApelacion.value,
-      instanciaApelacion: instanciaApelacion.value,
-      fechaVencimiento: calcularFechaApelacion(plazoApelacion.value)
+    console.log('🔴 RECHAZAR - Solicitud seleccionada:', solicitudSeleccionada.value);
+    console.log('🔴 RECHAZAR - ID a enviar:', solicitudSeleccionada.value.id_solicitud);
+    console.log('🔴 RECHAZAR - Motivo:', razonRechazo.value);
+    console.log('🔴 RECHAZAR - Plazo apelación:', plazoApelacion.value);
+    console.log('🔴 RECHAZAR - Instancia apelación:', instanciaApelacion.value);
+    
+    const resultado = await rechazarSolicitudAPI(solicitudSeleccionada.value.id_solicitud, {
+      motivo: razonRechazo.value,
+      plazo_apelacion: plazoApelacion.value,
+      instancia_apelacion: instanciaApelacion.value
     });
     
-    // TODO: Mostrar mensaje de éxito
+    console.log('🔴 RECHAZAR - Resultado del backend:', resultado);
+    error.value = null;
     cerrarModalRechazar();
-    await aplicarFiltros();
+    await cargarSolicitudes();
   } catch (err) {
-    console.error('Error al rechazar solicitud:', err);
+    console.error('❌ Error al rechazar solicitud:', err);
     error.value = err.message || 'Error al rechazar la solicitud';
   } finally {
     procesando.value = false;
@@ -636,10 +752,23 @@ const cerrarTodosLosModales = () => {
   cerrarModalRechazar();
 };
 
+const manejarAceptarDelModal = (solicitud) => {
+  console.log('📋 Aceptar desde modal:', solicitud);
+  solicitudSeleccionada.value = solicitud;
+  cerrarModalDetalle();
+  abrirModalAceptar(solicitud);
+};
+
+const manejarRechazarDelModal = (solicitud) => {
+  console.log('📋 Rechazar desde modal:', solicitud);
+  solicitudSeleccionada.value = solicitud;
+  cerrarModalDetalle();
+  abrirModalRechazar(solicitud);
+};
+
 // Lifecycle
-onMounted(() => {
-  // TODO: Cargar solicitudes de trabajadores al montar el componente
-  console.log('Cargando solicitudes de trabajadores...');
+onMounted(async () => {
+  await cargarSolicitudes();
 });
 </script>
 
