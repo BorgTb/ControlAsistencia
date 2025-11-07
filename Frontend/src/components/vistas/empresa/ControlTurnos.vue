@@ -57,7 +57,9 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio</label>
                   <input 
                     type="time" 
-                    v-model="formTipoTurno.hora_inicio" 
+                    v-model="formTipoTurno.hora_inicio"
+                    @change="validarHorarioBase"
+                    :class="{'border-red-500': erroresValidacion.horario}"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                     required
                   />
@@ -66,19 +68,26 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fin</label>
                   <input 
                     type="time" 
-                    v-model="formTipoTurno.hora_fin" 
+                    v-model="formTipoTurno.hora_fin"
+                    @change="validarHorarioBase"
+                    :class="{'border-red-500': erroresValidacion.horario}"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                     required
                   />
                 </div>
               </div>
+              <p v-if="erroresValidacion.horario" class="text-xs text-red-600 mt-1">
+                {{ erroresValidacion.horario }}
+              </p>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Colación Inicio</label>
                   <input 
                     type="time" 
-                    v-model="formTipoTurno.colacion_inicio" 
+                    v-model="formTipoTurno.colacion_inicio"
+                    @change="validarColacion"
+                    :class="{'border-red-500': erroresValidacion.colacion}"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
@@ -86,40 +95,55 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">Colación Fin</label>
                   <input 
                     type="time" 
-                    v-model="formTipoTurno.colacion_fin" 
+                    v-model="formTipoTurno.colacion_fin"
+                    @change="validarColacion"
+                    :class="{'border-red-500': erroresValidacion.colacion}"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
               </div>
+              <p v-if="erroresValidacion.colacion" class="text-xs text-red-600 mt-1">
+                {{ erroresValidacion.colacion }}
+              </p>
 
               <!-- Días de la semana -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Días de Trabajo</label>
                 <div class="space-y-2">
-                  <div v-for="(dia, index) in diasSemana" :key="dia.value" class="flex items-center space-x-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      :id="`dia-${dia.value}`"
-                      v-model="dia.trabaja"
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label :for="`dia-${dia.value}`" class="flex-1 text-xs font-medium text-gray-700 cursor-pointer">
-                      {{ dia.label }}
-                    </label>
-                    <div v-if="dia.trabaja" class="flex space-x-1">
+                  <div v-for="(dia, index) in diasSemana" :key="dia.value">
+                    <div class="flex items-center space-x-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
                       <input 
-                        type="time" 
-                        v-model="dia.hora_inicio"
-                        placeholder="Hora inicio"
-                        class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        type="checkbox" 
+                        :id="`dia-${dia.value}`"
+                        v-model="dia.trabaja"
+                        @change="validarHorarioDia(dia)"
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
-                      <input 
-                        type="time" 
-                        v-model="dia.hora_fin"
-                        placeholder="Hora fin"
-                        class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
+                      <label :for="`dia-${dia.value}`" class="flex-1 text-xs font-medium text-gray-700 cursor-pointer">
+                        {{ dia.label }}
+                      </label>
+                      <div v-if="dia.trabaja" class="flex space-x-1">
+                        <input 
+                          type="time" 
+                          v-model="dia.hora_inicio"
+                          @change="validarHorarioDia(dia)"
+                          :class="{'border-red-500': erroresValidacion.dias[dia.value]}"
+                          placeholder="Hora inicio"
+                          class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <input 
+                          type="time" 
+                          v-model="dia.hora_fin"
+                          @change="validarHorarioDia(dia)"
+                          :class="{'border-red-500': erroresValidacion.dias[dia.value]}"
+                          placeholder="Hora fin"
+                          class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                      </div>
                     </div>
+                    <p v-if="erroresValidacion.dias[dia.value]" class="text-xs text-red-600 mt-1 ml-6">
+                      {{ erroresValidacion.dias[dia.value] }}
+                    </p>
                   </div>
                 </div>
                 <p class="mt-2 text-xs text-gray-500">
@@ -190,6 +214,54 @@
                     <span v-if="dia.hora_inicio"> ({{ dia.hora_inicio }} - {{ dia.hora_fin }})</span>
                   </li>
                 </ul>
+                <div class="mt-3 pt-3 border-t border-blue-300">
+                  <p class="font-semibold text-blue-900">Total horas semanales: {{ calcularHorasTurno(turnoSeleccionado).toFixed(2) }} hrs</p>
+                </div>
+              </div>
+
+              <!-- Alerta de horas laborales -->
+              <div v-if="formAsignacion.usuario_empresa_id && formAsignacion.tipo_turno_id" class="p-3 rounded-lg text-xs">
+                <div v-if="(() => {
+                  const trabajador = trabajadores.find(t => t.id == formAsignacion.usuario_empresa_id);
+                  const tipoTurno = tiposTurnos.find(t => t.id == formAsignacion.tipo_turno_id);
+                  if (!trabajador || !tipoTurno || !trabajador.horas_laborales) return false;
+                  const horasTurno = calcularHorasTurno(tipoTurno);
+                  return horasTurno > parseFloat(trabajador.horas_laborales);
+                })()" class="bg-yellow-50 border border-yellow-400 p-3 rounded">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                      </svg>
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-xs text-yellow-700 font-medium">
+                        ⚠️ Este turno excede las horas laborales contratadas del trabajador
+                      </p>
+                      <p class="text-xs text-yellow-600 mt-1">
+                        Turno: {{ calcularHorasTurno(tiposTurnos.find(t => t.id == formAsignacion.tipo_turno_id)).toFixed(2) }} hrs/semana | 
+                        Contrato: {{ trabajadores.find(t => t.id == formAsignacion.usuario_empresa_id).horas_laborales }} hrs/semana
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="(() => {
+                  const trabajador = trabajadores.find(t => t.id == formAsignacion.usuario_empresa_id);
+                  return trabajador && trabajador.horas_laborales;
+                })()" class="bg-green-50 border border-green-200 p-3 rounded">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                      </svg>
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-xs text-green-700 font-medium">
+                        ✓ Las horas del turno están dentro del contrato laboral
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -895,6 +967,13 @@ const turnosAsignados = ref([]);
 const cargando = ref(false);
 const turnoSeleccionado = ref(null);
 
+// Estados de validación
+const erroresValidacion = reactive({
+  horario: '',
+  colacion: '',
+  dias: {}
+});
+
 const modalDetalleTurno = ref({
   mostrar: false,
   turno: null
@@ -986,6 +1065,69 @@ const turnosActivosFiltrados = computed(() => {
 });
 
 // Funciones
+const validarHorarioBase = () => {
+  erroresValidacion.horario = '';
+  
+  if (formTipoTurno.hora_inicio && formTipoTurno.hora_fin) {
+    if (formTipoTurno.hora_inicio >= formTipoTurno.hora_fin) {
+      erroresValidacion.horario = 'La hora de inicio debe ser menor que la hora de fin';
+      return false;
+    }
+  }
+  return true;
+};
+
+const validarColacion = () => {
+  erroresValidacion.colacion = '';
+  
+  // Si hay alguna hora de colación, ambas deben estar presentes
+  if (formTipoTurno.colacion_inicio || formTipoTurno.colacion_fin) {
+    if (!formTipoTurno.colacion_inicio || !formTipoTurno.colacion_fin) {
+      erroresValidacion.colacion = 'Debe especificar ambas horas de colación';
+      return false;
+    }
+
+    // Validar que colación inicio < colación fin
+    if (formTipoTurno.colacion_inicio >= formTipoTurno.colacion_fin) {
+      erroresValidacion.colacion = 'La hora de inicio debe ser menor que la hora de fin';
+      return false;
+    }
+
+    // Validar que la colación esté dentro del rango del turno
+    if (formTipoTurno.hora_inicio && formTipoTurno.hora_fin) {
+      if (formTipoTurno.colacion_inicio < formTipoTurno.hora_inicio || 
+          formTipoTurno.colacion_fin > formTipoTurno.hora_fin) {
+        erroresValidacion.colacion = 'La colación debe estar dentro del horario del turno';
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+const validarHorarioDia = (dia) => {
+  if (!dia.trabaja) {
+    delete erroresValidacion.dias[dia.value];
+    return true;
+  }
+
+  if (dia.hora_inicio && dia.hora_fin) {
+    if (dia.hora_inicio >= dia.hora_fin) {
+      erroresValidacion.dias[dia.value] = 'Hora de inicio debe ser menor que hora de fin';
+      return false;
+    }
+  }
+
+  // Si se ingresa una hora, debe ingresarse la otra
+  if ((dia.hora_inicio && !dia.hora_fin) || (!dia.hora_inicio && dia.hora_fin)) {
+    erroresValidacion.dias[dia.value] = 'Debe especificar ambas horas o dejarlas vacías';
+    return false;
+  }
+
+  delete erroresValidacion.dias[dia.value];
+  return true;
+};
+
 const contarAsignaciones = (tipoTurnoId) => {
   return turnosAsignados.value.filter(t => t.tipo_turno_id === tipoTurnoId && t.estado === 'activo').length;
 };
@@ -1033,10 +1175,67 @@ const cerrarNotificacion = () => {
   notificacion.value.mostrar = false;
 };
 
+const validarHorarios = () => {
+  // Validar que hora inicio sea menor que hora fin
+  if (formTipoTurno.hora_inicio && formTipoTurno.hora_fin) {
+    if (formTipoTurno.hora_inicio >= formTipoTurno.hora_fin) {
+      mostrarNotificacion('error', 'La hora de inicio debe ser menor que la hora de fin');
+      return false;
+    }
+  }
+
+  // Validar colación
+  if (formTipoTurno.colacion_inicio || formTipoTurno.colacion_fin) {
+    // Si se ingresa una, debe ingresarse la otra
+    if (!formTipoTurno.colacion_inicio || !formTipoTurno.colacion_fin) {
+      mostrarNotificacion('error', 'Debe especificar tanto la hora de inicio como la hora de fin de la colación');
+      return false;
+    }
+
+    // Validar que colación inicio < colación fin
+    if (formTipoTurno.colacion_inicio >= formTipoTurno.colacion_fin) {
+      mostrarNotificacion('error', 'La hora de inicio de colación debe ser menor que la hora de fin');
+      return false;
+    }
+
+    // Validar que la colación esté dentro del rango del turno
+    if (formTipoTurno.hora_inicio && formTipoTurno.hora_fin) {
+      if (formTipoTurno.colacion_inicio < formTipoTurno.hora_inicio || 
+          formTipoTurno.colacion_fin > formTipoTurno.hora_fin) {
+        mostrarNotificacion('error', 'El horario de colación debe estar dentro del horario del turno');
+        return false;
+      }
+    }
+  }
+
+  // Validar horarios personalizados de días
+  for (const dia of diasSemana.value) {
+    if (dia.trabaja && dia.hora_inicio && dia.hora_fin) {
+      if (dia.hora_inicio >= dia.hora_fin) {
+        mostrarNotificacion('error', `El horario del día ${dia.label} es inválido: la hora de inicio debe ser menor que la hora de fin`);
+        return false;
+      }
+    }
+
+    // Si se ingresa una hora, debe ingresarse la otra
+    if (dia.trabaja && ((dia.hora_inicio && !dia.hora_fin) || (!dia.hora_inicio && dia.hora_fin))) {
+      mostrarNotificacion('error', `Para el día ${dia.label} debe especificar tanto la hora de inicio como la hora de fin, o dejar ambas vacías para usar el horario base`);
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const guardarTipoTurno = async () => {
   try {
     if (!hayAlMenosUnDiaSeleccionado.value) {
       mostrarNotificacion('error', 'Debe seleccionar al menos un día de trabajo');
+      return;
+    }
+
+    // Validar horarios antes de guardar
+    if (!validarHorarios()) {
       return;
     }
 
@@ -1067,6 +1266,11 @@ const guardarTipoTurno = async () => {
 
 const guardarAsignacion = async () => {
   try {
+    // Validar horas laborales antes de guardar
+    if (!validarHorasLaborales()) {
+      return; // El usuario canceló la asignación
+    }
+
     console.log('Asignando turno con datos:', formAsignacion);
     await EmpresaServices.createTurno(formAsignacion);
     mostrarNotificacion('success', 'Turno asignado exitosamente');
@@ -1155,6 +1359,11 @@ const limpiarFormTipoTurno = () => {
     dia.hora_inicio = '';
     dia.hora_fin = '';
   });
+
+  // Limpiar errores de validación
+  erroresValidacion.horario = '';
+  erroresValidacion.colacion = '';
+  erroresValidacion.dias = {};
 };
 
 const limpiarFormAsignacion = () => {
@@ -1172,6 +1381,7 @@ const cargarTrabajadores = async () => {
   try {
     cargando.value = true;
     const response = await obtenerTrabajadores(true);
+    console.log('Respuesta de trabajadores:', response);
     trabajadores.value = response || [];
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);
@@ -1209,6 +1419,89 @@ const fetchTurnos = async () => {
   } catch (error) {
     console.error('Error al obtener turnos:', error);
   }
+};
+
+const calcularHorasTurno = (tipoTurno) => {
+  if (!tipoTurno || !tipoTurno.dias) return 0;
+
+  let totalHorasSemanal = 0;
+
+  // Calcular horas para cada día laboral
+  tipoTurno.dias.filter(d => d.trabaja).forEach(dia => {
+    const horaInicio = dia.hora_inicio || tipoTurno.hora_inicio;
+    const horaFin = dia.hora_fin || tipoTurno.hora_fin;
+
+    if (horaInicio && horaFin) {
+      // Convertir horas a minutos
+      const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
+      const [finHoras, finMinutos] = horaFin.split(':').map(Number);
+
+      const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
+      const finEnMinutos = finHoras * 60 + finMinutos;
+
+      // Calcular diferencia en horas
+      let diferenciaMinutos = finEnMinutos - inicioEnMinutos;
+      
+      // Si el turno cruza la medianoche
+      if (diferenciaMinutos < 0) {
+        diferenciaMinutos += 24 * 60;
+      }
+
+      // Restar tiempo de colación si existe
+      if (tipoTurno.colacion_inicio && tipoTurno.colacion_fin) {
+        const [colInicioHoras, colInicioMinutos] = tipoTurno.colacion_inicio.split(':').map(Number);
+        const [colFinHoras, colFinMinutos] = tipoTurno.colacion_fin.split(':').map(Number);
+
+        const colInicioEnMinutos = colInicioHoras * 60 + colInicioMinutos;
+        const colFinEnMinutos = colFinHoras * 60 + colFinMinutos;
+
+        const colacionMinutos = colFinEnMinutos - colInicioEnMinutos;
+        diferenciaMinutos -= colacionMinutos;
+      }
+
+      totalHorasSemanal += diferenciaMinutos / 60;
+    }
+  });
+
+  return totalHorasSemanal;
+};
+
+const validarHorasLaborales = () => {
+  if (!formAsignacion.usuario_empresa_id || !formAsignacion.tipo_turno_id) {
+    return true;
+  }
+
+  // Obtener trabajador seleccionado
+  const trabajador = trabajadores.value.find(t => t.id == formAsignacion.usuario_empresa_id);
+  if (!trabajador || !trabajador.horas_laborales) {
+    return true;
+  }
+
+  // Obtener tipo de turno seleccionado
+  const tipoTurno = tiposTurnos.value.find(t => t.id == formAsignacion.tipo_turno_id);
+  if (!tipoTurno) {
+    return true;
+  }
+
+  // Calcular horas del turno
+  const horasTurno = calcularHorasTurno(tipoTurno);
+  const horasLaboralesContrato = parseFloat(trabajador.horas_laborales);
+
+  console.log('Horas del turno:', horasTurno);
+  console.log('Horas laborales contrato:', horasLaboralesContrato);
+
+  // Si excede las horas laborales, mostrar alerta
+  if (horasTurno > horasLaboralesContrato) {
+    const diferencia = (horasTurno - horasLaboralesContrato).toFixed(2);
+    const mensaje = `⚠️ ADVERTENCIA: El turno asignado contempla ${horasTurno.toFixed(2)} horas semanales, ` +
+                   `pero el trabajador tiene contratadas ${horasLaboralesContrato} horas semanales. ` +
+                   `Esto excede en ${diferencia} horas semanales el contrato del trabajador.\n\n` +
+                   `¿Desea continuar con la asignación de todas formas?`;
+    
+    return confirm(mensaje);
+  }
+
+  return true;
 };
 
 const onTipoTurnoChange = () => {
