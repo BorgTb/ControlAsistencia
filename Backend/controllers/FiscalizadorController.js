@@ -504,7 +504,7 @@ const obtenerAsistenciasDomingos = async (req, res) => {
     const trabajadoresEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
     const trabajadores = [
         ...estAsignaciones.map(est => ({ ...est, es_est: true })),
-        ...trabajadoresEmpresa.map(trabajador => ({ ...trabajador, es_est: false }))
+        ...trabajAdoresEmpresa.map(trabajador => ({ ...trabajador, es_est: false }))
     ].filter(trabajador => trabajador.usuario_rol_global !== 'empleador');
    
     // Obtener configuración de tolerancias de la empresa
@@ -608,7 +608,7 @@ const obtenerAsistenciasDomingos = async (req, res) => {
     }
     
     for (const trabajador of trabajadores) {    
-        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
+        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFinExtendida);
         
         const TurnosModel = (await import('../model/TurnosModel.js')).default;
         
@@ -624,7 +624,7 @@ const obtenerAsistenciasDomingos = async (req, res) => {
                     ? marcaciones.marcaciones[fechaDomingo] || []
                     : [];
                 
-                // Para turnos nocturnos, buscar entrada en día actual y salida en día siguiente
+                // Para turnos nocturnos, bascar entrada en día actual y salida en día siguiente
                 let marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
                 let marcacionSalida = null;
                 let fechaSalidaSiguiente = null;
@@ -733,7 +733,8 @@ const obtenerAsistenciasDomingos = async (req, res) => {
         configuracion: {
             tolerancia_entrada_minutos: toleranciaEntradaMinutos
         },
-        filtro: 'solo_domingos'
+        filtro: 'solo_domingos',
+        fechas_domingos: fechasDomingos
     });
 }
 
@@ -921,6 +922,7 @@ const obtenerMarcacionesEmpresa = async (req, res) => {
         const fechaInicio = req.query.fecha_inicio;
         const fechaFin = req.query.fecha_fin;
         console.log('Parámetros recibidos - empresaId:', empresaId, 'fechaInicio:', fechaInicio, 'fechaFin:', fechaFin);
+        
         // Obtener todos los trabajadores de la empresa
         const estAsignaciones = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresaId);
         const trabajadoresEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
@@ -950,25 +952,37 @@ const obtenerMarcacionesEmpresa = async (req, res) => {
                     fechaInicioFinal, 
                     fechaFinFinal
                 );
+                console.log(`Marcaciones obtenidas para trabajador ${trabajador.id}:`, marcaciones);
                 
-                if (marcaciones && marcaciones.length > 0) {
-                    marcacionesPorUsuario[trabajador.id] = marcaciones.map(m => ({
-                        id: m.id,
-                        nombre: trabajador.nombre,
-                        apellido: trabajador.apellido,
-                        rut: trabajador.rut,
-                        fecha: m.fecha,
-                        hora: m.hora,
-                        hora_original: m.hora_original,
-                        tipo: m.tipo,
-                        metodo_registro: m.metodo_registro || 'App Móvil',
-                        modificada: m.modificada || false,
-                        agregada_manualmente: m.agregada_manualmente || false,
-                        modificado_por: m.modificado_por,
-                        fecha_modificacion: m.fecha_modificacion,
-                        latitud: m.latitud,
-                        longitud: m.longitud
-                    }));
+                if (marcaciones && marcaciones.success && marcaciones.marcaciones) {
+                    // Aplanar las marcaciones organizadas por fecha
+                    const marcacionesAplanadas = [];
+                    for (const [fecha, marcacionesDia] of Object.entries(marcaciones.marcaciones)) {
+                        console.log(trabajador)
+                        for (const marcacion of marcacionesDia) {
+                            marcacionesAplanadas.push({
+                                id: marcacion.id,
+                                nombre: trabajador.usuario_nombre,
+                                apellido: trabajador.usuario_apellido,
+                                rut: trabajador.usuario_rut,
+                                fecha: fecha,
+                                hora: marcacion.hora,
+                                hora_original: marcacion.hora_original,
+                                tipo: marcacion.tipo,
+                                metodo_registro: marcacion.metodo_registro || 'web',
+                                modificada: marcacion.modificada || false,
+                                agregada_manualmente: marcacion.agregada_manualmente || false,
+                                modificado_por: marcacion.modificado_por,
+                                fecha_modificacion: marcacion.fecha_modificacion,
+                                latitud: marcacion.latitud,
+                                longitud: marcacion.longitud
+                            });
+                        }
+                    }
+                    
+                    if (marcacionesAplanadas.length > 0) {
+                        marcacionesPorUsuario[trabajador.id] = marcacionesAplanadas;
+                    }
                 }
             } catch (error) {
                 console.error(`Error al obtener marcaciones del trabajador ${trabajador.id}:`, error);
