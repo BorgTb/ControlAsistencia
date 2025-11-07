@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    
+
     
     <!-- Main Content -->
     <main class="mx-auto py-6 sm:px-6 lg:px-8">
@@ -62,7 +62,7 @@
             </div>
 
             <!-- Alerta sobre trabajadores sin servicio en domingos/festivos -->
-            <div v-if="!trabajadorLaboraDomingosFestivos" class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+            <div v-if="!loading && !trabajadorLaboraDomingosFestivos" class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
               <div class="flex">
                 <div class="flex-shrink-0">
                   <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -71,7 +71,8 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-yellow-700 font-medium">
-                    ⚠️ La jornada de este trabajador no incluye domingos o festivos
+                    ⚠️ No se encontraron trabajadores con turnos asignados para domingos en el período seleccionado.
+                    Intente ajustar las fechas o verifique que los turnos de domingo estén configurados correctamente.
                   </p>
                 </div>
               </div>
@@ -389,26 +390,43 @@
             
             <!-- Tabla Principal -->
             <div class="mt-8 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table class="min-w-full divide-y divide-gray-300">
+              <div v-if="loading" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-gray-600">Cargando datos...</p>
+              </div>
+              
+              <div v-else-if="filteredData.length === 0" class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="mt-2 text-gray-600">No hay registros de domingos laborados en el período seleccionado</p>
+              </div>
+              
+              <table v-else class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Trabajador del Comercio<br/>
-                      <span class="text-xs font-normal">(Descansos Adicionales)</span>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Trabajador
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Fecha<br/>
-                      <span class="text-xs font-normal">(dd/mm/aa)</span>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      RUT
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Asistencia<br/>
-                      <span class="text-xs font-normal">(Sí/No)</span>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Fecha
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Ausencia<br/>
-                      <span class="text-xs font-normal">(Justificada/Injustificada)</span>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Turno
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Estado
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Entrada
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Salida
+                    </th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                       Observaciones
                     </th>
                   </tr>
@@ -416,54 +434,119 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                   <!-- Registros agrupados por mes -->
                   <template v-for="(registrosMes, mesAno) in registrosAgrupadosPorMes" :key="mesAno">
+                    <!-- Encabezado del mes -->
+                    <tr class="bg-gray-100">
+                      <td colspan="8" class="px-4 py-2 text-sm font-bold text-gray-700">
+                        📅 {{ mesAno }}
+                      </td>
+                    </tr>
+                    
                     <!-- Registros del mes -->
                     <tr v-for="registro in registrosMes.registros" :key="registro.id" class="hover:bg-gray-50">
-                      <!-- 1. Indicador Trabajador del Comercio -->
-                      <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
-                        <span v-if="registro.trabajadorComercio" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          ✓ SÍ
-                        </span>
-                        <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          NO
-                        </span>
-                      </td>
-                      
-                      <!-- 2. Fecha -->
-                      <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        <div class="flex flex-col">
-                          <span>{{ formatearFecha(registro.fecha) }}</span>
-                          <span class="text-xs text-gray-500">{{ registro.tipoDia }}</span>
+                      <!-- Trabajador -->
+                      <td class="px-3 py-4 text-sm">
+                        <div class="flex items-center">
+                          <div class="flex-shrink-0 h-10 w-10">
+                            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span class="text-blue-600 font-medium text-sm">{{ registro.iniciales }}</span>
+                            </div>
+                          </div>
+                          <div class="ml-3">
+                            <div class="font-medium text-gray-900">{{ registro.nombre }}</div>
+                            <div class="text-xs text-gray-500">
+                              {{ registro.cargo || 'Sin cargo' }}
+                              <span v-if="registro.empresaTransitoria" class="ml-1 text-purple-600">
+                                (EST: {{ registro.empresaTransitoria }})
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </td>
                       
-                      <!-- 3. Asistencia (Sí/No) -->
-                      <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
-                        <span v-if="registro.asistencia" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          ✓ SÍ
+                      <!-- RUT -->
+                      <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ registro.cedula }}
+                      </td>
+                      
+                      <!-- Fecha -->
+                      <td class="px-3 py-4 whitespace-nowrap text-sm">
+                        <div class="flex flex-col">
+                          <span class="font-medium text-gray-900">{{ formatearFecha(registro.fecha) }}</span>
+                          <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 inline-block w-fit">
+                            {{ registro.tipoDia }}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <!-- Turno -->
+                      <td class="px-3 py-4 text-sm">
+                        <div v-if="registro.turno" class="flex flex-col">
+                          <span class="font-medium text-gray-900">{{ registro.turno.nombre }}</span>
+                          <span class="text-xs text-gray-500">
+                            {{ registro.turno.hora_inicio }} - {{ registro.turno.hora_fin }}
+                          </span>
+                          <span v-if="registro.turno.es_nocturno" class="text-xs text-purple-600">
+                            🌙 Turno Nocturno
+                          </span>
+                        </div>
+                        <span v-else class="text-gray-400 italic text-xs">Sin turno</span>
+                      </td>
+                      
+                      <!-- Estado -->
+                      <td class="px-3 py-4 whitespace-nowrap text-sm">
+                        <span v-if="registro.estado_asistencia === 'PRESENTE'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          ✓ Presente
                         </span>
-                        <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          ✗ NO
+                        <span v-else-if="registro.estado_asistencia === 'TARDANZA'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          ⚠ Tardanza
+                        </span>
+                        <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          ✗ Ausente
                         </span>
                       </td>
                       
-                      <!-- 4. Ausencia (Justificada/Injustificada) -->
-                      <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
-                        <span v-if="!registro.asistencia">
-                          <span v-if="registro.ausenciaJustificada" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            Justificada
-                          </span>
-                          <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Injustificada
-                          </span>
-                        </span>
-                        <span v-else class="text-gray-400 italic text-xs">
-                          No Aplica
-                        </span>
+                      <!-- Entrada -->
+                      <td class="px-3 py-4 text-sm">
+                        <div v-if="registro.tiene_entrada && registro.marcaciones && registro.marcaciones.length > 0">
+                          <div v-for="(marc, idx) in registro.marcaciones.filter(m => m.tipo === 'entrada')" :key="idx" class="mb-1">
+                            <span class="font-medium text-gray-900">{{ marc.hora }}</span>
+                            <div v-if="registro.atraso && registro.atraso.atrasado" class="text-xs">
+                              <span v-if="registro.atraso.dentro_tolerancia" class="text-yellow-600">
+                                +{{ registro.atraso.minutos_atraso }}min (tolerancia)
+                              </span>
+                              <span v-else class="text-red-600 font-medium">
+                                +{{ registro.atraso.minutos_atraso }}min atraso
+                              </span>
+                            </div>
+                            <div v-else-if="registro.atraso && registro.atraso.llego_antes" class="text-xs text-green-600">
+                              -{{ registro.atraso.minutos_anticipacion }}min (anticipado)
+                            </div>
+                          </div>
+                        </div>
+                        <span v-else class="text-gray-400 italic text-xs">Sin entrada</span>
                       </td>
                       
-                      <!-- 5. Observaciones -->
-                      <td class="px-4 py-4 text-sm text-gray-900 max-w-xs">
-                        <div v-if="registro.observaciones" class="truncate" :title="registro.observaciones">
+                      <!-- Salida -->
+                      <td class="px-3 py-4 text-sm">
+                        <div v-if="registro.tiene_salida && registro.marcaciones && registro.marcaciones.length > 0">
+                          <div v-for="(marc, idx) in registro.marcaciones.filter(m => m.tipo === 'salida')" :key="idx" class="mb-1">
+                            <span class="font-medium text-gray-900">{{ marc.hora }}</span>
+                            <div v-if="registro.salida">
+                              <div v-if="registro.salida.salida_anticipada" class="text-xs text-red-600">
+                                -{{ registro.salida.minutos_anticipados }}min anticipado
+                              </div>
+                              <div v-if="registro.salida.es_salida_dia_siguiente" class="text-xs text-purple-600">
+                                (Día siguiente)
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <span v-else class="text-gray-400 italic text-xs">Sin salida</span>
+                      </td>
+                      
+                      <!-- Observaciones -->
+                      <td class="px-3 py-4 text-sm text-gray-900 max-w-xs">
+                        <div v-if="registro.observaciones" class="text-xs">
                           {{ registro.observaciones }}
                         </div>
                         <div v-else class="text-gray-400 italic text-xs">
@@ -474,45 +557,22 @@
                     
                     <!-- Línea de totales mensuales -->
                     <tr class="bg-blue-50 border-t-2 border-blue-200">
-                      <td class="px-4 py-3 text-sm font-bold text-blue-900 text-center">
+                      <td colspan="4" class="px-4 py-3 text-sm font-bold text-blue-900">
                         TOTAL {{ mesAno }}
                       </td>
-                      <td class="px-4 py-3 text-sm font-bold text-blue-900 text-center">
-                        {{ registrosMes.totalDias }} días
-                      </td>
-                      <td class="px-4 py-3 text-sm font-bold text-blue-900 text-center">
-                        {{ registrosMes.totalAsistencias }} trabajados
-                      </td>
-                      <td class="px-4 py-3 text-sm font-bold text-blue-900 text-center">
-                        {{ registrosMes.totalAusenciasJustificadas }} justificadas
-                      </td>
-                      <td class="px-4 py-3 text-sm font-bold text-blue-900">
-                        Resumen mensual de domingos/festivos
+                      <td colspan="4" class="px-4 py-3 text-sm font-bold text-blue-900">
+                        {{ registrosMes.totalDias }} domingos | {{ registrosMes.totalAsistencias }} trabajados | {{ registrosMes.totalAusenciasJustificadas }} ausencias justificadas
                       </td>
                     </tr>
                   </template>
                   
                   <!-- Línea final con totales del período -->
                   <tr v-if="totalesPeriodo" class="bg-green-50 border-t-4 border-green-300">
-                    <td class="px-4 py-4 text-sm font-bold text-green-900 text-center">
-                      TOTAL PERÍODO
+                    <td colspan="4" class="px-4 py-4 text-sm font-bold text-green-900">
+                      TOTAL PERÍODO ({{ formatearFecha(filters.fechaDesde) }} - {{ formatearFecha(filters.fechaHasta) }})
                     </td>
-                    <td class="px-4 py-4 text-sm font-bold text-green-900 text-center">
-                      {{ totalesPeriodo.totalDiasPeriodo }} días
-                    </td>
-                    <td class="px-4 py-4 text-sm font-bold text-green-900 text-center">
-                      {{ totalesPeriodo.totalAsistenciasPeriodo }} trabajados
-                    </td>
-                    <td class="px-4 py-4 text-sm font-bold text-green-900 text-center">
-                      {{ totalesPeriodo.totalAusenciasJustificadasPeriodo }} justificadas
-                    </td>
-                    <td class="px-4 py-4 text-sm font-bold text-green-900">
-                      <div class="flex flex-col">
-                        <span>RESUMEN TOTAL DEL PERÍODO</span>
-                        <span class="text-xs font-normal">
-                          ({{ formatearFecha(filters.fechaDesde) }} - {{ formatearFecha(filters.fechaHasta) }})
-                        </span>
-                      </div>
+                    <td colspan="4" class="px-4 py-4 text-sm font-bold text-green-900">
+                      {{ totalesPeriodo.totalDiasPeriodo }} domingos | {{ totalesPeriodo.totalAsistenciasPeriodo }} trabajados | {{ totalesPeriodo.totalAusenciasJustificadasPeriodo }} ausencias justificadas
                     </td>
                   </tr>
                 </tbody>
@@ -528,6 +588,44 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import Header from '../../component/header.vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
+
+const route = useRoute()
+const empresaId = route.params.empresa_id
+
+// Configurar base URL de la API
+const API_BASE_URL = (() => {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+  }
+  return process.env.VITE_API_URL || 'http://localhost:3000/api'
+})()
+
+// Crear instancia de axios con configuración
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000
+})
+
+// Interceptor para agregar el token
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth-storage')
+  if (token) {
+    try {
+      const authData = JSON.parse(token)
+      if (authData.token) {
+        config.headers.Authorization = `Bearer ${authData.token}`
+      }
+    } catch (e) {
+      console.warn('Error parsing auth token:', e)
+    }
+  }
+  return config
+})
 
 const today = new Date()
 const fechaMaxima = today.toISOString().split('T')[0]
@@ -551,6 +649,13 @@ const filters = ref({
 })
 
 const registros = ref([])
+const loading = ref(false)
+const marcacionesAgrupadasPorUsuario = ref({})
+const trabajadoresData = ref([])
+const fechasDomingos = ref([])
+const configuracion = ref({
+  tolerancia_entrada_minutos: 0
+})
 
 // Datos del encabezado legal requerido
 const encabezado = ref({
@@ -565,6 +670,83 @@ const encabezado = ref({
 
 // Variable para controlar si el trabajador labora en domingos/festivos
 const trabajadorLaboraDomingosFestivos = ref(true)
+
+// Computed para registros procesados desde las marcaciones
+const registrosProcesados = computed(() => {
+  const resultados = []
+  
+  Object.keys(marcacionesAgrupadasPorUsuario.value).forEach(trabajadorId => {
+    const datos = marcacionesAgrupadasPorUsuario.value[trabajadorId]
+    const trabajador = datos.trabajador
+    
+    Object.keys(datos.marcaciones).forEach(fecha => {
+      const marcacionDia = datos.marcaciones[fecha]
+      
+      // Crear un registro por cada domingo trabajado
+      const registro = {
+        id: `${trabajadorId}-${fecha}`,
+        fecha: fecha,
+        tipoDia: 'DOMINGO',
+        nombre: `${trabajador.usuario_nombre} ${trabajador.usuario_apellido_pat} ${trabajador.usuario_apellido_mat || ''}`.trim(),
+        cedula: trabajador.usuario_rut,
+        iniciales: `${trabajador.usuario_nombre.charAt(0)}${trabajador.usuario_apellido_pat.charAt(0)}`,
+        departamento: trabajador.departamento || 'N/A',
+        cargo: trabajador.cargo || 'N/A',
+        empresaTransitoria: trabajador.es_est ? trabajador.empresa_est_nombre : null,
+        trabajadorComercio: trabajador.trabajador_comercio || false,
+        asistencia: marcacionDia.estado_asistencia === 'PRESENTE' || marcacionDia.estado_asistencia === 'TARDANZA',
+        ausenciaJustificada: marcacionDia.estado_asistencia === 'NO_ASISTE' ? false : null,
+        turno: marcacionDia.turno,
+        estado_asistencia: marcacionDia.estado_asistencia,
+        tiene_entrada: marcacionDia.tiene_entrada,
+        tiene_salida: marcacionDia.tiene_salida,
+        atraso: marcacionDia.atraso,
+        salida: marcacionDia.salida,
+        observaciones: generarObservaciones(marcacionDia),
+        pagoExtra: calcularPagoExtra(marcacionDia),
+        hashChecksum: `hash-${trabajadorId}-${fecha}`,
+        marcaciones: marcacionDia.marcaciones
+      }
+      
+      resultados.push(registro)
+    })
+  })
+  
+  return resultados
+})
+
+const generarObservaciones = (marcacionDia) => {
+  const observaciones = []
+  
+  if (marcacionDia.estado_asistencia === 'NO_ASISTE') {
+    observaciones.push('No asistió al turno de domingo')
+  } else if (marcacionDia.estado_asistencia === 'PRESENTE') {
+    observaciones.push('Asistió al turno de domingo')
+  } else if (marcacionDia.estado_asistencia === 'TARDANZA') {
+    if (marcacionDia.atraso) {
+      observaciones.push(`Llegó ${marcacionDia.atraso.minutos_atraso} minutos tarde`)
+    }
+  }
+  
+  if (marcacionDia.turno?.es_nocturno) {
+    observaciones.push('Turno nocturno')
+  }
+  
+  if (marcacionDia.salida?.salida_anticipada) {
+    observaciones.push(`Salida anticipada: ${marcacionDia.salida.minutos_anticipados} minutos`)
+  }
+  
+  return observaciones.join('. ')
+}
+
+const calcularPagoExtra = (marcacionDia) => {
+  // Simulación de cálculo de pago extra por trabajar domingo
+  if (marcacionDia.estado_asistencia === 'PRESENTE' || marcacionDia.estado_asistencia === 'TARDANZA') {
+    // En Chile, trabajar domingo puede tener recargo del 50% adicional
+    return '150.00' // Valor base de ejemplo
+  }
+  return '0.00'
+}
 
 // Computed para registros agrupados por mes
 const registrosAgrupadosPorMes = computed(() => {
@@ -610,17 +792,17 @@ const totalesPeriodo = computed(() => {
 })
 
 const stats = computed(() => {
-  const data = filteredData.value
+  const data = registrosProcesados.value
   return {
-    totalDomingos: data.filter(r => r.tipoDia === 'DOMINGO').length,
-    totalFestivos: data.filter(r => r.tipoDia === 'FESTIVO').length,
+    totalDomingos: fechasDomingos.value.length,
+    totalFestivos: 0, // Por ahora solo domingos
     empleadosTrabajaron: data.filter(r => r.asistencia).length,
     totalPagosExtra: data.reduce((sum, r) => sum + (r.asistencia ? parseFloat(r.pagoExtra || 0) : 0), 0).toFixed(2)
   }
 })
 
 const filteredData = computed(() => {
-  let data = registros.value
+  let data = registrosProcesados.value
   
   // Filtro por nombre o apellido del trabajador
   if (filters.value.trabajadorNombre) {
@@ -736,132 +918,40 @@ const getTipoClass = (tipo) => {
 }
 
 
+
+
 const loadData = async () => {
-  // Simular datos según el formato legal requerido
-  registros.value = [
-    {
-      id: 1,
-      fecha: '2024-01-07', // Domingo
-      tipoDia: 'DOMINGO',
-      nombre: 'Juan Pérez Martínez',
-      cedula: '12345678',
-      iniciales: 'JP',
-      departamento: 'SEGURIDAD',
-      cargo: 'seguridad',
-      empresaTransitoria: null,
-      trabajadorComercio: false,
-      asistencia: true,
-      ausenciaJustificada: null,
-      observaciones: 'Turno de seguridad nocturna - Personal esencial',
-      pagoExtra: '120.00',
-      hashChecksum: 'abc123def456'
-    },
-    {
-      id: 2,
-      fecha: '2024-01-01', // Festivo - Año Nuevo
-      tipoDia: 'FESTIVO',
-      nombre: 'María González Silva',
-      cedula: '87654321',
-      iniciales: 'MG',
-      departamento: 'IT',
-      cargo: 'tecnico',
-      empresaTransitoria: null,
-      trabajadorComercio: true,
-      asistencia: true,
-      ausenciaJustificada: null,
-      observaciones: 'Mantenimiento de servidores críticos en feriado',
-      pagoExtra: '180.00',
-      hashChecksum: 'def456ghi789'
-    },
-    {
-      id: 3,
-      fecha: '2024-01-14', // Domingo
-      tipoDia: 'DOMINGO',
-      nombre: 'Carlos López Fernández',
-      cedula: '11223344',
-      iniciales: 'CL',
-      departamento: 'SEGURIDAD',
-      cargo: 'seguridad',
-      empresaTransitoria: 'manpower',
-      trabajadorComercio: false,
-      asistencia: false,
-      ausenciaJustificada: true,
-      observaciones: 'Ausencia justificada por licencia médica',
-      pagoExtra: '0.00',
-      hashChecksum: 'ghi789jkl012'
-    },
-    {
-      id: 4,
-      fecha: '2024-01-21', // Domingo
-      tipoDia: 'DOMINGO',
-      nombre: 'Ana Rodríguez Castro',
-      cedula: '55667788',
-      iniciales: 'AR',
-      departamento: 'VENTAS',
-      cargo: 'vendedor',
-      empresaTransitoria: null,
-      trabajadorComercio: true,
-      asistencia: false,
-      ausenciaJustificada: false,
-      observaciones: 'Falta injustificada - Se aplicará descuento según normativa',
-      pagoExtra: '0.00',
-      hashChecksum: 'jkl012mno345'
-    },
-    {
-      id: 5,
-      fecha: '2024-01-28', // Domingo
-      tipoDia: 'DOMINGO',
-      nombre: 'Roberto Sanchez Torres',
-      cedula: '99887766',
-      iniciales: 'RS',
-      departamento: 'PRODUCCION',
-      cargo: 'operario',
-      empresaTransitoria: 'randstad',
-      trabajadorComercio: false,
-      asistencia: true,
-      ausenciaJustificada: null,
-      observaciones: 'Producción urgente para entrega de lunes',
-      pagoExtra: '150.00',
-      hashChecksum: 'mno345pqr678'
-    },
-    {
-      id: 6,
-      fecha: '2024-02-04', // Domingo - Febrero
-      tipoDia: 'DOMINGO',
-      nombre: 'Patricia Morales Vega',
-      cedula: '22334455',
-      iniciales: 'PM',
-      departamento: 'ADMINISTRACION',
-      cargo: 'contador',
-      empresaTransitoria: null,
-      trabajadorComercio: true,
-      asistencia: true,
-      ausenciaJustificada: null,
-      observaciones: 'Cierre contable mensual urgente',
-      pagoExtra: '200.00',
-      hashChecksum: 'pqr678stu901'
-    },
-    {
-      id: 7,
-      fecha: '2024-02-14', // Festivo - Día de San Valentín (ejemplo)
-      tipoDia: 'FESTIVO',
-      nombre: 'Diego Herrera Luna',
-      cedula: '66778899',
-      iniciales: 'DH',
-      departamento: 'IT',
-      cargo: 'tecnico',
-      empresaTransitoria: 'adecco',
-      trabajadorComercio: false,
-      asistencia: false,
-      ausenciaJustificada: true,
-      observaciones: 'Compensación por día trabajado en enero',
-      pagoExtra: '0.00',
-      hashChecksum: 'stu901vwx234'
+  loading.value = true
+  try {
+    const params = {
+      fecha_inicio: filters.value.fechaDesde,
+      fecha_fin: filters.value.fechaHasta
     }
-  ]
-  
-  // Verificar si el trabajador actual labora en domingos/festivos
-  trabajadorLaboraDomingosFestivos.value = registros.value.length > 0
+    
+    const response = await apiClient.get(`/fiscalizador/asistencia-domingos/${empresaId}`, { params })
+    
+    if (response.data.success) {
+      marcacionesAgrupadasPorUsuario.value = response.data.marcacionesAgrupadasPorUsuario
+      trabajadoresData.value = response.data.trabajadores
+      fechasDomingos.value = response.data.fechas_domingos || []
+      configuracion.value = response.data.configuracion || { tolerancia_entrada_minutos: 0 }
+      
+      // Verificar si hay trabajadores con turnos de domingos
+      trabajadorLaboraDomingosFestivos.value = Object.keys(marcacionesAgrupadasPorUsuario.value).length > 0
+      
+      console.log('Datos cargados:', {
+        trabajadores: trabajadoresData.value.length,
+        marcaciones: Object.keys(marcacionesAgrupadasPorUsuario.value).length,
+        fechasDomingos: fechasDomingos.value
+      })
+    } else {
+      console.error('Error al cargar datos:', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error al cargar datos:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 const formatearFecha = (fecha) => {
@@ -905,7 +995,8 @@ const setPeriodoRapido = (periodo) => {
 }
 
 const applyFilters = () => {
-  // La funcionalidad de filtrado se maneja automáticamente con computed
+  // Recargar datos con las nuevas fechas
+  loadData()
   console.log('Filtros aplicados según Art. 25:', filters.value)
 }
 

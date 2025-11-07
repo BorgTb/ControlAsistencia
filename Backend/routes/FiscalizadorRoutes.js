@@ -10,6 +10,7 @@ router.get("/asistencia/:empresa_id", FiscalizadorController.obtenerAsistencias)
 router.get("/asistencia-domingos/:empresa_id", FiscalizadorController.obtenerAsistenciasDomingos);
 router.post("/enviar-correo-empleador/:empresa_id", FiscalizadorController.enviarCorreoEmpleador);
 router.get("/reporte-modificaciones/:empresa_id", FiscalizadorController.obtenerReporteModificaciones);
+router.get("/marcaciones/:empresa_id", FiscalizadorController.obtenerMarcacionesEmpresa);
 
 
 export default router;
