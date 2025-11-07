@@ -813,6 +813,13 @@ const obtenerReporteModificaciones = async (req, res) => {
                 console.log('Detalle dias turno anterior:', detalleDiasTurnoAnterior);
                 console.log('Detalle dias turno nuevo:', detalleDiasTurnoNuevo);
 
+                console.log(asignacionNueva);
+
+                if (!asignacionAnterior || !asignacionNueva) {
+                    console.warn('No se encontró la asignación de turnos para la modificación:', modificacion.id);
+                    continue; // saltar esta modificación si no se encuentran las asignaciones
+                }
+
                 const modificacionProcesada = {
                     id: modificacion.id,
                     usuario_id: modificacion.usuario_id,
@@ -847,7 +854,7 @@ const obtenerReporteModificaciones = async (req, res) => {
                     tipo_turno_id: modificacion.datos_nuevos.tipo_turno_id,
                     usuario_empresa_id: modificacion.datos_nuevos.usuario_empresa_id,
                     tipo_turno_nombre: modificacion.datos_nuevos.tipo_turno_nombre,
-                    fecha_asignacion: asignacionNueva.created_at,
+                    fecha_asignacion: asignacionNueva.created_at || null,
                     hora_inicio: asignacionNueva.hora_inicio,
                     hora_fin: asignacionNueva.hora_fin,
                     colacion_inicio: asignacionNueva.colacion_inicio,
@@ -907,6 +914,79 @@ const obtenerReporteModificaciones = async (req, res) => {
     }
 };
 
+// Obtener todas las marcaciones de una empresa
+const obtenerMarcacionesEmpresa = async (req, res) => {
+    try {
+        const empresaId = req.params.empresa_id;
+        const fechaInicio = req.query.fecha_inicio;
+        const fechaFin = req.query.fecha_fin;
+        console.log('Parámetros recibidos - empresaId:', empresaId, 'fechaInicio:', fechaInicio, 'fechaFin:', fechaFin);
+        // Obtener todos los trabajadores de la empresa
+        const estAsignaciones = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresaId);
+        const trabajadoresEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
+        const trabajadores = [
+            ...estAsignaciones.map(est => ({ ...est, es_est: true })),
+            ...trabajadoresEmpresa.map(trabajador => ({ ...trabajador, es_est: false }))
+        ].filter(trabajador => trabajador.usuario_rol_global !== 'empleador');
+        
+        // Configurar fechas por defecto (último mes)
+        const fechaActualChile = DateTime.now().setZone('America/Santiago');
+        const fechaFinDefault = fechaActualChile.toISODate();
+        const fechaInicioDefault = fechaActualChile.minus({ months: 1 }).toISODate();
+        
+        const fechaInicioFinal = fechaInicio || fechaInicioDefault;
+        const fechaFinFinal = fechaFin || fechaFinDefault;
+        
+        console.log('Fechas finales a usar - fechaInicio:', fechaInicioFinal, 'fechaFin:', fechaFinFinal);
+        
+        // Objeto para agrupar marcaciones por usuario
+        const marcacionesPorUsuario = {};
+
+        // Obtener marcaciones para cada trabajador
+        for (const trabajador of trabajadores) {
+            try {
+                const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(
+                    trabajador.id, 
+                    fechaInicioFinal, 
+                    fechaFinFinal
+                );
+                
+                if (marcaciones && marcaciones.length > 0) {
+                    marcacionesPorUsuario[trabajador.id] = marcaciones.map(m => ({
+                        id: m.id,
+                        nombre: trabajador.nombre,
+                        apellido: trabajador.apellido,
+                        rut: trabajador.rut,
+                        fecha: m.fecha,
+                        hora: m.hora,
+                        hora_original: m.hora_original,
+                        tipo: m.tipo,
+                        metodo_registro: m.metodo_registro || 'App Móvil',
+                        modificada: m.modificada || false,
+                        agregada_manualmente: m.agregada_manualmente || false,
+                        modificado_por: m.modificado_por,
+                        fecha_modificacion: m.fecha_modificacion,
+                        latitud: m.latitud,
+                        longitud: m.longitud
+                    }));
+                }
+            } catch (error) {
+                console.error(`Error al obtener marcaciones del trabajador ${trabajador.id}:`, error);
+            }
+        }
+        
+        res.status(200).json(marcacionesPorUsuario);
+        
+    } catch (error) {
+        console.error('Error al obtener marcaciones de la empresa:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener marcaciones de la empresa',
+            error: error.message
+        });
+    }
+};
+
         
         
 
@@ -918,7 +998,8 @@ const FiscalizadorController = {
     obtenerAsistencias,
     obtenerAsistenciasDomingos  ,
     enviarCorreoEmpleador,
-    obtenerReporteModificaciones
+    obtenerReporteModificaciones,
+    obtenerMarcacionesEmpresa
 }
 
 

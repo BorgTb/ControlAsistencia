@@ -233,6 +233,22 @@ class ReporteService {
    */
   async obtenerReporteMarcacionesDiarias(filtros = {}) {
     try {
+      // Si se proporciona empresa_id, usar el endpoint del fiscalizador
+      if (filtros.empresa_id) {
+        const response = await apiClient.get(`/fiscalizador/marcaciones/${filtros.empresa_id}`, { 
+          params: {
+            fecha_inicio: filtros.fecha_inicio,
+            fecha_fin: filtros.fecha_fin
+          }
+        })
+        return {
+          success: true,
+          data: response.data,
+          message: 'Reporte de marcaciones diarias obtenido correctamente'
+        }
+      }
+      
+      // Si no, usar el endpoint normal de reportes
       const response = await apiClient.get('/reportes/marcaciones-diarias', { params: filtros })
       return {
         success: true,
