@@ -1980,7 +1980,7 @@ async function aprobarSolicitud(req, res) {
 
         // chequear que tipo es si corresponde a una para justificar dias, es decir permisos con o sin goce de sueldo, sea otra se debe realizar algo mas a futuro se debe verificar que se agreguen vacaciones
 
-        if (solicitud.subtipo === 'permiso_con_goce' || solicitud.subtipo === 'permiso_sin_goce') {
+        if (solicitud.subtipo === 'permiso_con_goce' || solicitud.subtipo === 'permiso_sin_goce' || solicitud.subtipo === 'uso_feriado') {
             // Llamar a la función para justificar ausencias
             let urlDocumento = null;
             if (solicitud.documento_adjunto){

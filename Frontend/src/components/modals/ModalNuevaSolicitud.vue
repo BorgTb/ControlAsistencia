@@ -74,7 +74,7 @@
             <div v-if="tipoSeleccionado" class="space-y-4">
               
               <!-- Campos para Feriado -->
-              <template v-if="tipoSeleccionado.id === 'feriado'">
+              <template v-if="tipoSeleccionado.id === 'uso_feriado'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -383,7 +383,7 @@ const formularioValido = computed(() => {
   const requeridos = ['motivo'];
   
   // Validar campos específicos según el tipo
-  if (tipoSeleccionado.value.id === 'feriado') {
+  if (tipoSeleccionado.value.id === 'uso_feriado') {
     requeridos.push('fecha_inicio', 'fecha_fin');
   }
   
@@ -503,7 +503,7 @@ watch(() => props.visible, (visible) => {
 // Validación de feriados
 watch([() => formulario.value.fecha_inicio, () => formulario.value.fecha_fin], 
   async ([fechaInicio, fechaFin]) => {
-    if (tipoSeleccionado.value?.id === 'feriado' && fechaInicio && fechaFin) {
+    if (tipoSeleccionado.value?.id === 'uso_feriado' && fechaInicio && fechaFin) {
       try {
         await validarDiasFeriado(fechaInicio, fechaFin);
       } catch (error) {
