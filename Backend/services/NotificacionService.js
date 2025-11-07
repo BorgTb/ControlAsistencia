@@ -5,6 +5,7 @@ import ResolucionModel from '../model/usuarios_empresas_resoluciones.js';
 import EmpresaModel from '../model/EmpresaModel.js';
 import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import PDFService from '../services/PDFService.js';
 
 import {DateTime} from 'luxon';
 
@@ -249,7 +250,40 @@ class NotificacionService {
         }
     }
 
+    async enviarNotificacionCambioTurno(trabajador, tipoTurnoAnterior, nuevoTipoTurno) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
 
+            const pdfBuffer = await PDFService.generarPdfCambioTurno(trabajador, tipoTurnoAnterior, nuevoTipoTurno);
+            const fechaActual = DateTime.now().toFormat('yyyyMMdd_HHmmss');
+            const pdfPath = await PDFService.guardarPDFTemporal(pdfBuffer, `Cambio_Turno_${trabajador.id}_${fechaActual}.pdf`);
+
+
+            // Enviar notificación de cambio de turno
+            const estado = await MailService.enviarNotificacionCambioTurno(
+                trabajador,
+                tipoTurnoAnterior,
+                nuevoTipoTurno,
+                pdfPath
+            );
+            return estado;
+        } catch (error) {
+            console.error('Error al enviar notificación de cambio de turno:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de cambio de turno',
+                error: error.message
+            };
+        }
+    }
 
 }
 
