@@ -135,64 +135,131 @@
 
       <!-- Modal Detalles por usuario -->
       <div v-if="mostrarModalDetalles" class="fixed inset-0 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-5xl">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-bold text-gray-800">Detalles de {{ usuarioSeleccionado.nombre }}</h3>
+        <div class="bg-white rounded-lg shadow-lg p-10 w-full max-w-6xl">
+          <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11M9 21V3" />
+              </svg>
+              Detalles de {{ usuarioSeleccionado.nombre }}
+            </h3>
             <button @click="cerrarModalDetalles" class="text-gray-600 hover:text-gray-800">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div v-if="mostrarCambios" class="overflow-y-auto max-h-96">
-            <h4 class="text-lg font-bold text-gray-800 mb-4">Cambios realizados por {{ usuarioSeleccionado.nombre }}</h4>
-            <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
-              <thead class="sticky top-0 z-10 shadow-sm">
-                <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
-                  <th class="px-4 py-3 font-semibold text-left">Fecha</th>
-                  <th class="px-4 py-3 font-semibold text-left">Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="cambio in cambiosUsuario" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-blue-100 text-sm h-10 align-middle">
-                  <td class="px-4 py-2 text-gray-600 align-middle">{{ cambio.fecha }}</td>
-                  <td class="px-4 py-2 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-else class="overflow-y-auto max-h-96">
-            <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
-              <thead class="sticky top-0 z-10 shadow-sm">
-                <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
-                  <th class="px-4 py-3 font-semibold text-left">Email</th>
-                  <th class="px-4 py-3 font-semibold text-left">Rol</th>
-                  <th class="px-4 py-3 font-semibold text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="registro in registrosAgrupados[usuarioSeleccionado.nombre]" :key="registro.id" class="transition border-b border-gray-100 hover:bg-green-100 text-sm h-10 align-middle">
-                  <td class="px-4 py-2 text-gray-600 align-middle">{{ registro.email }}</td>
-                  <td class="px-4 py-2 align-middle">
-                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
-                      {{ registro.rol }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-2 text-center align-middle">
-                    <button
-                      @click="mostrarCambiosUsuario(registro.usuario_id)"
-                      class="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 transition text-sm shadow-sm mx-auto"
-                      title="Ver cambios realizados por este usuario"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                      </svg>
-                      <span class="hidden sm:inline">Ver Cambios</span>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div v-if="mostrarCambios" class="overflow-y-auto max-h-[700px]">
+            <h4 class="text-xl font-bold text-gray-800 mb-6">Cambios realizados por {{ usuarioSeleccionado.nombre }}</h4>
+            <div class="space-y-8">
+              <!-- Botones de navegación -->
+              <div class="flex space-x-6 mb-6">
+                <button
+                  @click="seccionActiva = 'empresa'"
+                  :class="seccionActiva === 'empresa' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600'"
+                  class="px-6 py-3 rounded-lg shadow hover:bg-blue-700 transition text-lg font-medium"
+                >
+                  Empresa
+                </button>
+                <button
+                  @click="seccionActiva = 'marcaciones'"
+                  :class="seccionActiva === 'marcaciones' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-600'"
+                  class="px-6 py-3 rounded-lg shadow hover:bg-green-700 transition text-lg font-medium"
+                >
+                  Marcaciones
+                </button>
+                <button
+                  @click="seccionActiva = 'usuarios'"
+                  :class="seccionActiva === 'usuarios' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-600'"
+                  class="px-6 py-3 rounded-lg shadow hover:bg-yellow-700 transition text-lg font-medium"
+                >
+                  Registro de Usuarios
+                </button>
+                <button
+                  @click="seccionActiva = 'edicion'"
+                  :class="seccionActiva === 'edicion' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'"
+                  class="px-6 py-3 rounded-lg shadow hover:bg-red-700 transition text-lg font-medium"
+                >
+                  Edición de Datos
+                </button>
+              </div>
+
+              <!-- Apartado Empresa -->
+              <div v-if="seccionActiva === 'empresa'">
+                <h5 class="text-lg font-semibold text-blue-600 mb-4">Empresa</h5>
+                <table class="w-full text-md border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+                  <thead class="sticky top-0 z-10 shadow-sm">
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
+                      <th class="px-6 py-4 font-semibold text-left">Fecha</th>
+                      <th class="px-6 py-4 font-semibold text-left">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cambio in cambiosUsuario.filter(c => c.descripcion.includes('Empresa'))" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-blue-100 text-md h-12 align-middle">
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.fecha }}</td>
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Apartado Marcaciones -->
+              <div v-if="seccionActiva === 'marcaciones'">
+                <h5 class="text-lg font-semibold text-green-600 mb-4">Marcaciones</h5>
+                <table class="w-full text-md border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+                  <thead class="sticky top-0 z-10 shadow-sm">
+                    <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
+                      <th class="px-6 py-4 font-semibold text-left">Fecha</th>
+                      <th class="px-6 py-4 font-semibold text-left">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cambio in cambiosUsuario.filter(c => c.descripcion.includes('Marcaciones'))" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-green-100 text-md h-12 align-middle">
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.fecha }}</td>
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Apartado Registro de Usuarios -->
+              <div v-if="seccionActiva === 'usuarios'">
+                <h5 class="text-lg font-semibold text-yellow-600 mb-4">Registro de Usuarios</h5>
+                <table class="w-full text-md border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+                  <thead class="sticky top-0 z-10 shadow-sm">
+                    <tr class="bg-gradient-to-r from-yellow-50 to-yellow-100 text-gray-700">
+                      <th class="px-6 py-4 font-semibold text-left">Fecha</th>
+                      <th class="px-6 py-4 font-semibold text-left">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cambio in cambiosUsuario.filter(c => c.descripcion.includes('Usuario'))" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-yellow-100 text-md h-12 align-middle">
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.fecha }}</td>
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Apartado Edición de Datos -->
+              <div v-if="seccionActiva === 'edicion'">
+                <h5 class="text-lg font-semibold text-red-600 mb-4">Edición de Datos</h5>
+                <table class="w-full text-md border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+                  <thead class="sticky top-0 z-10 shadow-sm">
+                    <tr class="bg-gradient-to-r from-red-50 to-red-100 text-gray-700">
+                      <th class="px-6 py-4 font-semibold text-left">Fecha</th>
+                      <th class="px-6 py-4 font-semibold text-left">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cambio in cambiosUsuario.filter(c => c.descripcion.includes('Edición'))" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-red-100 text-md h-12 align-middle">
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.fecha }}</td>
+                      <td class="px-6 py-4 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,6 +291,7 @@ const usuarioSeleccionado = ref({ id: null, nombre: '', rol: '' })
 const cambiosUsuario = ref([])
 const filtroBusqueda = ref('')
 const mostrarCambios = ref(false)
+const seccionActiva = ref('empresa')
 
 const registrosAgrupados = computed(() =>
   registros.value.reduce((acc, registro) => {
