@@ -127,6 +127,7 @@
             <div class="ml-4">
               <p class="text-blue-600 text-sm font-medium">Total Usuarios</p>
               <p class="text-2xl font-bold text-blue-800">{{ estadisticas.totalUsuarios || 0 }}</p>
+              <p class="text-sm text-gray-600">Número total de usuarios registrados en el sistema, incluyendo administradores, trabajadores y fiscalizadores.</p>
             </div>
           </div>
         </div>
@@ -142,6 +143,7 @@
             <div class="ml-4">
               <p class="text-green-600 text-sm font-medium">Total Empresas</p>
               <p class="text-2xl font-bold text-green-800">{{ estadisticas.totalEmpresas || 0 }}</p>
+              <p class="text-sm text-gray-600">Cantidad total de empresas registradas en el sistema, cada una con sus trabajadores y configuraciones específicas.</p>
             </div>
           </div>
         </div>
@@ -157,6 +159,7 @@
             <div class="ml-4">
               <p class="text-purple-600 text-sm font-medium">Marcaciones Hoy</p>
               <p class="text-2xl font-bold text-purple-800">{{ estadisticas.marcacionesHoy || 0 }}</p>
+              <p class="text-sm text-gray-600">Número total de marcaciones realizadas por los trabajadores en el día actual.</p>
             </div>
           </div>
         </div>
@@ -172,6 +175,7 @@
             <div class="ml-4">
               <p class="text-orange-600 text-sm font-medium">Sesiones Activas</p>
               <p class="text-2xl font-bold text-orange-800">{{ estadisticas.sesionesActivas || 0 }}</p>
+              <p class="text-sm text-gray-600">Cantidad de usuarios actualmente conectados al sistema.</p>
             </div>
           </div>
         </div>
@@ -219,40 +223,45 @@
       </div>
 
       <!-- Tabla de Resumen -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <h3 class="text-lg font-semibold text-gray-800">Resumen General</h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Métrica</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Actual</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mes Anterior</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cambio</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="metrica in estadisticas.resumen" :key="metrica.nombre" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {{ metrica.nombre }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ metrica.valorActual }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ metrica.valorAnterior }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <span :class="metrica.cambio >= 0 ? 'text-green-600' : 'text-red-600'" class="font-medium">
-                    {{ metrica.cambio >= 0 ? '+' : '' }}{{ metrica.cambio }}%
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- Agregar etiquetas descriptivas a la tabla de resumen general -->
+      <div class="mt-8">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Resumen General</h2>
+        <table class="w-full border-collapse shadow-lg rounded-lg overflow-hidden">
+          <thead>
+            <tr class="bg-gradient-to-r from-gray-100 to-gray-200">
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Métrica</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Valor Actual</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mes Anterior</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cambio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">Total Usuarios</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.totalUsuarios || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.totalUsuariosMesAnterior || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.cambioUsuarios || '0.0%' }}</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">Marcaciones Hoy</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.marcacionesHoy || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.marcacionesMesAnterior || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.cambioMarcaciones || '0.0%' }}</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">Total Empresas</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.totalEmpresas || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.totalEmpresasMesAnterior || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.cambioEmpresas || '0.0%' }}</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">Sesiones Activas</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.sesionesActivas || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.sesionesActivasMesAnterior || 0 }}</td>
+              <td class="px-6 py-4 text-sm text-gray-800 border-t">{{ estadisticas.cambioSesiones || '0.0%' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
