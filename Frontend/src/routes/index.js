@@ -217,6 +217,7 @@ router.beforeEach((to, from, next) => {
         '/empresa/turnos',
         '/empresa/marcaciones',
         '/empresa/reportes',
+        '/empresa/reportes/marcaciones-diarias',
         '/empresa/reportes/asistencia',
         '/empresa/configuracion',
         '/empresa/trabajadores/asociar',

@@ -147,6 +147,7 @@
                 :dias-justificados="diasJustificados"
                 :ausencias="ausenciasParaCalendario"
                 @hover-dia="mostrarTooltipDia"
+                @mes-change="onMesChange"
               />
             </div>
           </div>
@@ -188,6 +189,9 @@ const authStore = useAuthStore();
 
 // Estados reactivos
 const cargando = ref(false);
+// Mes/año seleccionados por el usuario para filtrar la vista (0-based month)
+const selectedMonth = ref(new Date().getMonth());
+const selectedYear = ref(new Date().getFullYear());
 const vista = ref('mensual');
 const empresas = ref([]);
 const empresaSeleccionada = ref('');
@@ -254,7 +258,7 @@ function actualizarAusenciasParaTrabajador(usuarioEmpresaId) {
       return null;
     }
 
-    let inicioDate = null;
+  let inicioDate = null;
     for (const k of possibleStartKeys) {
       if (trabajador[k]) { inicioDate = parseDateOnly(trabajador[k]); break; }
     }
@@ -269,12 +273,20 @@ function actualizarAusenciasParaTrabajador(usuarioEmpresaId) {
       });
       if (minFecha) inicioDate = parseDateOnly(minFecha);
     }
-    // fallback al primer día del mes actual
+    // fallback al primer día del mes actual si no hay otra referencia
     if (!inicioDate) {
       const hoy = new Date(); inicioDate = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     }
 
-    const finDate = new Date(); // hasta hoy
+    // Restringir el rango al mes seleccionado por el usuario (selectedMonth/selectedYear)
+    const monthStart = new Date(selectedYear.value, selectedMonth.value, 1);
+    const monthEnd = new Date(selectedYear.value, selectedMonth.value + 1, 0);
+
+    // Inicio será el mayor entre la fecha de inicio conocida y el inicio del mes seleccionado
+    if (inicioDate < monthStart) inicioDate = monthStart;
+    // finDate: no considerar fechas futuras más allá de hoy
+    const hoy = new Date();
+    let finDate = monthEnd > hoy ? hoy : monthEnd;
 
     // Construir array completo de días desde inicioDate hasta finDate a partir de marcaciones actuales y justificaciones
     const diasMesArray = [];
@@ -315,18 +327,12 @@ const resumen = computed(() => {
     promedioHoraSalida: '--:--'
   };
 
-  // Determinar mes/año a evaluar: preferir mes presente en las marcaciones (si existen), si no usar mes actual
-  let mes = new Date().getMonth();
-  let anio = new Date().getFullYear();
-  if (marcaciones.value && marcaciones.value.length) {
-    const anyFecha = (marcaciones.value[0].fecha || marcaciones.value[0].fecha_marcacion || '').split('T')[0];
-    if (anyFecha) {
-      const d = new Date(anyFecha);
-      mes = d.getMonth(); anio = d.getFullYear();
-    }
-  }
+  // Determinar mes/año a evaluar: usar el mes seleccionado por el usuario (selectedMonth/selectedYear)
+  const mes = (typeof selectedMonth !== 'undefined' && selectedMonth !== null) ? selectedMonth.value : new Date().getMonth();
+  const anio = (typeof selectedYear !== 'undefined' && selectedYear !== null) ? selectedYear.value : new Date().getFullYear();
 
   const inicio = new Date(anio, mes, 1);
+  // fin del mes seleccionado
   const fin = new Date(anio, mes + 1, 0);
 
   // Construir array completo de días del mes
@@ -345,25 +351,35 @@ const resumen = computed(() => {
   const assignedShiftsForSelected = trabajadorSeleccionado.value ? (trabajadorSeleccionado.value.turnos_asignados || trabajadorSeleccionado.value.turnos || trabajadorSeleccionado.value.turnosAsignados || []) : [];
   const ausInfo = calcularAusencias(diasMesArray, { workingDaysPerWeek: 5, excludeWeekends: true, assignedShifts: assignedShiftsForSelected });
 
-  // Calcular métricas de presencia y horas (se mantienen con los datos de marcaciones)
+  // Calcular métricas de presencia y horas (filtradas por el mes seleccionado)
   let sumaHoras = 0;
   const entradasTotales = [];
   const salidasTotales = [];
   let diasTrabajados = 0;
-  (marcaciones.value || []).forEach(dia => {
-    if (dia.entrada && dia.salida) {
-      entradasTotales.push(dia.entrada);
-      salidasTotales.push(dia.salida);
-      const [h1, m1, s1] = dia.entrada.split(':').map(Number);
-      const [h2, m2, s2] = dia.salida.split(':').map(Number);
-      const minEntrada = h1 * 60 + m1 + (s1 || 0) / 60;
-      const minSalida = h2 * 60 + m2 + (s2 || 0) / 60;
-      let horas = (minSalida - minEntrada) / 60;
-      if (horas < 0) horas = 0;
-      sumaHoras += horas;
-      diasTrabajados++;
-    }
-  });
+  try {
+    const startStr = inicio.toISOString().split('T')[0];
+    const endStr = fin.toISOString().split('T')[0];
+    (marcaciones.value || []).forEach(dia => {
+      const fecha = (dia.fecha || dia.fecha_marcacion || '').split('T')[0];
+      if (!fecha) return;
+      if (fecha < startStr || fecha > endStr) return; // ignorar fuera del mes
+      // contar sólo días con entrada y salida
+      if (dia.entrada && dia.salida) {
+        entradasTotales.push(dia.entrada);
+        salidasTotales.push(dia.salida);
+        const [h1, m1, s1] = (dia.entrada || '00:00').split(':').map(Number);
+        const [h2, m2, s2] = (dia.salida || '00:00').split(':').map(Number);
+        const minEntrada = (h1 || 0) * 60 + (m1 || 0) + (s1 || 0) / 60;
+        const minSalida = (h2 || 0) * 60 + (m2 || 0) + (s2 || 0) / 60;
+        let horas = (minSalida - minEntrada) / 60;
+        if (horas < 0) horas = 0;
+        sumaHoras += horas;
+        diasTrabajados++;
+      }
+    });
+  } catch (e) {
+    console.warn('Error calculando métricas por mes:', e);
+  }
   const totalHorasTrabajadas = sumaHoras.toFixed(2);
   const porcentajeAsistencia = diasMesArray.length ? Math.round((diasTrabajados / diasMesArray.length) * 100) : 0;
 
@@ -382,15 +398,21 @@ const resumen = computed(() => {
   const promedioHoraEntrada = calcularPromedio(entradasTotales);
   const promedioHoraSalida = calcularPromedio(salidasTotales);
 
+    // Determinar las fechas que se mostrarán (pueden venir desde el cache por trabajador)
+    const fechasMostradas = (trabajadorSeleccionado.value && ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id])
+      ? ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id]
+      : ausInfo.fechasAusentes || [];
+
     return {
     totalDiasTrabajados: diasTrabajados,
     ausenciasJustificadas: ausInfo.ausenciasJustificadas,
-    ausenciasInjustificadas: ausInfo.ausenciasInjustificadas,
+    // Contar ausencias según las fechas que efectivamente se muestran en la UI
+    ausenciasInjustificadas: (fechasMostradas || []).length,
     totalHorasTrabajadas,
     porcentajeAsistencia,
     promedioHoraEntrada,
     promedioHoraSalida,
-    fechasNoTrabajadas: (trabajadorSeleccionado.value && ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id]) ? ausenciasPorTrabajador.value[trabajadorSeleccionado.value.id] : ausInfo.fechasAusentes
+    fechasNoTrabajadas: fechasMostradas
   };
 });
 
@@ -570,6 +592,22 @@ function mostrarJustificaciones() {
 
 function cerrarJustificaciones() {
   mostrarModalJustificaciones.value = false;
+}
+
+// Handler cuando el calendario cambia mes/año
+function onMesChange(payload) {
+  try {
+    if (!payload) return;
+    const { mes, anio } = payload;
+    selectedMonth.value = typeof mes === 'number' ? mes : Number(mes);
+    selectedYear.value = typeof anio === 'number' ? anio : Number(anio);
+    // Recalcular ausencias para el trabajador seleccionado (si hay)
+    if (trabajadorSeleccionado.value && trabajadorSeleccionado.value.id) {
+      actualizarAusenciasParaTrabajador(trabajadorSeleccionado.value.id);
+    }
+  } catch (e) {
+    console.warn('onMesChange error:', e);
+  }
 }
 
 
