@@ -1,15 +1,14 @@
 ﻿<template>
-  <div class="min-h-screen bg-gray-50">
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Formularios en 2 columnas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         
-        <!-- Panel izquierdo: Formularios -->
-        <div class="lg:col-span-1 space-y-6">
-          
-          <!-- Formulario: Crear Tipo de Turno -->
-          <div class="bg-white shadow rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Crear Tipo de Turno</h3>
-            <form @submit.prevent="guardarTipoTurno" class="space-y-4">
+        <!-- Bloque 1: Crear Tipo de Turno -->
+        <div class="bg-white shadow-lg rounded-lg p-6 h-fit">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Crear Tipo de Turno</h3>
+          <form @submit.prevent="guardarTipoTurno" class="space-y-3">
               
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Turno</label>
@@ -17,7 +16,7 @@
                   type="text" 
                   v-model="formTipoTurno.nombre" 
                   placeholder="Ej: Turno Mañana, 4x3"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   required
                 />
               </div>
@@ -28,7 +27,7 @@
                   v-model="formTipoTurno.descripcion" 
                   rows="2"
                   placeholder="Descripción del turno..."
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                 ></textarea>
               </div>
 
@@ -36,7 +35,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Jornada</label>
                 <select 
                   v-model="formTipoTurno.tipo_jornada" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   required
                 >
                   <option value="">Seleccionar tipo de jornada</option>
@@ -48,27 +47,27 @@
                     {{ tipoJornada.label }}
                   </option>
                 </select>
-                <p v-if="formTipoTurno.tipo_jornada" class="mt-1 text-xs text-gray-500">
+                <p v-if="formTipoTurno.tipo_jornada" class="mt-2 text-xs text-gray-500">
                   {{ obtenerDescripcionJornada(formTipoTurno.tipo_jornada) }}
                 </p>
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio (Base)</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio</label>
                   <input 
                     type="time" 
                     v-model="formTipoTurno.hora_inicio" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                     required
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fin (Base)</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fin</label>
                   <input 
                     type="time" 
                     v-model="formTipoTurno.hora_fin" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                     required
                   />
                 </div>
@@ -80,7 +79,7 @@
                   <input 
                     type="time" 
                     v-model="formTipoTurno.colacion_inicio" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
                 <div>
@@ -88,7 +87,7 @@
                   <input 
                     type="time" 
                     v-model="formTipoTurno.colacion_fin" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
               </div>
@@ -97,33 +96,33 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Días de Trabajo</label>
                 <div class="space-y-2">
-                  <div v-for="(dia, index) in diasSemana" :key="dia.value" class="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                  <div v-for="(dia, index) in diasSemana" :key="dia.value" class="flex items-center space-x-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
                     <input 
                       type="checkbox" 
                       :id="`dia-${dia.value}`"
                       v-model="dia.trabaja"
                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <label :for="`dia-${dia.value}`" class="flex-1 text-sm font-medium text-gray-700">
+                    <label :for="`dia-${dia.value}`" class="flex-1 text-xs font-medium text-gray-700 cursor-pointer">
                       {{ dia.label }}
                     </label>
-                    <div v-if="dia.trabaja" class="flex space-x-2">
+                    <div v-if="dia.trabaja" class="flex space-x-1">
                       <input 
                         type="time" 
                         v-model="dia.hora_inicio"
                         placeholder="Hora inicio"
-                        class="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                        class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <input 
                         type="time" 
                         v-model="dia.hora_fin"
                         placeholder="Hora fin"
-                        class="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                        class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                   </div>
                 </div>
-                <p class="mt-1 text-xs text-gray-500">
+                <p class="mt-2 text-xs text-gray-500">
                   Deja los horarios vacíos para usar el horario base del turno
                 </p>
               </div>
@@ -131,23 +130,23 @@
               <button 
                 type="submit"
                 :disabled="!hayAlMenosUnDiaSeleccionado"
-                class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg text-sm"
               >
                 Crear Tipo de Turno
               </button>
             </form>
           </div>
 
-          <!-- Formulario: Asignar Turno a Trabajador -->
-          <div class="bg-white shadow rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Asignar Turno</h3>
-            <form @submit.prevent="guardarAsignacion" class="space-y-4">
+          <!-- Bloque 2: Asignar Turno a Trabajador -->
+          <div class="bg-white shadow-lg rounded-lg p-6 h-fit">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Asignar Turno</h3>
+            <form @submit.prevent="guardarAsignacion" class="space-y-3">
               
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Trabajador</label>
                 <select 
                   v-model="formAsignacion.usuario_empresa_id" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
                   <option value="">Seleccionar trabajador</option>
@@ -166,7 +165,7 @@
                 <select 
                   v-model="formAsignacion.tipo_turno_id"
                   @change="onTipoTurnoChange"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
                   <option value="">Seleccionar tipo de turno</option>
@@ -181,11 +180,11 @@
               </div>
 
               <!-- Mostrar detalle del turno seleccionado -->
-              <div v-if="turnoSeleccionado" class="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+              <div v-if="turnoSeleccionado" class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
                 <p class="font-medium text-blue-900 mb-2">Detalle del turno:</p>
                 <p class="text-blue-700">Horario base: {{ turnoSeleccionado.hora_inicio }} - {{ turnoSeleccionado.hora_fin }}</p>
                 <p class="text-blue-700 mt-1">Días laborables:</p>
-                <ul class="list-disc list-inside text-blue-600 ml-2">
+                <ul class="list-disc list-inside text-blue-600 ml-2 mt-1">
                   <li v-for="dia in turnoSeleccionado.dias.filter(d => d.trabaja)" :key="dia.dia_semana">
                     {{ dia.dia_semana.charAt(0).toUpperCase() + dia.dia_semana.slice(1) }}
                     <span v-if="dia.hora_inicio"> ({{ dia.hora_inicio }} - {{ dia.hora_fin }})</span>
@@ -198,7 +197,7 @@
                 <input 
                   type="date" 
                   v-model="formAsignacion.fecha_inicio" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 />
               </div>
@@ -208,68 +207,93 @@
                 <input 
                   type="date" 
                   v-model="formAsignacion.fecha_fin" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
 
               <button 
                 type="submit" 
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg text-sm"
               >
                 Asignar Turno
               </button>
             </form>
           </div>
-        </div>
+        </div><!-- fin grid 2 columnas formularios -->
 
-        <!-- Panel derecho: Tabs con tablas -->
-        <div class="lg:col-span-2 space-y-6">
+        <!-- Bloque 3: Tabs con tablas -->
+        <div class="bg-white shadow-lg rounded-lg">
           
           <!-- Pestañas de navegación -->
-          <div class="bg-white shadow rounded-lg">
-            <div class="border-b border-gray-200">
+          <div class="border-b border-gray-200">
               <nav class="flex -mb-px">
                 <button
                   @click="tabActiva = 'asignaciones'"
                   :class="[
-                    'px-6 py-3 text-sm font-medium border-b-2 transition-colors',
+                    'flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors',
                     tabActiva === 'asignaciones'
-                      ? 'border-indigo-500 text-indigo-600'
+                      ? 'border-indigo-500 text-indigo-600 bg-indigo-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   ]"
                 >
-                  Turnos Asignados
+                  <span class="flex items-center justify-center">
+                    Turnos Activos
+                    <span class="ml-2 px-2.5 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+                      {{ turnosActivos.length }}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  @click="tabActiva = 'historial'"
+                  :class="[
+                    'flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors',
+                    tabActiva === 'historial'
+                      ? 'border-indigo-500 text-indigo-600 bg-indigo-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ]"
+                >
+                  <span class="flex items-center justify-center">
+                    Historial de Modificaciones
+                    <span class="ml-2 px-2.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
+                      {{ turnosModificados.length }}
+                    </span>
+                  </span>
                 </button>
                 <button
                   @click="tabActiva = 'tipos'"
                   :class="[
-                    'px-6 py-3 text-sm font-medium border-b-2 transition-colors',
+                    'flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors',
                     tabActiva === 'tipos'
-                      ? 'border-indigo-500 text-indigo-600'
+                      ? 'border-indigo-500 text-indigo-600 bg-indigo-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   ]"
                 >
-                  Tipos de Turno
-                  <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">
-                    {{ tiposTurnos.length }}
+                  <span class="flex items-center justify-center">
+                    Tipos de Turno
+                    <span class="ml-2 px-2.5 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800">
+                      {{ tiposTurnos.length }}
+                    </span>
                   </span>
                 </button>
               </nav>
             </div>
 
-            <!-- Contenido: Turnos Asignados -->
+            <!-- Contenido: Turnos Activos -->
             <div v-show="tabActiva === 'asignaciones'">
-              <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Turnos Asignados</h3>
+              <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Turnos Activos</h3>
+                  <p class="text-sm text-gray-500 mt-1">Turnos actualmente vigentes</p>
+                </div>
                 <div class="flex space-x-3">
                   <input 
                     type="date" 
                     v-model="filtroFecha" 
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                   <select 
                     v-model="filtroTipo" 
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   >
                     <option value="">Todos los tipos</option>
                     <option 
@@ -287,21 +311,21 @@
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trabajador</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Turno</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días Laborables</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Período</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Turno</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Días Laborables</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="turno in turnosFiltrados" :key="turno.id" class="hover:bg-gray-50">
-                      <td class="px-6 py-4 whitespace-nowrap">
+                    <tr v-for="turno in turnosActivosFiltrados" :key="turno.id" class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-5 whitespace-nowrap">
                         <div class="flex items-center">
-                          <div class="h-10 w-10 flex-shrink-0">
-                            <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                              <span class="text-white font-medium">{{ turno.trabajador.iniciales }}</span>
+                          <div class="h-12 w-12 flex-shrink-0">
+                            <div class="h-12 w-12 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
+                              <span class="text-white font-semibold">{{ turno.trabajador.iniciales }}</span>
                             </div>
                           </div>
                           <div class="ml-4">
@@ -310,61 +334,159 @@
                           </div>
                         </div>
                       </td>
-                      <td class="px-6 py-4">
+                      <td class="px-6 py-5">
                         <div>
-                          <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                             {{ turno.tipo }}
                           </span>
-                          <div class="text-xs text-gray-500 mt-1">
+                          <div class="text-xs text-gray-500 mt-2 flex items-center">
+                            <svg class="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                             {{ turno.inicio }} - {{ turno.fin }}
                           </div>
                         </div>
                       </td>
-                      <td class="px-6 py-4">
-                        <div class="text-xs text-gray-600">
+                      <td class="px-6 py-5">
+                        <div class="flex flex-wrap gap-1">
                           <span v-for="(dia, idx) in turno.dias_laborables" :key="idx" 
-                                class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-1 mb-1">
-                            {{ dia.substr(0, 3) }}
+                                class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                            {{ dia.substr(0, 3).toUpperCase() }}
                           </span>
                         </div>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ formatearFecha(turno.fecha_inicio) }}
-                        <span v-if="turno.fecha_fin"> - {{ formatearFecha(turno.fecha_fin) }}</span>
-                        <span v-else class="text-green-600"> - Indefinido</span>
+                      <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex flex-col space-y-1">
+                          <span class="font-medium">{{ formatearFecha(turno.fecha_inicio) }}</span>
+                          <span v-if="turno.fecha_fin" class="text-xs">hasta {{ formatearFecha(turno.fecha_fin) }}</span>
+                          <span v-else class="text-green-600 text-xs font-medium">Indefinido</span>
+                        </div>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <span 
-                          :class="{
-                            'bg-green-100 text-green-800': turno.estado === 'activo',
-                            'bg-gray-100 text-gray-800': turno.estado === 'finalizado',
-                            'bg-yellow-100 text-yellow-800': turno.estado === 'suspendido'
-                          }"
-                          class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                        >
-                          {{ turno.estado }}
+                      <td class="px-6 py-5 whitespace-nowrap">
+                        <span class="bg-green-100 text-green-800 inline-flex px-3 py-1 text-xs font-medium rounded-full">
+                          Activo
                         </span>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                         <button 
-                          v-if="turno.estado === 'activo'"
                           @click="abrirModalModificarTurno(turno)"
-                          class="text-indigo-600 hover:text-indigo-900 mr-3"
+                          class="text-indigo-600 hover:text-indigo-900 mr-4 font-medium"
                         >
                           Modificar
                         </button>
                         <button 
-                          v-if="turno.estado === 'activo'"
                           @click="eliminarTurnoAction(turno.id)"
-                          class="text-red-600 hover:text-red-900"
+                          class="text-red-600 hover:text-red-900 font-medium"
                         >
                           Eliminar
                         </button>
                       </td>
                     </tr>
-                    <tr v-if="turnosFiltrados.length === 0">
-                      <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                        No hay turnos asignados
+                    <tr v-if="turnosActivosFiltrados.length === 0">
+                      <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <svg class="h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <p class="text-gray-500 text-base">No hay turnos activos</p>
+                          <p class="text-gray-400 text-sm mt-2">Asigna un turno usando el formulario de la izquierda</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Contenido: Historial de Modificaciones -->
+            <div v-show="tabActiva === 'historial'">
+              <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Historial de Modificaciones</h3>
+                  <p class="text-sm text-gray-500 mt-1">Turnos que han sido modificados o finalizados</p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Turno</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Días Laborables</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="turno in turnosModificados" :key="turno.id" class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-5 whitespace-nowrap">
+                        <div class="flex items-center">
+                          <div class="h-12 w-12 flex-shrink-0">
+                            <div class="h-12 w-12 rounded-full bg-gray-400 flex items-center justify-center shadow-md">
+                              <span class="text-white font-semibold">{{ turno.trabajador.iniciales }}</span>
+                            </div>
+                          </div>
+                          <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">{{ turno.trabajador.nombre }}</div>
+                            <div class="text-sm text-gray-500">{{ turno.trabajador.rut }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5">
+                        <div>
+                          <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                            {{ turno.tipo }}
+                          </span>
+                          <div class="text-xs text-gray-500 mt-2 flex items-center">
+                            <svg class="h-4 w-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {{ turno.inicio }} - {{ turno.fin }}
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5">
+                        <div class="flex flex-wrap gap-1">
+                          <span v-for="(dia, idx) in turno.dias_laborables" :key="idx" 
+                                class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                            {{ dia.substr(0, 3).toUpperCase() }}
+                          </span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex flex-col space-y-1">
+                          <span class="font-medium">{{ formatearFecha(turno.fecha_inicio) }}</span>
+                          <span v-if="turno.fecha_fin" class="text-xs">hasta {{ formatearFecha(turno.fecha_fin) }}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5 whitespace-nowrap">
+                        <span 
+                          :class="{
+                            'bg-gray-100 text-gray-800': turno.estado === 'finalizado',
+                            'bg-yellow-100 text-yellow-800': turno.estado === 'suspendido',
+                            'bg-red-100 text-red-800': turno.estado === 'modificado'
+                          }"
+                          class="inline-flex px-3 py-1 text-xs font-medium rounded-full capitalize"
+                        >
+                          {{ turno.estado }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-5 text-sm text-gray-500">
+                        <span v-if="turno.motivo_cambio" class="text-xs">{{ turno.motivo_cambio }}</span>
+                        <span v-else class="text-xs italic text-gray-400">Sin especificar</span>
+                      </td>
+                    </tr>
+                    <tr v-if="turnosModificados.length === 0">
+                      <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <svg class="h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                          <p class="text-gray-500 text-base">No hay historial de modificaciones</p>
+                          <p class="text-gray-400 text-sm mt-2">Los turnos modificados o finalizados aparecerán aquí</p>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -374,8 +496,8 @@
 
             <!-- Contenido: Tipos de Turno Creados -->
             <div v-show="tabActiva === 'tipos'">
-              <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Tipos de Turno Creados</h3>
+              <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Tipos de Turno Creados</h3>
                 <p class="text-sm text-gray-500 mt-1">Gestiona los tipos de turno disponibles para asignar</p>
               </div>
 
@@ -383,24 +505,24 @@
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Jornada</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horario Base</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días Laborables</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Colación</th>
-                      <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Asignaciones</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Jornada</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horario Base</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Días Laborables</th>
+                      <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colación</th>
+                      <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Asignaciones</th>
+                      <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="tipo in tiposTurnos" :key="tipo.id" class="hover:bg-gray-50">
-                      <td class="px-6 py-4">
+                    <tr v-for="tipo in tiposTurnos" :key="tipo.id" class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-5">
                         <div>
                           <div class="text-sm font-medium text-gray-900">{{ tipo.nombre }}</div>
                           <div v-if="tipo.descripcion" class="text-xs text-gray-500 mt-1">{{ tipo.descripcion }}</div>
                         </div>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
+                      <td class="px-6 py-5 whitespace-nowrap">
                         <span 
                           v-if="tipo.tipo_jornada_id"
                           :class="{
@@ -411,52 +533,52 @@
                             'bg-indigo-100 text-indigo-800': tipo.tipo_jornada == 5,
                             'bg-yellow-100 text-yellow-800': tipo.tipo_jornada == 6
                           }"
-                          class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                          class="inline-flex px-3 py-1 text-xs font-medium rounded-full"
                         >
                           {{ obtenerLabelJornada(tipo.tipo_jornada_id) }}
                         </span>
                         <span v-else class="text-xs text-gray-400">Sin especificar</span>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
+                      <td class="px-6 py-5 whitespace-nowrap">
                         <div class="flex items-center space-x-2">
-                          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
-                          <span class="text-sm text-gray-900">{{ tipo.hora_inicio }} - {{ tipo.hora_fin }}</span>
+                          <span class="text-sm text-gray-900 font-medium">{{ tipo.hora_inicio }} - {{ tipo.hora_fin }}</span>
                         </div>
                       </td>
-                      <td class="px-6 py-4">
-                        <div class="flex flex-wrap gap-1">
+                      <td class="px-6 py-5">
+                        <div class="flex flex-wrap gap-1.5">
                           <span 
                             v-for="dia in tipo.dias?.filter(d => d.trabaja)" 
                             :key="dia.dia_semana"
-                            class="inline-flex px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800"
+                            class="inline-flex px-2.5 py-1 text-xs font-medium rounded bg-green-100 text-green-800"
                           >
                             {{ dia.dia_semana.substr(0, 3).toUpperCase() }}
                           </span>
-                          <span v-if="!tipo.dias || tipo.dias.filter(d => d.trabaja).length === 0" class="text-sm text-gray-400">
+                          <span v-if="!tipo.dias || tipo.dias.filter(d => d.trabaja).length === 0" class="text-sm text-gray-400 italic">
                             Sin días configurados
                           </span>
                         </div>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div v-if="tipo.colacion_inicio && tipo.colacion_fin" class="flex items-center space-x-1">
+                      <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+                        <div v-if="tipo.colacion_inicio && tipo.colacion_fin" class="flex items-center space-x-2">
                           <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path>
                           </svg>
                           <span>{{ tipo.colacion_inicio }} - {{ tipo.colacion_fin }}</span>
                         </div>
-                        <span v-else class="text-gray-400">Sin colación</span>
+                        <span v-else class="text-gray-400 italic">Sin colación</span>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      <td class="px-6 py-5 whitespace-nowrap text-center">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                           {{ contarAsignaciones(tipo.id) }}
                         </span>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                         <button 
                           @click="verDetalleTipoTurno(tipo)"
-                          class="text-indigo-600 hover:text-indigo-900 mr-3"
+                          class="text-indigo-600 hover:text-indigo-900 mr-4 font-medium"
                         >
                           Ver
                         </button>
@@ -464,7 +586,7 @@
                           @click="eliminarTipoTurnoAction(tipo.id)"
                           :disabled="contarAsignaciones(tipo.id) > 0"
                           :class="[
-                            'transition-colors',
+                            'transition-colors font-medium',
                             contarAsignaciones(tipo.id) > 0
                               ? 'text-gray-400 cursor-not-allowed'
                               : 'text-red-600 hover:text-red-900'
@@ -476,13 +598,13 @@
                       </td>
                     </tr>
                     <tr v-if="tiposTurnos.length === 0">
-                      <td colspan="7" class="px-6 py-8 text-center">
+                      <td colspan="7" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center">
-                          <svg class="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
-                          <p class="text-gray-500 text-sm">No hay tipos de turno creados</p>
-                          <p class="text-gray-400 text-xs mt-1">Crea uno usando el formulario de la izquierda</p>
+                          <p class="text-gray-500 text-base font-medium">No hay tipos de turno creados</p>
+                          <p class="text-gray-400 text-sm mt-2">Crea uno usando el formulario de la izquierda</p>
                         </div>
                       </td>
                     </tr>
@@ -490,11 +612,11 @@
                 </table>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </main>
+          </div><!-- fin bg-white shadow-lg rounded-lg (tabs) -->
+        </div><!-- fin bloque 3 -->
 
+    </div><!-- fin max-w-7xl -->
+      
     <!-- Modal: Detalle de Tipo de Turno -->
     <div v-if="modalDetalleTurno.mostrar" class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
       <div class="flex items-center justify-center min-h-screen px-4 py-6">
@@ -732,7 +854,6 @@
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -834,8 +955,19 @@ const hayAlMenosUnDiaSeleccionado = computed(() => {
   return diasSemana.value.some(dia => dia.trabaja);
 });
 
-const turnosFiltrados = computed(() => {
-  let turnos = turnosAsignados.value;
+// Filtrar solo turnos activos
+const turnosActivos = computed(() => {
+  return turnosAsignados.value.filter(t => t.estado === 'activo');
+});
+
+// Filtrar turnos modificados/finalizados
+const turnosModificados = computed(() => {
+  return turnosAsignados.value.filter(t => t.estado !== 'activo');
+});
+
+// Aplicar filtros sobre turnos activos
+const turnosActivosFiltrados = computed(() => {
+  let turnos = turnosActivos.value;
 
   if (filtroTipo.value) {
     turnos = turnos.filter(t => t.tipo_turno_id == filtroTipo.value);

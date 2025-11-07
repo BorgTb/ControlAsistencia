@@ -203,7 +203,12 @@ const obtenerAsistencias = async (req, res) => {
     const fechaInicio = fechaInicioParam || fechaActualChile;
     const fechaFin = fechaFinParam || fechaInicio; // Si no se especifica fecha_fin, usar fecha_inicio
     
-
+    // Para turnos nocturnos: si se busca un solo día, extender búsqueda al siguiente día
+    // para capturar salidas que ocurren al día siguiente
+    let fechaFinExtendida = fechaFin;
+    if (fechaInicio === fechaFin) {
+        fechaFinExtendida = DateTime.fromISO(fechaFin).plus({ days: 1 }).toISODate();
+    }
     
     const marcacionesAgrupadasPorUsuario = {};
     
@@ -295,8 +300,8 @@ const obtenerAsistencias = async (req, res) => {
     };
     
     for (const trabajador of trabajadores) {    
-        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
-        console.log('Marcaciones obtenidas para trabajador', trabajador.id, ':', marcaciones, 'Fechas:', fechaInicio, 'a', fechaFin);
+        const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFinExtendida);
+        console.log('Marcaciones obtenidas para trabajador', trabajador.id, ':', marcaciones, 'Fechas:', fechaInicio, 'a', fechaFinExtendida);
         // Obtener el turno activo del trabajador para la fecha
         const TurnosModel = (await import('../model/TurnosModel.js')).default;
         const turnoActivo = await TurnosModel.obtenerTurnoPorUsuarioYFecha(trabajador.id, fechaInicio);
@@ -313,8 +318,28 @@ const obtenerAsistencias = async (req, res) => {
            
                 if (turnoFecha) {
                     // Hay turno asignado para este día
-                    const marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
-                    const marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                    
+                    // Para turnos nocturnos, buscar entrada en día actual y salida en día siguiente
+                    let marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
+                    let marcacionSalida = null;
+                    let fechaSalidaSiguiente = null;
+                    
+                    if (turnoFecha.tipo_jornada_nombre === 'Nocturna') {
+                        // Para turnos nocturnos: SIEMPRE buscar salida en el día siguiente
+                        // porque la salida pertenece al próximo día (ej: entrada 17:00 del 06/11, salida 08:00 del 07/11)
+                        const fechaSiguiente = DateTime.fromISO(fecha).plus({ days: 1 }).toISODate();
+                        if (marcaciones.marcaciones && marcaciones.marcaciones[fechaSiguiente]) {
+                            const marcacionesSiguiente = marcaciones.marcaciones[fechaSiguiente];
+                            const posibleSalida = marcacionesSiguiente.find(m => m.tipo === 'salida');
+                            if (posibleSalida) {
+                                marcacionSalida = posibleSalida;
+                                fechaSalidaSiguiente = fechaSiguiente;
+                            }
+                        }
+                    } else {
+                        // Para turnos diurnos, la salida está en el mismo día
+                        marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                    }
                     
                     const tieneEntrada = !!marcacionEntrada;
                     const tieneSalida = !!marcacionSalida;
@@ -358,7 +383,9 @@ const obtenerAsistencias = async (req, res) => {
                             nombre: turnoFecha.tipo_turno_nombre,
                             hora_inicio: turnoFecha.hora_inicio,
                             hora_fin: turnoFecha.hora_fin,
-                            dia_semana: turnoFecha.dia_semana
+                            dia_semana: turnoFecha.dia_semana,
+                            tipo_jornada: turnoFecha.tipo_jornada_nombre,
+                            es_nocturno: turnoFecha.tipo_jornada_nombre === 'Nocturna'
                         },
                         estado_asistencia: estadoAsistencia,
                         tiene_entrada: tieneEntrada,
@@ -380,11 +407,14 @@ const obtenerAsistencias = async (req, res) => {
                             hora_salida_real: infoSalida.hora_salida_real,
                             compensacion_requerida: infoSalida.compensacion_requerida,
                             minutos_compensacion: infoSalida.minutos_compensacion,
-                            hora_turno_fin: turnoFecha.hora_fin
+                            hora_turno_fin: turnoFecha.hora_fin,
+                            es_salida_dia_siguiente: turnoFecha.tipo_jornada_nombre === 'Nocturna' && fechaSalidaSiguiente !== null,
+                            fecha_salida_dia_siguiente: fechaSalidaSiguiente
                         } : null
-                    };
+                    }
                 } else {
                     // No hay turno asignado para este día (día libre/descanso)
+                    
                     marcacionesConEstado[fecha] = {
                         marcaciones: marcacionesDia,
                         turno: null,
@@ -405,7 +435,9 @@ const obtenerAsistencias = async (req, res) => {
                         nombre: turnoActivo.tipo_turno_nombre,
                         hora_inicio: turnoActivo.hora_inicio,
                         hora_fin: turnoActivo.hora_fin,
-                        dia_semana: turnoActivo.dia_semana
+                        dia_semana: turnoActivo.dia_semana,
+                        tipo_jornada: turnoActivo.tipo_jornada_nombre,
+                        es_nocturno: turnoActivo.tipo_jornada_nombre === 'Nocturna'
                     },
                     estado_asistencia: 'NO_ASISTE',
                     tiene_entrada: false,
@@ -423,7 +455,9 @@ const obtenerAsistencias = async (req, res) => {
                         nombre: turnoActivo.tipo_turno_nombre,
                         hora_inicio: turnoActivo.hora_inicio,
                         hora_fin: turnoActivo.hora_fin,
-                        dia_semana: turnoActivo.dia_semana
+                        dia_semana: turnoActivo.dia_semana,
+                        tipo_jornada: turnoActivo.tipo_jornada_nombre,
+                        es_nocturno: turnoActivo.tipo_jornada_nombre === 'Nocturna'
                     },
                     estado_asistencia: 'NO_ASISTE',
                     tiene_entrada: false,
@@ -564,6 +598,15 @@ const obtenerAsistenciasDomingos = async (req, res) => {
         fechaActual = fechaActual.plus({ days: 1 });
     }
     
+    // Para turnos nocturnos: extender búsqueda al siguiente día
+    // para capturar salidas que ocurren al día siguiente
+    let fechaFinExtendida = fechaFin;
+    if (fechasDomingos.length > 0) {
+        // Si hay domingos, extender hasta el siguiente día del último domingo
+        const ultimoDomingo = fechasDomingos[fechasDomingos.length - 1];
+        fechaFinExtendida = DateTime.fromISO(ultimoDomingo).plus({ days: 1 }).toISODate();
+    }
+    
     for (const trabajador of trabajadores) {    
         const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuario(trabajador.id, fechaInicio, fechaFin);
         
@@ -581,8 +624,27 @@ const obtenerAsistenciasDomingos = async (req, res) => {
                     ? marcaciones.marcaciones[fechaDomingo] || []
                     : [];
                 
-                const marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
-                const marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                // Para turnos nocturnos, buscar entrada en día actual y salida en día siguiente
+                let marcacionEntrada = marcacionesDia.find(m => m.tipo === 'entrada');
+                let marcacionSalida = null;
+                let fechaSalidaSiguiente = null;
+                
+                if (turnoFecha.tipo_jornada_nombre === 'Nocturna') {
+                    // Para turnos nocturnos: SIEMPRE buscar salida en el día siguiente
+                    // porque la salida pertenece al próximo día (ej: entrada 17:00 del domingo, salida 08:00 del lunes)
+                    const fechaSiguiente = DateTime.fromISO(fechaDomingo).plus({ days: 1 }).toISODate();
+                    if (marcaciones.marcaciones && marcaciones.marcaciones[fechaSiguiente]) {
+                        const marcacionesSiguiente = marcaciones.marcaciones[fechaSiguiente];
+                        const posibleSalida = marcacionesSiguiente.find(m => m.tipo === 'salida');
+                        if (posibleSalida) {
+                            marcacionSalida = posibleSalida;
+                            fechaSalidaSiguiente = fechaSiguiente;
+                        }
+                    }
+                } else {
+                    // Para turnos diurnos, la salida está en el mismo día
+                    marcacionSalida = marcacionesDia.find(m => m.tipo === 'salida');
+                }
                 
                 const tieneEntrada = !!marcacionEntrada;
                 const tieneSalida = !!marcacionSalida;
@@ -622,7 +684,9 @@ const obtenerAsistenciasDomingos = async (req, res) => {
                         nombre: turnoFecha.tipo_turno_nombre,
                         hora_inicio: turnoFecha.hora_inicio,
                         hora_fin: turnoFecha.hora_fin,
-                        dia_semana: turnoFecha.dia_semana
+                        dia_semana: turnoFecha.dia_semana,
+                        tipo_jornada: turnoFecha.tipo_jornada_nombre,
+                        es_nocturno: turnoFecha.tipo_jornada_nombre === 'Nocturna'
                     },
                     estado_asistencia: estadoAsistencia,
                     tiene_entrada: tieneEntrada,
@@ -645,9 +709,11 @@ const obtenerAsistenciasDomingos = async (req, res) => {
                         hora_salida_real: infoSalida.hora_salida_real,
                         compensacion_requerida: infoSalida.compensacion_requerida,
                         minutos_compensacion: infoSalida.minutos_compensacion,
-                        hora_turno_fin: turnoFecha.hora_fin
+                        hora_turno_fin: turnoFecha.hora_fin,
+                        es_salida_dia_siguiente: turnoFecha.tipo_jornada_nombre === 'Nocturna' && fechaSalidaSiguiente !== null,
+                        fecha_salida_dia_siguiente: fechaSalidaSiguiente
                     } : null
-                };
+                }
             }
         }
         

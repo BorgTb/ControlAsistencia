@@ -418,6 +418,10 @@ const obtenerHorarioHoy = async (req, res) => {
                 message: 'No hay horario asignado para hoy'
             });
         }
+
+        // retornar el turno que le corresponde hoy
+        console.log('Turno encontrado para hoy:', turno);
+
         return res.status(200).json({
             success: true,
             data: {

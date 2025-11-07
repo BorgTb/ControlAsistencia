@@ -93,7 +93,7 @@ class AsignacionTurnosModel {
             LEFT JOIN detalle_dias_turno dd ON tt.id = dd.tipo_turno_id
             LEFT JOIN tipo_jornada tj on tt.tipo_jornada_id = tj.id
             WHERE at.usuario_empresa_id = ?
-            AND at.estado = 'activo'
+            AND at.estado = 'activo' or at.estado = 'modificado'
             AND at.fecha_inicio <= ?
             AND (at.fecha_fin IS NULL OR at.fecha_fin >= ?)
             ORDER BY at.fecha_inicio DESC

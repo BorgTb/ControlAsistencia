@@ -997,19 +997,48 @@ const loadData = async (apiData = null) => {
       if (datosTrabajador && datosTrabajador.marcaciones) {
         // Procesar cada fecha con datos de asistencia
         for (const [fechaISO, datosAsistencia] of Object.entries(datosTrabajador.marcaciones)) {
+          // Omitir fechas que son continuación de turno nocturno (sin entrada, solo salida)
+          if (datosAsistencia.es_continuacion_nocturna) {
+            console.log('Omitiendo fecha de continuación nocturna:', fechaISO);
+            continue;
+          }
+          
+          // Omitir si no hay entrada (podría ser salida residual del día anterior)
+          const marcacionesArray = datosAsistencia.marcaciones || [];
+          const marcacionEntrada = marcacionesArray.find(m => m.tipo === 'entrada');
+          if (!marcacionEntrada && !datosAsistencia.tiene_entrada) {
+            console.log('Omitiendo fecha sin entrada:', fechaISO);
+            continue;
+          }
+          
           // Convertir fecha ISO a formato local sin cambio de día
           // La fecha viene como "2025-10-17", mantenerla tal cual
           const fecha = fechaISO; // Ya viene en formato YYYY-MM-DD, no necesita conversión
           
-          const marcacionesArray = datosAsistencia.marcaciones || [];
           const turno = datosAsistencia.turno;
           const estadoAsistencia = datosAsistencia.estado_asistencia;
           const atraso = datosAsistencia.atraso;
           const salida = datosAsistencia.salida;
           
-          // Buscar marcaciones específicas
-          const marcacionEntrada = marcacionesArray.find(m => m.tipo === 'entrada');
-          const marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida');
+          // Para turnos nocturnos: NO usar salida del mismo día si pertenece al día anterior
+          let marcacionSalida = null;
+          const esNocturno = turno && turno.es_nocturno;
+          
+          if (esNocturno && salida && salida.es_salida_dia_siguiente) {
+            // Es turno nocturno con salida al día siguiente
+            // Para cálculo de horas, necesitamos usar la hora de salida del día siguiente
+            marcacionSalida = {
+              tipo: 'salida',
+              hora: salida.hora_salida_real,
+              fecha_real: salida.fecha_salida_dia_siguiente,
+              es_dia_siguiente: true
+            };
+          } else if (!esNocturno) {
+            // Es turno diurno, usar salida del mismo día si existe
+            marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida');
+          }
+          // Si es turno nocturno sin es_salida_dia_siguiente, no asignar salida
+          
           const colaciones = marcacionesArray.filter(m => m.tipo === 'colacion');
           
           // Calcular horas trabajadas
