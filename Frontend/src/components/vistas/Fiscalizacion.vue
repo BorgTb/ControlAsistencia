@@ -144,7 +144,24 @@
               </svg>
             </button>
           </div>
-          <div class="overflow-y-auto max-h-96">
+          <div v-if="mostrarCambios" class="overflow-y-auto max-h-96">
+            <h4 class="text-lg font-bold text-gray-800 mb-4">Cambios realizados por {{ usuarioSeleccionado.nombre }}</h4>
+            <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
+              <thead class="sticky top-0 z-10 shadow-sm">
+                <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
+                  <th class="px-4 py-3 font-semibold text-left">Fecha</th>
+                  <th class="px-4 py-3 font-semibold text-left">Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="cambio in cambiosUsuario" :key="cambio.id" class="transition border-b border-gray-100 hover:bg-blue-100 text-sm h-10 align-middle">
+                  <td class="px-4 py-2 text-gray-600 align-middle">{{ cambio.fecha }}</td>
+                  <td class="px-4 py-2 text-gray-600 align-middle">{{ cambio.descripcion }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="overflow-y-auto max-h-96">
             <table class="w-full text-sm border-separate border-spacing-0 rounded-2xl overflow-hidden bg-white shadow-md">
               <thead class="sticky top-0 z-10 shadow-sm">
                 <tr class="bg-gradient-to-r from-green-50 to-green-100 text-gray-700">
@@ -163,7 +180,7 @@
                   </td>
                   <td class="px-4 py-2 text-center align-middle">
                     <button
-                      @click="abrirModalCambios(registro.usuario_id, registro.nombre, registro.apellido_pat, registro.rol)"
+                      @click="mostrarCambiosUsuario(registro.usuario_id)"
                       class="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 transition text-sm shadow-sm mx-auto"
                       title="Ver cambios realizados por este usuario"
                     >
@@ -197,14 +214,16 @@ import { useNotification } from '../../composables/useNotification.js'
 import ModalCambiosUsuario from '../modals/ModalCambiosUsuario.vue'
 import { useAuth } from '../../composables/useAuth.js'
 
-const { registros, loading, error, cargarRegistros, cargarEstadisticas } = useAuditoria()
+const { registros, loading, error, cargarRegistros, cargarEstadisticas, obtenerCambiosUsuario, estadisticasCalculadas } = useAuditoria()
 const { hasRole } = useAuth()
 const isAdmin = computed(() => hasRole('admin'))
 
 const mostrarModalCambios = ref(false)
 const mostrarModalDetalles = ref(false)
 const usuarioSeleccionado = ref({ id: null, nombre: '', rol: '' })
+const cambiosUsuario = ref([])
 const filtroBusqueda = ref('')
+const mostrarCambios = ref(false)
 
 const registrosAgrupados = computed(() =>
   registros.value.reduce((acc, registro) => {
@@ -229,14 +248,36 @@ const abrirModalDetalles = (usuario) => {
   usuarioSeleccionado.value.nombre = usuario
   mostrarModalDetalles.value = true
 }
-const cerrarModalDetalles = () => (mostrarModalDetalles.value = false)
-const abrirModalCambios = (usuarioId, nombre, apellido, rol) => {
-  usuarioSeleccionado.value = { id: usuarioId, nombre: `${nombre} ${apellido}`, rol }
-  mostrarModalCambios.value = true
+const mostrarCambiosUsuario = async (usuarioId) => {
+  mostrarCambios.value = true;
+  console.log('Cargando cambios para usuario:', usuarioId);
+  try {
+    const respuesta = await obtenerCambiosUsuario(usuarioId);
+    console.log('Respuesta de la API:', respuesta);
+    cambiosUsuario.value = respuesta.cambios || [];
+    console.log('Cambios cargados:', cambiosUsuario.value);
+  } catch (error) {
+    console.error('Error al cargar cambios:', error);
+    cambiosUsuario.value = [];
+  }
+}
+
+const cerrarModalDetalles = () => {
+  mostrarModalDetalles.value = false
+  mostrarCambios.value = false
 }
 
 onMounted(async () => {
-  await cargarRegistros()
-  await cargarEstadisticas()
+  try {
+    console.log('Cargando registros de auditoría...');
+    await cargarRegistros();
+    console.log('Registros cargados exitosamente:', registros.value);
+
+    console.log('Cargando estadísticas del sistema...');
+    await cargarEstadisticas();
+    console.log('Estadísticas cargadas:', estadisticasCalculadas.value);
+  } catch (error) {
+    console.error('Error durante la carga inicial:', error);
+  }
 })
 </script>
