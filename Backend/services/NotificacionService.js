@@ -285,6 +285,98 @@ class NotificacionService {
         }
     }
 
+    async enviarNotificacionAprobacionSolicitud(solicitud, usuario_que_aprueba, observaciones = null) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+
+            // Obtener datos del usuario que solicita
+            const usuarioSolicitante = await UserModel.findById(solicitud.usuario_id);
+            if (!usuarioSolicitante) {
+                throw new Error('Usuario solicitante no encontrado');
+            }
+
+            // Obtener datos de la empresa
+            const empresa = await EmpresaModel.getEmpresaById(solicitud.empresa_id);
+
+            // Enviar notificación de aprobación
+            const estado = await MailService.enviarNotificacionAprobacionSolicitud(
+                usuarioSolicitante,
+                solicitud,
+                usuario_que_aprueba,
+                empresa,
+                observaciones
+            );
+
+            //enviar copia al empleador
+            const copia = MailService.enviarNotificacionAprobacionSolicitudCopiaEmpleador(
+                usuarioSolicitante,
+                solicitud,
+                usuario_que_aprueba,
+                empresa,
+                observaciones
+            );
+            
+
+            return estado;
+        } catch (error) {
+            console.error('Error al enviar notificación de aprobación de solicitud:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de aprobación',
+                error: error.message
+            };
+        }
+    }
+
+    async enviarNotificacionRechazosolicitud(solicitud, usuario_que_rechaza, datosRechazo = {}) {
+        try {
+            // Verificar conexión de correo
+            const conexionValida = await MailService.verificarConexion();
+            if (!conexionValida.success) {
+                console.error('Error de conexión con el servicio de correo');
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servicio de correo'
+                };
+            }
+
+            // Obtener datos del usuario que solicita
+            const usuarioSolicitante = await UserModel.findById(solicitud.usuario_id);
+            if (!usuarioSolicitante) {
+                throw new Error('Usuario solicitante no encontrado');
+            }
+
+            // Obtener datos de la empresa
+            const empresa = await EmpresaModel.getEmpresaById(solicitud.empresa_id);
+
+            // Enviar notificación de rechazo con todos los detalles
+            const estado = await MailService.enviarNotificacionRechazosolicitud(
+                usuarioSolicitante,
+                solicitud,
+                usuario_que_rechaza,
+                empresa,
+                datosRechazo
+            );
+
+            return estado;
+        } catch (error) {
+            console.error('Error al enviar notificación de rechazo de solicitud:', error);
+            return {
+                success: false,
+                message: 'Error al enviar notificación de rechazo',
+                error: error.message
+            };
+        }
+    }
+
 }
 
 export default new NotificacionService();

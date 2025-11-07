@@ -391,26 +391,21 @@
             <p v-if="plazoApelacion === 0 || plazoApelacion === null" class="mt-1 text-xs text-red-500">El plazo es requerido y debe ser mayor a 0</p>
           </div>
 
-          <!-- TODO: Dropdown para seleccionar a quién va dirigida la apelación (supervisor, RH, director, etc.) -->
+          <!-- TODO: Campo libre para especificar a quién va dirigida la apelación -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Apelación dirigida a <span class="text-red-500">*</span>
             </label>
-            <select
+            <input
               v-model="instanciaApelacion"
+              type="text"
+              placeholder="Ej: Departamento de RRHH, Gerencia, Dirección General, etc."
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               required
-            >
-              <option value="">-- Selecciona una opción --</option>
-              <!-- TODO: Traer dinámicamente según la estructura organizacional -->
-              <!-- Posibles opciones: Departamento de RRHH, Gerencia, Dirección, etc. -->
-              <option value="rrhh">Departamento de RRHH</option>
-              <option value="gerencia">Gerencia</option>
-              <option value="direccion">Dirección General</option>
-              <option value="comite_apelacion">Comité de Apelación</option>
-            </select>
-            <!-- TODO: Validar que se seleccione una opción -->
-            <p v-if="instanciaApelacion === ''" class="mt-1 text-xs text-red-500">Debes seleccionar una instancia</p>
+            />
+            <p class="mt-1 text-xs text-gray-500">Especifica la instancia o persona a la que el trabajador puede dirigir su apelación</p>
+            <!-- TODO: Validar que no esté vacío -->
+            <p v-if="instanciaApelacion.trim() === ''" class="mt-1 text-xs text-red-500">Debes especificar una instancia de apelación</p>
           </div>
         </div>
 

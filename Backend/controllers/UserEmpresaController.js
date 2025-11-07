@@ -2210,6 +2210,16 @@ async function aprobarSolicitud(req, res) {
             }
         );
 
+        // Enviar correo de aprobación
+        try {
+            console.log('📧 Enviando correo de aprobación de solicitud...');
+            await NotificacionService.enviarNotificacionAprobacionSolicitud(solicitud, user, observaciones);
+            console.log('✅ Correo de aprobación enviado exitosamente');
+        } catch (emailError) {
+            console.error('⚠️ Error enviando correo de aprobación:', emailError);
+            // No bloqueamos la respuesta si falla el envío de correo
+        }
+
         res.status(200).json({
             success: true,
             message: "Solicitud aprobada correctamente",
@@ -2228,9 +2238,9 @@ async function aprobarSolicitud(req, res) {
 async function rechazarSolicitud(req, res) {
     try {
         const id = parseInt(req.params.id); // Convertir a número
-        const { motivo, observaciones } = req.body;
+        const { motivo, observaciones, plazo_apelacion, instancia_apelacion} = req.body;
         const user = req.user;
-
+        console.log(req.body);
         console.log("Rechazando solicitud:", id, "por usuario:", user.id);
         console.log("Estado del usuario:", user);
 
@@ -2269,6 +2279,25 @@ async function rechazarSolicitud(req, res) {
                 rechazado_por: user.id
             }
         );
+
+        // Enviar correo de rechazo con detalles completos
+        try {
+            console.log('📧 Enviando correo de rechazo de solicitud...');
+            await NotificacionService.enviarNotificacionRechazosolicitud(
+                solicitud, 
+                user, 
+                {
+                    motivo: motivo || 'Sin especificar',
+                    observaciones: observaciones || null,
+                    plazo_apelacion: plazo_apelacion || null,
+                    instancia_apelacion: instancia_apelacion || null
+                }
+            );
+            console.log('✅ Correo de rechazo enviado exitosamente');
+        } catch (emailError) {
+            console.error('⚠️ Error enviando correo de rechazo:', emailError);
+            // No bloqueamos la respuesta si falla el envío de correo
+        }
 
         res.status(200).json({
             success: true,
