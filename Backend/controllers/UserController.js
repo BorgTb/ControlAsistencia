@@ -6,6 +6,7 @@ import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import AuditoriaModel from '../model/AuditoriaModel.js';
 import FileUploadService from '../services/FileUploadService.js';
 import SolicitudesUsuariosModel from '../model/SolicitudesUsuariosModel.js';
+import HorasExtrasModel from '../model/HorasExtrasModel.js';
 
 /**
  * Actualiza el rol de un usuario por su id.
@@ -887,6 +888,30 @@ const getSolicitudes = async (req, res) => {
     }
 }
 
+const getHorasExtrasUsuario = async (req, res) => {
+    try {
+        const user = req.user;
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioEmpresa(usuarioEmpresa.id);
+        const sumTotalHoras = horasExtras.reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
+        const aprobadas = horasExtras.filter(horaExtra => horaExtra.estado === 'APROBADA').reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
+
+        res.status(200).json({
+            success: true,
+            data: {horasAprobadas: aprobadas, horasAcumuladas: sumTotalHoras - aprobadas, horasExtras},
+        });
+    }
+    catch (error) {
+        console.error('Error obteniendo horas extras:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las horas extras',
+            error: error.message
+        });
+    }
+};
+
+
 const UserController = {
     updateEmail,
     updatePassword,
@@ -905,7 +930,8 @@ const UserController = {
     listAdmins,
     createSolicitudMarcacion,
     createSolicitud,
-    getSolicitudes
+    getSolicitudes,
+    getHorasExtrasUsuario
 }
 
 export default UserController;

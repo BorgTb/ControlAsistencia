@@ -57,4 +57,8 @@ router.post('/usuarios-empresas', AuthService.verifyToken, AuthService.isAdmin, 
 router.post('/solicitudes', AuthService.verifyToken, uploadSolicitudes.single('archivo'), UserController.createSolicitud);
 router.get('/solicitudes', AuthService.verifyToken, UserController.getSolicitudes);
 
+
+//rutas para horas extras
+router.get('/horas-extras', AuthService.verifyToken, UserController.getHorasExtrasUsuario);
+
 export default router;

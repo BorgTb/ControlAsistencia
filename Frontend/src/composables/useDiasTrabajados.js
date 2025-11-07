@@ -43,7 +43,7 @@ export function useDiasTrabajados() {
       // Convertir mes de JavaScript (0-11) a mes normal (1-12)
       const mesBackend = mes + 1;
       const response = await diasTrabajadosService.getHorasExtrasMes(mesBackend, anio);
-      
+      console.log('Respuesta de horas extras del mes:', response.data);
       if (response.success) {
         horasExtras.value = response.data || null;
       } else {
