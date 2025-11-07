@@ -2,16 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import router from './routes/index.js';
-
-
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.SERVER_PORT;
-
 
 //MIDDLEWARE
 app.use(cors());
@@ -34,6 +34,7 @@ app.use('/api/estadisticas', router.estadisticas);
 app.use('/api/fiscalizador', router.fiscalizador);
 app.use('/api/justificaciones', router.justificaciones);
 app.use('/api/feriados', router.feriados);
+app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
 
 
 

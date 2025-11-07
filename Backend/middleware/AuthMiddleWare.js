@@ -5,8 +5,7 @@ const verifyToken = (req, res, next) => {
     try {
         // Obtener el token del header Authorization
         const authHeader = req.headers.authorization;
-
-        
+        console.log(authHeader);
         if (!authHeader) {
             return res.status(401).json({ 
                 success: false,

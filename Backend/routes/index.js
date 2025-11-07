@@ -10,6 +10,7 @@ import EstadisticasRoutes from "./EstadisticasRoutes.js";
 import FiscalizadorRoutes from "./FiscalizadorRoutes.js";
 import JustificacionesRoutes from "./JustificacionesRoutes.js";
 import FeriadosRoutes from "./FeriadosRoutes.js";
+import DocumentoRoutes from "./DocumentoRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -23,7 +24,8 @@ const router = {
     estadisticas: EstadisticasRoutes,
     fiscalizador: FiscalizadorRoutes,
     justificaciones: JustificacionesRoutes,
-    feriados: FeriadosRoutes
+    feriados: FeriadosRoutes,
+    documentos: DocumentoRoutes
 }
 
 export default router;

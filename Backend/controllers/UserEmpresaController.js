@@ -2074,9 +2074,15 @@ async function obtenerSolicitudesUsuarios(req,res) {
         // Obtener todas las solicitudes de la empresa
         // usando el método obtenerPendientesPorEmpresa del modelo
         const solicitudes = await SolicitudesUsuariosModel.obtenerPendientesPorEmpresa(user.empresa_id);
+
+        // la url del documento adjunto debe ser solo el nombre del archivo, no la ruta completa
+        solicitudes.forEach(solicitud => {
+            if (solicitud.documento_adjunto) {
+                const partesRuta = solicitud.documento_adjunto.split('/');
+                solicitud.documento_adjunto = partesRuta[partesRuta.length - 1];
+            }
+        });
         
-        console.log("Solicitudes obtenidas:", solicitudes.length);
-        console.log("Solicitudes:", solicitudes);
 
         res.status(200).json({
             success: true,
