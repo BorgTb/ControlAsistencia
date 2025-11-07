@@ -3,69 +3,169 @@
   <div class="w-full bg-gray-50 border-b border-gray-200">
     <nav class="max-w-7xl mx-auto px-4">
       <ul class="flex space-x-2">
+        <!-- Administrar empresas -->
         <li>
           <router-link
             to="/administrarempresa"
             class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
-            :class="$route.path === '/administrarempresa' ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white' : 'text-gray-500 hover:text-cyan-600'"
+            :class="$route.path === '/administrarempresa'
+              ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white'
+              : 'text-gray-500 hover:text-cyan-600'"
           >
-            <svg class="w-4 h-4 mr-1 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 7v4a1 1 0 001 1h3v9a1 1 0 001 1h4a1 1 0 001-1v-9h3a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1zm13 0V5a5 5 0 00-10 0v2" />
+            <svg
+              class="w-4 h-4 mr-1 text-cyan-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 7v4a1 1 0 001 1h3v9a1 1 0 001 1h4a1 1 0 001-1v-9h3a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1zm13 0V5a5 5 0 00-10 0v2"
+              />
             </svg>
             Administrar empresas
           </router-link>
         </li>
+
+        <!-- Administración -->
         <li>
           <router-link
             to="/RolAdministracion"
             class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
-            :class="$route.path === '/RolAdministracion' ? 'text-indigo-600 border-b-2 border-indigo-400 bg-white' : 'text-gray-500 hover:text-indigo-600'"
+            :class="$route.path === '/RolAdministracion'
+              ? 'text-indigo-600 border-b-2 border-indigo-400 bg-white'
+              : 'text-gray-500 hover:text-indigo-600'"
           >
-            <svg class="w-4 h-4 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 7v4a1 1 0 001 1h3v9a1 1 0 001 1h4a1 1 0 001-1v-9h3a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1zm13 0V5a5 5 0 00-10 0v2" />
+            <svg
+              class="w-4 h-4 mr-1 text-indigo-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 7v4a1 1 0 001 1h3v9a1 1 0 001 1h4a1 1 0 001-1v-9h3a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1zm13 0V5a5 5 0 00-10 0v2"
+              />
             </svg>
             Administración
           </router-link>
         </li>
+
+        <!-- Usuarios y permisos -->
         <li>
           <router-link
             to="/usuarios-permisos"
             class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
-            :class="$route.path === '/usuarios-permisos' ? 'text-amber-600 border-b-2 border-amber-400 bg-white' : 'text-gray-500 hover:text-amber-600'"
+            :class="$route.path === '/usuarios-permisos'
+              ? 'text-amber-600 border-b-2 border-amber-400 bg-white'
+              : 'text-gray-500 hover:text-amber-600'"
           >
-            <svg class="w-4 h-4 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87v-2a4 4 0 00-3-3.87m6 5.87a4 4 0 00-3-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a4 4 0 100-8 4 4 0 000 8z" />
+            <svg
+              class="w-4 h-4 mr-1 text-amber-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87v-2a4 4 0 00-3-3.87m6 5.87a4 4 0 00-3-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
             </svg>
             Usuarios y permisos
           </router-link>
         </li>
+
+        <!-- Fiscalización -->
         <li>
           <router-link
             to="/fiscalizacion"
             class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
-            :class="$route.path === '/fiscalizacion' ? 'text-green-600 border-b-2 border-green-400 bg-white' : 'text-gray-500 hover:text-green-600'"
+            :class="$route.path === '/fiscalizacion'
+              ? 'text-green-600 border-b-2 border-green-400 bg-white'
+              : 'text-gray-500 hover:text-green-600'"
           >
-            <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              class="w-4 h-4 mr-1 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             Fiscalización
           </router-link>
         </li>
+
+        <!-- Estadísticas -->
         <li>
           <router-link
             to="/estadisticas"
             class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
-            :class="$route.path === '/estadisticas' ? 'text-fuchsia-600 border-b-2 border-fuchsia-400 bg-white' : 'text-gray-500 hover:text-fuchsia-600'"
+            :class="$route.path === '/estadisticas'
+              ? 'text-fuchsia-600 border-b-2 border-fuchsia-400 bg-white'
+              : 'text-gray-500 hover:text-fuchsia-600'"
           >
-            <svg class="w-4 h-4 mr-1 text-fuchsia-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M11 19V6m4 13V10m4 9V4M7 19v-4M3 19v-2" />
+            <svg
+              class="w-4 h-4 mr-1 text-fuchsia-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 19V6m4 13V10m4 9V4M7 19v-4M3 19v-2"
+              />
             </svg>
             Estadísticas
+          </router-link>
+        </li>
+
+        <!-- Domingos / Festivos -->
+        <li>
+          <router-link
+            to="/empresa/reportes/domingos-festivos"
+            class="inline-flex items-center px-2.5 py-2 text-xs font-medium rounded-t transition-colors duration-200"
+            :class="$route.path === '/empresa/reportes/domingos-festivos'
+              ? 'text-cyan-600 border-b-2 border-cyan-400 bg-white'
+              : 'text-gray-500 hover:text-cyan-600'"
+          >
+            <svg
+              class="w-4 h-4 mr-1 text-cyan-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <rect
+                x="3"
+                y="8"
+                width="18"
+                height="13"
+                rx="2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 2v4M8 2v4M3 10h18"
+              />
+            </svg>
+            Domingos/Festivos
           </router-link>
         </li>
       </ul>
@@ -74,10 +174,19 @@
 
   <!-- Buscador -->
   <div class="mt-6 flex justify-center">
-    <div class="flex items-center border border-gray-300 rounded-lg px-4 py-2 shadow-sm w-96">
-      <input v-model="filtroBusqueda" type="text" placeholder="Buscar usuario (nombre, apellido, RUT)"
-        class="w-full focus:outline-none text-sm text-gray-600" />
-      <button @click="limpiarBusqueda" class="text-blue-600 text-sm font-medium ml-4 hover:underline">
+    <div
+      class="flex items-center border border-gray-300 rounded-lg px-4 py-2 shadow-sm w-96"
+    >
+      <input
+        v-model="filtroBusqueda"
+        type="text"
+        placeholder="Buscar usuario (nombre, apellido, RUT)"
+        class="w-full focus:outline-none text-sm text-gray-600"
+      />
+      <button
+        @click="limpiarBusqueda"
+        class="text-blue-600 text-sm font-medium ml-4 hover:underline"
+      >
         Limpiar
       </button>
     </div>
@@ -85,23 +194,33 @@
 
   <!-- Contenido -->
   <div class="mt-8 flex justify-center">
-    <div v-if="loading" class="text-center py-8">
-      <p class="text-gray-600">Cargando datos...</p>
+    <div v-if="loading" class="text-center py-8 text-gray-600">Cargando datos...</div>
+    <div v-else-if="error" class="text-center py-8 text-red-600">
+      Error al cargar los datos: {{ error }}
     </div>
-    <div v-else-if="error" class="text-center py-8 text-red-600">Error al cargar los datos: {{ error }}</div>
-    <div v-else-if="!Object.keys(registrosFiltrados).length" class="text-center py-8 text-gray-600">
+    <div
+      v-else-if="!Object.keys(registrosFiltrados).length"
+      class="text-center py-8 text-gray-600"
+    >
       No hay registros disponibles.
     </div>
+
     <div v-else class="max-w-7xl">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        <div v-for="(registrosUsuario, usuario) in registrosFiltrados" :key="usuario"
-          class="p-5 bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-all duration-300 hover:border-green-300">
+        <div
+          v-for="(registrosUsuario, usuario) in registrosFiltrados"
+          :key="usuario"
+          class="p-5 bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition-all duration-300 hover:border-green-300"
+        >
           <h3 class="text-lg font-bold text-gray-800 mb-1">{{ usuario }}</h3>
-          <p class="text-sm text-gray-600 mb-3">Registros:
+          <p class="text-sm text-gray-600 mb-3">
+            Registros:
             <span class="font-semibold">{{ registrosUsuario.length }}</span>
           </p>
-          <button @click="abrirModalDetalles(usuario)"
-            class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-sm font-medium">
+          <button
+            @click="abrirModalDetalles(usuario)"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition text-sm font-medium"
+          >
             Ver Detalles
           </button>
         </div>
@@ -109,15 +228,15 @@
     </div>
   </div>
 
-  <!-- Modal Detalles -->
-  <div v-if="mostrarModalDetalles" class="fixed inset-0 bg-transparent flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-lg p-10 w-full max-w-6xl">
+  <!-- Modal de detalles -->
+  <div
+    v-if="mostrarModalDetalles"
+    class="fixed inset-0 bg-transparent flex items-center justify-center z-50"
+    style="align-items: center;"
+  >
+    <div class="bg-white bg-opacity-80 rounded-xl shadow-lg p-6 w-full max-w-5xl relative mt-0">
       <div class="flex justify-between items-center mb-4 border-b pb-3">
         <h3 class="text-xl font-bold text-gray-800 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11M9 21V3" />
-          </svg>
           Detalles de {{ usuarioSeleccionado.nombre }}
         </h3>
         <button @click="cerrarModalDetalles" class="text-gray-500 hover:text-gray-800 transition">
@@ -129,9 +248,13 @@
 
       <!-- Tabs -->
       <div class="flex space-x-4 mb-6">
-        <button v-for="tab in tabs" :key="tab.id" @click="seccionActiva = tab.id"
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="seccionActiva = tab.id"
           :class="seccionActiva === tab.id ? tab.activo : tab.inactivo"
-          class="px-5 py-2 rounded-lg text-sm font-medium shadow">
+          class="px-5 py-2 rounded-lg text-sm font-medium shadow"
+        >
           {{ tab.nombre }}
         </button>
       </div>
@@ -146,13 +269,18 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="cambio in cambiosFiltrados" :key="cambio.id"
-              class="border-b border-gray-100 hover:bg-green-50 transition text-sm">
+            <tr
+              v-for="cambio in cambiosFiltrados"
+              :key="cambio.id"
+              class="border-b border-gray-100 hover:bg-green-50 transition text-sm"
+            >
               <td class="px-4 py-2 text-gray-700">{{ cambio.fecha }}</td>
               <td class="px-4 py-2 text-gray-700">{{ cambio.descripcion }}</td>
             </tr>
             <tr v-if="!cambiosFiltrados.length">
-              <td colspan="2" class="text-center py-4 text-gray-500 italic">Sin registros en esta sección.</td>
+              <td colspan="2" class="text-center py-4 text-gray-500 italic">
+                Sin registros en esta sección.
+              </td>
             </tr>
           </tbody>
         </table>

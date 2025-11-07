@@ -733,6 +733,18 @@
       </div>
     </div>
   </div>
+
+  <!-- Mensaje de éxito al crear usuario -->
+  <div v-if="mostrarMensajeExito" class="fixed top-0 left-0 w-full flex justify-center z-50">
+    <div class="bg-green-500 text-white px-6 py-3 mt-4 rounded-lg shadow-lg text-lg font-semibold">
+      {{ mensajeExito }}
+    </div>
+  </div>
+  <div v-if="mostrarMensajeEliminacion" class="fixed top-0 left-0 w-full flex justify-center z-50">
+    <div class="bg-red-500 text-white px-6 py-3 mt-4 rounded-lg shadow-lg text-lg font-semibold">
+      {{ mensajeEliminacion }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -870,6 +882,14 @@ const nuevoUsuario = ref({
   estado: '1'
 });
 
+// Mensaje de éxito
+const mensajeExito = ref("");
+const mostrarMensajeExito = ref(false);
+
+// Mensaje de eliminación
+const mensajeEliminacion = ref("");
+const mostrarMensajeEliminacion = ref(false);
+
 // Funciones auxiliares
 const getRolBadgeClass = (rol) => {
   const classes = {
@@ -947,35 +967,26 @@ const cerrarModalCrearUsuario = () => {
 const crearUsuario = async () => {
   try {
     cargandoCreacion.value = true;
-    
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
-    
     const response = await axios.post("/api/user/usuarios", nuevoUsuario.value, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-    
     if (response.data.success) {
-      // Agregar usuario a la lista local
       const nuevoUsuarioCreado = {
         ...response.data.user,
         iniciales: (response.data.user.nombre.charAt(0) + 
                    (response.data.user.apellido_pat ? response.data.user.apellido_pat.charAt(0) : '')).toUpperCase()
       };
-      
       usuariosConPermisos.value.push(nuevoUsuarioCreado);
-      
-      // Cerrar modal y mostrar éxito
       cerrarModalCrearUsuario();
-      alert('Usuario creado exitosamente');
-      
-      // Disparar evento para actualizar estadísticas en tiempo real
+      mensajeExito.value = "Usuario creado exitosamente !!";
+      mostrarMensajeExito.value = true;
+      setTimeout(() => { mostrarMensajeExito.value = false; }, 5000);
       window.dispatchEvent(new Event('actualizarEstadisticas'));
-      console.log('📊 Evento de actualización de estadísticas disparado tras crear usuario');
     }
-    
   } catch (error) {
     console.error('Error al crear usuario:', error);
     if (error.response?.data?.message) {
@@ -1001,31 +1012,23 @@ const cerrarModalEliminar = () => {
 const eliminarUsuario = async () => {
   try {
     cargandoEliminacion.value = true;
-    
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
-    
     const response = await axios.delete(`/api/user/usuarios/${usuarioAEliminar.value.id}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-    
     if (response.data.success) {
-      // Remover usuario de la lista local
       usuariosConPermisos.value = usuariosConPermisos.value.filter(
         u => u.id !== usuarioAEliminar.value.id
       );
-      
-      // Cerrar modal y mostrar éxito
       cerrarModalEliminar();
-      alert('Usuario eliminado exitosamente');
-      
-      // Disparar evento para actualizar estadísticas en tiempo real
+      mensajeEliminacion.value = "Usuario eliminado correctamente !!";
+      mostrarMensajeEliminacion.value = true;
+      setTimeout(() => { mostrarMensajeEliminacion.value = false; }, 5000);
       window.dispatchEvent(new Event('actualizarEstadisticas'));
-      console.log('📊 Evento de actualización de estadísticas disparado tras eliminar usuario');
     }
-    
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     if (error.response?.data?.message) {
