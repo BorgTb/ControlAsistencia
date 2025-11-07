@@ -448,14 +448,23 @@ const updateTurno = async (req, res) => {
         const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionExistente.usuario_empresa_id);
         const tipoTurnoAnterior = await TipoTurnosModel.getById(asignacionExistente.tipo_turno_id);
 
+
+        // validar si se está intentando asignar el mismo tipo de turno
+        if (asignacionExistente.tipo_turno_id === nuevosDatos.tipo_turno_id) {
+            return res.status(400).json({
+                success: false,
+                message: "El nuevo tipo de turno debe ser diferente al actual"
+            });
+        }
+
         // Modificar el turno (invalida el anterior y crea uno nuevo)
-        //const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
+        const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
 
         
 
         NotificacionService.enviarNotificacionCambioTurno(trabajador, tipoTurnoAnterior, nuevoTipoTurno);
         
-        /*
+        
         // Registrar la modificación en auditoría
         if (req.user && req.user.id) {
             try {
@@ -492,11 +501,11 @@ const updateTurno = async (req, res) => {
                 console.error('⚠️ Error al registrar modificación de turno en auditoría:', auditError);
             }
         }
-*/
+
         
         
 
-        res.status(501).json({ 
+        res.status(200).json({ 
             success: true, 
             message: "Turno modificado exitosamente",
             data: {
