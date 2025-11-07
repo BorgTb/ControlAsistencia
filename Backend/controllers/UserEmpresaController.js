@@ -18,6 +18,7 @@ import AuditoriaModel from "../model/AuditoriaModel.js";
 import ConfigToleranciaModel from "../model/ConfigTolerancias.js";
 import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
 import SolicitudesUsuariosModel from "../model/SolicitudesUsuariosModel.js";
+import JustificacionesModel from "../model/JustificacionesModel.js";
 
 
 
@@ -1974,6 +1975,33 @@ async function aprobarSolicitud(req, res) {
                 message: "Esta solicitud no pertenece a tu empresa"
             });
         }
+
+
+
+        // chequear que tipo es si corresponde a una para justificar dias, es decir permisos con o sin goce de sueldo, sea otra se debe realizar algo mas a futuro se debe verificar que se agreguen vacaciones
+
+        if (solicitud.subtipo === 'permiso_con_goce' || solicitud.subtipo === 'permiso_sin_goce') {
+            // Llamar a la función para justificar ausencias
+            let urlDocumento = null;
+            if (solicitud.documento_adjunto){
+                urlDocumento = solicitud.documento_adjunto;
+            }
+
+            console.log(solicitud);
+
+            
+
+            const result = await JustificacionesModel.crearJustificacion({
+                usuario_empresa_id: solicitud.id_usuario_empresa,
+                fecha_inicio: solicitud.fecha_inicio,
+                fecha_fin: solicitud.fecha_fin,
+                tipo_justificacion: solicitud.subtipo,
+                archivo_url: urlDocumento,
+            })
+
+            await JustificacionesModel.actualizarEstadoJustificacion(result.insertId, 'APROBADA', user.id);
+        }
+
 
         // Actualizar estado a ACEPTADA
         const resultado = await SolicitudesUsuariosModel.actualizarEstado(
