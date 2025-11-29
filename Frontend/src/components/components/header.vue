@@ -169,7 +169,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '../../composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { user, isLoading, logout } = useAuth()

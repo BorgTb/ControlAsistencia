@@ -241,8 +241,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useEmpresa } from '../../../composables/useEmpresa.js';
-import { useEst } from '../../../composables/useEst.js';
+import { useEmpresa } from '@/composables/useEmpresa.js';
+import { useEst } from '@/composables/useEst.js';
 
 
 const { obtenerAsociaciones, asociarTrabajador } = useEst();

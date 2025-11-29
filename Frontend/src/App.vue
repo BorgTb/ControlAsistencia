@@ -12,9 +12,9 @@
 </template>
 
 <script setup>
-import Header from './components/components/header.vue'
-import HeaderEmpresa from './components/components/headerEmpresa.vue'
-import Footer from './components/components/footer.vue'
+import Header from '@/components/components/header.vue'
+import HeaderEmpresa from '@/components/components/headerEmpresa.vue'
+import Footer from '@/components/components/footer.vue'
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 

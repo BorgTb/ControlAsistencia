@@ -173,13 +173,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useNotification } from '../../../composables/useNotification.js';
-import { useEmpresa } from '../../../composables/useEmpresa.js';
-import { useAuthStore } from '../../../stores/authStore.js';
+import { useNotification } from '@/composables/useNotification.js';
+import { useEmpresa } from '@/composables/useEmpresa.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import MarcacionesCalendario from './MarcacionesCalendario.vue';
-import { calcularAusencias } from '../../../utils/ausencias.js';
+import { calcularAusencias } from '@/utils/ausencias.js';
 import ListaJustificaciones from './ListaJustificaciones.vue';
-import justificacionesService from '../../../services/JustificacionesService.js';
+import justificacionesService from '@/services/JustificacionesService.js';
 // import DetalleDiarioTable from './DetalleDiarioTable.vue';
 
 const router = useRouter();

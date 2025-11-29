@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import justificacionesService from '../services/justificacionesService';
+import justificacionesService from '@/services/justificacionesService';
 
 export function useJustificaciones() {
   const isLoading = ref(false);

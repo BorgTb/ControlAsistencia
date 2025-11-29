@@ -186,7 +186,7 @@
 
 <script setup>
 import { defineProps, defineEmits, ref } from 'vue';
-import { useDocumentos } from '../../composables/useDocumentos';
+import { useDocumentos } from '@/composables/useDocumentos';
 
 const { descargarPorURL, cargando } = useDocumentos();
 const descargandoDocumento = ref(false);

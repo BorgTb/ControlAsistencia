@@ -257,7 +257,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import axios from "axios";
-import { useAuth } from '../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 
 // Estados reactivos
 const estadisticas = ref({

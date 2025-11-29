@@ -291,8 +291,8 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useAuditoria } from '../../composables/useAuditoria.js'
-import { useAuth } from '../../composables/useAuth.js'
+import { useAuditoria } from '@/composables/useAuditoria.js'
+import { useAuth } from '@/composables/useAuth.js'
 
 const { registros, loading, error, cargarRegistros, obtenerCambiosUsuario } = useAuditoria()
 const { hasRole } = useAuth()

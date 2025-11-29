@@ -186,7 +186,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useNotification } from '../../composables/useNotification.js';
+import { useNotification } from '@/composables/useNotification.js';
 import { calcularAusencias } from '../../utils/ausencias.js';
 
 const props = defineProps({

@@ -508,8 +508,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useEmpresa } from '../../../composables/useEmpresa'
-import { useAuth } from '../../../composables/useAuth'
+import { useEmpresa } from '@/composables/useEmpresa'
+import { useAuth } from '@/composables/useAuth'
 
 const { obtenerReporteJornadaDiaria, aprobarHorasExtras, aprobarHoraExtraPendiente, rechazarHoraExtraPendiente } = useEmpresa()
 const { user } = useAuth()

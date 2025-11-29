@@ -126,8 +126,8 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import feriadosService from '../../../services/feriadosService.js';
-import { calcularAusencias, fechaTieneTurno } from '../../../utils/ausencias.js';
+import feriadosService from '@/services/feriadosService.js';
+import { calcularAusencias, fechaTieneTurno } from '@/utils/ausencias.js';
 const emit = defineEmits(['hover-dia', 'mes-change']);
 
 

@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import AsistenciaService from '../services/AsistenciaService.js'
+import AsistenciaService from '@/services/AsistenciaService.js'
 
 export function useAsistencia() {
   // Estado reactivo

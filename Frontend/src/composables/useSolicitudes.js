@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import SolicitudesService from '../services/SolicitudesService';
+import SolicitudesService from '@/services/SolicitudesService';
 
 /**
  * Composable para manejar la lógica de solicitudes de modificación de marcaciones

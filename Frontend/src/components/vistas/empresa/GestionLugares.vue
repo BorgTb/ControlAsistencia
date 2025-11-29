@@ -416,8 +416,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
-import { useAuth } from '../../../composables/useAuth.js';
-import LugarService from '../../../services/LugarService.js';
+import { useAuth } from '@/composables/useAuth.js';
+import LugarService from '@/services/LugarService.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 

@@ -827,8 +827,8 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
-import { useDiasTrabajados } from '../../composables/useDiasTrabajados';
-import { useJustificaciones } from '../../composables/useJustificaciones';
+import { useDiasTrabajados } from '@/composables/useDiasTrabajados';
+import { useJustificaciones } from '@/composables/useJustificaciones';
 
 // Composable
 const {

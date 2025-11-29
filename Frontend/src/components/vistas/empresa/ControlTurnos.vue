@@ -930,8 +930,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import EmpresaServices from '../../../services/EmpresaService.js';
-import { useEmpresa } from '../../../composables/useEmpresa.js';
+import EmpresaServices from '@/services/EmpresaService.js';
+import { useEmpresa } from '@/composables/useEmpresa.js';
 
 const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno, modificarTurno } = useEmpresa();
 

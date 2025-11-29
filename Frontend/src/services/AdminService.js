@@ -5,7 +5,7 @@
 // Además, así se mantiene la organización y encapsulamiento del código.
 // Esto permite que el CRUD de empresas funcione correctamente, mostrando los datos en la web y permitiendo crear, editar y visualizar sin errores de autenticación.
 import axios from 'axios';
-import { useAuthStore } from '../stores/authStore.js'
+import { useAuthStore } from '@/stores/authStore.js'
 
 // Configuración de la URL base de la API
 const API_BASE_URL = (() => {

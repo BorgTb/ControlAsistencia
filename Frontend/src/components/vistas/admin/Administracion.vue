@@ -228,8 +228,8 @@
 <script setup>
 
 import { ref, onMounted, computed } from "vue";
-import { useNotification } from "../../composables/useNotification.js";
-import { useAuth } from '../../composables/useAuth.js';
+import { useNotification } from "@/composables/useNotification.js";
+import { useAuth } from '@/composables/useAuth.js';
 import axios from "axios";
 
 // ========== VARIABLES REACTIVAS ==========
@@ -331,12 +331,12 @@ async function confirmarCambios(id) {
     const token = authStorage.token;
     
     // Actualizar estado del usuario en el backend
-    await axios.put(`/api/user/usuarios/${id}/estado`, { estado: estadoEditTemp.value }, {
+    await axios.put(`${import.meta.env.VITE_API_URL}/user/usuarios/${id}/estado`, { estado: estadoEditTemp.value }, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
     // Actualizar rol del usuario en el backend
-    await axios.put(`/api/user/usuarios/${id}/rol`, { rol: rolEditTemp.value }, {
+    await axios.put(`${import.meta.env.VITE_API_URL}/user/usuarios/${id}/rol`, { rol: rolEditTemp.value }, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -408,7 +408,7 @@ async function cargarEmpresasDisponibles() {
     const token = authStorage.token;
 
     // Realizar petición al backend para obtener empresas
-    const response = await axios.get('/api/user/empresas', {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/empresas`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -447,7 +447,7 @@ async function unirTrabajadorAEmpresa() {
     };
 
     // Enviar petición al backend para crear la relación
-    const response = await axios.post('/api/user/usuarios-empresas', datosUnion, {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL}/user/usuarios-empresas`, datosUnion, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -482,7 +482,7 @@ async function cargarRelacionesUsuarioEmpresa() {
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
 
-    const response = await axios.get('/api/user/usuarios-empresas', {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios-empresas`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -570,7 +570,7 @@ onMounted(async () => {
     const token = authStorage.token;
     
     // Cargar usuarios del sistema
-    const response = await axios.get("/api/user/usuarios", {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios`, {
       headers: {
         Authorization: `Bearer ${token}`
       }

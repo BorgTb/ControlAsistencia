@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import ReportesService from '../services/ReportesService.js'
+import ReportesService from '@/services/ReportesService.js'
 
 // Estados reactivos
 const isLoading = ref(false)

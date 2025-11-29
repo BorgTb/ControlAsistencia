@@ -181,8 +181,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useAuth } from '../../../composables/useAuth.js';
-import feriadosService from '../../../services/feriadosService.js';
+import { useAuth } from '@/composables/useAuth.js';
+import feriadosService from '@/services/feriadosService.js';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

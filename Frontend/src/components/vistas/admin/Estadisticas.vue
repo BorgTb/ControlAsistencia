@@ -269,7 +269,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useAuth } from '../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 import axios from "axios";
 
 // Estados reactivos

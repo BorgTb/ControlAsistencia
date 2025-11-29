@@ -321,7 +321,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { useSolicitudesGenerales } from '../../composables/useSolicitudesGenerales';
+import { useSolicitudesGenerales } from '@/composables/useSolicitudesGenerales';
 
 // Props
 const props = defineProps({

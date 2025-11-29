@@ -286,8 +286,8 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { useAuth } from '../../composables/useAuth'
-import AuthService from '../../services/Authservices'
+import { useAuth } from '@/composables/useAuth'
+import AuthService from '@/services/Authservices'
 
 const { user } = useAuth()
 const userData = computed(() => user.value || {})

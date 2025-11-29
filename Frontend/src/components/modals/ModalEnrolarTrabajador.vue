@@ -199,7 +199,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import EmpresaServices from '../../services/EmpresaService.js'
+import EmpresaServices from '@/services/EmpresaService.js'
 
 // Props
 const props = defineProps({

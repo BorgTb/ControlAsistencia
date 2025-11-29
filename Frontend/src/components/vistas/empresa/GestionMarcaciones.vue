@@ -792,9 +792,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useEmpresa } from '../../../composables/useEmpresa.js';
-import { useAuth } from '../../../composables/useAuth.js';
-import AgregarMarcacionEmpleadorModal from '../../modals/AgregarMarcacionEmpleadorModal.vue';
+import { useEmpresa } from '@/composables/useEmpresa.js';
+import { useAuth } from '@/composables/useAuth.js';
+import AgregarMarcacionEmpleadorModal from '@/components/modals/AgregarMarcacionEmpleadorModal.vue';
 
 const router = useRouter();
 const { esEst, esEmpleador } = useAuth();

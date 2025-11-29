@@ -201,7 +201,7 @@
 <script setup>
 // Importaciones necesarias para el modal de cambios
 import { ref, computed, watch } from 'vue'
-import { obtenerCambiosUsuario } from '../../services/AuditoriaService.js'
+import { obtenerCambiosUsuario } from '@/services/AuditoriaService.js'
 
 // ========== PROPS DEL COMPONENTE ==========
 // Props recibidas desde el componente padre

@@ -1,5 +1,5 @@
-import EmpresaServices from "../services/EmpresaService.js";
-import { useAuth } from "./useAuth.js";
+import EmpresaServices from "@/services/EmpresaService.js";
+import { useAuth } from "@/composables/useAuth.js";
 export function useEmpresa() {
   const { user } = useAuth();
 

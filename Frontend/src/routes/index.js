@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 // Importar solo el composable, no el store directamente. El store debe inicializarse dentro del guard para evitar errores de contexto.
-import { useAuthStore } from '../stores/authStore.js'
+import { useAuthStore } from '@/stores/authStore.js'
 
 // Configuración del base URL
 const getBaseUrl = () => {
@@ -17,19 +17,19 @@ const router = createRouter({
         {
             path: '/',
             name: 'Login',
-            component: () => import('../components/vistas/Login.vue'),
+            component: () => import('../components/vistas/auth/Login.vue'),
             meta: { requiresGuest: true} // Solo para usuarios no autenticados
         },
         {
             path: '/administrarempresa',
             name: 'AdminEmpresas',
-            component: () => import('../components/vistas/AdminEmpresas.vue'),
+            component: () => import('../components/vistas/admin/AdminEmpresas.vue'),
             meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores autenticados
         },
         {
             path: '/RolAdministracion',
             name: 'RolAdministracion',
-            component: () => import('../components/vistas/Administracion.vue'),
+            component: () => import('../components/vistas/admin/Administracion.vue'),
             meta: { requiresAuth: true, requiresAdmin: true }
         },
         {
@@ -37,7 +37,7 @@ const router = createRouter({
             // Permite a los administradores crear, editar, eliminar usuarios y asignar roles/permisos específicos
             path: '/usuarios-permisos',
             name: 'UsuariosPermisos',
-            component: () => import('../components/vistas/UsuariosPermisos.vue'), // Lazy loading para optimizar rendimiento
+            component: () => import('../components/vistas/admin/UsuariosPermisos.vue'), // Lazy loading para optimizar rendimiento
             meta: { requiresAuth: true, requiresAdmin: true } // Solo administradores autenticados pueden acceder
         },
         {
@@ -45,7 +45,7 @@ const router = createRouter({
             // Muestra reportes gráficos, tendencias de asistencia, datos agregados por empresa/usuario
             path: '/estadisticas',
             name: 'Estadisticas',
-            component: () => import('../components/vistas/Estadisticas.vue'), // Carga dinámica del componente
+            component: () => import('../components/vistas/admin/Estadisticas.vue'), // Carga dinámica del componente
             meta: { requiresAuth: true, requiresAdmin: true } // Acceso restringido a administradores únicamente
         },
         {
@@ -53,7 +53,7 @@ const router = createRouter({
             // Permite revisar logs, auditar marcaciones, detectar irregularidades en asistencia
             path: '/fiscalizacion',
             name: 'Fiscalizacion',
-            component: () => import('../components/vistas/Fiscalizacion.vue'), // Importación lazy para mejor performance
+            component: () => import('../components/vistas/admin/Fiscalizacion.vue'), // Importación lazy para mejor performance
             meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores con permisos de auditoría
         },
         {
@@ -61,44 +61,44 @@ const router = createRouter({
             // Muestra resumen general, métricas clave, accesos rápidos a funciones principales
             path: '/dashboard',
             name: 'Dashboard',
-            component: () => import('../components/vistas/Dashboard.vue'), // Necesitarás crear este componente
+            component: () => import('../components/vistas/trabajador/Dashboard.vue'), // Necesitarás crear este componente
             meta: { requiresAuth: true, requiresUser: true } // Accesible para todos los usuarios autenticados (no solo admins)
         },
         {
             path: '/configuracion',
             name: 'ConfigUser',
-            component: () => import('../components/vistas/ConfigUser.vue'),
+            component: () => import('../components/vistas/trabajador/ConfigUser.vue'),
             meta: { requiresAuth: true, requiresUser: true}    
         },
         {
             path: '/historial',
             name: 'HistorialUsuario',
-            component: () => import('../components/vistas/HistorialUsuario.vue'),
+            component: () => import('../components/vistas/trabajador/HistorialUsuario.vue'),
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
             path: '/solicitudes',
             name: 'Solicitudes',
-            component: () => import('../components/vistas/Solicitudes.vue'),
+            component: () => import('../components/vistas/trabajador/Solicitudes.vue'),
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
             path: '/dias-trabajados',
             name: 'DiasTrabajados',
-            component: () => import('../components/vistas/DiasTrabajados.vue'),
+            component: () => import('../components/vistas/trabajador/DiasTrabajados.vue'),
             meta: { requiresAuth: true, requiresUser: true }
         },
         {
             path: '/administracion',
             name: 'Empresa',
-            component: () => import('../components/vistas/Administrador.vue'),
+            component: () => import('../components/vistas/admin/Administrador.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         // Rutas de la Empresa
         {
             path: '/empresa/dashboard',
             name: 'EmpresaDashboard',
-            component: () => import('../components/vistas/Administrador.vue'),
+            component: () => import('../components/vistas/admin/Administrador.vue'),
             meta: { requiresAuth: true, requiresEmpresa: true }
         },
         {

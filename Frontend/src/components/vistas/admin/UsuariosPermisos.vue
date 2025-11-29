@@ -749,7 +749,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useAuth } from '../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 import axios from "axios";
 
 // Estados reactivos
@@ -969,7 +969,7 @@ const crearUsuario = async () => {
     cargandoCreacion.value = true;
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
-    const response = await axios.post("/api/user/usuarios", nuevoUsuario.value, {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL}/user/usuarios`, nuevoUsuario.value, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -1014,7 +1014,7 @@ const eliminarUsuario = async () => {
     cargandoEliminacion.value = true;
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
-    const response = await axios.delete(`/api/user/usuarios/${usuarioAEliminar.value.id}`, {
+    const response = await axios.delete(`${import.meta.env.VITE_API_URL}/user/usuarios/${usuarioAEliminar.value.id}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -1052,7 +1052,7 @@ const recargarUsuarios = async () => {
     const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
     const token = authStorage.token;
     
-    const response = await axios.get("/api/user/usuarios", {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -1091,7 +1091,7 @@ const obtenerEstadisticasSesiones = async () => {
     console.log('📊 Obteniendo estadísticas de sesiones...');
     console.log('Token disponible:', !!token);
     
-    const response = await axios.get("/api/auditoria/estadisticas", {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/auditoria/estadisticas`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -1119,7 +1119,7 @@ const actualizarRegistrosAuditoria = async () => {
     console.log('🔍 Intentando obtener registros de auditoría...');
     console.log('Token disponible:', !!token);
     
-    const response = await axios.get("/api/auditoria/sesiones?limite=100", {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/auditoria/sesiones?limite=100`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -1180,9 +1180,9 @@ onMounted(async () => {
     
     console.log('🔍 Intentando cargar usuarios...');
     console.log('🔑 Token disponible:', !!token);
-    console.log('🔗 URL completa que se llamará:', axios.defaults.baseURL + "/api/user/usuarios");
+    console.log('🔗 URL completa que se llamará:', `${import.meta.env.VITE_API_URL}/user/usuarios`);
     
-    const response = await axios.get("/api/user/usuarios", {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios`, {
       headers: {
         Authorization: `Bearer ${token}`
       }

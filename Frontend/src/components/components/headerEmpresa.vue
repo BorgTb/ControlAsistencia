@@ -274,7 +274,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuth } from '../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 
 const router = useRouter();
 const { user, logout, isLoading: authLoading, esEst, hasRole } = useAuth();
