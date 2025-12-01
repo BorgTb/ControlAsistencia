@@ -464,8 +464,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useEmpresa } from '../../../composables/useEmpresa';
-import ModalDetalleSolicitudTrabajador from '../../modals/ModalDetalleSolicitudTrabajador.vue';
+import { useEmpresa } from '@/composables/useEmpresa';
+import ModalDetalleSolicitudTrabajador from '@/components/modals/ModalDetalleSolicitudTrabajador.vue';
 
 // Composable
 const {

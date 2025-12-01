@@ -169,7 +169,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '../../composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { user, isLoading, logout } = useAuth()
@@ -190,27 +190,27 @@ const closeDropdown = () => {
 }
 
 const verPerfil = () => {
-  router.push('/perfil')
+  router.push('/usuario/perfil')
   closeDropdown()
 }
 
 const abrirConfiguracion = () => {
-  router.push('/configuracion')
+  router.push('/usuario/configuracion')
   closeDropdown()
 }
 
 const verHistorial = () => {
-  router.push('/historial')
+  router.push('/usuario/historial')
   closeDropdown()
 }
 
 const abrirAyuda = () => {
-  router.push('/ayuda')
+  router.push('/usuario/ayuda')
   closeDropdown()
 }
 
 const home = () => {
-  router.push('/dashboard')
+  router.push('/usuario/dashboard')
   closeDropdown()
 }
 
@@ -220,7 +220,7 @@ const abrirSolicitudes = () => {
 }
 
 const verDiasTrabajados = () => {
-  router.push('/dias-trabajados')
+  router.push('/usuario/dias-trabajados')
   closeDropdown()
 }
 

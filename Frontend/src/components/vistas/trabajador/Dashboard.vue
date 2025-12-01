@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+
     <!-- Header -->
 
     <!-- Main content -->
@@ -342,14 +342,13 @@
   
     <!-- Modal de confirmación de ubicación -->
     <ConfirmUbicacionModal v-if="showConfirmModal" @confirm="onModalConfirm" @cancel="onModalCancel" />
-  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import ConfirmUbicacionModal from '../modals/ConfirmUbicacionModal.vue'
-import AsistenciaService from '../../services/AsistenciaService.js'
-import { useOffline } from '../../composables/useOffline.js'
+import ConfirmUbicacionModal from '@/components/modals/ConfirmUbicacionModal.vue'
+import AsistenciaService from '@/services/AsistenciaService.js'
+import { useOffline } from '@/composables/useOffline.js'
 
 // Agregar composable offline
 const { isOnline, isOffline, pendingActions, processPendingActions, isSyncing } = useOffline()

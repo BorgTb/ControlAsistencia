@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useAuthStore } from '../stores/authStore.js'
+import { useAuthStore } from '@/stores/authStore.js'
 import { useRouter } from 'vue-router'
 
 

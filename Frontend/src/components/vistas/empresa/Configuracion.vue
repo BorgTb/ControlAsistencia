@@ -257,8 +257,8 @@
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
 import { ref, onMounted, computed } from 'vue';
-import { useAuth } from '../../../composables/useAuth.js';
-import EmpresaServices from '../../../services/EmpresaService.js';
+import { useAuth } from '@/composables/useAuth.js';
+import EmpresaServices from '@/services/EmpresaService.js';
 
 const { esEst } = useAuth();
 

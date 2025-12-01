@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import SolicitudesGeneralesService from '../services/SolicitudesGeneralesService';
+import SolicitudesGeneralesService from '@/services/SolicitudesGeneralesService';
 
 /**
  * Composable para manejar todas las solicitudes generales del trabajador

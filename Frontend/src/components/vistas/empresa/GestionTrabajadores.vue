@@ -611,13 +611,13 @@
 
 <script setup>
 import HeaderAdmin from '../../components/headerEmpresa.vue';
-import ModalNuevoTrabajador from '../../modals/ModalNuevoTrabajador.vue';
-import ModalEnrolarTrabajador from '../../modals/ModalEnrolarTrabajador.vue';
-import ModalAmonestarTrabajador from '../../modals/ModalAmonestarTrabajador.vue';
-import EmpresaServices from '../../../services/EmpresaService.js';
+import ModalNuevoTrabajador from '@/components/modals/ModalNuevoTrabajador.vue';
+import ModalEnrolarTrabajador from '@/components/modals/ModalEnrolarTrabajador.vue';
+import ModalAmonestarTrabajador from '@/components/modals/ModalAmonestarTrabajador.vue';
+import EmpresaServices from '@/services/EmpresaService.js';
 import { ref, onMounted, computed, nextTick } from 'vue';
-import { useEmpresa } from '../../../composables/useEmpresa.js';
-import { useNotification } from '../../../composables/useNotification.js';
+import { useEmpresa } from '@/composables/useEmpresa.js';
+import { useNotification } from '@/composables/useNotification.js';
 
 
 const { obtenerTrabajadores, obtenerHorasSemanales } = useEmpresa();

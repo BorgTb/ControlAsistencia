@@ -269,8 +269,8 @@
 
 <script setup>
 import { ref, computed, onMounted, defineEmits } from 'vue'
-import JustificacionesService from '../../../services/JustificacionesService.js'
-import ModalAprobacionJustificacion from '../../modals/ModalAprobacionJustificacion.vue'
+import JustificacionesService from '@/services/JustificacionesService.js'
+import ModalAprobacionJustificacion from '@/components/modals/ModalAprobacionJustificacion.vue'
 
 // Definir emits
 const emit = defineEmits(['cerrar'])

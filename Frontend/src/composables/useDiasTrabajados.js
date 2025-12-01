@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import diasTrabajadosService from '../services/diasTrabajadosService';
+import diasTrabajadosService from '@/services/diasTrabajadosService';
 
 export function useDiasTrabajados() {
   const diasTrabajados = ref([]);

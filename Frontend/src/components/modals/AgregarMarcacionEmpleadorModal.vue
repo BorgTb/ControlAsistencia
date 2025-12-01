@@ -264,8 +264,8 @@
 
 <script setup>
 import { ref, computed, defineEmits, onMounted } from 'vue'
-import { useMarcaciones } from '../../composables/useMarcaciones.js'
-import { useEmpresa } from '../../composables/useEmpresa.js'
+import { useMarcaciones } from '@/composables/useMarcaciones.js'
+import { useEmpresa } from '@/composables/useEmpresa.js'
 
 const emit = defineEmits(['confirm', 'cancel'])
 

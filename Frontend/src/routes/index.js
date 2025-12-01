@@ -1,307 +1,151 @@
+// router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-// Importar solo el composable, no el store directamente. El store debe inicializarse dentro del guard para evitar errores de contexto.
-import { useAuthStore } from '../stores/authStore.js'
+import { useAuthStore } from '@/stores/authStore.js'
 
-// Configuración del base URL
+// ===========================
+// BASE CONFIG
+// ===========================
 const getBaseUrl = () => {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
+  if (typeof import.meta !== 'undefined' && import.meta.env)
     return import.meta.env.BASE_URL
-  }
   return '/'
 }
 
+// ===========================
+// ROUTES
+// ===========================
+const routes = [
+
+  // ===========================
+  // AUTH (usa AuthLayout)
+  // ===========================
+  {
+    path: '/',
+    component: () => import('@/components/layouts/AuthLayout.vue'),
+    meta: { requiresGuest: true },
+    children: [
+      {
+        path: '',
+        name: 'Login',
+        component: () => import('@/components/vistas/auth/Login.vue'),
+      },
+      {
+        path: 'aprobar-modificacion',
+        name: 'AprobarModificacion',
+        component: () => import('@/components/vistas/Solicitudes/ModificacionMaracacion.vue'),
+      }
+    ]
+  },
+
+  // ===========================
+  // ADMIN (usa AdminLayout)
+  // ===========================
+  {
+    path: '/admin',
+    component: () => import('@/components/layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      { path: 'empresas', name: 'AdminEmpresas', component: () => import('@/components/vistas/admin/AdminEmpresas.vue') },
+      { path: 'roles', name: 'RolAdministracion', component: () => import('@/components/vistas/admin/Administracion.vue') },
+      { path: 'usuarios', name: 'UsuariosPermisos', component: () => import('@/components/vistas/admin/UsuariosPermisos.vue') },
+      { path: 'estadisticas', name: 'Estadisticas', component: () => import('@/components/vistas/admin/Estadisticas.vue') },
+      { path: 'fiscalizacion', name: 'Fiscalizacion', component: () => import('@/components/vistas/admin/Fiscalizacion.vue') },
+      { path: 'reportes-domingos', name: 'EmpresaReporteDomingosFestivos', component: () => import('@/components/vistas/empresa/ReportesDomingosFestivos.vue') },
+    ]
+  },
+
+  // ===========================
+  // EMPRESA / EMPLEADOR (usa EmpresaLayout)
+  // ===========================
+  {
+    path: '/empresa',
+    component: () => import('@/components/layouts/EmpresaLayout.vue'),
+    meta: { requiresAuth: true, requiresEmpresa: true },
+    children: [
+      { path: 'dashboard', name: 'EmpresaDashboard', component: () => import('@/components/vistas/admin/Administrador.vue') },
+      { path: 'trabajadores', name: 'EmpresaTrabajadores', component: () => import('@/components/vistas/empresa/GestionTrabajadores.vue') },
+      { path: 'trabajadores/asociar', name: 'EmpresaAsociarTrabajador', component: () => import('@/components/vistas/empresa/AsociarTrabajador.vue') },
+      { path: 'turnos', name: 'EmpresaTurnos', component: () => import('@/components/vistas/empresa/ControlTurnos.vue') },
+      { path: 'marcaciones', name: 'EmpresaMarcaciones', component: () => import('@/components/vistas/empresa/GestionMarcaciones.vue') },
+
+      // Reportes
+      { path: 'reportes', name: 'EmpresaReportes', component: () => import('@/components/vistas/empresa/Reportes.vue') },
+      { path: 'reportes/asistencia', name: 'EmpresaReporteAsistencia', component: () => import('@/components/vistas/empresa/ReporteAsistencia.vue') },
+      { path: 'reportes/jornada-diaria', name: 'EmpresaReporteJornadaDiaria', component: () => import('@/components/vistas/empresa/ReporteJornadaDiaria.vue') },
+
+      // Otros
+      { path: 'historial-solicitudes', name: 'HistorialSolicitudes', component: () => import('@/components/vistas/empresa/HistorialSolicitudes.vue') },
+      { path: 'lugares', name: 'EmpresaLugares', component: () => import('@/components/vistas/empresa/GestionLugares.vue') },
+      { path: 'solicitudes-trabajadores', name: 'EmpresaSolicitudesTrabajadores', component: () => import('@/components/vistas/empresa/SolicitudesTrabajadores.vue') },
+      { path: 'configuracion', name: 'EmpresaConfiguracion', component: () => import('@/components/vistas/empresa/Configuracion.vue') },
+    ]
+  },
+
+  // ===========================
+  // TRABAJADOR (usa TrabajadorLayout)
+  // ===========================
+  {
+    path: '/usuario',
+    component: () => import('@/components/layouts/TrabajadorLayout.vue'),
+    meta: { requiresAuth: true, requiresUser: true },
+    children: [
+      { path: 'dashboard', name: 'Dashboard', component: () => import('@/components/vistas/trabajador/Dashboard.vue') },
+      { path: 'configuracion', name: 'ConfigUser', component: () => import('@/components/vistas/trabajador/ConfigUser.vue') },
+      { path: 'historial', name: 'HistorialUsuario', component: () => import('@/components/vistas/trabajador/HistorialUsuario.vue') },
+      { path: 'solicitudes', name: 'Solicitudes', component: () => import('@/components/vistas/trabajador/Solicitudes.vue') },
+      { path: 'dias-trabajados', name: 'DiasTrabajados', component: () => import('@/components/vistas/trabajador/DiasTrabajados.vue') },
+    ]
+  },
+
+  // ===========================
+  // 404
+  // ===========================
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
+  }
+
+]
+
+// ===========================
+// CREATE ROUTER
+// ===========================
 const router = createRouter({
-    history: createWebHistory(getBaseUrl()),
-    routes: [
-        
-        {
-            path: '/',
-            name: 'Login',
-            component: () => import('../components/vistas/Login.vue'),
-            meta: { requiresGuest: true} // Solo para usuarios no autenticados
-        },
-        {
-            path: '/administrarempresa',
-            name: 'AdminEmpresas',
-            component: () => import('../components/vistas/AdminEmpresas.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores autenticados
-        },
-        {
-            path: '/RolAdministracion',
-            name: 'RolAdministracion',
-            component: () => import('../components/vistas/Administracion.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
-        },
-        {
-            // Ruta para la gestión de usuarios y sus permisos del sistema
-            // Permite a los administradores crear, editar, eliminar usuarios y asignar roles/permisos específicos
-            path: '/usuarios-permisos',
-            name: 'UsuariosPermisos',
-            component: () => import('../components/vistas/UsuariosPermisos.vue'), // Lazy loading para optimizar rendimiento
-            meta: { requiresAuth: true, requiresAdmin: true } // Solo administradores autenticados pueden acceder
-        },
-        {
-            // Ruta para visualizar estadísticas y métricas del sistema de asistencia
-            // Muestra reportes gráficos, tendencias de asistencia, datos agregados por empresa/usuario
-            path: '/estadisticas',
-            name: 'Estadisticas',
-            component: () => import('../components/vistas/Estadisticas.vue'), // Carga dinámica del componente
-            meta: { requiresAuth: true, requiresAdmin: true } // Acceso restringido a administradores únicamente
-        },
-        {
-            // Ruta para herramientas de fiscalización y auditoría del sistema
-            // Permite revisar logs, auditar marcaciones, detectar irregularidades en asistencia
-            path: '/fiscalizacion',
-            name: 'Fiscalizacion',
-            component: () => import('../components/vistas/Fiscalizacion.vue'), // Importación lazy para mejor performance
-            meta: { requiresAuth: true, requiresAdmin: true } // Solo para administradores con permisos de auditoría
-        },
-        {
-            // Dashboard principal del sistema - panel de control centralizado
-            // Muestra resumen general, métricas clave, accesos rápidos a funciones principales
-            path: '/dashboard',
-            name: 'Dashboard',
-            component: () => import('../components/vistas/Dashboard.vue'), // Necesitarás crear este componente
-            meta: { requiresAuth: true, requiresUser: true } // Accesible para todos los usuarios autenticados (no solo admins)
-        },
-        {
-            path: '/configuracion',
-            name: 'ConfigUser',
-            component: () => import('../components/vistas/ConfigUser.vue'),
-            meta: { requiresAuth: true, requiresUser: true}    
-        },
-        {
-            path: '/historial',
-            name: 'HistorialUsuario',
-            component: () => import('../components/vistas/HistorialUsuario.vue'),
-            meta: { requiresAuth: true, requiresUser: true }
-        },
-        {
-            path: '/solicitudes',
-            name: 'Solicitudes',
-            component: () => import('../components/vistas/Solicitudes.vue'),
-            meta: { requiresAuth: true, requiresUser: true }
-        },
-        {
-            path: '/dias-trabajados',
-            name: 'DiasTrabajados',
-            component: () => import('../components/vistas/DiasTrabajados.vue'),
-            meta: { requiresAuth: true, requiresUser: true }
-        },
-        {
-            path: '/administracion',
-            name: 'Empresa',
-            component: () => import('../components/vistas/Administrador.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        // Rutas de la Empresa
-        {
-            path: '/empresa/dashboard',
-            name: 'EmpresaDashboard',
-            component: () => import('../components/vistas/Administrador.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/trabajadores',
-            name: 'EmpresaTrabajadores',
-            component: () => import('../components/vistas/empresa/GestionTrabajadores.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/turnos',
-            name: 'EmpresaTurnos',
-            component: () => import('../components/vistas/empresa/ControlTurnos.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/marcaciones',
-            name: 'EmpresaMarcaciones',
-            component: () => import('../components/vistas/empresa/GestionMarcaciones.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/reportes',
-            name: 'EmpresaReportes',
-            component: () => import('../components/vistas/empresa/Reportes.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/reportes/asistencia',
-            name: 'EmpresaReporteAsistencia',
-            component: () => import('../components/vistas/empresa/ReporteAsistencia.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/reportes/jornada-diaria',
-            name: 'EmpresaReporteJornadaDiaria',
-            component: () => import('../components/vistas/empresa/ReporteJornadaDiaria.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/reportes/domingos-festivos',
-            name: 'EmpresaReporteDomingosFestivos',
-            component: () => import('../components/vistas/empresa/ReportesDomingosFestivos.vue'),
-            meta: { requiresAuth: true, requiresAdmin: true }
-        },
-        {
-            path: '/empresa/configuracion',
-            name: 'EmpresaConfiguracion',
-            component: () => import('../components/vistas/empresa/Configuracion.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/trabajadores/asociar',
-            name: 'EmpresaAsociarTrabajador',
-            component: () => import('../components/vistas/empresa/AsociarTrabajador.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/aprobar-modificacion',
-            name: 'AprobarModificacion',
-            component: () => import('../components/vistas/Solicitudes/ModificacionMaracacion.vue'),
-        },
-        {
-            path: '/empresa/historial-solicitudes',
-            name: 'HistorialSolicitudes',
-            component: () => import('../components/vistas/empresa/HistorialSolicitudes.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/lugares',
-            name: 'EmpresaLugares',
-            component: () => import('../components/vistas/empresa/GestionLugares.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        {
-            path: '/empresa/solicitudes-trabajadores',
-            name: 'EmpresaSolicitudesTrabajadores',
-            component: () => import('../components/vistas/empresa/SolicitudesTrabajadores.vue'),
-            meta: { requiresAuth: true, requiresEmpresa: true }
-        },
-        // Ruta comodín para manejar rutas no definidas (404)
-        // Agregar más rutas según necesites
-        {
-            path: '/:pathMatch(.*)*',
-            name: 'NotFound',
-            redirect: '/'
-        }
-    ],
-    scrollBehavior(to, from, savedPosition) {
-        if (savedPosition) {
-            return savedPosition
-        } else {
-            return { top: 0 }
-        }
-    }
+  history: createWebHistory(getBaseUrl()),
+  routes,
+  scrollBehavior() {
+    return { top: 0 }
+  }
 })
 
-// Guard de navegación global
+// ===========================
+// NAVIGATION GUARD (tu lógica exacta, organizada)
+// ===========================
 router.beforeEach((to, from, next) => {
-    // Inicializar el store dentro del guard para evitar ReferenceError de inicialización.
-    const authStore = useAuthStore()
-    
-    // Definir rutas por rol
-    const adminRoutes = [
-        '/administrarempresa',
-        '/RolAdministracion', 
-        '/empresa/reportes/domingos-festivos',
-        '/usuarios-permisos',
-        '/estadisticas',
-        '/fiscalizacion'
-    ]
-    
-    const empleadorRoutes = [
-        '/administracion',
-        '/empresa/dashboard',
-        '/empresa/trabajadores',
-        '/empresa/turnos',
-        '/empresa/marcaciones',
-        '/empresa/reportes',
-        '/empresa/reportes/marcaciones-diarias',
-        '/empresa/reportes/asistencia',
-        '/empresa/configuracion',
-        '/empresa/trabajadores/asociar',
-        '/empresa/historial-solicitudes',
-        '/empresa/lugares',
-        '/empresa/reportes/jornada-diaria',
-        '/empresa/solicitudes-trabajadores'
-    ]
-    
-    const trabajadorRoutes = [
-        '/dashboard',
-        '/configuracion',
-        '/historial',
-        '/solicitudes',
-        '/dias-trabajados'
-    ]
-    
-    const guestRoutes = [
-        '/',
-        '/aprobar-modificacion'
-    ]
-    
-    // Verificar si la ruta es solo para invitados (usuarios no autenticados)
-    if (to.meta.requiresGuest && authStore.isAuthenticated) {
-        // Redirigir según el rol del usuario autenticado
-        if (authStore.user?.rol === 'admin' || authStore.user?.esAdmin) {
-            next({ name: 'AdminEmpresas' })
-        } else if (authStore.user?.rol === 'empleador' || authStore.user?.esEmpleador) {
-            next({ name: 'EmpresaDashboard' })
-        } else if (authStore.user?.rol === 'trabajador' || authStore.user?.esTrabajador) {
-            next({ name: 'Dashboard' })
-        } else {
-            next({ name: 'Login' })
-        }
-        return
-    }
-    
-    // Verificar si la ruta requiere autenticación
-    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next({ name: 'Login' })
-        return
-    }
-    
-    // Si el usuario está autenticado, verificar permisos por rol
-    if (authStore.isAuthenticated) {
-        const userRole = authStore.user?.rol
-        const currentPath = to.path
-        
-        // Verificar acceso para ADMIN
-        if (userRole === 'admin' || authStore.user?.esAdmin) {
-            // Admin solo puede acceder a rutas de admin
-            if (!adminRoutes.includes(currentPath)) {
-                console.warn('Acceso denegado: Admin intentando acceder a ruta no autorizada')
-                next({ name: 'AdminEmpresas' })
-                return
-            }
-        }
-        // Verificar acceso para EMPLEADOR
-        else if (userRole === 'empleador' || authStore.user?.esEmpleador) {
-            // Empleador solo puede acceder a rutas de empresa
-            if (!empleadorRoutes.includes(currentPath)) {
-                console.warn('Acceso denegado: Empleador intentando acceder a ruta no autorizada')
-                next({ name: 'EmpresaDashboard' })
-                return
-            }
-        }
-        // Verificar acceso para TRABAJADOR
-        else if (userRole === 'trabajador' || authStore.user?.esTrabajador) {
-            // Trabajador solo puede acceder a rutas de trabajador
-            if (!trabajadorRoutes.includes(currentPath)) {
-                console.warn('Acceso denegado: Trabajador intentando acceder a ruta no autorizada')
-                next({ name: 'Dashboard' })
-                return
-            }
-        }
-        // Si no tiene rol válido, redirigir al login
-        else {
-            console.warn('Usuario sin rol válido')
-            next({ name: 'Login' })
-            return
-        }
-    }
-    
-    next()
+  const auth = useAuthStore()
+
+  // Rutas para invitados
+  if (to.meta.requiresGuest && auth.isAuthenticated) {
+    const role = auth.user?.rol
+    if (role === "admin") return next("/admin/empresas")
+    if (role === "empleador") return next("/empresa/dashboard")
+    if (role === "trabajador") return next("/usuario/dashboard")
+    return next("/")
+  }
+
+  // Rutas que requieren login
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return next("/")
+  }
+
+  // Validar rol
+  if (to.meta.role && to.meta.role !== auth.user?.rol) {
+    // Si está logueado pero no tiene el rol
+    return next("/")
+  }
+
+  next()
 })
+
 
 export default router

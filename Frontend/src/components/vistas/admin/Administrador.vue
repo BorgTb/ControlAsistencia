@@ -290,10 +290,9 @@
 </template>
 
 <script setup>
-import HeaderAdmin from '../components/headerEmpresa.vue';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuth } from '../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 const { esEst, esEmpleador } = useAuth();
 
 const router = useRouter();

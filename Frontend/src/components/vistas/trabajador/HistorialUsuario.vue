@@ -276,12 +276,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import AsistenciaService from '../../services/AsistenciaService.js'
-import ReporteModal from '../modals/ReporteModal.vue'
-import AgregarMarcacionModal from '../modals/AgregarMarcacionModal.vue'
-import { useReportes } from '../../composables/useReportes.js'
-import { useMarcaciones } from '../../composables/useMarcaciones.js'
-
+import AsistenciaService from '@/services/AsistenciaService.js'
+import ReporteModal from '@/components/modals/ReporteModal.vue'
+import AgregarMarcacionModal from '@/components/modals/AgregarMarcacionModal.vue'
+import { useReportes } from '@/composables/useReportes.js'
+import { useMarcaciones } from '@/composables/useMarcaciones.js'
 // Estados reactivos
 const marcaciones = ref([])
 const cargando = ref(false)

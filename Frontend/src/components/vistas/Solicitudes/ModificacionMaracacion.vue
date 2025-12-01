@@ -176,7 +176,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useSolicitudes } from '../../../composables/useSolicitudes'
+import { useSolicitudes } from '@/composables/useSolicitudes'
 
 const route = useRoute()
 

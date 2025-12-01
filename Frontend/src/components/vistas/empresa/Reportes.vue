@@ -348,7 +348,7 @@
 import HeaderAdmin from '../../components/headerEmpresa.vue';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuth } from '../../../composables/useAuth.js';
+import { useAuth } from '@/composables/useAuth.js';
 
 const router = useRouter();
 

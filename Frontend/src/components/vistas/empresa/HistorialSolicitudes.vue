@@ -347,7 +347,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import EmpresaServices from '../../../services/EmpresaService';
+import EmpresaServices from '@/services/EmpresaService';
 
 const router = useRouter();
 

@@ -139,7 +139,7 @@
 
 <script setup>
 import { watch } from 'vue';
-import { useSolicitudesGenerales } from '../../composables/useSolicitudesGenerales';
+import { useSolicitudesGenerales } from '@/composables/useSolicitudesGenerales';
 
 // Props
 const props = defineProps({

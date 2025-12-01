@@ -1,5 +1,5 @@
-import EstServices from "../services/EstServices.js";
-import { useAuth } from "./useAuth.js";
+import EstServices from "@/services/EstServices.js";
+import { useAuth } from "@/composables/useAuth.js";
 
 export function useEst() {
   const { user } = useAuth();

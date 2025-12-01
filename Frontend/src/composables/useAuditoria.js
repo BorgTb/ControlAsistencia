@@ -16,7 +16,7 @@ import {
   formatearFecha as formatearFechaService,
   formatearDuracion as formatearDuracionService,
   obtenerColorEstado as obtenerColorEstadoService
-} from '../services/AuditoriaService.js'
+} from '@/services/AuditoriaService.js'
 
 /**
  * ========== ESTADO REACTIVO GLOBAL ==========

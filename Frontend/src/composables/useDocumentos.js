@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import DocumentoService from '../services/documentoService';
+import DocumentoService from '@/services/documentoService';
 
 export function useDocumentos() {
   const cargando = ref(false);

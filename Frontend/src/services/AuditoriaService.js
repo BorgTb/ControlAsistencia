@@ -6,7 +6,7 @@
  */
 
 // Importación del store de autenticación para obtener el token
-import { useAuthStore } from '../stores/authStore.js'
+import { useAuthStore } from '@/stores/authStore.js'
 
 // URL base del backend para endpoints de auditoría
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'

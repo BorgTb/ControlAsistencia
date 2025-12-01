@@ -317,8 +317,8 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useNotification } from '../../composables/useNotification.js';
-import { useEmpresa } from '../../composables/useEmpresa.js';
+import { useNotification } from '@/composables/useNotification.js';
+import { useEmpresa } from '@/composables/useEmpresa.js';
 
 const { showSuccess, showError, showWarning } = useNotification();
 const { agregarAmonestacion } = useEmpresa();
