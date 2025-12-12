@@ -28,7 +28,7 @@ app.use('/api/user', router.users);
 app.use('/api/empresas', router.empresas);
 app.use('/api/admin', router.admin);
 app.use('/api/userEmpresa', router.userEmpresa);
-app.use('/api/test/alertas', router.test);
+//app.use('/api/test/alertas', router.test);
 app.use('/api/auditoria', router.auditoria);
 app.use('/api/estadisticas', router.estadisticas);
 app.use('/api/fiscalizador', router.fiscalizador);
