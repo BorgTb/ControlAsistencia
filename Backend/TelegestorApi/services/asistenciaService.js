@@ -5,6 +5,11 @@ class AsistenciaService {
     asistenciaModel = new AsistenciaModel();  
    
 
-    async insertarAsistencia(datosAsistencia) {}
+    async insertarAsistencia(datosAsistencia) {
+        return await this.asistenciaModel.insertarAsistencia(datosAsistencia);
+    }
+    async obtenerUltimoIDNAsistencia() {
+        return await this.asistenciaModel.obtenerUltimoIDNAsistencia();
+    }
 }
 export default AsistenciaService;
