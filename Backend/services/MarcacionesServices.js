@@ -596,6 +596,51 @@ class MarcacionesService {
         }
     }
 
+    async obtenerMarcacionesPorRangoFechaEmpresaRut(fechaInicio, fechaFin, rutEmpresa) {
+        try {
+            const marcaciones = await MarcacionesModel.obtenerMarcacionesPorRangoFechaEmpresaRut(
+                fechaInicio,
+                fechaFin,
+                rutEmpresa
+            );
+            // agrupar las marcaciones por rut del usuario (solo primeros 8 dígitos, sin puntos ni guion)
+            const marcacionesAgrupadas = marcaciones.reduce((acc, marcacion) => {
+                // Eliminar puntos y guion, y tomar solo los primeros 8 dígitos
+                const rutUsuario = marcacion.rut ? marcacion.rut.replace(/[.\-]/g, '').substring(0, 8) : '';
+                if (!acc[rutUsuario]) {
+                    acc[rutUsuario] = [];
+                }
+                acc[rutUsuario].push(marcacion);
+                return acc;
+            }, {});
+
+
+            // ahora dentro de cada rut, agrupar por fecha
+            for (const rut in marcacionesAgrupadas) {
+                const marcacionesPorRut = marcacionesAgrupadas[rut];
+                const agrupadasPorFecha = marcacionesPorRut.reduce((acc, marcacion) => {
+                    const fechaMarcacion = new Date(marcacion.fecha);
+                    const fechaKey = fechaMarcacion.toISOString().split('T')[0];
+                    if (!acc[fechaKey]) {
+                        acc[fechaKey] = [];
+                    }
+                    acc[fechaKey].push(marcacion);
+                    return acc;
+                }, {});
+                marcacionesAgrupadas[rut] = agrupadasPorFecha;
+            }
+
+
+            return {
+                success: true,
+                data: marcacionesAgrupadas
+            };
+        } catch (error) {
+            console.error('Error al obtener marcaciones por rango de fecha y empresa:', error);
+            throw error;
+        }
+    }
+
 }
 
 export default new MarcacionesService();

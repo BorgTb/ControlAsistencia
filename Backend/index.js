@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import router from './routes/index.js';
+import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,6 +17,12 @@ const PORT = process.env.SERVER_PORT;
 //MIDDLEWARE
 app.use(cors());
 app.use(express.json());
+
+
+// Telegestor API Routes usa el mismo servidor pero con rutas separadas en un futuro deberia ir en un microservicio aparte
+ApiTelegestorRouter(app);
+
+
 
 // ROUTES
 app.get('/', (req, res) => {
@@ -35,6 +42,7 @@ app.use('/api/fiscalizador', router.fiscalizador);
 app.use('/api/justificaciones', router.justificaciones);
 app.use('/api/feriados', router.feriados);
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
+
 
 
 
