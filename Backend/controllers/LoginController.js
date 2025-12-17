@@ -1,4 +1,5 @@
 import AuthService from '../services/authservice.js';
+import RefreshTokenModel from '../model/RefreshTokenModel.js';
 
 // Simulación de base de datos de usuarios (reemplaza con tu DB real)
 const users = [];
@@ -88,11 +89,22 @@ const login = async (req, res) => {
             ip_address: ip_address
         });
         
+        // Generar access token (15 minutos) y refresh token (30 días)
+        const accessToken = AuthService.generateAccessToken(loginResult.user, loginResult.empresa_id);
+        const refreshToken = AuthService.generateRefreshToken(loginResult.user);
+        
+        // Guardar refresh token en base de datos (si la tabla existe)
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        await RefreshTokenModel.create(loginResult.user.id, refreshToken, expiresAt, ip_address, userAgent);
+        
+        // Establecer ambas cookies HTTP-only
+        AuthService.setAuthCookies(res, accessToken, refreshToken);
+        
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            token: loginResult.token,
-            user: loginResult.user
+            user: loginResult.user // NO se envían tokens en el body
         });
 
     } catch (error) {
@@ -119,21 +131,21 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        const token = req.headers['authorization']?.split(' ')[1];
+        // Obtener refresh token de las cookies
+        const refreshToken = req.cookies.refreshToken;
         
-        if (!token) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'No token provided' 
-            });
+        // Revocar refresh token en base de datos si existe
+        if (refreshToken) {
+            await RefreshTokenModel.revoke(refreshToken);
         }
-
-        // Verify and decode the token to get user info
-        const decoded = AuthService.verifyToken(token);
         
-        // Optional: You could add token to a blacklist here
-        // await TokenBlacklistModel.addToBlacklist(token);
+        // Limpiar ambas cookies de autenticación
+        AuthService.clearAuthCookies(res);
         
+        // Optional: registrar logout en auditoría si es necesario
+        // if (req.user?.id) {
+        //     await AuditoriaModel.registrarCierreSesion(req.user.id);
+        // }
 
         res.status(200).json({ 
             success: true, 
@@ -141,8 +153,8 @@ const logout = async (req, res) => {
         });
 
     } catch (error) {
-        // Even if token verification fails, we still consider logout successful
-        // This prevents issues if token is already expired or invalid
+        // Siempre retornamos éxito en logout para evitar problemas
+        AuthService.clearAuthCookies(res);
         res.status(200).json({ 
             success: true, 
             message: 'Logout successful' 
@@ -174,11 +186,88 @@ const verifyToken = (req, res) => {
     }
 };
 
+/**
+ * Endpoint para renovar access token usando refresh token
+ * Se llama automáticamente desde el frontend cuando el access token expira
+ */
+const refresh = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        
+        if (!refreshToken) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No refresh token provided',
+                requiresLogin: true
+            });
+        }
+
+        // Verificar que el refresh token sea válido en JWT
+        const decoded = AuthService.verifyRefreshToken(refreshToken);
+        
+        if (!decoded || decoded.type !== 'refresh') {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid refresh token',
+                requiresLogin: true
+            });
+        }
+
+        // Verificar que el token no esté revocado en base de datos
+        const tokenRecord = await RefreshTokenModel.findValidToken(refreshToken);
+        
+        if (!tokenRecord) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Refresh token not found or revoked',
+                requiresLogin: true
+            });
+        }
+
+        // Generar nuevo access token
+        const user = {
+            id: tokenRecord.user_id,
+            email: tokenRecord.email,
+            rol: tokenRecord.rol
+        };
+        
+        // Necesitamos obtener empresa_id del usuario
+        // Por ahora usamos null, pero deberías obtenerlo de la base de datos
+        const newAccessToken = AuthService.generateAccessToken(user, null);
+        
+        // Establecer solo el nuevo access token cookie
+        res.cookie('accessToken', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutos
+        });
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Token refreshed successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error en refresh token:', error);
+        
+        // Limpiar cookies en caso de error
+        AuthService.clearAuthCookies(res);
+        
+        res.status(401).json({ 
+            success: false, 
+            message: 'Failed to refresh token',
+            requiresLogin: true
+        });
+    }
+};
+
 const LoginController = {
     register,
     login,
     logout,
-    verifyToken
+    verifyToken,
+    refresh
 };
 
 export default LoginController;

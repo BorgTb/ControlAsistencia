@@ -272,18 +272,16 @@ const cargarDatosReporte = async () => {
     /*
 
     // Hacer llamada a la API para obtener trabajadores y sus datos
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
+    // NOTA: Ya NO necesitamos obtener token de localStorage
+    // Las cookies HTTP-only se envían automáticamente con credentials: 'include'
 
     // Obtener trabajadores
     const responseTrabajadores = await fetch('/api/usuario-empresa/trabajadores', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      credentials: 'include' // Enviar cookies automáticamente
     });
 
     if (!responseTrabajadores.ok) {

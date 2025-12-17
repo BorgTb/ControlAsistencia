@@ -542,19 +542,13 @@ const cargarDatosBasicos = async () => {
   console.log('� Usando fallback a datos básicos...');
   
   try {
-    const token = authStore.getToken;
-    if (!token) {
-      console.error('No se encontró token de autenticación');
-      return;
-    }
-
-    // Obtener trabajadores básicos
+    // Obtener trabajadores básicos - usando cookies HTTP-only
     const responseTrabajadores = await fetch(`${import.meta.env.VITE_API_URL}/api/userEmpresa/trabajadores`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      credentials: 'include' // Enviar cookies automáticamente
     });
 
     if (!responseTrabajadores.ok) {

@@ -12,7 +12,7 @@ dotenv.config();
 
 const SECRET_KEY = process.env.SECRET_KEY || ''; 
 
-// Function to generate JWT
+// Function to generate JWT (mantiene compatibilidad)
 // Se agrega el campo 'rol' al payload del JWT para que el middleware de admin
 // pueda verificar si el usuario autenticado tiene permisos de administrador.
 // Esto es fundamental para proteger rutas sensibles y de gestión.
@@ -24,6 +24,28 @@ const generateToken = (user, empresa_id) => {
         rol: user.rol // El rol permite al backend saber si el usuario es admin
     };
     return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
+};
+
+// Generar Access Token (corta duración para seguridad)
+const generateAccessToken = (user, empresa_id) => {
+    const payload = {
+        id: user.id,
+        email: user.email,
+        empresa_id: empresa_id,
+        rol: user.rol,
+        type: 'access'
+    };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' }); // 15 minutos
+};
+
+// Generar Refresh Token (larga duración para sesiones persistentes)
+const generateRefreshToken = (user) => {
+    const payload = {
+        id: user.id,
+        email: user.email,
+        type: 'refresh'
+    };
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '30d' }); // 30 días
 };
 
 // Funtion to generate JWT for fiscalizador so only email is needed
@@ -38,6 +60,19 @@ const generateTokenForFiscalizador = (email) => {
 const verifyToken = (token) => {
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
+        return decoded;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Verificar y decodificar Refresh Token
+const verifyRefreshToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        if (decoded.type !== 'refresh') {
+            throw new Error('Invalid token type');
+        }
         return decoded;
     } catch (error) {
         throw error;
@@ -295,9 +330,65 @@ const generateTemporaryCode = async (email) => {
     };
 };
 
+// Función para configurar cookie de autenticación (legacy - mantiene compatibilidad)
+const setAuthCookie = (res, token) => {
+    res.cookie('authToken', token, {
+        httpOnly: true,  // No accesible desde JavaScript del cliente
+        secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+        sameSite: 'strict', // Protección contra CSRF
+        maxAge: 3600000 // 1 hora en milisegundos
+    });
+};
+
+// Función para limpiar cookie de autenticación (legacy)
+const clearAuthCookie = (res) => {
+    res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+};
+
+// Configurar ambas cookies (access + refresh tokens)
+const setAuthCookies = (res, accessToken, refreshToken) => {
+    // Access Token - corta duración, HttpOnly
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000 // 15 minutos
+    });
+    
+    // Refresh Token - larga duración, HttpOnly
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+    });
+};
+
+// Limpiar ambas cookies
+const clearAuthCookies = (res) => {
+    res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+    
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+};
+
 const AuthService = {
     generateToken,
+    generateAccessToken,
+    generateRefreshToken,
     verifyToken,
+    verifyRefreshToken,
     registerUser,
     loginUser,
     getUserById,
@@ -308,7 +399,11 @@ const AuthService = {
     generateTemporaryCode,
     generateTokenForFiscalizador,
     verificarEst,
-    generarTokenAceptacionCambios
+    generarTokenAceptacionCambios,
+    setAuthCookie,
+    clearAuthCookie,
+    setAuthCookies,
+    clearAuthCookies
 };
 
 // Export an object containing the functions

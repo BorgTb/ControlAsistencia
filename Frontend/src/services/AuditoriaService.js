@@ -44,9 +44,10 @@ export const obtenerRegistrosAuditoria = async (filtros = {}) => {
     const response = await fetch(`${API_BASE_URL}/auditoria/sesiones?${params}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.getToken}` // Token JWT para autenticación
-      }
+        'Content-Type': 'application/json'
+        // Ya NO se envía Authorization header - las cookies se envían automáticamente
+      },
+      credentials: 'include' // IMPORTANTE: enviar cookies automáticamente
     })
 
     if (!response.ok) {
@@ -85,9 +86,9 @@ export const obtenerEstadisticasAuditoria = async () => {
     const response = await fetch(`${API_BASE_URL}/auditoria/estadisticas`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.getToken}`
-      }
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include' // Enviar cookies automáticamente
     })
 
     if (!response.ok) {
@@ -114,9 +115,9 @@ export const cerrarSesionUsuario = async (usuarioId, sesionId) => {
     const response = await fetch(`${API_BASE_URL}/auditoria/cerrar-sesion`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.getToken}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include', // Enviar cookies automáticamente
       body: JSON.stringify({
         usuarioId,
         sesionId,
@@ -148,8 +149,7 @@ export const obtenerCambiosUsuario = async (usuarioId, limite = 50) => {
     console.log('🔍 Tipo de usuarioId:', typeof usuarioId, 'Valor:', usuarioId)
     
     const authStore = useAuthStore()
-    const token = authStore.getToken
-    console.log('🔍 Token disponible:', !!token, 'Primeros caracteres:', token?.substring(0, 20))
+    console.log('🔍 Token no es necesario - usando cookies')
     
     const url = `${API_BASE_URL}/auditoria/cambios/${usuarioId}?limite=${limite}`
     console.log('🔍 URL de la petición:', url)
@@ -157,9 +157,9 @@ export const obtenerCambiosUsuario = async (usuarioId, limite = 50) => {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include' // Enviar cookies automáticamente
     })
 
     console.log('🔍 Response status:', response.status, response.statusText)
@@ -210,9 +210,9 @@ export const registrarCambio = async (datosDelCambio) => {
     const response = await fetch(`${API_BASE_URL}/auditoria/registrar-cambio`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.getToken}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include', // Enviar cookies automáticamente
       body: JSON.stringify(datosDelCambio)
     })
 

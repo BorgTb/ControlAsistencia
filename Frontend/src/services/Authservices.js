@@ -20,19 +20,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000
+  timeout: 10000,
+  withCredentials: true // IMPORTANTE: enviar cookies automáticamente
 })
 
-// Interceptor para agregar el token a las peticiones
+// Interceptor simplificado - ya no necesitamos agregar tokens manualmente
 apiClient.interceptors.request.use(
   (config) => {
-    const authStore = useAuthStore()
-    const token = authStore.getToken
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    
+    // Las cookies se envían automáticamente con withCredentials: true
     return config
   },
   (error) => {
@@ -74,10 +69,9 @@ class AuthService {
       authStore.setLoading(true)
       const response = await apiClient.post('/auth/login', credentials)
       
-      const { token, user } = response.data
+      const { user } = response.data // Ya NO recibimos token en la respuesta
       
-      // Almacenar el token y datos del usuario en el store
-      authStore.setToken(token)
+      // Solo almacenar datos del usuario (el token está en cookie HTTP-only)
       authStore.setUser(user)
       
       return {
@@ -102,6 +96,10 @@ class AuthService {
    * Realiza el logout del usuario
    * @returns {Promise<Object>} Respuesta del logout
    */
+  /**
+   * Cierra la sesión del usuario
+   * @returns {Promise<Object>} Respuesta del logout
+   */
   async logout() {
     const authStore = useAuthStore()
     
@@ -109,10 +107,10 @@ class AuthService {
       authStore.setLoading(true)
       
       // Obtener datos del usuario antes de limpiar
-      const userData = authStore.getUser // Cambiar de getUserData a getUser
+      const userData = authStore.getUser
       console.log('🔍 Datos del usuario para logout:', userData)
       
-      // Cerrar sesión en auditoría antes del logout tradicional
+      // Cerrar sesión en auditoría antes del logout
       if (userData && userData.id) {
         try {
           console.log('📤 Enviando petición de cierre de sesión para usuario ID:', userData.id)
@@ -122,22 +120,20 @@ class AuthService {
           console.log('✅ Respuesta del cierre de sesión:', response.data)
         } catch (auditoriaError) {
           console.error('⚠️ Error al cerrar sesión en auditoría:', auditoriaError)
-          console.error('⚠️ Detalles del error:', auditoriaError.response?.data)
           // No fallar el logout por esto
         }
-      } else {
-        console.warn('⚠️ No se encontraron datos del usuario para cerrar sesión en auditoría')
       }
       
-      // Llamar al endpoint de logout tradicional en el backend
+      // Llamar al endpoint de logout para limpiar la cookie
       try {
         await apiClient.post('/auth/logout')
+        console.log('✅ Cookie de autenticación limpiada')
       } catch (authError) {
         console.warn('⚠️ Error en logout del auth:', authError)
         // Continuar con el logout local
       }
       
-      // Limpiar el store
+      // Limpiar el store local
       authStore.clearAuth()
       
       return {

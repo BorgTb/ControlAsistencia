@@ -60,7 +60,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
-import axios from "axios";
+import { apiClient } from '@/config/axios-config';
 
 // Estados reactivos
 const estadisticas = ref({
@@ -79,17 +79,10 @@ const ultimaActualizacion = ref(null);
 const obtenerEstadisticas = async () => {
   try {
     cargando.value = true;
-    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    const token = authStorage.token;
-    
     console.log('📊 Obteniendo estadísticas generales del sistema...');
-    console.log('🔑 Token disponible:', !!token);
-    console.log('🔗 URL completa que se llamará:', axios.defaults.baseURL + "/api/estadisticas/general");
     
     // Obtener estadísticas generales desde el backend
-    const response = await axios.get("/api/estadisticas/general", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await apiClient.get("/api/estadisticas/general");
     
     console.log('📈 Respuesta del servidor:', response.data);
     

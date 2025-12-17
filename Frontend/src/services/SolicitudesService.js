@@ -8,7 +8,8 @@ const publicApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000
+  timeout: 10000,
+  withCredentials: true // Aún en rutas públicas, podemos enviar cookies
 });
 
 /**

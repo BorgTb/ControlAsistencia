@@ -21,24 +21,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000
+  timeout: 10000,
+  withCredentials: true // Enviar cookies automáticamente
 })
 
-// Interceptor para agregar el token y el user a las peticiones
+// Interceptor simplificado - las cookies se envían automáticamente
 apiClient.interceptors.request.use(
   (config) => {
-    const authStore = useAuthStore()
-    const token = authStore.getToken
-    const user = authStore.getUser
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
-    if (user) {
-      config.headers['X-User'] = user
-    }
-
+    // Las cookies se envían automáticamente con withCredentials: true
     return config
   },
   (error) => {

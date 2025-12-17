@@ -147,7 +147,7 @@ import { ref, onMounted, computed } from "vue";
 import { useNotification } from "@/composables/useNotification.js";
 import { useAuth } from '@/composables/useAuth.js';
 import AdminNavbar from '@/components/shared/AdminNavbar.vue';
-import axios from "axios";
+import { apiClient } from '@/config/axios-config';
 
 // ========== VARIABLES REACTIVAS ==========
 const usuarios = ref([]);
@@ -239,19 +239,11 @@ function cancelarEdicionEstado() {
  */
 async function confirmarCambios(id) {
   try {
-    // Se obtiene el token JWT para autenticación
-    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    const token = authStorage.token;
-    
     // Actualizar estado del usuario en el backend
-    await axios.put(`${import.meta.env.VITE_API_URL}/user/usuarios/${id}/estado`, { estado: estadoEditTemp.value }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await apiClient.put(`/user/usuarios/${id}/estado`, { estado: estadoEditTemp.value });
     
     // Actualizar rol del usuario en el backend
-    await axios.put(`${import.meta.env.VITE_API_URL}/user/usuarios/${id}/rol`, { rol: rolEditTemp.value }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await apiClient.put(`/user/usuarios/${id}/rol`, { rol: rolEditTemp.value });
     
     // Actualizar la UI local para reflejar los cambios inmediatamente
     // Esto evita tener que recargar toda la lista de usuarios
@@ -317,13 +309,9 @@ function cerrarModalUnirEmpresa() {
 async function cargarEmpresasDisponibles() {
   try {
     cargandoEmpresas.value = true;
-    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    const token = authStorage.token;
 
     // Realizar petición al backend para obtener empresas
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/empresas`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await apiClient.get('/user/empresas');
 
     empresasDisponibles.value = response.data || [];
     console.log('Empresas cargadas:', empresasDisponibles.value);
@@ -392,12 +380,7 @@ async function unirTrabajadorAEmpresa() {
  */
 async function cargarRelacionesUsuarioEmpresa() {
   try {
-    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    const token = authStorage.token;
-
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios-empresas`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await apiClient.get('/user/usuarios-empresas');
 
     relacionesUsuarioEmpresa.value = response.data || [];
     console.log('Relaciones usuario-empresa cargadas:', relacionesUsuarioEmpresa.value);
@@ -476,18 +459,8 @@ function buscarUsuarios() {
  */
 onMounted(async () => {
   try {
-    // Se obtiene el token JWT desde el objeto 'auth-storage' en localStorage,
-    // ya que el token está guardado como parte de un JSON y no como string plano.
-    // Esto asegura que el header Authorization se envíe correctamente y el backend lo reconozca.
-    const authStorage = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    const token = authStorage.token;
-    
     // Cargar usuarios del sistema
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/usuarios`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await apiClient.get('/user/usuarios');
     
     // Depuración: muestra en consola la respuesta del backend para verificar que llegan los usuarios correctamente
     console.log('Respuesta usuarios:', response.data);

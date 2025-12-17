@@ -3,31 +3,37 @@ import AuthService from '../services/authservice.js';
 // Middleware para verificar JWT
 const verifyToken = (req, res, next) => {
     try {
-        // Obtener el token del header Authorization
-        const authHeader = req.headers.authorization;
-        console.log(authHeader);
-        if (!authHeader) {
+        // Intentar obtener access token de cookie primero (método recomendado)
+        let token = req.cookies?.accessToken;
+        
+        // Fallback: verificar header Authorization (para compatibilidad con apps móviles/APIs externas)
+        if (!token) {
+            const authHeader = req.headers.authorization;
+            console.log('No cookie found, trying Authorization header:', authHeader);
+            if (authHeader) {
+                token = authHeader.split(' ')[1];
+            }
+        }
+        
+        if (!token) {
             return res.status(401).json({ 
                 success: false,
                 message: 'Access denied. No token provided.' 
             });
         }
 
-        // Extraer el token (formato: "Bearer <token>")
-        const token = authHeader.split(' ')[1];
-        
-        if (!token) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Access denied. Invalid token format.' 
-            });
-        }
-
         // Verificar el token usando el AuthService
         const decoded = AuthService.verifyToken(token);
         
+        // Verificar que sea un access token (no refresh token)
+        if (decoded.type && decoded.type !== 'access') {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid token type.' 
+            });
+        }
 
-        // Debug: Log información del usuario decodificado, para borrar usuarios en caso de tener cosas conectadas
+        // Debug: Log información del usuario decodificado
         console.log('🔍 Usuario decodificado del token:', {
             id: decoded.id,
             email: decoded.email,
@@ -45,7 +51,8 @@ const verifyToken = (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ 
                 success: false,
-                message: 'Token expired. Please login again.' 
+                message: 'Token expired. Please login again.',
+                requiresRefresh: true // Señal para el frontend de intentar refresh
             });
         }
         

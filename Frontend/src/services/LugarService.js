@@ -14,19 +14,14 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true // Enviar cookies automáticamente
 });
 
-// Interceptor para agregar el token a cada petición
+// Interceptor simplificado - las cookies se envían automáticamente
 apiClient.interceptors.request.use(
   config => {
-    const authStore = useAuthStore();
-    const token = authStore.token;
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
+    // Las cookies se envían automáticamente con withCredentials: true
     return config;
   },
   error => {

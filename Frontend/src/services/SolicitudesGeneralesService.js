@@ -12,17 +12,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000 // Aumentado para uploads de archivos
+  timeout: 30000, // Aumentado para uploads de archivos
+  withCredentials: true // Enviar cookies automáticamente
 });
 
-// Interceptor para agregar token de autenticación
+// Interceptor simplificado - las cookies se envían automáticamente
 apiClient.interceptors.request.use(
   (config) => {
-   const authStore = useAuthStore()
-  const token = authStore.getToken
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Las cookies se envían automáticamente con withCredentials: true
     return config;
   },
   (error) => {

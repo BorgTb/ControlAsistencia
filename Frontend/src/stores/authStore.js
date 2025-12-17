@@ -5,23 +5,17 @@ export const useAuthStore = defineStore('auth', () => {
   // Detecta si el usuario tiene el rol 'admin'.
   // Permite proteger rutas y vistas exclusivas para administradores.
   const esAdmin = computed(() => user.value?.rol === 'admin' || user.value?.rol?.includes('admin'))
-  // Estado
-  const token = ref(null)
+  // Estado - YA NO almacenamos token (está en cookie HTTP-only)
   const user = ref(null)
   const isLoading = ref(false)
 
   // Getters
-  const isAuthenticated = computed(() => !!token.value)
-  const getToken = computed(() => token.value)
+  const isAuthenticated = computed(() => !!user.value) // Autenticado si hay usuario
   const getUser = computed(() => user.value)
   const esEmpleador = computed(() => user.value?.rol?.includes('empleador'))
   const esEst = computed(() => user.value?.est === true)
 
   // Actions
-  function setToken(newToken) {
-    token.value = newToken
-  }
-
   function setUser(userData) {
     user.value = userData
   }
@@ -31,7 +25,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
-    token.value = null
     user.value = null
   }
 
@@ -41,18 +34,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     // Estado
-    token,
     user,
     isLoading,
-  esEmpleador,
-  esEst,
-  esAdmin, // Indica si el usuario es administrador
+    esEmpleador,
+    esEst,
+    esAdmin, // Indica si el usuario es administrador
     // Getters
     isAuthenticated,
-    getToken,
     getUser,
     // Actions
-    setToken,
     setUser,
     setLoading,
     logout,
@@ -62,6 +52,6 @@ export const useAuthStore = defineStore('auth', () => {
   persist: {
     key: 'auth-storage',
     storage: localStorage,
-    paths: ['token', 'user']
+    paths: ['user'] // Solo persistir usuario, NO token (está en cookie HTTP-only)
   }
 })
