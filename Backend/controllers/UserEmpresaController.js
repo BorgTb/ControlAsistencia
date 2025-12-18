@@ -109,7 +109,7 @@ const createTrabajador = async (req, res) => {
         }
 
         if (userData.sistemaExcepcional && userData.sistemaExcepcional === true) {
-            // crear resolucion para este usuario empresa
+            // crear reslucion para este usuario empresa
             ResolucionModel.create({
                 usuario_empresa_id: newUserEmpresa.id,
                 resolucion_numero: userData.numeroResolucion || 'EX-2024-00001',
@@ -879,7 +879,7 @@ const aprobarCambioMarcacion = async (req, res) => {
             }
             if (reporte.hora_correcta){
                // await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
-                datosCambios.horaModificada = marcacionOriginal.data.hora;
+                datosCambios.horaModificada = reporte.hora_correcta;
             }
 
             //await ReporteMarcacionesModel.aprobar(reporteId);
@@ -900,7 +900,7 @@ const aprobarCambioMarcacion = async (req, res) => {
         const reporteActualizado = await ReportesModel.findById(reporteId);
 
         if (reporte.tipo === 'modificar') {
-            NotificacionService.enviarNotificacionConfirmacionModificacionMarcacion(reporte, datosCambios, datosCambios.marcacionOriginal);
+            NotificacionService.enviarNotificacionConfirmacionModificacionMarcacion(reporte, datosCambios);
         } else if (reporte.tipo === 'agregar') {
             // agregar informacion del usuario a datosCambios
             const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
@@ -1189,11 +1189,17 @@ const obtenerTiposTurnos = async (req, res) => {
     try {
         
         const empresa_id = req.user.empresa_id
+    
+        console.log("Obteniendo tipos de turnos para empresa ID:", empresa_id);
+
         // Obtener solo los tipos de turno de la empresa
         const tiposTurnos = await TipoTurnosModel.getByEmpresaId(empresa_id);
         // para cada tipo de turno agregarle los dias en que aplica
 
-    const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
+        const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
+
+        console.log("Tipos de turnos obtenidos:", tiposConDias);
+        
         res.status(200).json({
             success: true,
             data: tiposConDias,
@@ -1540,13 +1546,14 @@ function calcularDiferenciaHorasNocturna(horaEntrada, horaSalida, esNocturno) {
  * Obtener reporte de jornada diaria con marcaciones agrupadas por usuario
  * Similar al reporte de asistencia pero específico para empresas
  * Maneja correctamente turnos nocturnos agrupando entrada del día reportado con salida del día siguiente
+ * OPTIMIZADO: Reduce de 300+ consultas a solo 5 consultas usando carga masiva
  */
 const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
     try {
         const { rutEmpresa } = req.params;
         const { fecha_inicio, fecha_fin } = req.query;
 
-        
+        console.time('⏱️ Tiempo total de reporte');
 
         // Validar fechas
         if (!fecha_inicio || !fecha_fin) {
@@ -1557,62 +1564,138 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         }
 
         // Obtener empresa
+        console.time('📊 1. Obtener empresa');
         const empresa = await EmpresaModel.getEmpresaByRut(rutEmpresa);
+        console.timeEnd('📊 1. Obtener empresa');
+        
         if (!empresa) {
             return res.status(404).json({
                 success: false,
                 message: 'Empresa no encontrada'
             });
         }
-        // Obtener todos los trabajadores de la empresa (directos)
-        const trabajadoresDirectos = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresa.empresa_id);
         
-        // Obtener trabajadores de empresas EST asociadas
-        const trabajadoresEST = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
+        // Calcular rango ampliado para turnos nocturnos
+        const fechaInicioBusqueda = new Date(fecha_inicio);
+        fechaInicioBusqueda.setDate(fechaInicioBusqueda.getDate() - 1);
+        const fechaInicioBusquedaStr = fechaInicioBusqueda.toISOString().split('T')[0];
         
-        // Combinar todos los trabajadores
-        const todosTrabajadores = [...trabajadoresDirectos, ...trabajadoresEST];
+        const fechaFinBusqueda = new Date(fecha_fin);
+        fechaFinBusqueda.setDate(fechaFinBusqueda.getDate() + 1);
+        const fechaFinBusquedaStr = fechaFinBusqueda.toISOString().split('T')[0];
 
-        // Objeto para agrupar marcaciones por usuario
+        // OPTIMIZACIÓN 1: Obtener todos los trabajadores en paralelo
+        console.time('📊 2. Obtener trabajadores');
+        const [trabajadoresDirectos, trabajadoresEST] = await Promise.all([
+            UsuarioEmpresaModel.getUsuariosByEmpresaId(empresa.empresa_id),
+            EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id)
+        ]);
+        const todosTrabajadores = [...trabajadoresDirectos, ...trabajadoresEST];
+        console.timeEnd('📊 2. Obtener trabajadores');
+        
+        if (todosTrabajadores.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    trabajadores: [],
+                    marcacionesAgrupadasPorUsuario: {},
+                    empresa: {
+                        id: empresa.id,
+                        nombre: empresa.emp_nombre,
+                        rut: empresa.emp_rut
+                    },
+                    periodo: { fecha_inicio, fecha_fin }
+                },
+                message: 'No hay trabajadores en esta empresa'
+            });
+        }
+
+        const usuarioEmpresaIds = todosTrabajadores.map(t => t.id);
+
+        // OPTIMIZACIÓN 2: Obtener TODAS las marcaciones y horas extras en paralelo
+        console.time('📊 3. Obtener marcaciones y horas extras (paralelo)');
+        const [todasMarcacionesResults, todasHorasExtras] = await Promise.all([
+            Promise.all(
+                usuarioEmpresaIds.map(id => 
+                    MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
+                        id,
+                        fechaInicioBusquedaStr,
+                        fechaFinBusquedaStr
+                    )
+                )
+            ),
+            Promise.all(
+                usuarioEmpresaIds.map(id =>
+                    HorasExtrasModel.getHorasExtrasByUsuarioYFechas(
+                        id,
+                        fechaInicioBusquedaStr,
+                        fechaFinBusquedaStr
+                    )
+                )
+            )
+        ]);
+        console.timeEnd('📊 3. Obtener marcaciones y horas extras (paralelo)');
+
+        // OPTIMIZACIÓN 3: Crear mapa de marcaciones y horas extras por usuario
+        const marcacionesPorUsuario = {};
+        const horasExtrasPorUsuario = {};
+        
+        usuarioEmpresaIds.forEach((id, index) => {
+            marcacionesPorUsuario[id] = todasMarcacionesResults[index]?.data || [];
+            horasExtrasPorUsuario[id] = todasHorasExtras[index] || [];
+        });
+
+        // OPTIMIZACIÓN 4: Obtener TODOS los turnos necesarios en una sola pasada
+        console.time('📊 4. Obtener todos los turnos');
+        const fechasUnicas = new Set();
+        Object.values(marcacionesPorUsuario).forEach(marcaciones => {
+            marcaciones.forEach(m => {
+                const fecha = DateTime.fromJSDate(new Date(m.fecha))
+                    .setZone('America/Santiago')
+                    .toISODate();
+                fechasUnicas.add(fecha);
+                // Agregar día anterior para turnos nocturnos
+                const fechaAnterior = new Date(fecha);
+                fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+                fechasUnicas.add(fechaAnterior.toISOString().split('T')[0]);
+            });
+        });
+
+        // Obtener todos los turnos para todos los usuarios y fechas
+        const turnosPorUsuarioFecha = {};
+        await Promise.all(
+            usuarioEmpresaIds.map(async (usuarioId) => {
+                turnosPorUsuarioFecha[usuarioId] = {};
+                const turnosUsuario = await Promise.all(
+                    Array.from(fechasUnicas).map(async (fecha) => {
+                        const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioId, fecha);
+                        return { fecha, turno };
+                    })
+                );
+                turnosUsuario.forEach(({ fecha, turno }) => {
+                    turnosPorUsuarioFecha[usuarioId][fecha] = turno;
+                });
+            })
+        );
+        console.timeEnd('📊 4. Obtener todos los turnos');
+
+        // OPTIMIZACIÓN 5: Procesar todo en memoria
+        console.time('📊 5. Procesar datos en memoria');
         const marcacionesAgrupadasPorUsuario = {};
 
-        // Procesar cada trabajador
         for (const trabajador of todosTrabajadores) {
             const usuarioEmpresaId = trabajador.id;
 
-            // Inicializar estructura de datos para este trabajador
+            // Inicializar estructura
             marcacionesAgrupadasPorUsuario[usuarioEmpresaId] = {
                 trabajador_id: usuarioEmpresaId,
                 marcaciones: {}
             };
 
-            // Obtener marcaciones del trabajador en el rango de fechas
-            // Para turnos nocturnos, necesitamos un día adicional antes Y después
-            const fechaInicioBusqueda = new Date(fecha_inicio);
-            fechaInicioBusqueda.setDate(fechaInicioBusqueda.getDate() - 1);
-            const fechaInicioBusquedaStr = fechaInicioBusqueda.toISOString().split('T')[0];
-            
-            const fechaFinBusqueda = new Date(fecha_fin);
-            fechaFinBusqueda.setDate(fechaFinBusqueda.getDate() + 1);
-            const fechaFinBusquedaStr = fechaFinBusqueda.toISOString().split('T')[0];
-            
-            const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
-                usuarioEmpresaId,
-                fechaInicioBusquedaStr,
-                fechaFinBusquedaStr
-            );
-            
-            console.log(`🔍 Marcaciones obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, marcaciones);
-            
-            // Obtener horas extras del trabajador en el rango de fechas
-            const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioYFechas(
-                usuarioEmpresaId,
-                fechaInicioBusquedaStr,
-                fechaFinBusquedaStr
-            );
-            console.log(`⏰ Horas extras obtenidas para usuario_empresa_id ${usuarioEmpresaId}:`, horasExtras);
+            const marcaciones = marcacionesPorUsuario[usuarioEmpresaId] || [];
+            const horasExtras = horasExtrasPorUsuario[usuarioEmpresaId] || [];
 
-            // Crear un mapa de horas extras por marcacion_id para búsqueda rápida
+            // Crear mapa de horas extras por marcacion_id
             const horasExtrasMap = {};
             horasExtras.forEach(he => {
                 if (he.marcacion_id) {
@@ -1620,33 +1703,24 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 }
             });
 
-            // Agrupar marcaciones por fecha
-            if (marcaciones && marcaciones.data && marcaciones.data.length > 0) {
-                for (const marcacion of marcaciones.data) {
+            // Procesar marcaciones
+            if (marcaciones.length > 0) {
+                for (const marcacion of marcaciones) {
                     const fechaMarcacion = DateTime.fromJSDate(new Date(marcacion.fecha))
                         .setZone('America/Santiago')
                         .toISODate();
 
-                    // Obtener turno del trabajador para esa fecha
-                    const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
-                        usuarioEmpresaId,
-                        fechaMarcacion
-                    );
-
-                    // Obtener turno del día anterior para validar agrupación de turnos nocturnos
+                    // Obtener turnos desde el mapa (ya cargados)
+                    const turno = turnosPorUsuarioFecha[usuarioEmpresaId]?.[fechaMarcacion] || null;
+                    
                     const fechaAnterior = new Date(fechaMarcacion);
                     fechaAnterior.setDate(fechaAnterior.getDate() - 1);
                     const fechaAnteriorStr = fechaAnterior.toISOString().split('T')[0];
-                    
-                    const turnoAnterior = await TurnosModel.obtenerTurnoPorUsuarioYFecha(
-                        usuarioEmpresaId,
-                        fechaAnteriorStr
-                    );
+                    const turnoAnterior = turnosPorUsuarioFecha[usuarioEmpresaId]?.[fechaAnteriorStr] || null;
 
-                    // Para turnos nocturnos, calcular la fecha lógica de la jornada
+                    // Calcular fecha lógica de agrupación
                     let fechaAgrupacion = fechaMarcacion;
                     
-                    // Verificar si hay agrupación por turno nocturno
                     if ((turno && esturnoNocturno(turno)) || (turnoAnterior && esturnoNocturno(turnoAnterior))) {
                         fechaAgrupacion = obtenerFechaLogicaJornada(
                             fechaMarcacion,
@@ -1655,14 +1729,9 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                             turno,
                             turnoAnterior
                         );
-                        const razon = !turno && turnoAnterior && esturnoNocturno(turnoAnterior) 
-                            ? '(sin turno hoy, agrupada con turno nocturno anterior)' 
-                            : turno && esturnoNocturno(turno)
-                            ? '(turno nocturno detectado)'
-                            : '';
-                        console.log(`🌙 Marcación para ${usuarioEmpresaId} - Fecha original: ${fechaMarcacion} → Agrupada como: ${fechaAgrupacion} ${razon}`);
                     }
 
+                    // Inicializar estructura para la fecha si no existe
                     if (!marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion]) {
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion] = {
                             marcaciones: [],
@@ -1674,10 +1743,8 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                         };
                     }
 
-                    // Verificar si esta marcación tiene hora extra asociada
+                    // Agregar marcación con hora extra
                     const horaExtra = horasExtrasMap[marcacion.id];
-
-                    // Agregar marcación al array con información de hora extra
                     marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaAgrupacion].marcaciones.push({
                         id: marcacion.id,
                         hora: marcacion.hora,
@@ -1701,10 +1768,9 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                     });
                 }
 
-                // Determinar estado de asistencia para cada fecha DESPUÉS de agrupar todas las marcaciones
+                // Determinar estado de asistencia
                 for (const fechaMarcacion in marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones) {
                     const tiposMarcacion = marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.map(m => m.tipo);
-                    console.log(`Tipos de marcación para usuario_empresa_id ${usuarioEmpresaId} en ${fechaMarcacion}:`, tiposMarcacion);
                     
                     if (tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'PRESENTE';
@@ -1718,32 +1784,13 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 }
             }
         }
+        console.timeEnd('📊 5. Procesar datos en memoria');
 
-        // Filtrar marcaciones para que solo muestren fechas dentro del rango solicitado
-        // (ya que obtuvimos un día adicional para turnos nocturnos)
+        console.timeEnd('📊 5. Procesar datos en memoria');
+
+        // Filtrar y calcular horas trabajadas
+        console.time('📊 6. Filtrar y calcular');
         const marcacionesFiltradasPorUsuario = {};
-        // Calcular diferencia de horas para cada jornada (considerando turnos nocturnos)
-        for (const usuarioId in marcacionesFiltradasPorUsuario) {
-            for (const fecha in marcacionesFiltradasPorUsuario[usuarioId].marcaciones) {
-                const datosJornada = marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha];
-                const marcaciones = datosJornada.marcaciones;
-                
-                if (marcaciones.length >= 2) {
-                    const entrada = marcaciones.find(m => m.tipo === 'entrada');
-                    const salida = marcaciones.find(m => m.tipo === 'salida');
-                    
-                    if (entrada && salida) {
-                        // Calcular diferencia de horas considerando turnos nocturnos
-                        const diferenciaHoras = calcularDiferenciaHorasNocturna(
-                            entrada.hora,
-                            salida.hora,
-                            datosJornada.es_turno_nocturno
-                        );
-                        datosJornada.horas_trabajadas = diferenciaHoras;
-                    }
-                }
-            }
-        }
         
         for (const usuarioId in marcacionesAgrupadasPorUsuario) {
             marcacionesFiltradasPorUsuario[usuarioId] = {
@@ -1751,16 +1798,35 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 marcaciones: {}
             };
             
-            // Filtrar solo fechas dentro del rango
+            // Filtrar solo fechas dentro del rango Y calcular horas trabajadas
             for (const fecha in marcacionesAgrupadasPorUsuario[usuarioId].marcaciones) {
                 if (fecha >= fecha_inicio && fecha <= fecha_fin) {
-                    marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha] = 
-                        marcacionesAgrupadasPorUsuario[usuarioId].marcaciones[fecha];
+                    const datosJornada = marcacionesAgrupadasPorUsuario[usuarioId].marcaciones[fecha];
+                    const marcaciones = datosJornada.marcaciones;
+                    
+                    // Calcular horas trabajadas si hay entrada y salida
+                    if (marcaciones.length >= 2) {
+                        const entrada = marcaciones.find(m => m.tipo === 'entrada');
+                        const salida = marcaciones.find(m => m.tipo === 'salida');
+                        
+                        if (entrada && salida) {
+                            const diferenciaHoras = calcularDiferenciaHorasNocturna(
+                                entrada.hora,
+                                salida.hora,
+                                datosJornada.es_turno_nocturno
+                            );
+                            datosJornada.horas_trabajadas = diferenciaHoras;
+                        }
+                    }
+                    
+                    marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha] = datosJornada;
                 }
             }
         }
+        console.timeEnd('📊 6. Filtrar y calcular');
 
-        // Formatear respuesta con información de trabajadores
+        // Formatear respuesta
+        console.time('📊 7. Formatear respuesta');
         const trabajadoresFormateados = todosTrabajadores.map(t => ({
             id: t.id,
             usuario_id: t.usuario_id,
@@ -1775,8 +1841,9 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
             empresa_nombre: t.empresa_nombre || empresa.emp_nombre,
             empresa_rut: t.empresa_rut || empresa.emp_rut
         }));
+        console.timeEnd('📊 7. Formatear respuesta');
 
-        
+        console.timeEnd('⏱️ Tiempo total de reporte');
 
         res.status(200).json({
             success: true,

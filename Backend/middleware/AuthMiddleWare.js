@@ -24,7 +24,7 @@ const verifyToken = (req, res, next) => {
 
         // Verificar el token usando el AuthService
         const decoded = AuthService.verifyToken(token);
-        
+        console.log('Token decoded successfully:', decoded);
         // Verificar que sea un access token (no refresh token)
         if (decoded.type && decoded.type !== 'access') {
             return res.status(401).json({ 
@@ -32,15 +32,6 @@ const verifyToken = (req, res, next) => {
                 message: 'Invalid token type.' 
             });
         }
-
-        // Debug: Log información del usuario decodificado
-        console.log('🔍 Usuario decodificado del token:', {
-            id: decoded.id,
-            email: decoded.email,
-            rol: decoded.rol,
-            hasId: !!decoded.id
-        });
-        
         // Agregar la información del usuario al objeto request
         req.user = decoded;
         

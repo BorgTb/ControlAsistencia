@@ -35,7 +35,7 @@ const generateAccessToken = (user, empresa_id) => {
         rol: user.rol,
         type: 'access'
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' }); // 15 minutos
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1m' }); // 1 minuto
 };
 
 // Generar Refresh Token (larga duración para sesiones persistentes)
@@ -238,6 +238,7 @@ const loginUser = async (email, password, ip_address = null) => {
     
     return {
         token,
+        empresa_id: empresaId, // ← IMPORTANTE: Agregar empresa_id para el access token
         user: {
             id: user.id,
             nombre: user.nombre,
@@ -247,7 +248,9 @@ const loginUser = async (email, password, ip_address = null) => {
             rol: user.rol,
             rut: empresaRut,
             estado: user.estado,
-            est: est
+            est: est,
+            empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
+            empresa_rut: empresaRut,
         }
     };
 };
