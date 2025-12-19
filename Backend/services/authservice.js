@@ -35,7 +35,7 @@ const generateAccessToken = (user, empresa_id) => {
         rol: user.rol,
         type: 'access'
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: '1m' }); // 1 minuto
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' }); // 15 minutos
 };
 
 // Generar Refresh Token (larga duración para sesiones persistentes)

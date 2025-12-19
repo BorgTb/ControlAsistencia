@@ -43,9 +43,10 @@ const RefreshTokenModel = {
     async findValidToken(token) {
         try {
             const query = `
-                SELECT rt.*, u.email, u.rol, u.estado
+                SELECT rt.*, u.email, u.rol, u.estado, ue.empresa_id
                 FROM refresh_tokens rt
                 JOIN usuarios u ON rt.user_id = u.id
+                LEFT JOIN usuarios_empresas ue ON u.id = ue.usuario_id
                 WHERE rt.token = ? 
                 AND rt.revoked = FALSE
                 AND rt.expires_at > NOW()

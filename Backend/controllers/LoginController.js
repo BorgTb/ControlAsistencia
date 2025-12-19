@@ -231,9 +231,9 @@ const refresh = async (req, res) => {
             rol: tokenRecord.rol
         };
         
-        // Necesitamos obtener empresa_id del usuario
-        // Por ahora usamos null, pero deberías obtenerlo de la base de datos
-        const newAccessToken = AuthService.generateAccessToken(user, null);
+        // Obtener empresa_id del token record (ya viene del JOIN en findValidToken)
+        const empresa_id = tokenRecord.empresa_id || null;
+        const newAccessToken = AuthService.generateAccessToken(user, empresa_id);
         
         // Establecer solo el nuevo access token cookie
         res.cookie('accessToken', newAccessToken, {
