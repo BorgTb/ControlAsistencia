@@ -738,7 +738,6 @@ const loadData = async (apiData = null) => {
           const atraso = datosAsistencia.atraso
           const salida = datosAsistencia.salida
           
-          console.log(`📋 Turno para ${trabajador.usuario_nombre} en ${fecha}:`, turno)
         
           const marcacionEntrada = marcacionesArray.find(m => m.tipo === 'entrada')
           const marcacionSalida = marcacionesArray.find(m => m.tipo === 'salida')
@@ -754,7 +753,6 @@ const loadData = async (apiData = null) => {
           let jornadaPactada = 'N/A'
           let jornadaPactadaMinutos = 0
           if (turno && turno.hora_inicio && turno.hora_fin) {
-            console.log(`⏰ Jornada pactada - Inicio: ${turno.hora_inicio}, Fin: ${turno.hora_fin}`)
             // Formatear las horas (quitar segundos si existen)
             const horaInicio = turno.hora_inicio.substring(0, 5)
             const horaFin = turno.hora_fin.substring(0, 5)
@@ -766,7 +764,6 @@ const loadData = async (apiData = null) => {
             jornadaPactadaMinutos = minutosFin - minutosInicio
             if (jornadaPactadaMinutos < 0) jornadaPactadaMinutos += 24 * 60
             
-            console.log(`⏰ Jornada pactada: ${jornadaPactada} (${jornadaPactadaMinutos} minutos)`)
           } else {
             console.warn(`⚠️ No se pudo obtener jornada pactada - turno:`, turno)
           }
