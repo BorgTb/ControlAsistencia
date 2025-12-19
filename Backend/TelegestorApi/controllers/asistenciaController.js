@@ -302,18 +302,42 @@ class AsistenciaController {
                         total_marcaciones: detalles.length
                     };
                     
-                    // Acumular registro para inserción posterior
+                    // Acumular registros para inserción posterior
                     const horaEntradaFinal = resumenDia.hora_entrada || resumenDia.horario_inicio;
                     const horaSalidaFinal = resumenDia.hora_salida || resumenDia.horario_fin;
                     
-                    registrosParaInsertar.push({
-                        con_hor_trab_idn: currentIDN++,
-                        prov_emp_idn: dataTrabajadorTelegestor.prov_emp_idn,
-                        con_hor_trab_hora_desde_a_cumplir: formatoSQL(dia, resumenDia.horario_inicio),
-                        con_hor_trab_hora_hasta_a_cumplir: formatoSQL(dia, resumenDia.horario_fin),
-                        con_hor_trab_desde: formatoSQL(dia, horaEntradaFinal),
-                        con_hor_trab_hasta: formatoSQL(dia, horaSalidaFinal)
-                    });
+                    // Si hay colación, insertar DOS registros: antes y después de colación
+                    if (resumenDia.colacion_inicio_real && resumenDia.colacion_fin_real) {
+                        // Primer registro: desde entrada hasta inicio de colación
+                        registrosParaInsertar.push({
+                            con_hor_trab_idn: currentIDN++,
+                            prov_emp_idn: dataTrabajadorTelegestor.prov_emp_idn,
+                            con_hor_trab_hora_desde_a_cumplir: formatoSQL(dia, resumenDia.horario_inicio),
+                            con_hor_trab_hora_hasta_a_cumplir: formatoSQL(dia, resumenDia.horario_colacion_inicio),
+                            con_hor_trab_desde: formatoSQL(dia, horaEntradaFinal),
+                            con_hor_trab_hasta: formatoSQL(dia, resumenDia.colacion_inicio_real)
+                        });
+                        
+                        // Segundo registro: desde fin de colación hasta salida
+                        registrosParaInsertar.push({
+                            con_hor_trab_idn: currentIDN++,
+                            prov_emp_idn: dataTrabajadorTelegestor.prov_emp_idn,
+                            con_hor_trab_hora_desde_a_cumplir: formatoSQL(dia, resumenDia.horario_colacion_inicio),
+                            con_hor_trab_hora_hasta_a_cumplir: formatoSQL(dia, resumenDia.horario_fin),
+                            con_hor_trab_desde: formatoSQL(dia, resumenDia.colacion_fin_real),
+                            con_hor_trab_hasta: formatoSQL(dia, horaSalidaFinal)
+                        });
+                    } else {
+                        // Sin colación: un solo registro completo
+                        registrosParaInsertar.push({
+                            con_hor_trab_idn: currentIDN++,
+                            prov_emp_idn: dataTrabajadorTelegestor.prov_emp_idn,
+                            con_hor_trab_hora_desde_a_cumplir: formatoSQL(dia, resumenDia.horario_inicio),
+                            con_hor_trab_hora_hasta_a_cumplir: formatoSQL(dia, resumenDia.horario_fin),
+                            con_hor_trab_desde: formatoSQL(dia, horaEntradaFinal),
+                            con_hor_trab_hasta: formatoSQL(dia, horaSalidaFinal)
+                        });
+                    }
 
                     //console.log(resumenDia);
                     } catch (innerError) {
