@@ -211,7 +211,7 @@
     <transition name="fade">
       <div 
         v-if="mostrarModalTelegestor" 
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-black bg-opacity-30"
         @click.self="cerrarModalTelegestor"
       >
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden">
@@ -239,78 +239,148 @@
           </div>
 
           <!-- Contenido del Modal -->
-          <div class="p-6 overflow-y-auto max-h-96">
-            <div v-if="cargandoValidacion" class="text-center py-12">
-              <svg class="animate-spin h-12 w-12 mx-auto text-blue-600" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <p class="mt-4 text-gray-600">Validando datos...</p>
-            </div>
+          <div class="p-6 overflow-y-auto max-h-96 relative">
+            <!-- Pantalla de Validación -->
+            <transition name="slide">
+              <div v-if="!mostrarConfirmacion" key="validacion">
+                <div v-if="cargandoValidacion" class="text-center py-12">
+                  <svg class="animate-spin h-12 w-12 mx-auto text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p class="mt-4 text-gray-600">Validando datos...</p>
+                </div>
 
-            <div v-else-if="diasIncompletos.length === 0" class="text-center py-12">
-              <svg class="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="mt-4 text-gray-600 font-medium">¡Todos los días tienen turnos completos!</p>
-              <p class="text-sm text-gray-500 mt-2">Puede proceder con la exportación a Telegestor</p>
-            </div>
+                <!-- Sin marcaciones -->
+                <div v-else-if="!hayMarcaciones" class="text-center py-12">
+                  <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p class="mt-4 text-gray-600 font-medium">{{ mensajeValidacion }}</p>
+                  <p class="text-sm text-gray-500 mt-2">No hay datos para exportar en el período seleccionado</p>
+                </div>
 
-            <div v-else class="space-y-3">
-              <div 
-                v-for="(dia, index) in diasIncompletos" 
-                :key="index"
-                class="border border-orange-200 rounded-lg p-4 bg-orange-50 hover:shadow-md transition"
-              >
-                <div class="flex items-start gap-3">
-                  <div class="flex-shrink-0 mt-1">
-                    <div class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-                      {{ index + 1 }}
-                    </div>
-                  </div>
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                      <h4 class="text-lg font-semibold text-gray-800">{{ formatearFecha(dia.fecha) }}</h4>
-                      <span class="px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full">
-                        {{ dia.tipo }}
-                      </span>
-                    </div>
-                    <div class="space-y-1">
-                      <p class="text-sm text-gray-700">
-                        <span class="font-medium">Empleado:</span> {{ dia.empleado }}
-                      </p>
-                      <p class="text-sm text-gray-700">
-                        <span class="font-medium">Motivo:</span> {{ dia.motivo }}
-                      </p>
-                      <p v-if="dia.turnoEsperado" class="text-sm text-gray-700">
-                        <span class="font-medium">Turno esperado:</span> {{ dia.turnoEsperado }}
-                      </p>
+                <!-- Todos completos -->
+                <div v-else-if="diasIncompletos.length === 0" class="text-center py-12">
+                  <svg class="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p class="mt-4 text-gray-600 font-medium">¡Todos los días tienen turnos completos!</p>
+                  <p class="text-sm text-gray-500 mt-2">Puede proceder con la exportación a Telegestor</p>
+                </div>
+
+                <div v-else class="space-y-3">
+                  <div 
+                    v-for="(dia, index) in diasIncompletos" 
+                    :key="index"
+                    class="border border-orange-200 rounded-lg p-4 bg-orange-50 hover:shadow-md transition"
+                  >
+                    <div class="flex items-start gap-3">
+                      <div class="flex-shrink-0 mt-1">
+                        <div class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
+                          {{ index + 1 }}
+                        </div>
+                      </div>
+                      <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                          <h4 class="text-lg font-semibold text-gray-800">{{ formatearFecha(dia.fecha) }}</h4>
+                          <span class="px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full">
+                            {{ dia.tipo }}
+                          </span>
+                        </div>
+                        <div class="space-y-1">
+                          <p class="text-sm text-gray-700">
+                            <span class="font-medium">Empleado:</span> {{ dia.empleado }}
+                          </p>
+                          <p class="text-sm text-gray-700">
+                            <span class="font-medium">Problema:</span> 
+                            <span class="text-red-600 font-medium">{{ dia.motivo }}</span>
+                          </p>
+                          <p v-if="dia.advertencias" class="text-sm text-gray-700">
+                            <span class="font-medium">Advertencias:</span> 
+                            <span class="text-yellow-600">{{ dia.advertencias }}</span>
+                          </p>
+                          <p v-if="dia.turnoEsperado" class="text-sm text-gray-700">
+                            <span class="font-medium">Turno esperado:</span> {{ dia.turnoEsperado }}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </transition>
+
+            <!-- Pantalla de Confirmación -->
+            <transition name="slide">
+              <div v-if="mostrarConfirmacion" key="confirmacion" class="text-center py-12">
+                <svg class="w-20 h-20 mx-auto text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="mt-6 text-2xl font-bold text-gray-800">¿Está seguro?</h3>
+                <p class="mt-4 text-gray-600 text-lg">
+                  Está a punto de enviar los datos de asistencia a Telegestor.
+                </p>
+                <p class="mt-2 text-gray-500">
+                  Esta acción procesará e insertará los registros en el sistema Telegestor.
+                </p>
+                <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p class="text-sm text-blue-800">
+                    <span class="font-semibold">Período:</span> {{ obtenerPeriodo().fechaInicio }} al {{ obtenerPeriodo().fechaFin }}
+                  </p>
+                </div>
+              </div>
+            </transition>
           </div>
 
           <!-- Footer del Modal -->
           <div class="bg-gray-50 p-6 flex justify-between items-center border-t">
             <div class="text-sm text-gray-600">
-              <span class="font-semibold">Nota:</span> Es necesario justificar estos días antes de exportar
+              <span class="font-semibold">Nota:</span> 
+              <span v-if="mostrarConfirmacion">Confirme la exportación para continuar</span>
+              <span v-else-if="!hayMarcaciones">No hay datos para exportar</span>
+              <span v-else-if="diasIncompletos.length > 0">Es necesario justificar estos días antes de exportar</span>
+              <span v-else>Los datos están listos para exportar</span>
             </div>
             <div class="flex gap-3">
-              <button 
-                @click="cerrarModalTelegestor"
-                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition"
-              >
-                Cancelar
-              </button>
-              <button 
-                v-if="diasIncompletos.length === 0"
-                @click="confirmarEnvioTelegestor"
-                class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
-              >
-                Continuar Exportación
-              </button>
+              <!-- Botones pantalla de validación -->
+              <template v-if="!mostrarConfirmacion">
+                <button 
+                  @click="cerrarModalTelegestor"
+                  class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  v-if="diasIncompletos.length === 0 && hayMarcaciones"
+                  @click="mostrarPantallaConfirmacion"
+                  class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+                >
+                  Continuar Exportación
+                </button>
+              </template>
+              
+              <!-- Botones pantalla de confirmación -->
+              <template v-else>
+                <button 
+                  @click="volverAValidacion"
+                  class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition"
+                >
+                  <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Volver
+                </button>
+                <button 
+                  @click="confirmarEnvioTelegestor"
+                  class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition flex items-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confirmar y Enviar
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -323,6 +393,7 @@
 import { ref, computed } from 'vue';
 import { useNotification } from '@/composables/useNotification';
 import { apiClient } from '@/config/axios-config';
+import { DateTime } from 'luxon';
 
 const { showSuccess, showError, showWarning } = useNotification();
 
@@ -337,6 +408,9 @@ const exportando = ref(false);
 const mostrarModalTelegestor = ref(false);
 const cargandoValidacion = ref(false);
 const diasIncompletos = ref([]);
+const hayMarcaciones = ref(true);
+const mensajeValidacion = ref('');
+const mostrarConfirmacion = ref(false);
 
 // Datos para los selectores
 const meses = [
@@ -387,17 +461,24 @@ async function validarDiasIncompletos() {
 
   try {
     const periodo = obtenerPeriodo();
-    // Por ahora deshabilitamos la validación hasta que se implemente el endpoint
-    // const response = await apiClient.post('/telegestorapi/validar', {
-    //   fechaInicio: periodo.fechaInicio,
-    //   fechaFin: periodo.fechaFin,
-    //   empresaId: sessionStorage.getItem('empresa_id')
-    // });
     
-    diasIncompletos.value = []; // response.data.diasIncompletos || [];
-
-    if (diasIncompletos.value.length === 0) {
-      showSuccess('Validación exitosa. Todos los turnos están completos.');
+    const response = await apiClient.post('/telegestorapi/asistencia/validar', {
+      fechaInicio: periodo.fechaInicio,
+      fechaFin: periodo.fechaFin
+    });
+    
+    diasIncompletos.value = response.data.diasIncompletos || [];
+    mensajeValidacion.value = response.data.mensaje || '';
+    
+    // Verificar si no hay marcaciones
+    if (mensajeValidacion.value.includes('No se encontraron marcaciones')) {
+      hayMarcaciones.value = false;
+      showWarning('No hay datos para exportar en el período seleccionado');
+    } else {
+      hayMarcaciones.value = true;
+      if (diasIncompletos.value.length === 0) {
+        showSuccess('Validación exitosa. Todos los turnos están completos.');
+      }
     }
   } catch (error) {
     console.error('Error al validar días incompletos:', error);
@@ -414,25 +495,24 @@ async function exportarDatos() {
 
   try {
     const periodo = obtenerPeriodo();
-    const empresaId = sessionStorage.getItem('empresa_id');
 
     let response;
     
     if (formatoSeleccionado.value === 'csv') {
-      response = await apiClient.post('/exportacion/csv', {
-        ...periodo,
-        empresaId
+      response = await apiClient.post('/telegestorapi/asistencia/export/csv', {
+        fechaInicio: periodo.fechaInicio,
+        fechaFin: periodo.fechaFin
       }, { responseType: 'blob' });
       
-      descargarArchivo(response.data, `exportacion_${periodo.fechaInicio}_${periodo.fechaFin}.csv`, 'text/csv');
+      descargarArchivo(response.data, `asistencia_${periodo.fechaInicio}_${periodo.fechaFin}.csv`, 'text/csv');
       
     } else if (formatoSeleccionado.value === 'excel') {
-      response = await apiClient.post('/exportacion/excel', {
-        ...periodo,
-        empresaId
+      response = await apiClient.post('/telegestorapi/asistencia/export/excel', {
+        fechaInicio: periodo.fechaInicio,
+        fechaFin: periodo.fechaFin
       }, { responseType: 'blob' });
       
-      descargarArchivo(response.data, `exportacion_${periodo.fechaInicio}_${periodo.fechaFin}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      descargarArchivo(response.data, `asistencia_${periodo.fechaInicio}_${periodo.fechaFin}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
     showSuccess('Exportación completada exitosamente');
@@ -443,6 +523,16 @@ async function exportarDatos() {
   } finally {
     exportando.value = false;
   }
+}
+
+// Mostrar confirmación antes de enviar
+function mostrarPantallaConfirmacion() {
+  mostrarConfirmacion.value = true;
+}
+
+// Volver a la pantalla de validación
+function volverAValidacion() {
+  mostrarConfirmacion.value = false;
 }
 
 // Confirmar y enviar a Telegestor
@@ -503,15 +593,23 @@ function descargarArchivo(blob, nombreArchivo, tipo) {
 
 // Formatear fecha para mostrar
 function formatearFecha(fecha) {
-  const date = new Date(fecha);
-  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString('es-ES', opciones);
+  // Usar DateTime de luxon con zona horaria de Chile
+  const dt = DateTime.fromISO(fecha, { zone: 'America/Santiago' });
+  return dt.setLocale('es').toLocaleString({ 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 }
 
 // Cerrar modal de Telegestor
 function cerrarModalTelegestor() {
   mostrarModalTelegestor.value = false;
   diasIncompletos.value = [];
+  hayMarcaciones.value = true;
+  mensajeValidacion.value = '';
+  mostrarConfirmacion.value = false;
 }
 </script>
 
@@ -522,5 +620,30 @@ function cerrarModalTelegestor() {
 
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* Animación de slide para las pantallas del modal */
+.slide-enter-active {
+  transition: all 0.4s ease-out;
+}
+
+.slide-leave-active {
+  transition: all 0.4s ease-in;
+}
+
+.slide-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-enter-to,
+.slide-leave-from {
+  transform: translateX(0);
+  opacity: 1;
 }
 </style>

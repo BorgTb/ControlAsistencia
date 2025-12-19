@@ -6,7 +6,10 @@ import AuthService from '../../middleware/AuthMiddleWare.js';
 const router = express.Router();
 const asistenciaController = new AsistenciaController();
 
-router.post('/', AuthService.verifyToken,asistenciaController.getAsistencia);
+router.post('/', AuthService.verifyToken, asistenciaController.getAsistencia);
+router.post('/validar', AuthService.verifyToken, asistenciaController.validarDiasIncompletos);
+router.post('/export/csv', AuthService.verifyToken, asistenciaController.exportarCSV);
+router.post('/export/excel', AuthService.verifyToken, asistenciaController.exportarExcel);
 
 
 
