@@ -615,6 +615,7 @@ class MarcacionesService {
             }, {});
 
 
+
             // ahora dentro de cada rut, agrupar por fecha
             for (const rut in marcacionesAgrupadas) {
                 const marcacionesPorRut = marcacionesAgrupadas[rut];
@@ -629,6 +630,8 @@ class MarcacionesService {
                 }, {});
                 marcacionesAgrupadas[rut] = agrupadasPorFecha;
             }
+
+
 
 
             return {

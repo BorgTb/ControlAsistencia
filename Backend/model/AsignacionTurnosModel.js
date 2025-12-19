@@ -307,6 +307,7 @@ class AsignacionTurnosModel {
             connection.release();
         }
     }
+
 }
 
 export default AsignacionTurnosModel;
