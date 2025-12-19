@@ -2,6 +2,7 @@ import TrabajadoresService from "../services/trabajadoresService.js";
 import MarcacionesServices from "../../services/MarcacionesServices.js";
 import AsistenciaService from "../services/asistenciaService.js";
 import AsignacionTurnosModel from "../../model/AsignacionTurnosModel.js";
+import EmpresaModel from '../../model/EmpresaModel.js';
 import {DateTime} from 'luxon';
 
 
@@ -25,18 +26,34 @@ const diasDict = {
 class AsistenciaController {
     async getAsistencia(req, res) {
         try {
+
+            const {empresaId, fechaInicio, fechaFin} = req.body;
+
+            const user = req.user; 
+
+
+            console.log('Usuario autenticado:', user);
+
+            const empresa = await EmpresaModel.getEmpresaById(user.empresa_id);
+
+            if (!empresa) {
+                return res.status(404).json({ message: 'Empresa no encontrada' });
+            }
+
+            console.log(empresa.emp_rut);
             // Paralelizar consultas iniciales
             const [trabajadoresActivos, marcaciones, ultimoIDN] = await Promise.all([
-                trabajadoresService.fetchTrabajadoresActivos(76011662),
-                MarcacionesServices.obtenerMarcacionesPorRangoFechaEmpresaRut('2025-12-01', '2025-12-31', '76011629'),
+                trabajadoresService.fetchTrabajadoresActivos(empresa.emp_rut),
+                MarcacionesServices.obtenerMarcacionesPorRangoFechaEmpresaRut(fechaInicio, fechaFin, empresa.emp_rut),
                 asistenciaService.obtenerUltimoIDNAsistencia()
             ]);
 
+
             let currentIDN = ultimoIDN.ultimo_idn + 1;
             
-            console.log('Total de trabajadores en marcaciones:', Object.keys(marcaciones.data || {}).length);
-            console.log('Estructura de trabajadoresActivos:', trabajadoresActivos);
-            console.log('Keys de trabajadoresActivos:', Object.keys(trabajadoresActivos));
+            //console.log('Total de trabajadores en marcaciones:', Object.keys(marcaciones.data || {}).length);
+            //console.log('Estructura de trabajadoresActivos:', trabajadoresActivos);
+            //console.log('Keys de trabajadoresActivos:', Object.keys(trabajadoresActivos));
             
             // Validar que marcaciones tenga la estructura esperada
             if (!marcaciones || !marcaciones.data) {
@@ -58,11 +75,11 @@ class AsistenciaController {
                 }
                 
                 const dataTrabajadorTelegestor = trabajadorData[0];
-
+                console.log(`Procesando trabajador RUT: ${key}, ID: ${dataTrabajadorTelegestor.trab_idn}`);
                 // a cada marcacion consultar el turno que tenia para se dia 
                 // value es un objeto con las marcaciones del trabajador agrupadas por dia 
-                
                 for (const [dia, detalles] of Object.entries(value)) {
+                    
                     try {
                         // Obtener IDs únicos de usuario_empresa para evitar consultas duplicadas
                         const usuariosEmpresasUnicos = [...new Set(detalles.map(d => d.usuario_empresa_id))];
@@ -135,14 +152,14 @@ class AsistenciaController {
                         con_hor_trab_hasta: formatoSQL(dia, horaSalidaFinal)
                     });
 
-                    console.log(resumenDia);
+                    //console.log(resumenDia);
                     } catch (innerError) {
                         console.error(`Error procesando día ${dia} del trabajador ${key}:`, innerError.message);
                     }
                 }
             }
 
-        
+            
             
             // Insertar todos los registros de asistencia
             console.log(`Insertando ${registrosParaInsertar.length} registros de asistencia...`);
@@ -159,7 +176,7 @@ class AsistenciaController {
             }
             
             console.log(`Insertados exitosamente: ${exitosos} de ${registrosParaInsertar.length}`);
-
+            
             res.status(200).json({ 
                 success: true, 
                 message: 'Datos de asistencia procesados e insertados correctamente',

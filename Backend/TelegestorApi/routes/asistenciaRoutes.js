@@ -1,11 +1,12 @@
 import express from 'express';
 import AsistenciaController from '../controllers/asistenciaController.js';
+import AuthService from '../../middleware/AuthMiddleWare.js';
 
 
 const router = express.Router();
 const asistenciaController = new AsistenciaController();
 
-router.get('/', asistenciaController.getAsistencia);
+router.post('/', AuthService.verifyToken,asistenciaController.getAsistencia);
 
 
 

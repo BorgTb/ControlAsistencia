@@ -7,7 +7,7 @@ class RouterIndex {
     }
 
     initializeRoutes() {
-        this.app.use('/telegestorapi/asistencia', asistenciaRoutes);
+        this.app.use('/api/telegestorapi/asistencia', asistenciaRoutes);
     }
 }
 

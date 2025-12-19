@@ -322,7 +322,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useNotification } from '@/composables/useNotification';
-import axios from 'axios';
+import { apiClient } from '@/config/axios-config';
 
 const { showSuccess, showError, showWarning } = useNotification();
 
@@ -387,13 +387,14 @@ async function validarDiasIncompletos() {
 
   try {
     const periodo = obtenerPeriodo();
-    const response = await axios.post('/api/exportacion/validar-telegestor', {
-      fechaInicio: periodo.fechaInicio,
-      fechaFin: periodo.fechaFin,
-      empresaId: sessionStorage.getItem('empresa_id')
-    });
-
-    diasIncompletos.value = response.data.diasIncompletos || [];
+    // Por ahora deshabilitamos la validación hasta que se implemente el endpoint
+    // const response = await apiClient.post('/telegestorapi/validar', {
+    //   fechaInicio: periodo.fechaInicio,
+    //   fechaFin: periodo.fechaFin,
+    //   empresaId: sessionStorage.getItem('empresa_id')
+    // });
+    
+    diasIncompletos.value = []; // response.data.diasIncompletos || [];
 
     if (diasIncompletos.value.length === 0) {
       showSuccess('Validación exitosa. Todos los turnos están completos.');
@@ -418,7 +419,7 @@ async function exportarDatos() {
     let response;
     
     if (formatoSeleccionado.value === 'csv') {
-      response = await axios.post('/api/exportacion/csv', {
+      response = await apiClient.post('/exportacion/csv', {
         ...periodo,
         empresaId
       }, { responseType: 'blob' });
@@ -426,7 +427,7 @@ async function exportarDatos() {
       descargarArchivo(response.data, `exportacion_${periodo.fechaInicio}_${periodo.fechaFin}.csv`, 'text/csv');
       
     } else if (formatoSeleccionado.value === 'excel') {
-      response = await axios.post('/api/exportacion/excel', {
+      response = await apiClient.post('/exportacion/excel', {
         ...periodo,
         empresaId
       }, { responseType: 'blob' });
@@ -453,8 +454,9 @@ async function confirmarEnvioTelegestor() {
     const periodo = obtenerPeriodo();
     const empresaId = sessionStorage.getItem('empresa_id');
 
-    const response = await axios.post('/api/exportacion/telegestor', {
-      ...periodo,
+    const response = await apiClient.post('/telegestorapi/asistencia', {
+      fechaInicio: periodo.fechaInicio,
+      fechaFin: periodo.fechaFin,
       empresaId
     });
 

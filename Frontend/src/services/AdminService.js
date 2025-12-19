@@ -5,11 +5,6 @@
 // Además, así se mantiene la organización y encapsulamiento del código.
 // Esto permite que el CRUD de empresas funcione correctamente, mostrando los datos en la web y permitiendo crear, editar y visualizar sin errores de autenticación.
 import { apiClient } from '@/config/axios-config.js'
-    }
-    
-    return Promise.reject(error)
-  }
-)
 
 
 
