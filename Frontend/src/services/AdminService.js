@@ -4,60 +4,7 @@
 // Esto es necesario porque los métodos deben estar dentro de la clase para que el servicio funcione correctamente y evitar errores de sintaxis.
 // Además, así se mantiene la organización y encapsulamiento del código.
 // Esto permite que el CRUD de empresas funcione correctamente, mostrando los datos en la web y permitiendo crear, editar y visualizar sin errores de autenticación.
-import axios from 'axios';
-import { useAuthStore } from '@/stores/authStore.js'
-
-// Configuración de la URL base de la API
-const API_BASE_URL = (() => {
-  // Verificar si estamos en un entorno Vite
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-  }
-  // Fallback para otros entornos
-  return process.env.VITE_API_URL || 'http://localhost:3000/api'
-})()
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000
-})
-
-// Interceptor para agregar el token y el user a las peticiones
-apiClient.interceptors.request.use(
-  (config) => {
-    const authStore = useAuthStore()
-    const token = authStore.getToken
-    const user = authStore.getUser
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
-    if (user) {
-      config.headers['X-User'] = user
-    }
-
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Interceptor para manejar respuestas y errores
-apiClient.interceptors.response.use(
-  (response) => {
-    return response
-  },
-  (error) => {
-    const authStore = useAuthStore()
-    
-    // Si recibimos un 401, limpiamos la autenticación
-    if (error.response?.status === 401) {
-      authStore.clearAuth()
+import { apiClient } from '@/config/axios-config.js'
     }
     
     return Promise.reject(error)

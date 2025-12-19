@@ -215,7 +215,7 @@ const home = () => {
 }
 
 const abrirSolicitudes = () => {
-  router.push('/solicitudes')
+  router.push('/usuario/solicitudes')
   closeDropdown()
 }
 

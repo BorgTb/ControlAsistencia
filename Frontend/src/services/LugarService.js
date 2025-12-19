@@ -1,38 +1,4 @@
-import axios from 'axios';
-import { useAuthStore } from '@/stores/authStore.js';
-
-// Configuración de la URL base de la API
-const API_BASE_URL = (() => {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  }
-  return process.env.VITE_API_URL || 'http://localhost:3000/api';
-})();
-
-// Cliente axios con interceptor para agregar el token
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Interceptor para agregar el token a cada petición
-apiClient.interceptors.request.use(
-  config => {
-    const authStore = useAuthStore();
-    const token = authStore.token;
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
+import { apiClient } from '@/config/axios-config.js'
 
 class LugarService {
   /**

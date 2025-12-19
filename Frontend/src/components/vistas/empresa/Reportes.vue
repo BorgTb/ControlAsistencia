@@ -12,17 +12,13 @@
             <p class="text-gray-600 mt-2">Visualización y exportación de reportes en PDF, Excel y Word</p>
           </div>
           <div class="flex space-x-3">
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m2-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <span>Generar Reporte</span>
-            </button>
-            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-              </svg>
-              <span>Exportar Todo</span>
+            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
+            @click="irExportarDatos"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 16v-6m0 0l-3 3m3-3l3 3"></path>
+                </svg>
+              <span>Traspasar datos</span>
             </button>
           </div>
         </div>
@@ -425,6 +421,9 @@ const irReporteDomingosFestivos = () => {
   router.push({ name: 'EmpresaReporteDomingosFestivos' });
 };
 
+const irExportarDatos = () => {
+  router.push({ name: 'EmpresaExportacionDatos' });
+};
 
 onMounted(() => {
   console.log('Vista Reportes cargada');

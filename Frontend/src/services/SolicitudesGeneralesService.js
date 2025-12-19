@@ -1,47 +1,4 @@
-import axios from 'axios';
-import { useAuthStore } from '@/stores/authStore.js'
-
-
-
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/';
-
-// Crear instancia de axios con interceptores para autenticación
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 30000 // Aumentado para uploads de archivos
-});
-
-// Interceptor para agregar token de autenticación
-apiClient.interceptors.request.use(
-  (config) => {
-   const authStore = useAuthStore()
-  const token = authStore.getToken
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para manejar respuestas y errores
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expirado o inválido
-      //localStorage.removeItem('token');
-      //window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+import { apiClient } from '@/config/axios-config.js'
 
 /**
  * Servicio para manejar todas las solicitudes generales del trabajador

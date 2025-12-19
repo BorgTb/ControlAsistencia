@@ -78,6 +78,7 @@ const routes = [
       { path: 'lugares', name: 'EmpresaLugares', component: () => import('@/components/vistas/empresa/GestionLugares.vue') },
       { path: 'solicitudes-trabajadores', name: 'EmpresaSolicitudesTrabajadores', component: () => import('@/components/vistas/empresa/SolicitudesTrabajadores.vue') },
       { path: 'configuracion', name: 'EmpresaConfiguracion', component: () => import('@/components/vistas/empresa/Configuracion.vue') },
+      { path: 'exportacion-datos', name: 'EmpresaExportacionDatos', component: () => import('@/components/vistas/empresa/ExportacionDatos.vue') },
     ]
   },
 

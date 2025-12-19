@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import router from './routes/index.js';
+import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -14,8 +16,19 @@ const app = express();
 const PORT = process.env.SERVER_PORT;
 
 //MIDDLEWARE
-app.use(cors());
+// Configurar CORS para permitir cookies
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true // IMPORTANTE: permitir envío de cookies
+}));
 app.use(express.json());
+app.use(cookieParser()); // Parsear cookies
+
+
+// Telegestor API Routes usa el mismo servidor pero con rutas separadas en un futuro deberia ir en un microservicio aparte
+ApiTelegestorRouter(app);
+
+
 
 // ROUTES
 app.get('/', (req, res) => {
@@ -35,6 +48,7 @@ app.use('/api/fiscalizador', router.fiscalizador);
 app.use('/api/justificaciones', router.justificaciones);
 app.use('/api/feriados', router.feriados);
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
+
 
 
 

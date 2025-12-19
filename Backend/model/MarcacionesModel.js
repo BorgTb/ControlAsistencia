@@ -327,6 +327,33 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
     async obtenerMarcacionesPorPeriodo(usuario_empresa_id, fechaInicio, fechaFin) {
         return this.obtenerMarcacionesPorUsuarioYRangoFecha(usuario_empresa_id, fechaInicio, fechaFin);
     }
+
+    async obtenerMarcacionesPorRangoFechaEmpresaRut(fechaInicio, fechaFin, empRut) {
+        try {
+            const query = `
+                SELECT 
+                    m.*,
+                    u.nombre,
+                    u.apellido_pat,
+                    u.apellido_mat,
+                    u.rut,
+                    e.emp_nombre as empresa_nombre
+                FROM marcaciones m
+                LEFT JOIN usuarios_empresas ue ON m.usuario_empresa_id = ue.id
+                LEFT JOIN usuarios u ON ue.usuario_id = u.id
+                LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+                WHERE DATE(m.fecha) >= ?
+                AND DATE(m.fecha) <= ?
+                AND e.emp_rut = ?
+                ORDER BY m.fecha ASC, m.hora ASC;
+            `;
+            const [rows] = await pool.execute(query, [fechaInicio, fechaFin, empRut]);
+            return rows;
+        } catch (error) {
+            console.error('Error al obtener marcaciones por rango de fecha:', error);
+            throw error;
+        }
+    }
     
 }
 
