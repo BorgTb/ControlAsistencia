@@ -135,7 +135,7 @@ const registrarMarcacion = async (req, res) => {
             });
         }
 
-        if (!usuario_id || !geo_lat || !geo_lon || !ip_cliente) {
+        if (!usuario_id || !ip_cliente) {
             return res.status(400).json({
                 success: false,
                 message: `Faltan datos requeridos para registrar la ${tipo}.`
