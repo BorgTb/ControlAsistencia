@@ -89,22 +89,28 @@ const login = async (req, res) => {
             ip_address: ip_address
         });
         
-        // Generar access token (15 minutos) y refresh token (30 días)
+        // Generar access token (15 minutos) y refresh token (180 días)
         const accessToken = AuthService.generateAccessToken(loginResult.user, loginResult.empresa_id);
         const refreshToken = AuthService.generateRefreshToken(loginResult.user);
         
-        // Guardar refresh token en base de datos (si la tabla existe)
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+        // Guardar refresh token en base de datos
+        // SESIÓN PERSISTENTE: 5 años (sin rotación)
+        const expiresAt = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000); // 5 años
         const userAgent = req.headers['user-agent'] || 'unknown';
         await RefreshTokenModel.create(loginResult.user.id, refreshToken, expiresAt, ip_address, userAgent);
         
         // Establecer ambas cookies HTTP-only
         AuthService.setAuthCookies(res, accessToken, refreshToken);
         
+        // Devolver información del usuario y tiempo de expiración del token
+        const expiresIn = 15 * 60; // 15 minutos en segundos
+        
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            user: loginResult.user // NO se envían tokens en el body
+            user: loginResult.user, // NO se envían tokens en el body
+            expiresIn: expiresIn, // Segundos hasta expiración
+            expiresAt: Date.now() + (expiresIn * 1000) // Timestamp de expiración
         });
 
     } catch (error) {
@@ -134,13 +140,19 @@ const logout = async (req, res) => {
         // Obtener refresh token de las cookies
         const refreshToken = req.cookies.refreshToken;
         
+        console.log('🚪 Iniciando logout - tiene refresh token:', !!refreshToken);
+        
         // Revocar refresh token en base de datos si existe
         if (refreshToken) {
-            await RefreshTokenModel.revoke(refreshToken);
+            const revoked = await RefreshTokenModel.revoke(refreshToken);
+            console.log('📝 Resultado de revocación:', revoked ? '✅ OK' : '⚠️ No encontrado');
+        } else {
+            console.log('⚠️ No hay refresh token para revocar');
         }
         
         // Limpiar ambas cookies de autenticación
         AuthService.clearAuthCookies(res);
+        console.log('🧹 Cookies limpiadas');
         
         // Optional: registrar logout en auditoría si es necesario
         // if (req.user?.id) {
@@ -151,8 +163,11 @@ const logout = async (req, res) => {
             success: true, 
             message: 'Logout successful' 
         });
+        
+        console.log('✅ Logout completado exitosamente');
 
     } catch (error) {
+        console.error('❌ Error en logout:', error);
         // Siempre retornamos éxito en logout para evitar problemas
         AuthService.clearAuthCookies(res);
         res.status(200).json({ 
@@ -235,7 +250,9 @@ const refresh = async (req, res) => {
         const empresa_id = tokenRecord.empresa_id || null;
         const newAccessToken = AuthService.generateAccessToken(user, empresa_id);
         
-        // Establecer solo el nuevo access token cookie
+        // SIN ROTACIÓN: Solo renovar access token
+        // El refresh token permanece igual durante toda la sesión (5 años)
+        // Solo se establece el nuevo access token cookie
         res.cookie('accessToken', newAccessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -243,9 +260,14 @@ const refresh = async (req, res) => {
             maxAge: 15 * 60 * 1000 // 15 minutos
         });
 
+        // Devolver información sobre la expiración para renovación proactiva
+        const expiresIn = 15 * 60; // 15 minutos en segundos
+        
         res.status(200).json({ 
             success: true, 
-            message: 'Token refreshed successfully'
+            message: 'Token refreshed successfully',
+            expiresIn: expiresIn, // Segundos hasta expiración
+            expiresAt: Date.now() + (expiresIn * 1000) // Timestamp de expiración
         });
 
     } catch (error) {

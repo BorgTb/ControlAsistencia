@@ -1,4 +1,4 @@
-import { apiClient } from '@/config/axios-config.js'
+import { apiClient, setTokenExpiration } from '@/config/axios-config.js'
 import { useAuthStore } from '@/stores/authStore.js'
 
 class AuthService {
@@ -16,7 +16,12 @@ class AuthService {
       authStore.setLoading(true)
       const response = await apiClient.post('/auth/login', credentials)
       
-      const { user } = response.data // Ya NO recibimos token en la respuesta
+      const { user, expiresAt } = response.data // Ya NO recibimos token en la respuesta
+      
+      // Establecer tiempo de expiración del token para renovación proactiva
+      if (expiresAt) {
+        setTokenExpiration(expiresAt)
+      }
       
       // Solo almacenar datos del usuario (el token está en cookie HTTP-only)
       authStore.setUser(user)

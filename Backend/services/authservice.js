@@ -27,6 +27,9 @@ const generateToken = (user, empresa_id) => {
 };
 
 // Generar Access Token (corta duración para seguridad)
+// NOTA: Cambiado de 5s a 15m para permitir operaciones largas como descargas
+// Para testing rápido usar: '2m' (2 minutos)
+// Para producción usar: '15m' (15 minutos)
 const generateAccessToken = (user, empresa_id) => {
     const payload = {
         id: user.id,
@@ -35,17 +38,20 @@ const generateAccessToken = (user, empresa_id) => {
         rol: user.rol,
         type: 'access'
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: '5s' }); // 30 segundos
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '10s' }); // 15 minutos (era 5s)
 };
 
 // Generar Refresh Token (larga duración para sesiones persistentes)
+// SESIÓN PERSISTENTE: El refresh token dura 5 años
+// NO se rota, el mismo token se usa durante toda la sesión
+// Solo se revoca cuando el usuario hace logout
 const generateRefreshToken = (user) => {
     const payload = {
         id: user.id,
         email: user.email,
         type: 'refresh'
     };
-    return jwt.sign(payload, SECRET_KEY, { expiresIn: '30d' }); // 30 días
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: '5y' }); // 5 años
 };
 
 // Funtion to generate JWT for fiscalizador so only email is needed
@@ -219,6 +225,9 @@ const loginUser = async (email, password, ip_address = null) => {
         // No bloqueamos el login por errores de auditoría
     }
 
+    // Limpiar RUT de espacios (trim)
+    const rutLimpio = empresaRut ? empresaRut.trim() : null;
+    
     // Return both token and user info (without password)
     const responseUser = {
         id: user.id,
@@ -227,11 +236,11 @@ const loginUser = async (email, password, ip_address = null) => {
         apellido_mat: user.apellido_mat,
         email: user.email,
         rol: user.rol,
-        rut: empresaRut,
+        rut: rutLimpio,
         estado: user.estado,
         est: est,
         empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
-        empresa_rut: empresaRut
+        empresa_rut: rutLimpio
     };
     
     console.log('👤 Usuario final que se enviará al frontend:', responseUser);
@@ -246,11 +255,11 @@ const loginUser = async (email, password, ip_address = null) => {
             apellido_mat: user.apellido_mat,
             email: user.email,
             rol: user.rol,
-            rut: empresaRut,
+            rut: rutLimpio,
             estado: user.estado,
             est: est,
             empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
-            empresa_rut: empresaRut,
+            empresa_rut: rutLimpio,
         }
     };
 };
@@ -353,6 +362,7 @@ const clearAuthCookie = (res) => {
 };
 
 // Configurar ambas cookies (access + refresh tokens)
+// SESIÓN PERSISTENTE: Refresh token cookie dura 5 años
 const setAuthCookies = (res, accessToken, refreshToken) => {
     // Access Token - corta duración, HttpOnly
     res.cookie('accessToken', accessToken, {
@@ -363,11 +373,12 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
     });
     
     // Refresh Token - larga duración, HttpOnly
+    // NO se rota, mismo token durante toda la sesión (hasta logout)
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+        maxAge: 5 * 365 * 24 * 60 * 60 * 1000 // 5 años
     });
 };
 

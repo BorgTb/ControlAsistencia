@@ -677,10 +677,9 @@ const obtenerTrabajadores = async (req, res) => {
 const obtenerTurnos = async (req, res) => {
     try {
         const { rut } = req.params;
-
         // Obtener todas las asignaciones de turnos por empresa
         const asignaciones = await AsignacionTurnosModel.getByEmpresaRut(rut);
-
+        console.log('Asignaciones obtenidas para empresa RUT', rut, ':', asignaciones);
         // se deben otener los turnos de los trabajadore que son de una est asignados a esta empresa
         const estActiva = await EstAsignacionesModel.getEstInfoByUsuariaRut(rut);
         // para cada est activa obtener sus asignaciones
@@ -689,7 +688,6 @@ const obtenerTurnos = async (req, res) => {
             asignaciones.push(...asignacion);
         }
     
-        
 
         
         // Formatear las asignaciones con información completa (incluir días del tipo de turno)
@@ -1197,8 +1195,6 @@ const obtenerTiposTurnos = async (req, res) => {
         // para cada tipo de turno agregarle los dias en que aplica
 
         const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
-
-        console.log("Tipos de turnos obtenidos:", tiposConDias);
         
         res.status(200).json({
             success: true,

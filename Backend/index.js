@@ -6,6 +6,7 @@ import router from './routes/index.js';
 import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { startCleanupJob } from './jobs/CleanupRefreshTokens.js';
 
 dotenv.config();
 
@@ -56,6 +57,10 @@ app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), rout
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     
+    // Iniciar job de limpieza de refresh tokens (cada 24 horas)
+    // Esto elimina tokens expirados y mantiene la BD optimizada
+    startCleanupJob(24);
+    console.log('✅ Job de limpieza de refresh tokens iniciado');
 });
 
 // Manejo de cierre graceful

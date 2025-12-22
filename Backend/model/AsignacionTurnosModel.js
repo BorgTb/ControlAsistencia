@@ -185,6 +185,7 @@ class AsignacionTurnosModel {
     }
 
     static async getByEmpresaRut(rutEmpresa) {
+        console.log('Consultando asignaciones de turnos para empresa con RUT:', rutEmpresa);
         const query = `
             SELECT 
                 at.*,

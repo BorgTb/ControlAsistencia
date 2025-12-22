@@ -126,6 +126,7 @@ class EmpresaServices{
   }
 
   static async obtenerTurnos(rut) {
+    console.log('Obteniendo turnos para trabajador con RUT:', rut)
     try {
       const response = await apiClient.get(`/userEmpresa/turnos/${rut}`)
       return response.data

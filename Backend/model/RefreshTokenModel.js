@@ -68,9 +68,17 @@ const RefreshTokenModel = {
      */
     async revoke(token) {
         try {
+            console.log('🔒 Revocando refresh token...');
             const query = 'UPDATE refresh_tokens SET revoked = TRUE WHERE token = ?';
-            await pool.query(query, [token]);
-            return true;
+            const [result] = await pool.query(query, [token]);
+            
+            if (result.affectedRows > 0) {
+                console.log('✅ Refresh token revocado exitosamente');
+                return true;
+            } else {
+                console.log('⚠️ Token no encontrado para revocar');
+                return false;
+            }
         } catch (error) {
             console.error('❌ Error al revocar refresh token:', error);
             return false;
@@ -126,6 +134,63 @@ const RefreshTokenModel = {
         } catch (error) {
             console.error('❌ Error al obtener tokens activos:', error);
             return [];
+        }
+    },
+
+    /**
+     * Obtener cantidad de tokens activos (estadísticas)
+     * @returns {Promise<number>} Cantidad de tokens activos
+     */
+    async getActiveTokensCount() {
+        try {
+            const query = `
+                SELECT COUNT(*) as count
+                FROM refresh_tokens
+                WHERE revoked = FALSE AND expires_at > NOW()
+            `;
+            const [rows] = await pool.query(query);
+            return rows[0]?.count || 0;
+        } catch (error) {
+            console.error('❌ Error al contar tokens activos:', error);
+            return 0;
+        }
+    },
+
+    /**
+     * Obtener cantidad de tokens expirados (estadísticas)
+     * @returns {Promise<number>} Cantidad de tokens expirados
+     */
+    async getExpiredTokensCount() {
+        try {
+            const query = `
+                SELECT COUNT(*) as count
+                FROM refresh_tokens
+                WHERE expires_at <= NOW()
+            `;
+            const [rows] = await pool.query(query);
+            return rows[0]?.count || 0;
+        } catch (error) {
+            console.error('❌ Error al contar tokens expirados:', error);
+            return 0;
+        }
+    },
+
+    /**
+     * Obtener cantidad de tokens revocados (estadísticas)
+     * @returns {Promise<number>} Cantidad de tokens revocados
+     */
+    async getRevokedTokensCount() {
+        try {
+            const query = `
+                SELECT COUNT(*) as count
+                FROM refresh_tokens
+                WHERE revoked = TRUE
+            `;
+            const [rows] = await pool.query(query);
+            return rows[0]?.count || 0;
+        } catch (error) {
+            console.error('❌ Error al contar tokens revocados:', error);
+            return 0;
         }
     }
 };
