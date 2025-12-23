@@ -4,6 +4,13 @@ import RefreshTokenModel from '../model/RefreshTokenModel.js';
 // Middleware para verificar JWT y validar sesión
 const verifyToken = async (req, res, next) => {
     try {
+        // 🔍 LOGS DE DIAGNÓSTICO
+        console.log('\n🔍 === DIAGNÓSTICO MIDDLEWARE ===');
+        console.log('📍 Path:', req.path);
+        console.log('🍪 Cookies recibidas:', req.cookies);
+        console.log('🍪 AccessToken:', req.cookies?.accessToken ? `${req.cookies.accessToken.substring(0, 30)}...` : 'NO');
+        console.log('🍪 RefreshToken:', req.cookies?.refreshToken ? `${req.cookies.refreshToken.substring(0, 30)}...` : 'NO');
+        
         // 1. OBTENER ACCESS TOKEN
         let token = req.cookies?.accessToken;
         
@@ -12,16 +19,53 @@ const verifyToken = async (req, res, next) => {
             const authHeader = req.headers.authorization;
             if (authHeader) {
                 token = authHeader.split(' ')[1];
+                console.log('📋 Token desde Authorization header');
             }
         }
         
+        // Si no hay access token, verificar si hay refresh token válido
         if (!token) {
-            console.log('❌ No access token - Path:', req.path);
-            return res.status(401).json({ 
-                success: false,
-                message: 'Access denied. No token provided.',
-                requiresRefresh: false
-            });
+            const refreshToken = req.cookies?.refreshToken;
+            
+            if (!refreshToken) {
+                console.log('❌ No access token ni refresh token - Path:', req.path);
+                return res.status(401).json({ 
+                    success: false,
+                    message: 'Access denied. No token provided.',
+                    requiresRefresh: false,
+                    requiresLogin: true
+                });
+            }
+            
+            // Hay refresh token - verificar si es válido en BD
+            try {
+                const tokenRecord = await RefreshTokenModel.findValidToken(refreshToken);
+                
+                if (tokenRecord) {
+                    console.log('✅ Refresh token válido detectado - Solicitando renovación');
+                    return res.status(401).json({ 
+                        success: false,
+                        message: 'Access token missing. Please refresh.',
+                        requiresRefresh: true // ✅ Frontend renovará automáticamente
+                    });
+                } else {
+                    console.log('❌ Refresh token inválido/revocado - Path:', req.path);
+                    return res.status(401).json({ 
+                        success: false,
+                        message: 'Session expired. Please login again.',
+                        requiresRefresh: false,
+                        requiresLogin: true
+                    });
+                }
+            } catch (dbError) {
+                console.error('❌ Error verificando refresh token:', dbError.message);
+                // En caso de error de BD, permitir intentar refresh (fail-safe)
+                return res.status(401).json({ 
+                    success: false,
+                    message: 'Access token missing.',
+                    requiresRefresh: true
+                });
+            }
         }
 
         // 2. VERIFICAR JWT (firma, estructura, expiración)

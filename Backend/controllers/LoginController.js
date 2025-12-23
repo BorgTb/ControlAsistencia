@@ -93,14 +93,24 @@ const login = async (req, res) => {
         const accessToken = AuthService.generateAccessToken(loginResult.user, loginResult.empresa_id);
         const refreshToken = AuthService.generateRefreshToken(loginResult.user);
         
+        // 🔍 LOGS DE DIAGNÓSTICO
+        console.log('\n🔍 === TOKENS GENERADOS ===');
+        console.log('🔑 AccessToken:', accessToken.substring(0, 30) + '...');
+        console.log('🔄 RefreshToken:', refreshToken.substring(0, 30) + '...');
+        console.log('⏰ Expira en:', new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toLocaleString());
+        
         // Guardar refresh token en base de datos
         // SESIÓN PERSISTENTE: 5 años (sin rotación)
         const expiresAt = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000); // 5 años
         const userAgent = req.headers['user-agent'] || 'unknown';
         await RefreshTokenModel.create(loginResult.user.id, refreshToken, expiresAt, ip_address, userAgent);
         
+        console.log('✅ Token guardado en BD');
+        
         // Establecer ambas cookies HTTP-only
         AuthService.setAuthCookies(res, accessToken, refreshToken);
+        
+        console.log('✅ Cookies establecidas');
         
         // Devolver información del usuario y tiempo de expiración del token
         const expiresIn = 15 * 60; // 15 minutos en segundos
