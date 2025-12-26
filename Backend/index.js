@@ -60,43 +60,46 @@ app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), rout
 // START SERVER
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    
+
     // Iniciar job de limpieza de refresh tokens (cada 24 horas)
     // Esto elimina tokens expirados y mantiene la BD optimizada
     startCleanupJob(24);
     console.log('✅ Job de limpieza de refresh tokens iniciado');
-    
+
     // Iniciar servicio MQTT
     mqttService.connect();
-    console.log('✅ Servicio MQTT iniciado');
-    
-    // Registrar dispositivos ZK desde la configuración o BD
-    // Ejemplo: Registrar dispositivos conocidos
-    const knownDevices = process.env.ZK_DEVICES ? process.env.ZK_DEVICES.split(',') : [];
-    
-    if (knownDevices.length > 0) {
-        knownDevices.forEach(serial => {
-            zkDeviceService.registerDevice(serial.trim(), {
-                name: `Dispositivo ZK ${serial}`,
-                location: 'Por definir'
-            });
-        });
-        console.log(`✅ ${knownDevices.length} dispositivos ZK registrados`);
-    } else {
-        console.log('ℹ️ No hay dispositivos ZK configurados. Define ZK_DEVICES en .env');
-    }
-    
+    //console.log('✅ Servicio MQTT iniciado');
+
+    // Inicializar servicio de dispositivos ZK (Carga desde BD y sincroniza con MQTT)
+    import('./services/DispositivoZKService.js').then(module => {
+        const dispositivoZKService = module.default;
+        dispositivoZKService.initialize()
+            // .then(() => console.log('✅ Servicio de persistencia ZK inicializado'))
+            .catch(err => console.error('❌ Error inicializando persistencia ZK:', err));
+    }).catch(err => console.error('❌ Error importando DispositivoZKService:', err));
+
     // Suscribirse a topic wildcard para detectar nuevos dispositivos
-    mqttService.subscribe('zk/+/status', (topic, message) => {
-        const serial = topic.split('/')[1];
-        const status = message.toString().trim();
-        
-        if (status === 'online' && !zkDeviceService.getDeviceStatus(serial)) {
-            console.log(`📱 Nuevo dispositivo ZK detectado: ${serial}`);
-            zkDeviceService.registerDevice(serial, {
-                name: `Auto-detectado ${serial}`,
-                autoDetected: true
-            });
+    mqttService.subscribe('zk/+/status', async (topic, message) => {
+        try {
+            const serial = topic.split('/')[1];
+            const status = message.toString().trim();
+
+            // Importar servicio dinámicamente para evitar problemas de dependencias circulares si las hubiera
+            // O usar la misma referencia si ya está cargada
+            const zkDeviceService = (await import('./services/ZKDeviceService.js')).default;
+            const dispositivoZKService = (await import('./services/DispositivoZKService.js')).default;
+
+            if (status === 'online' && !zkDeviceService.getDeviceStatus(serial)) {
+                console.log(`📱 Nuevo dispositivo ZK detectado: ${serial}`);
+
+                // Registrar como auto-detectado (solo en MQTT por ahora o segun logica de negocio)
+                await dispositivoZKService.registrarAutoDetectado(serial, {
+                    name: `Auto-detectado ${serial}`,
+                    autoDetected: true
+                });
+            }
+        } catch (error) {
+            console.error('Error handling new device:', error);
         }
     });
 });

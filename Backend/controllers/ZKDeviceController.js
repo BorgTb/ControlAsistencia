@@ -1,12 +1,20 @@
 import zkDeviceService from '../services/ZKDeviceService.js';
+import dispositivoZKService from '../services/DispositivoZKService.js';
 
 /**
  * Obtener todos los dispositivos ZK registrados
  */
 export const getAllDevices = async (req, res) => {
     try {
-        const devices = zkDeviceService.getAllDevices();
-        
+        // Usar servicio de BD enriquecido con estado MQTT
+        let devices;
+        // Si hay usuario autenticado con empresa, filtrar
+        if (req.user && req.user.empresa_id) {
+            devices = await dispositivoZKService.obtenerDispositivosPorEmpresa(req.user.empresa_id);
+        } else {
+            devices = await dispositivoZKService.obtenerDispositivosConEstado();
+        }
+
         res.status(200).json({
             success: true,
             count: devices.length,
@@ -27,12 +35,20 @@ export const getAllDevices = async (req, res) => {
  */
 export const getOnlineDevices = async (req, res) => {
     try {
-        const devices = zkDeviceService.getOnlineDevices();
-        
+        // Filtrar de la lista completa
+        let devices;
+        if (req.user && req.user.empresa_id) {
+            devices = await dispositivoZKService.obtenerDispositivosPorEmpresa(req.user.empresa_id);
+        } else {
+            devices = await dispositivoZKService.obtenerDispositivosConEstado();
+        }
+
+        const onlineDevices = devices.filter(d => d.mqtt_online);
+
         res.status(200).json({
             success: true,
-            count: devices.length,
-            data: devices
+            count: onlineDevices.length,
+            data: onlineDevices
         });
     } catch (error) {
         console.error('Error obteniendo dispositivos online:', error);
@@ -51,17 +67,21 @@ export const getDeviceStatus = async (req, res) => {
     try {
         const { serial } = req.params;
         const device = zkDeviceService.getDeviceStatus(serial);
-        
-        if (!device) {
+
+        // También intentar obtener info de la BD
+        const dbDevice = await dispositivoZKService.obtenerDispositivosConEstado();
+        const found = dbDevice.find(d => d.serial === serial);
+
+        if (!device && !found) {
             return res.status(404).json({
                 success: false,
                 message: `Dispositivo ${serial} no encontrado`
             });
         }
-        
+
         res.status(200).json({
             success: true,
-            data: device
+            data: found || device
         });
     } catch (error) {
         console.error('Error obteniendo estado del dispositivo:', error);
@@ -78,17 +98,28 @@ export const getDeviceStatus = async (req, res) => {
  */
 export const registerDevice = async (req, res) => {
     try {
-        const { serial, name, location } = req.body;
-        
+        const { serial, name, location, empresa_id } = req.body;
+
         if (!serial) {
             return res.status(400).json({
                 success: false,
                 message: 'Serial es requerido'
             });
         }
-        
-        const device = zkDeviceService.registerDevice(serial, { name, location });
-        
+
+        // Determinar ID de empresa (del body o del usuario autenticado)
+        const empresaId = empresa_id || (req.user ? req.user.empresa_id : 1); // Fallback a 1 si no hay auth
+
+        const deviceData = {
+            serial,
+            nombre: name,
+            ubicacion: location,
+            empresa_id: empresaId,
+            activo: true
+        };
+
+        const device = await dispositivoZKService.crearDispositivo(deviceData);
+
         res.status(201).json({
             success: true,
             message: 'Dispositivo registrado exitosamente',
@@ -110,9 +141,21 @@ export const registerDevice = async (req, res) => {
 export const unregisterDevice = async (req, res) => {
     try {
         const { serial } = req.params;
-        
-        zkDeviceService.unregisterDevice(serial);
-        
+
+        // Necesitamos el ID de BD para eliminar usando el servicio
+        // Ojo, el servicio `eliminarDispositivo` pide ID.
+        // Pero nuestra ruta usa serial. 
+        // Vamos a buscar primero el dispositivo por serial en la lista
+        const devices = await dispositivoZKService.obtenerDispositivosConEstado();
+        const device = devices.find(d => d.serial === serial);
+
+        if (device) {
+            await dispositivoZKService.eliminarDispositivo(device.id);
+        } else {
+            // Si no está en BD pero está en memoria (casos raros)
+            zkDeviceService.unregisterDevice(serial);
+        }
+
         res.status(200).json({
             success: true,
             message: `Dispositivo ${serial} desregistrado`
@@ -134,21 +177,21 @@ export const sendCommand = async (req, res) => {
     try {
         const { serial } = req.params;
         const { action, payload, timeout } = req.body;
-        
+
         if (!action) {
             return res.status(400).json({
                 success: false,
                 message: 'Action es requerido'
             });
         }
-        
+
         const result = await zkDeviceService.sendCommand(
             serial,
             action,
             payload || {},
             timeout || 30000
         );
-        
+
         res.status(200).json({
             success: true,
             message: 'Comando ejecutado exitosamente',
@@ -170,8 +213,11 @@ export const sendCommand = async (req, res) => {
 export const getUsers = async (req, res) => {
     try {
         const { serial } = req.params;
+        //console.log(`Obteniendo usuarios del dispositivo ${serial}`);   
         const users = await zkDeviceService.getUsers(serial);
-        
+        console.log(`Usuarios obtenidos: ${users}`);
+
+
         res.status(200).json({
             success: true,
             data: users
@@ -193,7 +239,7 @@ export const syncTime = async (req, res) => {
     try {
         const { serial } = req.params;
         const result = await zkDeviceService.syncTime(serial);
-        
+
         res.status(200).json({
             success: true,
             message: 'Tiempo sincronizado',
@@ -216,9 +262,9 @@ export const getAttendance = async (req, res) => {
     try {
         const { serial } = req.params;
         const { startDate, endDate } = req.query;
-        
+
         const attendance = await zkDeviceService.getAttendance(serial, startDate, endDate);
-        
+
         res.status(200).json({
             success: true,
             data: attendance
@@ -240,7 +286,7 @@ export const getDeviceInfo = async (req, res) => {
     try {
         const { serial } = req.params;
         const info = await zkDeviceService.getDeviceInfo(serial);
-        
+
         res.status(200).json({
             success: true,
             data: info
@@ -262,7 +308,7 @@ export const restartDevice = async (req, res) => {
     try {
         const { serial } = req.params;
         const result = await zkDeviceService.restart(serial);
-        
+
         res.status(200).json({
             success: true,
             message: 'Dispositivo reiniciado',
@@ -285,9 +331,9 @@ export const openDoor = async (req, res) => {
     try {
         const { serial } = req.params;
         const { duration } = req.body;
-        
+
         const result = await zkDeviceService.openDoor(serial, duration || 5);
-        
+
         res.status(200).json({
             success: true,
             message: 'Puerta abierta',
@@ -310,7 +356,7 @@ export const clearLogs = async (req, res) => {
     try {
         const { serial } = req.params;
         const result = await zkDeviceService.clearLogs(serial);
-        
+
         res.status(200).json({
             success: true,
             message: 'Logs limpiados',

@@ -36,7 +36,7 @@ class ZKDeviceService {
             ...deviceInfo
         });
 
-        console.log(`✅ Dispositivo ZK registrado: ${serial}`);
+        //console.log(`✅ Dispositivo ZK registrado: ${serial}`);
         return this.devices.get(serial);
     }
 
@@ -60,7 +60,7 @@ class ZKDeviceService {
             this.handleDeviceStatus(serial, message);
         });
 
-        console.log(`📡 Suscrito a topics del dispositivo: zk/${serial}/*`);
+        //console.log(`📡 Suscrito a topics del dispositivo: zk/${serial}/*`);
     }
 
     /**
@@ -74,7 +74,7 @@ class ZKDeviceService {
     sendCommand(serial, action, payload = {}, timeout = this.commandTimeout) {
         return new Promise((resolve, reject) => {
             const commandId = `${serial}_${action}_${Date.now()}`;
-            
+
             const command = {
                 action,
                 payload
@@ -109,13 +109,20 @@ class ZKDeviceService {
             const response = JSON.parse(message);
             console.log(`📥 Respuesta de zk/${serial}/out:`, response);
 
-            const { status, message: responseMessage, action, payload, device_name } = response;
+            const { status, message: responseMessage, action, payload, data, device_name } = response;
 
-            // Buscar callback pendiente por action
-            // Buscar el commandId que corresponda a esta acción
+            // Buscar callback pendiente
+            // Estrategia: 
+            // 1. Si la respuesta tiene 'action', buscar coincidencia exacta.
+            // 2. Si la respuesta NO tiene 'action', tomar el primer comando pendiente para este dispositivo (FIFO).
             let foundCommandId = null;
             for (const [commandId, callbackData] of this.commandCallbacks.entries()) {
-                if (commandId.includes(serial) && callbackData.action === action) {
+                if (commandId.includes(serial)) {
+                    // Si la respuesta trae acción, debe coincidir
+                    if (action && callbackData.action !== action) {
+                        continue;
+                    }
+                    // Si llegamos aqui, es match (o acción coincide, o respuesta no trae acción y asumimos es para este cmd)
                     foundCommandId = commandId;
                     break;
                 }
@@ -127,7 +134,13 @@ class ZKDeviceService {
                 this.commandCallbacks.delete(foundCommandId);
 
                 if (status === 'ok') {
-                    resolve({ message: responseMessage, payload, device_name });
+                    // Resolver con payload o data (algunos comandos devuelven 'data', otros 'payload')
+                    resolve({
+                        message: responseMessage,
+                        payload,
+                        data,
+                        device_name
+                    });
                 } else {
                     reject(new Error(responseMessage || 'Comando falló'));
                 }
@@ -190,7 +203,7 @@ class ZKDeviceService {
         try {
             const statusData = JSON.parse(message);
             const { status, device_name, ip_local, timestamp } = statusData;
-            
+
             console.log(`🔌 Estado de zk/${serial}/status: ${status}`);
 
             if (this.devices.has(serial)) {
@@ -224,7 +237,7 @@ class ZKDeviceService {
             // Si no es JSON, intentar como string simple (para compatibilidad)
             const status = message.toString().trim();
             console.log(`🔌 Estado de zk/${serial}/status: ${status}`);
-            
+
             if (this.devices.has(serial)) {
                 const device = this.devices.get(serial);
                 device.status = status;
@@ -318,7 +331,10 @@ class ZKDeviceService {
      * Solicitar usuarios del dispositivo
      */
     async getUsers(serial) {
-        return this.sendCommand(serial, 'GET_USERS', {});
+        const test = await this.sendCommand(serial, 'GET_USERS', {});
+        console.log("test");
+        console.log(test);
+        return test;
     }
 
     /**

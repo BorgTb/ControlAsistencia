@@ -34,7 +34,7 @@ class MQTTService {
         const mqttOptions = { ...defaultOptions, ...options };
         const connectUrl = `${mqttOptions.protocol}://${mqttOptions.host}:${mqttOptions.port}`;
 
-        console.log(`📡 Conectando al broker MQTT en ${connectUrl}...`);
+        //console.log(`📡 Conectando al broker MQTT en ${connectUrl}...`);
 
         const clientOptions = {
             clientId: mqttOptions.clientId,
@@ -65,7 +65,7 @@ class MQTTService {
         this.client.on('connect', () => {
             this.connected = true;
             this.reconnectAttempts = 0;
-            console.log('✅ Conectado al broker MQTT');
+            //console.log('✅ Conectado al broker MQTT');
             
             // Re-suscribirse a todos los topics después de reconexión
             this.resubscribeAll();
@@ -75,7 +75,7 @@ class MQTTService {
         this.client.on('message', (topic, message, packet) => {
             try {
                 const payload = message.toString();
-                console.log(`📩 Mensaje recibido en topic "${topic}":`, payload);
+                //console.log(`📩 Mensaje recibido en topic "${topic}":`, payload);
 
                 // Ejecutar todos los callbacks suscritos a este topic
                 if (this.subscribers.has(topic)) {
@@ -147,7 +147,7 @@ class MQTTService {
                 console.error(`❌ Error al suscribirse al topic "${topic}":`, error);
                 return;
             }
-            console.log(`✅ Suscrito al topic: "${topic}"`);
+            //console.log(`✅ Suscrito al topic: "${topic}"`);
         });
 
         // Agregar callback a la lista de suscriptores
@@ -163,13 +163,13 @@ class MQTTService {
     resubscribeAll() {
         if (this.subscribers.size === 0) return;
 
-        console.log('🔄 Re-suscribiendo a topics...');
+        //console.log('🔄 Re-suscribiendo a topics...');
         for (const topic of this.subscribers.keys()) {
             this.client.subscribe(topic, { qos: 0 }, (error) => {
                 if (error) {
                     console.error(`❌ Error al re-suscribirse al topic "${topic}":`, error);
                 } else {
-                    console.log(`✅ Re-suscrito al topic: "${topic}"`);
+                    //console.log(`✅ Re-suscrito al topic: "${topic}"`);
                 }
             });
         }
@@ -217,7 +217,7 @@ class MQTTService {
                 console.error(`❌ Error al publicar en topic "${topic}":`, error);
                 return;
             }
-            console.log(`✅ Mensaje publicado en topic "${topic}"`);
+            //console.log(`✅ Mensaje publicado en topic "${topic}"`);
         });
     }
 

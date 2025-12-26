@@ -13,7 +13,7 @@ class DispositivoZKService {
      */
     async initialize() {
         try {
-            console.log('🔄 Inicializando servicio de dispositivos ZK...');
+            //console.log('🔄 Inicializando servicio de dispositivos ZK...');
             
             // Cargar dispositivos activos de la base de datos
             const dispositivos = await DispositivoZKModel.getAllDispositivos();
@@ -32,7 +32,7 @@ class DispositivoZKService {
                 }
             }
             
-            console.log(`✅ ${dispositivos.filter(d => d.activo).length} dispositivos ZK cargados desde BD`);
+            //console.log(`✅ ${dispositivos.filter(d => d.activo).length} dispositivos ZK cargados desde BD`);
             return true;
         } catch (error) {
             console.error('❌ Error inicializando servicio de dispositivos ZK:', error);
@@ -238,11 +238,9 @@ class DispositivoZKService {
     async obtenerDispositivosPorEmpresa(empresa_id) {
         try {
             const dispositivos = await DispositivoZKModel.getDispositivosByEmpresa(empresa_id);
-            
             // Enriquecer con información del servicio MQTT
             return dispositivos.map(dispositivo => {
                 const estadoMQTT = zkDeviceService.getDeviceStatus(dispositivo.serial);
-                
                 return {
                     ...dispositivo,
                     mqtt_status: estadoMQTT?.status || 'unknown',
