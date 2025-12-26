@@ -142,6 +142,7 @@ class NotificacionService {
         try {
             // Verificar conexión de correo
             const conexionValida = await MailService.verificarConexion();
+            console.log("Verificando conexion de correo:", conexionValida);
             if (!conexionValida.success) {
                 console.error('Error de conexión con el servicio de correo');
                 return {
