@@ -82,15 +82,34 @@
                 </h3>
                 
                 <form @submit.prevent="onSubmit" class="space-y-4">
+                    <!-- Selector de Trabajador -->
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">ID Usuario (Número)</label>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Seleccionar Trabajador (Enrolar)</label>
+                        <select 
+                            v-model="form.selected_worker" 
+                            @change="onWorkerSelect"
+                            class="input w-full"
+                            :disabled="loadingTrabajadores">
+                            <option :value="null">-- Manual / Nuevo --</option>
+                            <option v-for="t in trabajadores" :key="t.id" :value="t">
+                                {{ t.usuario_nombre }} {{ t.usuario_apellido }} ({{ t.usuario_rut }})
+                            </option>
+                        </select>
+                        <p v-if="loadingTrabajadores" class="text-xs text-blue-500 mt-1">Cargando trabajadores...</p>
+                    </div>
+
+                    <div class="border-t border-gray-200 my-2"></div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">ID Usuario (En Dispositivo)</label>
                         <input 
                             v-model="form.user_id" 
                             type="number" 
                             min="1" 
                             required 
-                            class="input w-full" 
-                            placeholder="Ej: 105" />
+                            class="input w-full bg-gray-50 disabled:text-gray-500 disabled:bg-gray-200" 
+                            :disabled="!!form.selected_worker"
+                            placeholder="Se llenará al seleccionar trabajador" />
                     </div>
                     
                     <div>
@@ -99,8 +118,9 @@
                             v-model="form.name" 
                             type="text" 
                             required 
-                            class="input w-full" 
-                            placeholder="Ej: Juan Pérez" />
+                            class="input w-full bg-gray-50 disabled:text-gray-500 disabled:bg-gray-200" 
+                            :disabled="!!form.selected_worker"
+                            placeholder="Se llenará al seleccionar trabajador" />
                     </div>
                     
                     <div>
@@ -150,8 +170,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useDispositivos } from '@/composables/useDispositivos.js';
+import { useAuthStore } from '@/stores/authStore';
+import EmpresaServices from '@/services/EmpresaService';
 
 const props = defineProps({
     serial: {
@@ -167,9 +189,12 @@ const {
     crearUsuario, 
     eliminarUsuario 
 } = useDispositivos();
+const authStore = useAuthStore();
 
 const users = ref([]);
+const trabajadores = ref([]);
 const loading = ref(false);
+const loadingTrabajadores = ref(false);
 const submitting = ref(false);
 const feedback = reactive({ type: '', message: '' });
 
@@ -177,11 +202,13 @@ const form = reactive({
     user_id: '',
     name: '',
     privilege: 0,
-    register_finger: false
+    register_finger: false,
+    selected_worker: null // Para el v-model del select
 });
 
 onMounted(() => {
     fetchUsers();
+    fetchTrabajadores();
 });
 
 const fetchUsers = async () => {
@@ -189,8 +216,6 @@ const fetchUsers = async () => {
     try {
         const data = await obtenerUsuarios(props.serial);
         console.log('Usuarios data:', data);
-        // data es la respuesta resuelta del servicio: { message, data: [...], payload, ... }
-        // La lista de usuarios viene en data.data (según log del usuario) o data.users o data (si fuera array directo)
         users.value = Array.isArray(data) ? data : (data.data || data.users || []);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -200,15 +225,50 @@ const fetchUsers = async () => {
     }
 };
 
+const fetchTrabajadores = async () => {
+    const user = authStore.user;
+    if (!user || !user.rut) {
+        console.warn('No hay usuario o RUT en authStore para cargar trabajadores');
+        return;
+    }
+    
+    loadingTrabajadores.value = true;
+    try {
+        // Asumiendo que obtenerTrabajadores devuelve un array o un objeto con data
+        const response = await EmpresaServices.obtenerTrabajadores(user.rut);
+        console.log('Trabajadores response:', response);
+        trabajadores.value = Array.isArray(response) ? response : (response.data || []);
+    } catch (error) {
+        console.error('Error cargando trabajadores:', error);
+        showFeedback('error', 'No se pudieron cargar los trabajadores de la empresa.');
+    } finally {
+        loadingTrabajadores.value = false;
+    }
+};
+
+const onWorkerSelect = () => {
+    const worker = form.selected_worker;
+    if (worker) {
+        // Usar ID del trabajador como user_id en el dispositivo (o el RUT si se prefiere, pero string puede ser largo)
+        // ZK suele usar ID numérico para 'uid' y string para 'user_id'. 
+        // Vamos a usar el ID de BD como user_id para consistencia.
+        form.user_id = worker.id || worker.rut; 
+        form.name = `${worker.usuario_nombre} ${worker.usuario_apellido_pat || ''}`.trim();
+    } else {
+        form.user_id = '';
+        form.name = '';
+    }
+};
+
 const onSubmit = async () => {
     if (!form.user_id || !form.name) return;
     
     submitting.value = true;
-    feedback.message = ''; // Clear previous feedback
+    feedback.message = ''; 
 
     try {
         const userData = {
-            uid: parseInt(form.user_id), // ZK protocol uses uid often same as user_id for small setups
+            uid: parseInt(form.user_id), // Intentar usar ID numérico como UID
             user_id: form.user_id.toString(),
             name: form.name,
             privilege: form.privilege,
@@ -219,12 +279,12 @@ const onSubmit = async () => {
         
         showFeedback('success', `Usuario ${form.name} enviado al dispositivo.`);
         
-        // Reset form partially
+        // Reset form
+        form.selected_worker = null;
         form.user_id = '';
         form.name = '';
         form.register_finger = false;
         
-        // Refresh list after a delay to allow firmware to process
         setTimeout(fetchUsers, 2000);
 
     } catch (error) {
