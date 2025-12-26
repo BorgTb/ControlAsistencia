@@ -31,7 +31,8 @@
                         <thead class="bg-gray-50 text-gray-500 font-medium sticky top-0">
                             <tr>
                                 <th class="px-4 py-2">ID</th>
-                                <th class="px-4 py-2">Nombre</th>
+                                <th class="px-4 py-2">Nombre (Reloj / Sistema)</th>
+                                <th class="px-4 py-2">RUT</th>
                                 <th class="px-4 py-2">Rol</th>
                                 <th class="px-4 py-2 text-center">Acciones</th>
                             </tr>
@@ -50,7 +51,16 @@
                             </tr>
                             <tr v-for="user in users" :key="user.user_id" class="hover:bg-gray-50 group">
                                 <td class="px-4 py-3 font-mono text-gray-600">{{ user.user_id }}</td>
-                                <td class="px-4 py-3 font-medium text-gray-900">{{ user.name }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900">{{ user.system_name || user.name }}</div>
+                                    <div v-if="user.system_name && user.name !== user.system_name" class="text-xs text-gray-400">
+                                        Reloj: {{ user.name }}
+                                    </div>
+                                    <div v-if="!user.in_system" class="text-xs text-amber-600 font-medium">
+                                        ⚠️ No vinculado al sistema
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-gray-600">{{ user.rut || '-' }}</td>
                                 <td class="px-4 py-3 text-xs">
                                     <span :class="[
                                         'px-2 py-1 rounded-full',

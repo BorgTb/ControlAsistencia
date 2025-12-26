@@ -1,7 +1,7 @@
 import express from 'express';
 import * as ZKDeviceController from '../controllers/ZKDeviceController.js';
-import  authMiddleware  from '../middleware/AuthMiddleWare.js';
-
+import authMiddleware from '../middleware/AuthMiddleWare.js';
+//este archivo tiene rutas de dispositivos ZK mediante mqqt
 const router = express.Router();
 
 // Proteger rutas con autenticación
@@ -19,6 +19,9 @@ router.get('/devices/:serial', authMiddleware.verifyToken, ZKDeviceController.ge
 // POST /api/zk/devices - Registrar nuevo dispositivo
 router.post('/devices', authMiddleware.verifyToken, ZKDeviceController.registerDevice);
 
+// PUT /api/zk/devices/:serial - Actualizar dispositivo
+router.put('/devices/:serial', authMiddleware.verifyToken, ZKDeviceController.updateDevice);
+
 // DELETE /api/zk/devices/:serial - Desregistrar dispositivo
 router.delete('/devices/:serial', authMiddleware.verifyToken, ZKDeviceController.unregisterDevice);
 
@@ -26,7 +29,7 @@ router.delete('/devices/:serial', authMiddleware.verifyToken, ZKDeviceController
 router.post('/devices/:serial/command', authMiddleware.verifyToken, ZKDeviceController.sendCommand);
 
 // GET /api/zk/devices/:serial/users - Obtener usuarios del dispositivo
-router.get('/devices/:serial/users',     authMiddleware.verifyToken, ZKDeviceController.getUsers);
+router.get('/devices/:serial/users', authMiddleware.verifyToken, ZKDeviceController.getUsers);
 
 // POST /api/zk/devices/:serial/sync-time - Sincronizar tiempo
 router.post('/devices/:serial/sync-time', authMiddleware.verifyToken, ZKDeviceController.syncTime);

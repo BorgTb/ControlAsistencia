@@ -1,5 +1,6 @@
 import DispositivoZKModel from '../model/DispositivoZKModel.js';
 import zkDeviceService from './ZKDeviceService.js';
+import ADMSService from './ADMSService.js';
 
 /**
  * Servicio de gestión de dispositivos ZK con persistencia en base de datos
@@ -7,31 +8,35 @@ import zkDeviceService from './ZKDeviceService.js';
  * el estado de los dispositivos
  */
 class DispositivoZKService {
-    
+
     /**
      * Inicializar servicio: cargar dispositivos de BD y registrarlos en MQTT
      */
     async initialize() {
         try {
             //console.log('🔄 Inicializando servicio de dispositivos ZK...');
-            
+
             // Cargar dispositivos activos de la base de datos
             const dispositivos = await DispositivoZKModel.getAllDispositivos();
-            
-            // Registrar cada dispositivo en el servicio MQTT
+
+            // Registrar cada dispositivo en el servicio correspondiente
             for (const dispositivo of dispositivos) {
                 if (dispositivo.activo) {
-                    zkDeviceService.registerDevice(dispositivo.serial, {
-                        name: dispositivo.nombre,
-                        location: dispositivo.ubicacion,
-                        empresa_id: dispositivo.empresa_id,
-                        ip_address: dispositivo.ip_address,
-                        puerto: dispositivo.puerto,
-                        dbId: dispositivo.id
-                    });
+                    if (dispositivo.protocolo === 'ADMS') {
+                        ADMSService.updateDeviceHeartbeat(dispositivo.serial);
+                    } else {
+                        zkDeviceService.registerDevice(dispositivo.serial, {
+                            name: dispositivo.nombre,
+                            location: dispositivo.ubicacion,
+                            empresa_id: dispositivo.empresa_id,
+                            ip_address: dispositivo.ip_address,
+                            puerto: dispositivo.puerto,
+                            dbId: dispositivo.id
+                        });
+                    }
                 }
             }
-            
+
             //console.log(`✅ ${dispositivos.filter(d => d.activo).length} dispositivos ZK cargados desde BD`);
             return true;
         } catch (error) {
@@ -39,7 +44,7 @@ class DispositivoZKService {
             throw error;
         }
     }
-    
+
     /**
      * Crear un nuevo dispositivo en BD y registrarlo en MQTT
      */
@@ -50,29 +55,33 @@ class DispositivoZKService {
             if (existe) {
                 throw new Error('Ya existe un dispositivo con ese número de serie');
             }
-            
+
             // Crear en base de datos
             const dispositivo = await DispositivoZKModel.createDispositivo(dispositivoData);
-            
-            // Si está activo, registrar en MQTT
+
+            // Si está activo, registrar en el servicio correspondiente
             if (dispositivo.activo) {
-                zkDeviceService.registerDevice(dispositivo.serial, {
-                    name: dispositivo.nombre,
-                    location: dispositivo.ubicacion,
-                    empresa_id: dispositivo.empresa_id,
-                    ip_address: dispositivo.ip_address,
-                    puerto: dispositivo.puerto,
-                    dbId: dispositivo.id
-                });
+                if (dispositivo.protocolo === 'ADMS') {
+                    ADMSService.updateDeviceHeartbeat(dispositivo.serial);
+                } else {
+                    zkDeviceService.registerDevice(dispositivo.serial, {
+                        name: dispositivo.nombre,
+                        location: dispositivo.ubicacion,
+                        empresa_id: dispositivo.empresa_id,
+                        ip_address: dispositivo.ip_address,
+                        puerto: dispositivo.puerto,
+                        dbId: dispositivo.id
+                    });
+                }
             }
-            
+
             return dispositivo;
         } catch (error) {
             console.error('❌ Error creando dispositivo:', error);
             throw error;
         }
     }
-    
+
     /**
      * Actualizar dispositivo en BD y sincronizar con MQTT
      */
@@ -83,32 +92,40 @@ class DispositivoZKService {
             if (!dispositivoActual) {
                 throw new Error('Dispositivo no encontrado');
             }
-            
+
             // Actualizar en base de datos
             const dispositivoActualizado = await DispositivoZKModel.updateDispositivo(id, dispositivoData);
-            
-            // Desregistrar del servicio MQTT
-            zkDeviceService.unregisterDevice(dispositivoActual.serial);
-            
-            // Si está activo, re-registrar en MQTT con nuevos datos
-            if (dispositivoActualizado.activo) {
-                zkDeviceService.registerDevice(dispositivoActualizado.serial, {
-                    name: dispositivoActualizado.nombre,
-                    location: dispositivoActualizado.ubicacion,
-                    empresa_id: dispositivoActualizado.empresa_id,
-                    ip_address: dispositivoActualizado.ip_address,
-                    puerto: dispositivoActualizado.puerto,
-                    dbId: dispositivoActualizado.id
-                });
+
+            // Desregistrar del servicio correspondiente
+            if (dispositivoActual.protocolo === 'ADMS') {
+                // ADMS no tiene un unregister formal por ahora, pero podríamos limpiar su estado si fuera necesario
+            } else {
+                zkDeviceService.unregisterDevice(dispositivoActual.serial);
             }
-            
+
+            // Si está activo, re-registrar en el servicio correspondiente con nuevos datos
+            if (dispositivoActualizado.activo) {
+                if (dispositivoActualizado.protocolo === 'ADMS') {
+                    ADMSService.updateDeviceHeartbeat(dispositivoActualizado.serial);
+                } else {
+                    zkDeviceService.registerDevice(dispositivoActualizado.serial, {
+                        name: dispositivoActualizado.nombre,
+                        location: dispositivoActualizado.ubicacion,
+                        empresa_id: dispositivoActualizado.empresa_id,
+                        ip_address: dispositivoActualizado.ip_address,
+                        puerto: dispositivoActualizado.puerto,
+                        dbId: dispositivoActualizado.id
+                    });
+                }
+            }
+
             return dispositivoActualizado;
         } catch (error) {
             console.error('❌ Error actualizando dispositivo:', error);
             throw error;
         }
     }
-    
+
     /**
      * Eliminar dispositivo de BD y desregistrar de MQTT
      */
@@ -119,20 +136,20 @@ class DispositivoZKService {
             if (!dispositivo) {
                 throw new Error('Dispositivo no encontrado');
             }
-            
+
             // Desregistrar del servicio MQTT
             zkDeviceService.unregisterDevice(dispositivo.serial);
-            
+
             // Eliminar de base de datos
             const dispositivoEliminado = await DispositivoZKModel.deleteDispositivo(id);
-            
+
             return dispositivoEliminado;
         } catch (error) {
             console.error('❌ Error eliminando dispositivo:', error);
             throw error;
         }
     }
-    
+
     /**
      * Activar/Desactivar dispositivo
      */
@@ -142,32 +159,40 @@ class DispositivoZKService {
             if (!dispositivo) {
                 throw new Error('Dispositivo no encontrado');
             }
-            
+
             // Actualizar estado en BD
             await DispositivoZKModel.toggleActivo(id, activo);
-            
+
             if (activo) {
-                // Activar: registrar en MQTT
-                zkDeviceService.registerDevice(dispositivo.serial, {
-                    name: dispositivo.nombre,
-                    location: dispositivo.ubicacion,
-                    empresa_id: dispositivo.empresa_id,
-                    ip_address: dispositivo.ip_address,
-                    puerto: dispositivo.puerto,
-                    dbId: dispositivo.id
-                });
+                // Activar: registrar en el servicio correspondiente
+                if (dispositivo.protocolo === 'ADMS') {
+                    ADMSService.updateDeviceHeartbeat(dispositivo.serial);
+                } else {
+                    zkDeviceService.registerDevice(dispositivo.serial, {
+                        name: dispositivo.nombre,
+                        location: dispositivo.ubicacion,
+                        empresa_id: dispositivo.empresa_id,
+                        ip_address: dispositivo.ip_address,
+                        puerto: dispositivo.puerto,
+                        dbId: dispositivo.id
+                    });
+                }
             } else {
-                // Desactivar: desregistrar de MQTT
-                zkDeviceService.unregisterDevice(dispositivo.serial);
+                // Desactivar: desregistrar
+                if (dispositivo.protocolo === 'ADMS') {
+                    // ADMS logic si fuera necesaria
+                } else {
+                    zkDeviceService.unregisterDevice(dispositivo.serial);
+                }
             }
-            
+
             return true;
         } catch (error) {
             console.error('❌ Error cambiando estado del dispositivo:', error);
             throw error;
         }
     }
-    
+
     /**
      * Actualizar estado de un dispositivo cuando cambia su conexión
      * Este método debe ser llamado desde el servicio MQTT cuando detecta cambios
@@ -180,50 +205,51 @@ class DispositivoZKService {
             console.error('❌ Error actualizando estado del dispositivo:', error);
         }
     }
-    
+
     /**
      * Sincronizar estado de dispositivos entre MQTT y BD
      */
     async sincronizarEstados() {
         try {
             const dispositivos = await DispositivoZKModel.getAllDispositivos();
-            
+
             for (const dispositivo of dispositivos) {
                 if (dispositivo.activo) {
                     const estadoMQTT = zkDeviceService.getDeviceStatus(dispositivo.serial);
-                    
+
                     if (estadoMQTT) {
                         // Actualizar BD con estado de MQTT
                         await DispositivoZKModel.updateEstado(
-                            dispositivo.serial, 
+                            dispositivo.serial,
                             estadoMQTT.status || 'unknown'
                         );
                     }
                 }
             }
-            
+
             console.log('✅ Estados sincronizados entre MQTT y BD');
         } catch (error) {
             console.error('❌ Error sincronizando estados:', error);
         }
     }
-    
+
     /**
      * Obtener todos los dispositivos con información de BD y estado MQTT
      */
     async obtenerDispositivosConEstado() {
         try {
             const dispositivos = await DispositivoZKModel.getAllDispositivos();
-            
-            // Enriquecer con información del servicio MQTT
+
+            // Enriquecer con información del servicio correspondiente
             return dispositivos.map(dispositivo => {
-                const estadoMQTT = zkDeviceService.getDeviceStatus(dispositivo.serial);
-                
+                const estadoService = dispositivo.protocolo === 'ADMS' ? ADMSService : zkDeviceService;
+                const estado = estadoService.getDeviceStatus(dispositivo.serial);
+
                 return {
                     ...dispositivo,
-                    mqtt_status: estadoMQTT?.status || 'unknown',
-                    mqtt_lastSeen: estadoMQTT?.lastSeen || null,
-                    mqtt_online: estadoMQTT?.status === 'online'
+                    mqtt_status: estado?.status || 'unknown',
+                    mqtt_lastSeen: estado?.lastSeen || estado?.lastUpdate || null,
+                    mqtt_online: estado?.status === 'online'
                 };
             });
         } catch (error) {
@@ -231,21 +257,22 @@ class DispositivoZKService {
             throw error;
         }
     }
-    
+
     /**
      * Obtener dispositivos por empresa con estado MQTT
      */
     async obtenerDispositivosPorEmpresa(empresa_id) {
         try {
             const dispositivos = await DispositivoZKModel.getDispositivosByEmpresa(empresa_id);
-            // Enriquecer con información del servicio MQTT
+            // Enriquecer con información del servicio correspondiente
             return dispositivos.map(dispositivo => {
-                const estadoMQTT = zkDeviceService.getDeviceStatus(dispositivo.serial);
+                const estadoService = dispositivo.protocolo === 'ADMS' ? ADMSService : zkDeviceService;
+                const estado = estadoService.getDeviceStatus(dispositivo.serial);
                 return {
                     ...dispositivo,
-                    mqtt_status: estadoMQTT?.status || 'unknown',
-                    mqtt_lastSeen: estadoMQTT?.lastSeen || null,
-                    mqtt_online: estadoMQTT?.status === 'online'
+                    mqtt_status: estado?.status || 'unknown',
+                    mqtt_lastSeen: estado?.lastSeen || estado?.lastUpdate || null,
+                    mqtt_online: estado?.status === 'online'
                 };
             });
         } catch (error) {
@@ -253,7 +280,7 @@ class DispositivoZKService {
             throw error;
         }
     }
-    
+
     /**
      * Registrar dispositivo auto-detectado vía MQTT
      */
@@ -261,13 +288,13 @@ class DispositivoZKService {
         try {
             // Verificar si ya existe
             const existe = await DispositivoZKModel.getDispositivoBySerial(serial);
-            
+
             if (!existe) {
                 // Si no existe, crear como auto-detectado sin empresa asignada
                 // Esto requeriría que empresa_id pueda ser NULL temporalmente
                 // O asignar a una empresa por defecto
                 console.log(`📱 Dispositivo auto-detectado: ${serial} - Requiere asignación manual a empresa`);
-                
+
                 // Por ahora solo registrar en MQTT, no en BD hasta que se asigne empresa
                 return null;
             } else {
@@ -280,7 +307,7 @@ class DispositivoZKService {
             throw error;
         }
     }
-    
+
     /**
      * Obtener estadísticas de dispositivos
      */
@@ -288,7 +315,7 @@ class DispositivoZKService {
         try {
             const { total, activos } = await DispositivoZKModel.contarDispositivos();
             const online = (await DispositivoZKModel.getDispositivosOnline()).length;
-            
+
             return {
                 total,
                 activos,

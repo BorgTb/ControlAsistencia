@@ -25,11 +25,9 @@ export default {
     return apiClient.post('/zk/devices', data);
   },
 
-  // Actualizar un dispositivo (nota: el backend no tiene PUT, usamos POST para comandos)
+  // Actualizar un dispositivo
   actualizarDispositivo(serial, data) {
-    // El backend actual no tiene endpoint de actualización directa
-    // Necesitarías implementarlo o usar registerDevice que sobrescribe
-    return apiClient.post('/zk/devices', { serial, ...data });
+    return apiClient.put(`/zk/devices/${serial}`, data);
   },
 
   // Eliminar un dispositivo

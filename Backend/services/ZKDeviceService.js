@@ -1,4 +1,5 @@
 import mqttService from './MQTTService.js';
+import DispositivoZKModel from '../model/DispositivoZKModel.js';
 import UserModel from '../model/UserModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import MarcacionesServices from './MarcacionesServices.js';
@@ -265,8 +266,13 @@ class ZKDeviceService {
         try {
             console.log(`📊 Procesando marcación dispositivo ${serial}:`, log);
 
-            // 1. Obtener dispositivo y empresa
-            const device = this.devices.get(serial);
+            // 1. Obtener dispositivo y empresa (Fallback a BD si no está en memoria)
+            let device = this.devices.get(serial);
+            if (!device) {
+                console.log(`🔍 Dispositivo ${serial} no hallado en memoria, buscando en BD...`);
+                device = await DispositivoZKModel.getBySerial(serial);
+            }
+
             if (!device || !device.empresa_id) {
                 console.warn(`⚠️ Dispositivo ${serial} no registrado o sin empresa asignada.`);
                 return;
