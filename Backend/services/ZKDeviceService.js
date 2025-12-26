@@ -1,4 +1,7 @@
 import mqttService from './MQTTService.js';
+import UserModel from '../model/UserModel.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import MarcacionesServices from './MarcacionesServices.js';
 
 /**
  * Servicio para gestionar dispositivos ZK a través de MQTT
@@ -170,23 +173,29 @@ class ZKDeviceService {
             const logData = JSON.parse(message);
             console.log(`📋 Log de marcaje zk/${serial}/logs:`, logData);
 
-            const { device_name, count, data } = logData;
-
             // Actualizar última actividad y nombre del dispositivo
             if (this.devices.has(serial)) {
                 const device = this.devices.get(serial);
                 device.lastSeen = new Date();
-                if (device_name) {
-                    device.name = device_name;
+                if (logData.device_name) {
+                    device.name = logData.device_name;
                 }
                 this.devices.set(serial, device);
             }
 
-            // Procesar cada marcaje del array
+            // CASO 1: Log individual (estructura reportada por usuario)
+            if (logData.user_id && logData.timestamp) {
+                console.log(`📊 Procesando log individual del dispositivo ${logData.device_name || serial}`);
+                this.processAttendanceLog(serial, logData);
+                return;
+            }
+
+            // CASO 2: Batch de logs (estructura original esperada)
+            const { device_name, count, data } = logData;
             if (data && Array.isArray(data)) {
                 console.log(`📊 Procesando ${count} marcaje(s) del dispositivo ${device_name || serial}`);
                 data.forEach(attendance => {
-                    this.processAttendanceLog(serial, attendance, device_name);
+                    this.processAttendanceLog(serial, attendance);
                 });
             }
         } catch (error) {
@@ -250,38 +259,106 @@ class ZKDeviceService {
     /**
      * Procesar log de marcaje de asistencia
      * @param {string} serial - Número de serie del dispositivo
-     * @param {Object} attendance - Datos del marcaje
-     * @param {string} deviceName - Nombre del dispositivo
+     * @param {Object} log - Datos del marcaje (user_id, timestamp, etc.)
      */
-    async processAttendanceLog(serial, attendance, deviceName) {
+    async processAttendanceLog(serial, log) {
         try {
-            // Estructura del attendance:
-            // {
-            //     user_id: "105",
-            //     timestamp: "2025-12-23 14:30:05",
-            //     status: 1,
-            //     punch: 0
-            // }
+            console.log(`📊 Procesando marcación dispositivo ${serial}:`, log);
 
-            const { user_id, timestamp, status, punch } = attendance;
+            // 1. Obtener dispositivo y empresa
+            const device = this.devices.get(serial);
+            if (!device || !device.empresa_id) {
+                console.warn(`⚠️ Dispositivo ${serial} no registrado o sin empresa asignada.`);
+                return;
+            }
 
-            console.log(`💾 Procesando marcaje: Usuario ${user_id} - ${timestamp} (Status: ${status}, Punch: ${punch})`);
+            // 2. Obtener Usuario
+            // El dispositivo envía user_id como string, asumimos que corresponde al ID de la tabla usuarios o al ID en dispositivo
+            const userId = parseInt(log.user_id);
+            if (isNaN(userId)) {
+                console.warn(`⚠️ ID de usuario inválido en marcación: ${log.user_id}`);
+                return;
+            }
 
-            // TODO: Implementar lógica para guardar marcaje en BD
-            // Mapear status/punch a tipo de marcaje según tu sistema
-            // Status típicamente: 0=check-in, 1=check-out, 2=break-out, 3=break-in
-            // Punch: 0=entrada, 1=salida, etc. (depende del dispositivo)
+            const user = await UserModel.findById(userId);
+            if (!user) {
+                console.warn(`⚠️ Usuario ID ${userId} no encontrado en BD.`);
+                return;
+            }
 
-            // Aquí integrar con MarcacionesModel o controller
-            // await MarcacionesModel.crear({
-            //     usuario_id: user_id,
-            //     fecha_hora: timestamp,
-            //     tipo: status === 0 ? 'entrada' : 'salida',
-            //     dispositivo_serial: serial,
-            //     dispositivo_nombre: deviceName
-            // });
+            // 3. Obtener relación Usuario-Empresa
+            const usuarioEmpresaId = await UsuarioEmpresaModel.getIdByUsuarioIdAndEmpresaId(userId, device.empresa_id);
+            if (!usuarioEmpresaId) {
+                console.warn(`⚠️ Usuario ${userId} no tiene relación activa con empresa ${device.empresa_id}.`);
+                return;
+            }
+
+            // 4. Parsear Fecha y Hora del log
+            const logDate = new Date(log.timestamp);
+            if (isNaN(logDate.getTime())) {
+                console.error('❌ Fecha de marcación inválida:', log.timestamp);
+                return;
+            }
+
+            const fechaStr = logDate.toISOString().split('T')[0];
+            const horaStr = logDate.toTimeString().split(' ')[0];
+
+            // 5. Verificar duplicados y determinar Tipo
+            const historial = await MarcacionesServices.obtenerMarcacionesPorUsuario(usuarioEmpresaId, fechaStr, fechaStr);
+            const marcacionesHoy = (historial.marcaciones && historial.marcaciones[fechaStr]) ? historial.marcaciones[fechaStr] : [];
+
+            // Verificar duplicados (misma hora exacta)
+            const duplicado = marcacionesHoy.find(m => m.hora === horaStr);
+            if (duplicado) {
+                console.log(`ℹ️ Marcación duplicada ignorada para usuario ${userId} a las ${horaStr}`);
+                return;
+            }
+
+            // Validar si ya tiene salida (Turno finalizado)
+            if (marcacionesHoy.some(m => m.tipo === 'salida')) {
+                console.warn(`🛑 Usuario ${userId} ya tiene salida registrada hoy. Se ignora marcación.`);
+                return;
+            }
+
+            // Lógica de turno: Entrada -> Colación -> Colación -> Salida
+            let tipo = 'entrada';
+
+            // Ordenamos por hora para contar correctamente (ya debería venir ordenado, pero aseguramos)
+            const sortedPunches = marcacionesHoy.sort((a, b) => a.hora.localeCompare(b.hora));
+            const count = sortedPunches.length;
+
+            if (count === 0) {
+                tipo = 'entrada';
+            } else if (count === 1) {
+                tipo = 'colacion'; // Colación Inicio
+            } else if (count === 2) {
+                tipo = 'colacion'; // Colación Fin
+            } else if (count >= 3) {
+                tipo = 'salida';
+            }
+
+            console.log(`
+                usuarioEmpresaId: ${usuarioEmpresaId}
+                tipo: ${tipo}
+                fechaStr: ${fechaStr}
+                horaStr: ${horaStr}
+            `);
+            // 6. Guardar Marcación
+            const result = await MarcacionesServices.insertarMarcacionManual(
+                usuarioEmpresaId,
+                tipo,
+                fechaStr,
+                horaStr
+            );
+
+            if (result.success) {
+                console.log(`✅ Marcación registrada: ${tipo} para usuario ${userId} (${horaStr})`);
+            } else {
+                console.error('❌ Error guardando marcación:', result.message);
+            }
+
         } catch (error) {
-            console.error('❌ Error guardando marcaje:', error);
+            console.error('❌ Error procesando marcación ZK:', error);
         }
     }
 
@@ -316,7 +393,7 @@ class ZKDeviceService {
      */
     unregisterDevice(serial) {
         // Desuscribirse de los topics
-        mqttService.unsubscribe(`zk/${serial}/out`);
+        mqttService.unsubscribe(`zk / ${serial}/out`);
         mqttService.unsubscribe(`zk/${serial}/logs`);
         mqttService.unsubscribe(`zk/${serial}/status`);
 

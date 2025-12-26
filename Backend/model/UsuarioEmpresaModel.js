@@ -1,7 +1,7 @@
 import db from '../config/dbconfig.js';
 
 class UsuarioEmpresaModel {
-    
+
     // Crear una nueva relación usuario-empresa
     static async createUsuarioEmpresa(usuarioEmpresaData) {
         const query = `
@@ -15,13 +15,13 @@ class UsuarioEmpresaModel {
             usuarioEmpresaData.fecha_inicio,
             usuarioEmpresaData.fecha_fin || null
         ]);
-        
+
         return {
             id: result.insertId,
             ...usuarioEmpresaData
         };
     }
-    
+
     // Obtener todas las relaciones usuario-empresa
     static async getAllUsuarioEmpresas() {
         const query = `
@@ -47,11 +47,11 @@ class UsuarioEmpresaModel {
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
             ORDER BY ue.created_at DESC
         `;
-        
+
         const [rows] = await db.execute(query);
         return rows;
     }
-    
+
     // Obtener relación por ID
     /*
         Falta implementar que valide o retorne la ultima empresa activa con la que esta ligado
@@ -81,7 +81,7 @@ class UsuarioEmpresaModel {
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
             WHERE ue.usuario_id = ?
         `;
-        
+
         const [rows] = await db.execute(query, [id]);
         return rows.length > 0 ? rows[0] : null;
     }
@@ -118,7 +118,7 @@ class UsuarioEmpresaModel {
         }
         return rows.length > 0 ? rows[0] : null;
     }
-    
+
     // Obtener todas las empresas de un usuario
     static async getEmpresasByUsuarioId(usuario_id) {
         const query = `
@@ -140,11 +140,11 @@ class UsuarioEmpresaModel {
             AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
             ORDER BY ue.fecha_inicio DESC
         `;
-        
+
         const [rows] = await db.execute(query, [usuario_id]);
         return rows;
     }
-    
+
     // Obtener todos los usuarios de una empresa
     static async getUsuariosByEmpresaId(empresa_id) {
         const query = `
@@ -170,11 +170,11 @@ class UsuarioEmpresaModel {
             AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
             ORDER BY ue.fecha_inicio DESC
         `;
-        
+
         const [rows] = await db.execute(query, [empresa_id]);
         return rows;
     }
-    
+
     // Obtener usuarios activos de una empresa por RUT de empresa
     static async getUsuariosByEmpresaRut(empresa_rut) {
         const query = `
@@ -204,7 +204,7 @@ class UsuarioEmpresaModel {
             AND u.estado = 1
             ORDER BY u.nombre ASC
         `;
-        
+
         const [rows] = await db.execute(query, [empresa_rut]);
         return rows;
     }
@@ -238,7 +238,7 @@ class UsuarioEmpresaModel {
             AND u.estado = 1
             ORDER BY u.nombre ASC
         `;
-        
+
         const [rows] = await db.execute(query, [empresa_id]);
         return rows;
     }
@@ -278,7 +278,7 @@ class UsuarioEmpresaModel {
     }
 
 
-    
+
     // Verificar si un usuario pertenece a una empresa
     static async usuarioPerteneceEmpresa(usuario_id, empresa_id) {
         const query = `
@@ -288,11 +288,11 @@ class UsuarioEmpresaModel {
             AND empresa_id = ?
             AND (fecha_fin IS NULL OR fecha_fin > CURRENT_DATE)
         `;
-        
+
         const [rows] = await db.execute(query, [usuario_id, empresa_id]);
         return rows[0].count > 0;
     }
-    
+
     // Obtener el rol de un usuario en una empresa específica
     static async getRolUsuarioEnEmpresa(usuario_id, empresa_id) {
         const query = `
@@ -304,16 +304,16 @@ class UsuarioEmpresaModel {
             ORDER BY fecha_inicio DESC
             LIMIT 1
         `;
-        
+
         const [rows] = await db.execute(query, [usuario_id, empresa_id]);
         return rows.length > 0 ? rows[0].rol_en_empresa : null;
     }
-    
 
 
 
 
-    
+
+
     // Obtener usuarios por rol en una empresa
     static async getUsuariosByRolEnEmpresa(empresa_id, rol_en_empresa) {
         const query = `
@@ -339,11 +339,11 @@ class UsuarioEmpresaModel {
             AND u.estado = 1
             ORDER BY u.nombre ASC
         `;
-        
+
         const [rows] = await db.execute(query, [empresa_id, rol_en_empresa]);
         return rows;
     }
-    
+
     // Actualizar relación usuario-empresa
     static async updateUsuarioEmpresa(id, usuarioEmpresaData) {
         const query = `
@@ -352,7 +352,7 @@ class UsuarioEmpresaModel {
                 fecha_inicio = ?, fecha_fin = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `;
-        
+
         const [result] = await db.execute(query, [
             usuarioEmpresaData.usuario_id,
             usuarioEmpresaData.empresa_id,
@@ -361,28 +361,28 @@ class UsuarioEmpresaModel {
             usuarioEmpresaData.fecha_fin,
             id
         ]);
-        
+
         return result.affectedRows > 0;
     }
-    
+
     // Finalizar relación usuario-empresa (establecer fecha_fin)
     static async finalizarRelacion(id, fecha_fin = null) {
         const fechaFinalizacion = fecha_fin || new Date().toISOString().split('T')[0];
-        
+
         const query = `
             UPDATE usuarios_empresas 
             SET fecha_fin = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `;
-        
+
         const [result] = await db.execute(query, [fechaFinalizacion, id]);
         return result.affectedRows > 0;
     }
-    
+
     // Finalizar todas las relaciones de un usuario con una empresa
     static async finalizarRelacionesUsuarioEmpresa(usuario_id, empresa_id, fecha_fin = null) {
         const fechaFinalizacion = fecha_fin || new Date().toISOString().split('T')[0];
-        
+
         const query = `
             UPDATE usuarios_empresas 
             SET fecha_fin = ?, updated_at = CURRENT_TIMESTAMP
@@ -390,18 +390,18 @@ class UsuarioEmpresaModel {
             AND empresa_id = ?
             AND fecha_fin IS NULL
         `;
-        
+
         const [result] = await db.execute(query, [fechaFinalizacion, usuario_id, empresa_id]);
         return result.affectedRows > 0;
     }
-    
+
     // Eliminar relación usuario-empresa permanentemente
     static async deleteUsuarioEmpresa(id) {
         const query = `DELETE FROM usuarios_empresas WHERE id = ?`;
         const [result] = await db.execute(query, [id]);
         return result.affectedRows > 0;
     }
-    
+
     // Obtener estadísticas de una empresa
     static async getEstadisticasEmpresa(empresa_id) {
         const query = `
@@ -414,11 +414,11 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             WHERE ue.empresa_id = ?
         `;
-        
+
         const [rows] = await db.execute(query, [empresa_id]);
         return rows[0];
     }
-    
+
     // Buscar relaciones por múltiples criterios
     static async buscarUsuarioEmpresas(filtros) {
         let query = `
@@ -443,45 +443,45 @@ class UsuarioEmpresaModel {
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
             WHERE 1=1
         `;
-        
+
         const params = [];
-        
+
         if (filtros.usuario_nombre) {
             query += ` AND u.nombre LIKE ?`;
             params.push(`%${filtros.usuario_nombre}%`);
         }
-        
+
         if (filtros.usuario_apellido_pat) {
             query += ` AND u.apellido_pat LIKE ?`;
             params.push(`%${filtros.usuario_apellido_pat}%`);
         }
-        
+
         if (filtros.usuario_apellido_mat) {
             query += ` AND u.apellido_mat LIKE ?`;
             params.push(`%${filtros.usuario_apellido_mat}%`);
         }
-        
+
         if (filtros.empresa_nombre) {
             query += ` AND e.emp_nombre LIKE ?`;
             params.push(`%${filtros.empresa_nombre}%`);
         }
-        
+
         if (filtros.rol_en_empresa) {
             query += ` AND ue.rol_en_empresa = ?`;
             params.push(filtros.rol_en_empresa);
         }
-        
+
         if (filtros.activos_solo) {
             query += ` AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)`;
         }
-        
+
         query += ` ORDER BY ue.created_at DESC`;
-        
+
         if (filtros.limit) {
             query += ` LIMIT ?`;
             params.push(parseInt(filtros.limit));
         }
-        
+
         const [rows] = await db.execute(query, params);
         return rows;
     }
@@ -521,8 +521,8 @@ class UsuarioEmpresaModel {
         const [rows] = await db.execute(query, [usuario_id]);
         return rows.length > 0 ? rows[0].id : null;
     }
-    
-    static async obtenerUsuarioByID(usuario_empresa_id){
+
+    static async obtenerUsuarioByID(usuario_empresa_id) {
         const query = `
         SELECT
             u.id,
@@ -559,7 +559,7 @@ class UsuarioEmpresaModel {
             WHERE fecha_fin IS NULL OR fecha_fin > CURDATE()
             ORDER BY usuario_id
         `;
-        
+
         const [rows] = await db.execute(query);
         return rows;
     }
@@ -576,17 +576,17 @@ class UsuarioEmpresaModel {
             SET horas_laborales = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `;
-        
+
         console.log('🔄 Ejecutando query actualización horas laborales:', {
             usuarioEmpresaId,
             horasLaborales,
             query
         });
-        
+
         const [result] = await db.execute(query, [horasLaborales, usuarioEmpresaId]);
-        
+
         console.log('✅ Resultado actualización horas laborales:', result);
-        
+
         return result;
     }
 
@@ -598,6 +598,19 @@ class UsuarioEmpresaModel {
         `;
         const [rows] = await db.execute(query, [empresaId]);
         return rows.map(row => row.rol_en_empresa);
+    }
+
+    static async getIdByUsuarioIdAndEmpresaId(usuario_id, empresa_id) {
+        const query = `
+            SELECT id
+            FROM usuarios_empresas 
+            WHERE usuario_id = ? 
+            AND empresa_id = ?
+            AND (fecha_fin IS NULL OR fecha_fin > CURRENT_DATE)
+            LIMIT 1
+        `;
+        const [rows] = await db.execute(query, [usuario_id, empresa_id]);
+        return rows.length > 0 ? rows[0].id : null;
     }
 
 }

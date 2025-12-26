@@ -31,7 +31,7 @@ class MarcacionesService {
             // Validar y normalizar datos
             const marcacionData = {
                 usuario_empresa_id: usuario_empresa_id,
-                mandante_id: asignaciones.length > 0 ? asignaciones[0].mandante_id : null,
+                mandante_id: asignaciones > 0 && asignaciones.length > 0 ? asignaciones[0].mandante_id : null,
                 fecha: fecha,
                 hora: hora,
                 tipo: tipo,

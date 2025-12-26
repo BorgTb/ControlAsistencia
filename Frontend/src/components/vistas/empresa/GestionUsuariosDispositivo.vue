@@ -91,7 +91,7 @@
                             class="input w-full"
                             :disabled="loadingTrabajadores">
                             <option :value="null">-- Manual / Nuevo --</option>
-                            <option v-for="t in trabajadores" :key="t.id" :value="t">
+                            <option v-for="t in trabajadores" :key="t.usuario_id" :value="t">
                                 {{ t.usuario_nombre }} {{ t.usuario_apellido }} ({{ t.usuario_rut }})
                             </option>
                         </select>
@@ -235,7 +235,7 @@ const fetchTrabajadores = async () => {
     loadingTrabajadores.value = true;
     try {
         // Asumiendo que obtenerTrabajadores devuelve un array o un objeto con data
-        const response = await EmpresaServices.obtenerTrabajadores(user.rut);
+    const response = await EmpresaServices.obtenerTrabajadores(user.rut);
         console.log('Trabajadores response:', response);
         trabajadores.value = Array.isArray(response) ? response : (response.data || []);
     } catch (error) {
@@ -249,10 +249,8 @@ const fetchTrabajadores = async () => {
 const onWorkerSelect = () => {
     const worker = form.selected_worker;
     if (worker) {
-        // Usar ID del trabajador como user_id en el dispositivo (o el RUT si se prefiere, pero string puede ser largo)
-        // ZK suele usar ID numérico para 'uid' y string para 'user_id'. 
-        // Vamos a usar el ID de BD como user_id para consistencia.
-        form.user_id = worker.id || worker.rut; 
+        // Usar usuario_id del trabajador como user_id en el dispositivo (ID global del sistema)
+        form.user_id = worker.usuario_id; 
         form.name = `${worker.usuario_nombre} ${worker.usuario_apellido_pat || ''}`.trim();
     } else {
         form.user_id = '';
