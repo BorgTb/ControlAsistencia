@@ -11,6 +11,8 @@ import FiscalizadorRoutes from "./FiscalizadorRoutes.js";
 import JustificacionesRoutes from "./JustificacionesRoutes.js";
 import FeriadosRoutes from "./FeriadosRoutes.js";
 import DocumentoRoutes from "./DocumentoRoutes.js";
+import MQTTRoutes from "./MQTTRoutes.js";
+import ZKDeviceRoutes from "./ZKDeviceRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -25,7 +27,9 @@ const router = {
     fiscalizador: FiscalizadorRoutes,
     justificaciones: JustificacionesRoutes,
     feriados: FeriadosRoutes,
-    documentos: DocumentoRoutes
+    documentos: DocumentoRoutes,
+    mqtt: MQTTRoutes,
+    zk: ZKDeviceRoutes
 }
 
 export default router;

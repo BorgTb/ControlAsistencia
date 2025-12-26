@@ -7,6 +7,8 @@ import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { startCleanupJob } from './jobs/CleanupRefreshTokens.js';
+import mqttService from './services/MQTTService.js';
+import zkDeviceService from './services/ZKDeviceService.js';
 
 dotenv.config();
 
@@ -48,6 +50,8 @@ app.use('/api/estadisticas', router.estadisticas);
 app.use('/api/fiscalizador', router.fiscalizador);
 app.use('/api/justificaciones', router.justificaciones);
 app.use('/api/feriados', router.feriados);
+app.use('/api/mqtt', router.mqtt);
+app.use('/api/zk', router.zk);
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
 
 
@@ -61,15 +65,51 @@ app.listen(PORT, () => {
     // Esto elimina tokens expirados y mantiene la BD optimizada
     startCleanupJob(24);
     console.log('✅ Job de limpieza de refresh tokens iniciado');
+    
+    // Iniciar servicio MQTT
+    mqttService.connect();
+    console.log('✅ Servicio MQTT iniciado');
+    
+    // Registrar dispositivos ZK desde la configuración o BD
+    // Ejemplo: Registrar dispositivos conocidos
+    const knownDevices = process.env.ZK_DEVICES ? process.env.ZK_DEVICES.split(',') : [];
+    
+    if (knownDevices.length > 0) {
+        knownDevices.forEach(serial => {
+            zkDeviceService.registerDevice(serial.trim(), {
+                name: `Dispositivo ZK ${serial}`,
+                location: 'Por definir'
+            });
+        });
+        console.log(`✅ ${knownDevices.length} dispositivos ZK registrados`);
+    } else {
+        console.log('ℹ️ No hay dispositivos ZK configurados. Define ZK_DEVICES en .env');
+    }
+    
+    // Suscribirse a topic wildcard para detectar nuevos dispositivos
+    mqttService.subscribe('zk/+/status', (topic, message) => {
+        const serial = topic.split('/')[1];
+        const status = message.toString().trim();
+        
+        if (status === 'online' && !zkDeviceService.getDeviceStatus(serial)) {
+            console.log(`📱 Nuevo dispositivo ZK detectado: ${serial}`);
+            zkDeviceService.registerDevice(serial, {
+                name: `Auto-detectado ${serial}`,
+                autoDetected: true
+            });
+        }
+    });
 });
 
 // Manejo de cierre graceful
 process.on('SIGTERM', async () => {
     console.log('🛑 Cerrando servidor...');
+    mqttService.disconnect();
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
     console.log('🛑 Cerrando servidor...');
+    mqttService.disconnect();
     process.exit(0);
 });

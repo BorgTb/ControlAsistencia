@@ -23,6 +23,7 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.7.1",
+    "mqtt": "^5.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
     "node-cron": "^4.2.1",
