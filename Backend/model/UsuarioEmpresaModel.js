@@ -162,7 +162,6 @@ class UsuarioEmpresaModel {
                 u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
-                u.rol as usuario_rol_global,
                 u.estado as usuario_estado
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
@@ -192,7 +191,6 @@ class UsuarioEmpresaModel {
                 u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
-                u.rol as usuario_rol_global,
                 u.estado as usuario_estado,
                 e.emp_nombre as empresa_nombre,
                 e.emp_rut as empresa_rut
@@ -226,7 +224,6 @@ class UsuarioEmpresaModel {
                 u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
-                u.rol as usuario_rol_global,
                 u.estado as usuario_estado,
                 e.emp_nombre as empresa_nombre,
                 e.emp_rut as empresa_rut
@@ -259,17 +256,18 @@ class UsuarioEmpresaModel {
                 u.apellido_mat as usuario_apellido_mat,
                 u.email as usuario_email,
                 u.rut as usuario_rut,
-                u.rol as usuario_rol_global,
                 u.estado as usuario_estado,
                 e.emp_nombre as empresa_nombre,
                 e.emp_rut as empresa_rut
                 FROM usuarios_empresas ue
                 LEFT JOIN usuarios u ON ue.usuario_id = u.id
                 LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+                INNER JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+                INNER JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
                 WHERE e.empresa_id = ?
                 AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
                 AND u.estado = 1
-                AND u.rol = 'empleador'
+                AND rs.slug = 'empleador'
                 ORDER BY ue.fecha_inicio ASC
                 LIMIT 1
         `;
@@ -333,8 +331,10 @@ class UsuarioEmpresaModel {
                 u.estado as usuario_estado
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
+            INNER JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+            INNER JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
             WHERE ue.empresa_id = ?
-            AND u.rol = ?
+            AND rs.slug = ?
             AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
             AND u.estado = 1
             ORDER BY u.nombre ASC
@@ -531,7 +531,6 @@ class UsuarioEmpresaModel {
             u.apellido_mat,
             u.email,
             u.rut,
-            u.rol,
             u.estado,
             ue.rol_en_empresa
         FROM usuarios u

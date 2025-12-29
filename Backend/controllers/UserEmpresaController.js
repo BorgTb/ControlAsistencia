@@ -663,7 +663,7 @@ const obtenerConfiguracion = async (req, res) => {
 const obtenerTrabajadores = async (req, res) => {
     try {
         const USR_PETICION = req.user; // usuario que genera la consulta
-
+        console.log('Usuario que genera la consulta:', USR_PETICION);
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 

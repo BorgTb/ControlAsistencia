@@ -2,7 +2,7 @@ import db from '../config/dbconfig.js';
 
 
 class EstAsignacionesModel {
-    
+
     // Obtener todas las asignaciones
     static async getAll() {
         const query = `
@@ -55,7 +55,6 @@ class EstAsignacionesModel {
             u.apellido_mat AS usuario_apellido_mat,
             u.email AS usuario_email,
             u.rut AS usuario_rut,
-            u.rol AS usuario_rol_global,
             u.estado AS usuario_estado,
 
             -- Empresa usuaria (empresa donde se presta el servicio)
@@ -79,9 +78,13 @@ class EstAsignacionesModel {
         -- Empresa contratante (dueña del trabajador)
         LEFT JOIN empresa AS ec 
             ON ue.empresa_id = ec.empresa_id
+        
+        -- MULTI-ROL: JOIN con tabla de roles
+        INNER JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+        INNER JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
 
         WHERE ea.usuaria_id = ?
-        AND u.rol = 'trabajador'
+        AND rs.slug = 'trabajador'
         AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
         ORDER BY ue.fecha_inicio DESC;
 
@@ -172,7 +175,7 @@ class EstAsignacionesModel {
         return rows;
     }
 
-   // Obtener asignaciones activas por usuario_empresa_id
+    // Obtener asignaciones activas por usuario_empresa_id
     static async getActiveByUsuarioEmpresaId(usuarioEmpresaId) {
         const query = `
             SELECT id, est_id, usuaria_id, usuario_empresa_id, fecha_inicio, fecha_fin 
@@ -220,7 +223,7 @@ class EstAsignacionesModel {
         `;
         const [rows] = await db.execute(query, [estId]);
         return rows;
-    }  
+    }
 
     static async getEmpresaEstByUsuariaId(usuariaId) {
         const query = `

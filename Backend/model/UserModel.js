@@ -3,11 +3,18 @@ import UsuariosRolesAsignadosModel from './UsuariosRolesAsignadosModel.js';
 
 class UserModel {
     /**
-     * Obtiene todos los usuarios cuyo rol es 'admin'.
-     * Útil para paneles de gestión y auditoría de administradores.
+     * Obtiene todos los usuarios que tienen el rol 'admin'.
+     * Ahora usa la tabla usuarios_roles_asignados (sistema multi-rol).
      */
     static async findAllAdmins() {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rol = "admin"');
+        const [rows] = await pool.query(`
+            SELECT DISTINCT u.* 
+            FROM usuarios u
+            INNER JOIN usuarios_empresas ue ON u.id = ue.usuario_id
+            INNER JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+            INNER JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
+            WHERE rs.slug = 'admin' AND ue.activo = 1
+        `);
         return rows;
     }
     static async findById(id) {
@@ -37,7 +44,14 @@ class UserModel {
     }
 
     static async findAllWorkers() {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rol = "trabajador"');
+        const [rows] = await pool.query(`
+            SELECT DISTINCT u.* 
+            FROM usuarios u
+            INNER JOIN usuarios_empresas ue ON u.id = ue.usuario_id
+            INNER JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+            INNER JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
+            WHERE rs.slug = 'trabajador' AND ue.activo = 1
+        `);
         return rows;
     }
 

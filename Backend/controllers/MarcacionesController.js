@@ -352,7 +352,7 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
         const usuario_id = req.user?.id;
         const fechaActual = DateTime.now().setZone('America/Santiago');
         const fecha = req.query.fecha || fechaActual.toISODate();
-
+        
         if (!usuario_id) {
             return res.status(400).json({
                 success: false,
@@ -363,13 +363,13 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fecha);
         // si tiene entrada y salida, devolver que 
 
-
+        console.log(userEmpresa);
     
         // si tiene turno nocturno buscar las marcaciones del dia anterior 
         //fecha anterior
         const fechaAnterior = fechaActual.minus({ days: 1 }).toISODate();
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(userEmpresa.id, fecha);
-        
+        console.log(fecha);
         if (turno.tipo_jornada_nombre === 'Nocturna') {
             const resultAnterior =  await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fechaAnterior);
             return res.status(200).json(resultAnterior);
