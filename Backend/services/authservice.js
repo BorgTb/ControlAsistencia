@@ -6,11 +6,13 @@ import EmpresaModel from '../model/EmpresaModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import EmpresaEstModel from '../model/EmpresaEstModel.js';
 import AuditoriaModel from '../model/AuditoriaModel.js';
+import UsuariosRolesAsignadosModel from '../model/UsuariosRolesAsignadosModel.js';
+import RolesSistemaModel from '../model/RolesSistemaModel.js';
 
 
 dotenv.config();
 
-const SECRET_KEY = process.env.SECRET_KEY || ''; 
+const SECRET_KEY = process.env.SECRET_KEY || '';
 
 // Function to generate JWT (mantiene compatibilidad)
 // Se agrega el campo 'rol' al payload del JWT para que el middleware de admin
@@ -30,12 +32,13 @@ const generateToken = (user, empresa_id) => {
 // NOTA: Cambiado de 5s a 15m para permitir operaciones largas como descargas
 // Para testing rápido usar: '2m' (2 minutos)
 // Para producción usar: '15m' (15 minutos)
-const generateAccessToken = (user, empresa_id) => {
+// MULTI-ROL: Solo usa array de roles
+const generateAccessToken = (user, empresa_id, roles = []) => {
     const payload = {
         id: user.id,
         email: user.email,
         empresa_id: empresa_id,
-        rol: user.rol,
+        roles: roles, // Array de roles del sistema multi-rol
         type: 'access'
     };
     return jwt.sign(payload, SECRET_KEY, { expiresIn: '10m' }); // 15 minutos (era 5s)
@@ -97,6 +100,8 @@ const generarTokenAceptacionCambios = (id) => {
 
 
 // Function to register a user (hash password)
+// NOTA: El parámetro 'rol' se mantiene solo para compatibilidad con código existente
+// pero ya NO se guarda en la BD. Los roles se asignan en usuarios_roles_asignados
 const registerUser = async (email, password, nombre, apellido_pat, apellido_mat, rol = 'trabajador', rut, estado = 1) => {
     // Check if user already exists
     const existingUser = await UserModel.findByEmail(email);
@@ -105,22 +110,21 @@ const registerUser = async (email, password, nombre, apellido_pat, apellido_mat,
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Create user data object
+
+    // Create user data object (sin campo rol)
     const userData = {
         nombre,
         apellido_pat,
         apellido_mat,
         email,
         password: hashedPassword,
-        rol,
         rut,
         estado
     };
 
     // Save user to database using UserModel
     const userId = await UserModel.create(userData);
-    
+
     // Return user without password
     return {
         id: userId,
@@ -128,7 +132,6 @@ const registerUser = async (email, password, nombre, apellido_pat, apellido_mat,
         apellido_pat,
         apellido_mat,
         email,
-        rol,
         rut,
         estado
     };
@@ -137,15 +140,15 @@ const registerUser = async (email, password, nombre, apellido_pat, apellido_mat,
 // Function to login a user - now uses UserModel directly
 const loginUser = async (email, password, ip_address = null) => {
     // Use UserModel to find user
-    
+
     const user = await UserModel.findByEmail(email);
-    
-    
+
+
 
     if (!user) {
         throw new Error('User not found');
     }
-    
+
     console.log('User found:', user);
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -154,7 +157,7 @@ const loginUser = async (email, password, ip_address = null) => {
     if (!isPasswordValid) {
         throw new Error('Invalid password');
     }
-    
+
     /**
      * VALIDACIÓN DEL ESTADO DEL USUARIO
      * 
@@ -178,10 +181,24 @@ const loginUser = async (email, password, ip_address = null) => {
     if (user.estado !== 1) {
         throw new Error('User account is inactive');
     }
-    
+
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
     const empresaId = usuarioEmpresas ? usuarioEmpresas.empresa_id : null;
     const empresaRut = usuarioEmpresas ? usuarioEmpresas.empresa_rut : null;
+    const usuarioEmpresaId = usuarioEmpresas ? usuarioEmpresas.id : null;
+
+    // MULTI-ROL: Obtener roles asignados del usuario en esta empresa
+    let rolesSlugs = [];
+    try {
+        const rolesAsignados = await UsuariosRolesAsignadosModel.getUserRolesInCompany(user.id, empresaId);
+        rolesSlugs = rolesAsignados.map(r => r.rol_slug);
+        console.log(`✅ Roles obtenidos de usuarios_roles_asignados:`, rolesSlugs);
+    } catch (roleError) {
+        console.error('❌ Error al obtener roles del usuario:', roleError);
+        // Si no hay roles asignados, usar trabajador por defecto
+        rolesSlugs = ['trabajador'];
+        console.warn('⚠️ No se encontraron roles, usando trabajador por defecto');
+    }
 
     // Generate token
     const token = generateToken(user, empresaId);
@@ -191,7 +208,7 @@ const loginUser = async (email, password, ip_address = null) => {
     let est = false;
 
     // si es empleador verificar si su empresa es est
-    if(user.rol === 'empleador'){
+    if (rolesSlugs.includes('empleador')) {
         est = await verificarEst(empresaId);
     }
 
@@ -213,12 +230,14 @@ const loginUser = async (email, password, ip_address = null) => {
         console.log('📝 Registrando inicio de sesión en auditoría:', {
             usuario_id: user.id,
             usuario_nombre: user.nombre,
-            usuario_rol: user.rol,
+            roles_asignados: rolesSlugs,
             ip_address: ip_address,
             fecha: new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })
         });
-        
-        await AuditoriaModel.registrarInicioSesion(user.id, ip_address, user.rol);
+
+        // Usar el primer rol del array para auditoría (compatibilidad)
+        const rolParaAuditoria = rolesSlugs.length > 0 ? rolesSlugs[0] : 'trabajador';
+        await AuditoriaModel.registrarInicioSesion(user.id, ip_address, rolParaAuditoria);
         console.log('✅ Auditoría de inicio de sesión registrada exitosamente');
     } catch (auditoriaError) {
         console.error('❌ Error al registrar auditoría de inicio de sesión:', auditoriaError);
@@ -227,7 +246,7 @@ const loginUser = async (email, password, ip_address = null) => {
 
     // Limpiar RUT de espacios (trim)
     const rutLimpio = empresaRut ? empresaRut.trim() : null;
-    
+
     // Return both token and user info (without password)
     const responseUser = {
         id: user.id,
@@ -235,26 +254,27 @@ const loginUser = async (email, password, ip_address = null) => {
         apellido_pat: user.apellido_pat,
         apellido_mat: user.apellido_mat,
         email: user.email,
-        rol: user.rol,
+        roles: rolesSlugs, // Array de roles asignados
         rut: rutLimpio,
         estado: user.estado,
         est: est,
         empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
         empresa_rut: rutLimpio
     };
-    
+
     console.log('👤 Usuario final que se enviará al frontend:', responseUser);
-    
+
     return {
         token,
         empresa_id: empresaId, // ← IMPORTANTE: Agregar empresa_id para el access token
+        roles: rolesSlugs, // Pasar roles para el access token
         user: {
             id: user.id,
             nombre: user.nombre,
             apellido_pat: user.apellido_pat,
             apellido_mat: user.apellido_mat,
             email: user.email,
-            rol: user.rol,
+            roles: rolesSlugs, // Array de roles asignados
             rut: rutLimpio,
             estado: user.estado,
             est: est,
@@ -270,7 +290,7 @@ const getUserById = async (id) => {
     if (!user) {
         throw new Error('User not found');
     }
-    
+
     // Return user without password
     return {
         id: user.id,
@@ -290,7 +310,7 @@ const getUserByEmail = async (email) => {
     if (!user) {
         throw new Error('User not found');
     }
-    
+
     // Return user without password
     return {
         id: user.id,
@@ -371,7 +391,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
         sameSite: 'strict',
         maxAge: 15 * 60 * 1000 // 15 minutos
     });
-    
+
     // Refresh Token - larga duración, HttpOnly
     // NO se rota, mismo token durante toda la sesión (hasta logout)
     res.cookie('refreshToken', refreshToken, {
@@ -389,7 +409,7 @@ const clearAuthCookies = (res) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
     });
-    
+
     res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

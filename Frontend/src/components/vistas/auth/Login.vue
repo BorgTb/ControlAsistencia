@@ -228,20 +228,36 @@ const handleSubmit = async () => {
       if (result.data.token) authStore.setToken(result.data.token)
       if (result.data.user) authStore.setUser(result.data.user)
       
-      // Verificar el rol y redirigir según corresponda
+      // MULTI-ROL: Verificar roles y redirigir según prioridad
       setTimeout(() => {
-        if (result.data.user && result.data.user.rol) {
-          if (result.data.user.rol === 'admin') {
+        if (result.data.user && result.data.user.roles) {
+          const userRoles = result.data.user.roles
+          
+          console.log('🎭 Roles del usuario:', userRoles)
+          
+          // Prioridad de redirección:
+          // 1. Admin (más alto privilegio)
+          // 2. Empleador (gestión)
+          // 3. Trabajador (usuario final)
+          // 4. Fiscalizador
+          
+          if (userRoles.includes('admin')) {
+            console.log('→ Redirigiendo a panel de admin')
             router.push('/admin/empresas')
-          } else if (result.data.user.rol === 'trabajador') {
-            router.push('/usuario/dashboard')
-          } else if (result.data.user.rol === 'empleador') {
+          } else if (userRoles.includes('empleador')) {
+            console.log('→ Redirigiendo a panel de empleador')
             router.push('/empresa/dashboard')
+          } else if (userRoles.includes('trabajador')) {
+            console.log('→ Redirigiendo a panel de trabajador')
+            router.push('/usuario/dashboard')
+          } else if (userRoles.includes('fiscalizador')) {
+            console.log('→ Redirigiendo a panel de fiscalizador')
+            router.push('/fiscalizador/dashboard')
           } else {
             errorMessage.value = 'Rol de usuario no reconocido'
           }
         } else {
-          errorMessage.value = 'No se pudo determinar el rol del usuario'
+          errorMessage.value = 'No se pudo determinar los roles del usuario'
         }
       }, 1000)
     } else {

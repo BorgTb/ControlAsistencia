@@ -2,9 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
-  // Detecta si el usuario tiene el rol 'admin'.
-  // Permite proteger rutas y vistas exclusivas para administradores.
-  const esAdmin = computed(() => user.value?.rol === 'admin' || user.value?.rol?.includes('admin'))
   // Estado - YA NO almacenamos token (está en cookie HTTP-only)
   const user = ref(null)
   const isLoading = ref(false)
@@ -12,12 +9,54 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!user.value) // Autenticado si hay usuario
   const getUser = computed(() => user.value)
-  const esEmpleador = computed(() => user.value?.rol?.includes('empleador'))
+
+  // MULTI-ROL: Obtener array de roles del usuario
+  const userRoles = computed(() => {
+    if (!user.value) return []
+    // Siempre retorna el array de roles
+    return user.value.roles || []
+  })
+
+  // MULTI-ROL: Verificar si el usuario tiene un rol específico
+  const hasRole = (roleSlug) => {
+    return userRoles.value.includes(roleSlug)
+  }
+
+  // MULTI-ROL: Verificar si tiene al menos uno de los roles
+  const hasAnyRole = (roleSlugs) => {
+    return roleSlugs.some(role => userRoles.value.includes(role))
+  }
+
+  // MULTI-ROL: Verificar si tiene todos los roles especificados
+  const hasAllRoles = (roleSlugs) => {
+    return roleSlugs.every(role => userRoles.value.includes(role))
+  }
+
+  // Detecta si el usuario tiene el rol 'admin'
+  const esAdmin = computed(() => hasRole('admin'))
+
+  // Detecta si el usuario tiene el rol 'empleador'
+  const esEmpleador = computed(() => hasRole('empleador'))
+
+  // Detecta si el usuario tiene el rol 'trabajador'
+  const esTrabajador = computed(() => hasRole('trabajador'))
+
+  // Detecta si el usuario tiene el rol 'fiscalizador'
+  const esFiscalizador = computed(() => hasRole('fiscalizador'))
+
+  // Detecta si la empresa es EST
   const esEst = computed(() => user.value?.est === true)
+
+  // MULTI-ROL: Detecta si el usuario tiene múltiples roles
+  const hasMultipleRoles = computed(() => userRoles.value.length > 1)
 
   // Actions
   function setUser(userData) {
     user.value = userData
+    console.log('👤 Usuario establecido en store:', {
+      nombre: userData?.nombre,
+      roles: userData?.roles
+    })
   }
 
   function setLoading(loading) {
@@ -36,12 +75,25 @@ export const useAuthStore = defineStore('auth', () => {
     // Estado
     user,
     isLoading,
+
+    // Getters de roles
+    userRoles,
+    hasMultipleRoles,
+    esAdmin,
     esEmpleador,
+    esTrabajador,
+    esFiscalizador,
     esEst,
-    esAdmin, // Indica si el usuario es administrador
-    // Getters
+
+    // Getters generales
     isAuthenticated,
     getUser,
+
+    // Funciones de verificación de roles
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+
     // Actions
     setUser,
     setLoading,
