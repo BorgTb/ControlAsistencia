@@ -1,7 +1,7 @@
 import db from '../config/dbconfig.js';
 
 class DispositivoZKModel {
-    
+
     /**
      * Crear un nuevo dispositivo ZK
      * @param {Object} dispositivoData - Datos del dispositivo
@@ -11,7 +11,7 @@ class DispositivoZKModel {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
-            
+
             const query = `
                 INSERT INTO dispositivos_zk (
                     serial, 
@@ -23,10 +23,11 @@ class DispositivoZKModel {
                     activo, 
                     auto_detectado,
                     ultimo_estado,
-                    configuracion
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    configuracion,
+                    protocolo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            
+
             const [result] = await connection.execute(query, [
                 dispositivoData.serial,
                 dispositivoData.nombre,
@@ -37,18 +38,19 @@ class DispositivoZKModel {
                 dispositivoData.activo !== undefined ? dispositivoData.activo : true,
                 dispositivoData.auto_detectado || false,
                 dispositivoData.ultimo_estado || 'unknown',
-                dispositivoData.configuracion ? JSON.stringify(dispositivoData.configuracion) : null
+                dispositivoData.configuracion ? JSON.stringify(dispositivoData.configuracion) : null,
+                dispositivoData.protocolo || 'MQTT'
             ]);
-            
+
             const dispositivoId = result.insertId;
             await connection.commit();
-            
+
             // Devolver el dispositivo creado
             const [createdRows] = await connection.execute(
                 'SELECT * FROM dispositivos_zk WHERE id = ?',
                 [dispositivoId]
             );
-            
+
             return createdRows[0] || null;
         } catch (error) {
             await connection.rollback();
@@ -57,7 +59,7 @@ class DispositivoZKModel {
             connection.release();
         }
     }
-    
+
     /**
      * Obtener todos los dispositivos
      * @returns {Array} Lista de dispositivos
@@ -75,7 +77,7 @@ class DispositivoZKModel {
         const [rows] = await db.execute(query);
         return rows;
     }
-    
+
     /**
      * Obtener dispositivos por empresa
      * @param {number} empresa_id - ID de la empresa
@@ -90,7 +92,7 @@ class DispositivoZKModel {
         const [rows] = await db.execute(query, [empresa_id]);
         return rows;
     }
-    
+
     /**
      * Obtener dispositivos activos por empresa
      * @param {number} empresa_id - ID de la empresa
@@ -105,7 +107,7 @@ class DispositivoZKModel {
         const [rows] = await db.execute(query, [empresa_id]);
         return rows;
     }
-    
+
     /**
      * Obtener dispositivo por ID
      * @param {number} id - ID del dispositivo
@@ -124,7 +126,7 @@ class DispositivoZKModel {
         const [rows] = await db.execute(query, [id]);
         return rows.length > 0 ? rows[0] : null;
     }
-    
+
     /**
      * Obtener dispositivo por serial
      * @param {string} serial - Número de serie del dispositivo
@@ -143,7 +145,7 @@ class DispositivoZKModel {
         const [rows] = await db.execute(query, [serial]);
         return rows.length > 0 ? rows[0] : null;
     }
-    
+
     /**
      * Actualizar dispositivo
      * @param {number} id - ID del dispositivo
@@ -154,7 +156,7 @@ class DispositivoZKModel {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
-            
+
             const query = `
                 UPDATE dispositivos_zk 
                 SET 
@@ -164,10 +166,11 @@ class DispositivoZKModel {
                     ip_address = ?,
                     puerto = ?,
                     activo = ?,
-                    configuracion = ?
+                    configuracion = ?,
+                    protocolo = ?
                 WHERE id = ?
             `;
-            
+
             await connection.execute(query, [
                 dispositivoData.nombre,
                 dispositivoData.ubicacion || null,
@@ -176,17 +179,18 @@ class DispositivoZKModel {
                 dispositivoData.puerto || 4370,
                 dispositivoData.activo !== undefined ? dispositivoData.activo : true,
                 dispositivoData.configuracion ? JSON.stringify(dispositivoData.configuracion) : null,
+                dispositivoData.protocolo || 'MQTT',
                 id
             ]);
-            
+
             await connection.commit();
-            
+
             // Devolver el dispositivo actualizado
             const [updatedRows] = await connection.execute(
                 'SELECT * FROM dispositivos_zk WHERE id = ?',
                 [id]
             );
-            
+
             return updatedRows[0] || null;
         } catch (error) {
             await connection.rollback();
@@ -195,7 +199,7 @@ class DispositivoZKModel {
             connection.release();
         }
     }
-    
+
     /**
      * Actualizar estado del dispositivo
      * @param {string} serial - Serial del dispositivo
@@ -216,7 +220,7 @@ class DispositivoZKModel {
         const [result] = await db.execute(query, [estado, estado, serial]);
         return result.affectedRows > 0;
     }
-    
+
     /**
      * Activar/Desactivar dispositivo
      * @param {number} id - ID del dispositivo
@@ -232,7 +236,7 @@ class DispositivoZKModel {
         const [result] = await db.execute(query, [activo, id]);
         return result.affectedRows > 0;
     }
-    
+
     /**
      * Eliminar dispositivo
      * @param {number} id - ID del dispositivo
@@ -242,22 +246,22 @@ class DispositivoZKModel {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
-            
+
             // Obtener el dispositivo antes de eliminar
             const [rowsBefore] = await connection.execute(
                 'SELECT * FROM dispositivos_zk WHERE id = ?',
                 [id]
             );
-            
+
             if (rowsBefore.length === 0) {
                 throw new Error('Dispositivo no encontrado');
             }
-            
+
             const rowBefore = rowsBefore[0];
-            
+
             // Eliminar dispositivo
             await connection.execute('DELETE FROM dispositivos_zk WHERE id = ?', [id]);
-            
+
             await connection.commit();
             return rowBefore;
         } catch (error) {
@@ -267,7 +271,7 @@ class DispositivoZKModel {
             connection.release();
         }
     }
-    
+
     /**
      * Verificar si un serial ya existe
      * @param {string} serial - Número de serie
@@ -277,16 +281,16 @@ class DispositivoZKModel {
     static async serialExists(serial, excludeId = null) {
         let query = 'SELECT COUNT(*) as count FROM dispositivos_zk WHERE serial = ?';
         const params = [serial];
-        
+
         if (excludeId) {
             query += ' AND id != ?';
             params.push(excludeId);
         }
-        
+
         const [rows] = await db.execute(query, params);
         return rows[0].count > 0;
     }
-    
+
     /**
      * Contar dispositivos totales y activos
      * @returns {Object} {total, activos}
@@ -307,7 +311,7 @@ class DispositivoZKModel {
             return { total: 0, activos: 0 };
         }
     }
-    
+
     /**
      * Obtener dispositivos online
      * @returns {Array} Lista de dispositivos online
@@ -320,6 +324,16 @@ class DispositivoZKModel {
         `;
         const [rows] = await db.execute(query);
         return rows;
+    }
+
+    /**
+     * Obtener dispositivo por número de serie
+     * @param {string} serial - Número de serie
+     */
+    static async getBySerial(serial) {
+        const query = 'SELECT * FROM dispositivos_zk WHERE serial = ?';
+        const [rows] = await db.execute(query, [serial]);
+        return rows.length > 0 ? rows[0] : null;
     }
 }
 

@@ -77,14 +77,14 @@
                             class="input" 
                             placeholder="Ej: Entrada Principal" />
                     </div>
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Ubicación
+                            Protocolo <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            v-model="form.location" 
-                            class="input" 
-                            placeholder="Ej: Edificio A - Piso 1 - Recepción" />
+                        <select v-model="form.protocolo" class="input">
+                            <option value="MQTT">MQTT (ZKTeco Cloud)</option>
+                            <option value="ADMS">ADMS (Push SDK)</option>
+                        </select>
                     </div>
                 </div>
                 <div class="mt-6 flex gap-3">
@@ -154,6 +154,9 @@
                                 Ubicación
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Protocolo
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Estado
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -186,6 +189,12 @@
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 {{ d.ubicacion || 'Sin ubicación' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <span :class="d.protocolo === 'ADMS' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'" 
+                                      class="px-2 py-0.5 rounded text-xs font-semibold">
+                                    {{ d.protocolo || 'MQTT' }}
+                                </span>
                             </td>
                             <td class="px-4 py-3">
                                 <span :class="getEstadoBadgeClass(d.mqtt_status)">
@@ -355,7 +364,8 @@ const {
 const form = reactive({
     serial: '',
     name: '',
-    location: ''
+    location: '',
+    protocolo: 'MQTT'
 });
 
 const editando = ref(false);
@@ -453,14 +463,16 @@ const onSubmit = async () => {
         if (editando.value) {
             await actualizarDispositivo(editSerial.value, {
                 name: form.name,
-                location: form.location
+                location: form.location,
+                protocolo: form.protocolo
             });
             mostrarNotificacion('success', '✅ Dispositivo actualizado correctamente');
         } else {
             await crearDispositivo({
                 serial: form.serial,
                 name: form.name,
-                location: form.location
+                location: form.location,
+                protocolo: form.protocolo
             });
             mostrarNotificacion('success', '✅ Dispositivo registrado correctamente');
         }
@@ -475,6 +487,7 @@ const editarDispositivo = (d) => {
     form.serial = d.serial;
     form.name = d.nombre || '';
     form.location = d.ubicacion || '';
+    form.protocolo = d.protocolo || 'MQTT';
     editando.value = true;
     editSerial.value = d.serial;
     
@@ -490,6 +503,7 @@ const resetForm = () => {
     form.serial = '';
     form.name = '';
     form.location = '';
+    form.protocolo = 'MQTT';
     editando.value = false;
     editSerial.value = null;
 };

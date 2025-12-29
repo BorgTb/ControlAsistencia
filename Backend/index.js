@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
+// Configuración global de zona horaria para Chile
+process.env.TZ = 'America/Santiago';
+
 import cookieParser from 'cookie-parser';
 import router from './routes/index.js';
 import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
@@ -9,6 +13,8 @@ import { fileURLToPath } from 'url';
 import { startCleanupJob } from './jobs/CleanupRefreshTokens.js';
 import mqttService from './services/MQTTService.js';
 import zkDeviceService from './services/ZKDeviceService.js';
+
+import ADMSLink from './routes/ADMSLink.js';
 
 dotenv.config();
 
@@ -53,6 +59,7 @@ app.use('/api/feriados', router.feriados);
 app.use('/api/mqtt', router.mqtt);
 app.use('/api/zk', router.zk);
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
+app.use('/iclock', ADMSLink);
 
 
 
