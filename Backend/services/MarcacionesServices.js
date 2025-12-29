@@ -22,8 +22,6 @@ class MarcacionesService {
     async insertarMarcacionManual(usuario_empresa_id, tipo, fecha, hora) {
         try {
 
-
-
             // validar si el usuario que marca esta ligado a una est si es asi agregar mandante_id en la marcacion 
             const asignaciones = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_empresa_id);
             console.log('Asignaciones encontradas para el usuario:', asignaciones);

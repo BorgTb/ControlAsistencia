@@ -13,6 +13,7 @@ class EmpresaServices{
 
   static async crearTrabajador(trabajadorData) {
     try {
+      console.log('🚀 Creando trabajador con datos:', trabajadorData)
       const response = await apiClient.post('/userEmpresa/trabajador', trabajadorData)
       return response.data
     } catch (error) {

@@ -541,16 +541,8 @@ const submitForm = async () => {
     console.log('- Usuario:', authStore.getUser)
     console.log('- Datos a enviar:', trabajador)
     
-    if (!authStore.getToken) {
-      errorGeneral.value = 'Error de autenticación. Por favor, inicie sesión nuevamente.'
-      return
-    }
-    
-    // Aquí simularemos el envío - reemplazar con llamada real al API
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
     // Simular éxito (puedes cambiar esto por una llamada real al servidor)
-    console.log('Datos del usuario a enviar:', trabajador)
+    console.log('Datos del usuario a enviarsssss:', trabajador)
     const response = await EmpresaServices.crearTrabajador(trabajador)
 
     console.log('Usuario registrado exitosamente:', response)
