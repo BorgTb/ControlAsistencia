@@ -17,54 +17,72 @@ const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
-        
+
 
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-        
+
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(userData.rut);
         if (existingUserByRut) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado"
             });
         }
 
         const existingUserByEmail = await UserModel.findByEmail(userData.email);
         if (existingUserByEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el email proporcionado"
             });
         }
-        
+
         const newUser = await AuthService.registerUser(
-            userData.email, 
-            userData.password, 
-            userData.nombre, 
+            userData.email,
+            userData.password,
+            userData.nombre,
             userData.apellido_pat,
             userData.apellido_mat,
-            userData.rol, 
-            userData.rut, 
+            userData.rol,
+            userData.rut,
             userData.estado
         );
-        
+
         // si new user throw error
         if (!newUser) {
             return res.status(400).json({ success: false, message: "Error creando trabajador" });
         }
-        
+
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: newUser.id,
             empresa_id: empresa.empresa_id,
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
+        // MULTI-ROL: Asignar rol en la tabla usuarios_roles_asignados
+        try {
+            const UsuariosRolesAsignadosModel = (await import('../model/UsuariosRolesAsignadosModel.js')).default;
+            const RolesSistemaModel = (await import('../model/RolesSistemaModel.js')).default;
+
+            // Obtener el ID del rol desde roles_sistema
+            const rolSistema = await RolesSistemaModel.findBySlug(userData.rol || 'trabajador');
+            if (rolSistema) {
+                await UsuariosRolesAsignadosModel.assignRole(newUserEmpresa.id, rolSistema.id);
+                console.log(`✅ Rol '${userData.rol}' asignado al usuario en usuarios_roles_asignados`);
+            } else {
+                console.warn(`⚠️ No se encontró el rol '${userData.rol}' en roles_sistema`);
+            }
+        } catch (roleError) {
+            console.error('❌ Error al asignar rol en usuarios_roles_asignados:', roleError);
+            // No bloqueamos la creación del trabajador por este error
+        }
+
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
             try {
                 console.log('🔄 Registrando creación de trabajador por empleador (AdminController):', req.user.id);
-                
+
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
                     accion: 'crear_trabajador_admin',
@@ -77,7 +95,6 @@ const createTrabajador = async (req, res) => {
                         apellido_pat: userData.apellido_pat,
                         apellido_mat: userData.apellido_mat,
                         email: userData.email,
-                        rol: userData.rol,
                         rut: userData.rut,
                         estado: userData.estado,
                         empresa_id: empresa.empresa_id
@@ -103,8 +120,8 @@ const createTrabajador = async (req, res) => {
                 resolucion_numero: userData.numeroResolucion || 'EX-2024-00001',
                 resolucion_fecha: userData.fechaResolucion || DateTime.now().setZone("America/Santiago").toISODate()
             });
-        }  
-            
+        }
+
 
 
 
@@ -403,38 +420,38 @@ const obtenerTurnos = async (req, res) => {
 const enrolarTrabajador = async (req, res) => {
     try {
         const { rut, email, password, rol, nombre, apellido_pat, apellido_mat } = req.body;
-        
+
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(rut);
         if (existingUserByRut) {
-            return res.status(400).json({ 
-            success: false, 
-            message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado"
             });
         }
 
         const existingUserByEmail = await UserModel.findByEmail(email);
         if (existingUserByEmail) {
-            return res.status(400).json({ 
-            success: false, 
-            message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el email proporcionado"
             });
         }
 
         // Crear el usuario
         const newUser = await AuthService.registerUser(email, password, nombre, apellido_pat, apellido_mat, rol, rut);
-        
-        res.status(201).json({ 
-            success: true, 
+
+        res.status(201).json({
+            success: true,
             message: "Trabajador enrolado exitosamente",
-            data: newUser 
+            data: newUser
         });
     } catch (error) {
         console.error("Error enrolando trabajador:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };

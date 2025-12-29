@@ -29,54 +29,72 @@ const createTrabajador = async (req, res) => {
     try {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
-        
+
 
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-        
+
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(userData.rut);
         if (existingUserByRut) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado"
             });
         }
 
         const existingUserByEmail = await UserModel.findByEmail(userData.email);
         if (existingUserByEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el email proporcionado"
             });
         }
-        
+
         const newUser = await AuthService.registerUser(
-            userData.email, 
-            userData.password, 
-            userData.nombre, 
+            userData.email,
+            userData.password,
+            userData.nombre,
             userData.apellido_pat,
             userData.apellido_mat,
-            userData.rol, 
-            userData.rut, 
+            userData.rol,
+            userData.rut,
             userData.estado
         );
-        
+
         // si new user throw error
         if (!newUser) {
             return res.status(400).json({ success: false, message: "Error creando trabajador" });
         }
-        
+
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: newUser.id,
             empresa_id: empresa.empresa_id,
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
+        // MULTI-ROL: Asignar rol en la tabla usuarios_roles_asignados
+        try {
+            const UsuariosRolesAsignadosModel = (await import('../model/UsuariosRolesAsignadosModel.js')).default;
+            const RolesSistemaModel = (await import('../model/RolesSistemaModel.js')).default;
+
+            // Obtener el ID del rol desde roles_sistema
+            const rolSistema = await RolesSistemaModel.findBySlug(userData.rol || 'trabajador');
+            if (rolSistema) {
+                await UsuariosRolesAsignadosModel.assignRole(newUserEmpresa.id, rolSistema.id);
+                console.log(`✅ Rol '${userData.rol}' asignado al usuario en usuarios_roles_asignados`);
+            } else {
+                console.warn(`⚠️ No se encontró el rol '${userData.rol}' en roles_sistema`);
+            }
+        } catch (roleError) {
+            console.error('❌ Error al asignar rol en usuarios_roles_asignados:', roleError);
+            // No bloqueamos la creación del trabajador por este error
+        }
+
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
             try {
-                
-                
+
+
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
                     accion: 'crear_trabajador_empresa',
@@ -89,14 +107,13 @@ const createTrabajador = async (req, res) => {
                         apellido_pat: userData.apellido_pat,
                         apellido_mat: userData.apellido_mat,
                         email: userData.email,
-                        rol: userData.rol,
                         rut: userData.rut,
                         estado: userData.estado,
                         empresa_id: empresa.empresa_id
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                
+
             } catch (auditError) {
                 console.error('⚠️ Error al registrar cambio en auditoría:', auditError);
             }
@@ -141,8 +158,8 @@ const createTrabajador = async (req, res) => {
                 console.error('⚠️ Error al crear preferencia de compensación:', prefError);
                 // No bloqueamos la creación del trabajador si hay error en la preferencia
             }
-        }  
-            
+        }
+
 
 
 
@@ -159,60 +176,60 @@ const createTurno = async (req, res) => {
         console.log('Asignación de turno recibida:', asignacionData);
         // Validar campos requeridos
         if (!asignacionData.usuario_empresa_id) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "El usuario_id del trabajador es requerido" 
+            return res.status(400).json({
+                success: false,
+                message: "El usuario_id del trabajador es requerido"
             });
         }
         if (!asignacionData.tipo_turno_id) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "El tipo de turno es requerido" 
+            return res.status(400).json({
+                success: false,
+                message: "El tipo de turno es requerido"
             });
         }
         if (!asignacionData.fecha_inicio) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "La fecha de inicio es requerida" 
+            return res.status(400).json({
+                success: false,
+                message: "La fecha de inicio es requerida"
             });
         }
 
         // Obtener información del trabajador
-        
-    const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
+
+        const trabajador = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(asignacionData.usuario_empresa_id);
         if (!trabajador) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Trabajador no encontrado" 
+            return res.status(404).json({
+                success: false,
+                message: "Trabajador no encontrado"
             });
         }
 
         // Obtener información del tipo de turno
         const tipoTurno = await TipoTurnosModel.getById(asignacionData.tipo_turno_id);
         if (!tipoTurno) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Tipo de turno no encontrado" 
+            return res.status(404).json({
+                success: false,
+                message: "Tipo de turno no encontrado"
             });
         }
 
         // Validar si ya tiene turnos creados en el rango de fechas
         // Obtener los días laborables del tipo de turno
         const diasLaborables = await AsignacionTurnosModel.getDiasLaborablesByTipoTurno(asignacionData.tipo_turno_id);
-        
+
         // Obtener turnos existentes del trabajador
         const turnosExistentes = await AsignacionTurnosModel.getByUsuarioEmpresaId(asignacionData.usuario_empresa_id);
-        
+
         // Filtrar solo los turnos activos en el rango de fechas del nuevo turno
         const fechaInicio = new Date(asignacionData.fecha_inicio);
         const fechaFin = asignacionData.fecha_fin ? new Date(asignacionData.fecha_fin) : null;
-        
+
         const turnosEnRango = turnosExistentes.filter(turno => {
             if (turno.estado !== 'activo') return false;
-            
+
             const turnoInicio = new Date(turno.fecha_inicio);
             const turnoFin = turno.fecha_fin ? new Date(turno.fecha_fin) : null;
-            
+
             // Verificar si hay solapamiento de fechas
             if (fechaFin) {
                 // El nuevo turno tiene fecha fin
@@ -234,21 +251,21 @@ const createTurno = async (req, res) => {
                 }
             }
         });
-        
+
         // Si hay turnos en el rango, verificar conflictos por día
         if (turnosEnRango.length > 0) {
             const diasConflicto = [];
-            
+
             for (const diaLabor of diasLaborables) {
                 if (diaLabor.trabaja) {
                     // Verificar si algún turno existente también trabaja este día
                     for (const turnoExistente of turnosEnRango) {
                         const diasTurnoExistente = await AsignacionTurnosModel.getDiasLaborablesByTipoTurno(turnoExistente.tipo_turno_id);
-                        
-                        const conflicto = diasTurnoExistente.find(d => 
+
+                        const conflicto = diasTurnoExistente.find(d =>
                             d.dia_semana === diaLabor.dia_semana && d.trabaja
                         );
-                        
+
                         if (conflicto) {
                             diasConflicto.push({
                                 dia: diaLabor.dia_semana,
@@ -261,10 +278,10 @@ const createTurno = async (req, res) => {
                     }
                 }
             }
-            
+
             if (diasConflicto.length > 0) {
-                return res.status(409).json({ 
-                    success: false, 
+                return res.status(409).json({
+                    success: false,
                     message: "El trabajador ya tiene turnos asignados en los siguientes días",
                     conflictos: diasConflicto
                 });
@@ -296,23 +313,23 @@ const createTurno = async (req, res) => {
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                
+
             } catch (auditError) {
                 console.error('⚠️ Error al registrar asignación de turno en auditoría:', auditError);
             }
         }
 
-        res.status(201).json({ 
-            success: true, 
+        res.status(201).json({
+            success: true,
             message: "Turno asignado exitosamente",
             data: { id: asignacionId }
         });
     } catch (error) {
         console.error("Error creating turno:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -324,18 +341,18 @@ const deleteTurno = async (req, res) => {
 
         // Validar que el ID del turno sea válido
         if (!id || isNaN(id)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "ID de turno inválido" 
+            return res.status(400).json({
+                success: false,
+                message: "ID de turno inválido"
             });
         }
 
         // Verificar que la asignación existe antes de eliminarla
         const asignacionExistente = await AsignacionTurnosModel.getById(id);
         if (!asignacionExistente) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Asignación de turno no encontrada" 
+            return res.status(404).json({
+                success: false,
+                message: "Asignación de turno no encontrada"
             });
         }
 
@@ -345,11 +362,11 @@ const deleteTurno = async (req, res) => {
 
         // Eliminar la asignación de turno
         const resultado = await AsignacionTurnosModel.delete(id);
-        
+
         if (resultado === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "No se pudo eliminar la asignación de turno" 
+            return res.status(404).json({
+                success: false,
+                message: "No se pudo eliminar la asignación de turno"
             });
         }
 
@@ -376,22 +393,22 @@ const deleteTurno = async (req, res) => {
                     datos_nuevos: null,
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                
+
             } catch (auditError) {
                 console.error('⚠️ Error al registrar eliminación de turno en auditoría:', auditError);
             }
         }
 
-        res.status(200).json({ 
-            success: true, 
-            message: "Asignación de turno eliminada exitosamente" 
+        res.status(200).json({
+            success: true,
+            message: "Asignación de turno eliminada exitosamente"
         });
     } catch (error) {
         console.error("Error deleting turno:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -404,43 +421,43 @@ const updateTurno = async (req, res) => {
 
         // Validar que el ID del turno sea válido
         if (!id || isNaN(id)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "ID de turno inválido" 
+            return res.status(400).json({
+                success: false,
+                message: "ID de turno inválido"
             });
         }
 
         // Validar campos requeridos para el nuevo turno
         if (!nuevosDatos.tipo_turno_id) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "El tipo de turno es requerido" 
+            return res.status(400).json({
+                success: false,
+                message: "El tipo de turno es requerido"
             });
         }
 
         // Verificar que la asignación existe antes de modificarla
         const asignacionExistente = await AsignacionTurnosModel.getById(id);
         if (!asignacionExistente) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Asignación de turno no encontrada" 
+            return res.status(404).json({
+                success: false,
+                message: "Asignación de turno no encontrada"
             });
         }
 
         // Verificar que el estado sea 'activo'
         if (asignacionExistente.estado !== 'activo') {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Solo se pueden modificar turnos activos" 
+            return res.status(400).json({
+                success: false,
+                message: "Solo se pueden modificar turnos activos"
             });
         }
 
         // Obtener información del nuevo tipo de turno
         const nuevoTipoTurno = await TipoTurnosModel.getById(nuevosDatos.tipo_turno_id);
         if (!nuevoTipoTurno) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Tipo de turno no encontrado" 
+            return res.status(404).json({
+                success: false,
+                message: "Tipo de turno no encontrado"
             });
         }
 
@@ -460,11 +477,11 @@ const updateTurno = async (req, res) => {
         // Modificar el turno (invalida el anterior y crea uno nuevo)
         const resultado = await AsignacionTurnosModel.modificarTurno(id, nuevosDatos);
 
-        
+
 
         NotificacionService.enviarNotificacionCambioTurno(trabajador, tipoTurnoAnterior, nuevoTipoTurno);
-        
-        
+
+
         // Registrar la modificación en auditoría
         if (req.user && req.user.id) {
             try {
@@ -502,11 +519,11 @@ const updateTurno = async (req, res) => {
             }
         }
 
-        
-        
 
-        res.status(200).json({ 
-            success: true, 
+
+
+        res.status(200).json({
+            success: true,
             message: "Turno modificado exitosamente",
             data: {
                 turnoAnteriorId: resultado.turnoAnteriorId,
@@ -515,10 +532,10 @@ const updateTurno = async (req, res) => {
         });
     } catch (error) {
         console.error("Error modificando turno:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -531,23 +548,23 @@ const guardarConfiguracion = async (req, res) => {
 
         // Validar que el usuario tenga permisos para modificar configuración
         if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
-            return res.status(403).json({ 
-                success: false, 
-                message: "No tiene permisos para modificar la configuración del sistema" 
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para modificar la configuración del sistema"
             });
         }
 
         // Obtener empresa del usuario
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         if (!empresa) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Empresa no encontrada" 
+            return res.status(404).json({
+                success: false,
+                message: "Empresa no encontrada"
             });
         }
 
         // Por ahora simularemos el guardado - aquí se implementaría el guardado real en BD
-        
+
 
         // Registrar el cambio en auditoría - permite seguimiento de configuraciones
         if (USR_PETICION.id) {
@@ -562,23 +579,23 @@ const guardarConfiguracion = async (req, res) => {
                     datos_nuevos: JSON.stringify(configuracionData),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                
+
             } catch (auditError) {
                 console.error('⚠️ Error al registrar cambio de configuración en auditoría:', auditError);
             }
         }
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             message: "Configuración guardada exitosamente",
             data: { empresa_id: empresa.empresa_id }
         });
     } catch (error) {
         console.error("Error saving configuration:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -591,9 +608,9 @@ const obtenerConfiguracion = async (req, res) => {
         // Obtener empresa del usuario
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         if (!empresa) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Empresa no encontrada" 
+            return res.status(404).json({
+                success: false,
+                message: "Empresa no encontrada"
             });
         }
 
@@ -629,16 +646,16 @@ const obtenerConfiguracion = async (req, res) => {
             }
         };
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             data: configuracionDefecto
         });
     } catch (error) {
         console.error("Error getting configuration:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -653,7 +670,7 @@ const obtenerTrabajadores = async (req, res) => {
         // trabajadores que son de una est
         const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
 
-  
+
         // juntar ambos arrays  y a los trabajadores de est agregarle un campo est = true
         const trabajadoresMap = new Map();
 
@@ -666,7 +683,7 @@ const obtenerTrabajadores = async (req, res) => {
         );
 
         const trabajadoresUnicos = Array.from(trabajadoresMap.values());
-        
+
 
         res.status(200).json({ success: true, data: trabajadoresUnicos });
     } catch (error) {
@@ -684,12 +701,12 @@ const obtenerTurnos = async (req, res) => {
         const estActiva = await EstAsignacionesModel.getEstInfoByUsuariaRut(rut);
         // para cada est activa obtener sus asignaciones
         for (let est of estActiva) {
-            const asignacion  = await AsignacionTurnosModel.getByEmpresaRut(est.emp_rut);
+            const asignacion = await AsignacionTurnosModel.getByEmpresaRut(est.emp_rut);
             asignaciones.push(...asignacion);
         }
-    
 
-        
+
+
         // Formatear las asignaciones con información completa (incluir días del tipo de turno)
         const turnosFormateados = await Promise.all(asignaciones.map(async (asignacion) => {
             try {
@@ -745,14 +762,14 @@ const obtenerTurnos = async (req, res) => {
                 };
             }
         }));
-        
+
         res.status(200).json({ success: true, data: turnosFormateados });
     } catch (error) {
         console.error("Error fetching turnos:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error al obtener turnos",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -760,38 +777,38 @@ const obtenerTurnos = async (req, res) => {
 const enrolarTrabajador = async (req, res) => {
     try {
         const { rut, email, password, rol, nombre, apellido_pat, apellido_mat } = req.body;
-        
+
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(rut);
         if (existingUserByRut) {
-            return res.status(400).json({ 
-            success: false, 
-            message: "Ya existe una cuenta para este trabajador con el RUT proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado"
             });
         }
 
         const existingUserByEmail = await UserModel.findByEmail(email);
         if (existingUserByEmail) {
-            return res.status(400).json({ 
-            success: false, 
-            message: "Ya existe una cuenta para este trabajador con el email proporcionado" 
+            return res.status(400).json({
+                success: false,
+                message: "Ya existe una cuenta para este trabajador con el email proporcionado"
             });
         }
 
         // Crear el usuario
         const newUser = await AuthService.registerUser(email, password, nombre, apellido_pat, apellido_mat, rol, rut);
-        
-        res.status(201).json({ 
-            success: true, 
+
+        res.status(201).json({
+            success: true,
             message: "Trabajador enrolado exitosamente",
-            data: newUser 
+            data: newUser
         });
     } catch (error) {
         console.error("Error enrolando trabajador:", error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -808,21 +825,21 @@ const obtenerReportesMarcaciones = async (req, res) => {
         // para cada trabajador de est obtener sus reportes
         //
         const reportesTrabajadoresDeEst = await Promise.all(
-            trabajadoresDeEst.map(trabajador => 
-            ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
+            trabajadoresDeEst.map(trabajador =>
+                ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
             )
         ).then(reportesArrays => reportesArrays.flat());
-        
-       // unir ambos arrays de reportes
+
+        // unir ambos arrays de reportes
         reportes.push(...reportesTrabajadoresDeEst);
 
         // agregar info del trabajador a cada reporte
         // para cada reporte, incluir info de la marcacion
-        for (let reporte of reportes) {   
+        for (let reporte of reportes) {
             const marcacion = await MarcacionesServices.obtenerMarcacionPorId(reporte.marcacion_id);
 
             if (!marcacion || !marcacion.data) {
-                
+
                 continue; // saltar si no se encuentra la marcación
             }
             reporte.nombreTrabajador = marcacion.data.nombre;
@@ -831,21 +848,21 @@ const obtenerReportesMarcaciones = async (req, res) => {
         }
         // cargar reportes que corresponden a trabajadores de una est
 
-        
 
 
-    res.status(200).json({
-      success: true,
-      data: reportes,
-      message: "Reportes de marcaciones obtenidos exitosamente"
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error al obtener los reportes de marcaciones",
-      error: error.message
-    });
-  }
+
+        res.status(200).json({
+            success: true,
+            data: reportes,
+            message: "Reportes de marcaciones obtenidos exitosamente"
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener los reportes de marcaciones",
+            error: error.message
+        });
+    }
 }
 
 
@@ -854,7 +871,7 @@ const aprobarCambioMarcacion = async (req, res) => {
         const { reporteId } = req.params;
         // obtener reporte
         let reporte = await ReporteMarcacionesModel.findById(reporteId);
-        
+
         if (!reporte) {
             return res.status(404).json({ success: false, message: "Reporte no encontrado" });
         }
@@ -871,28 +888,28 @@ const aprobarCambioMarcacion = async (req, res) => {
             // agregar datos de la marcacion original al objeto datosCambios
             datosCambios.marcacionOriginal = marcacionOriginal.data;
 
-            if (reporte.fecha_correcta){
+            if (reporte.fecha_correcta) {
                 //await MarcacionesServices.updateFechaMarcacion(reporte.marcacion_id, reporte.fecha_correcta );
                 datosCambios.fechaModificada = marcacionOriginal.data.fecha;
             }
-            if (reporte.hora_correcta){
-               // await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
+            if (reporte.hora_correcta) {
+                // await MarcacionesServices.updateHoraMarcacion(reporte.marcacion_id, reporte.hora_correcta );
                 datosCambios.horaModificada = reporte.hora_correcta;
             }
 
             //await ReporteMarcacionesModel.aprobar(reporteId);
         } else if (reporte.tipo === 'agregar') {
             // crear nueva marcacion
-                //await MarcacionesServices.insertarMarcacionManual(reporte.usuario_id,reporte.tipo_marcacion_correcta,reporte.fecha_correcta,reporte.hora_correcta);
-                
-                
+            //await MarcacionesServices.insertarMarcacionManual(reporte.usuario_id,reporte.tipo_marcacion_correcta,reporte.fecha_correcta,reporte.hora_correcta);
 
-                datosCambios.fechaNueva = reporte.fecha_correcta;
-                datosCambios.horaNueva = reporte.hora_correcta;
-                datosCambios.tipoNueva = reporte.tipo_marcacion_correcta;
+
+
+            datosCambios.fechaNueva = reporte.fecha_correcta;
+            datosCambios.horaNueva = reporte.hora_correcta;
+            datosCambios.tipoNueva = reporte.tipo_marcacion_correcta;
 
         }
-                
+
 
         await ReporteMarcacionesModel.cambiarEstado(reporteId, 'POR CONFIRMAR');
         const reporteActualizado = await ReportesModel.findById(reporteId);
@@ -906,7 +923,7 @@ const aprobarCambioMarcacion = async (req, res) => {
             NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, datosCambios);
         }
 
-        
+
         res.status(200).json({ success: true, message: "Reporte aprobado", data: reporteActualizado });
     } catch (error) {
         console.error("Error aprobando reporte de marcación:", error);
@@ -943,7 +960,7 @@ const historialSolicitudes = async (req, res) => {
         const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(req.user.empresa_id);
         const reportesTrabajadoresDeEst = await Promise.all(
             trabajadoresDeEst.map(trabajador =>
-            ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
+                ReporteMarcacionesModel.findByUsuarioId(trabajador.id)
             )
         ).then(reportesArrays => reportesArrays.flat());
         historial.push(...reportesTrabajadoresDeEst);
@@ -957,7 +974,7 @@ const historialSolicitudes = async (req, res) => {
             }
         }
 
-        
+
         res.status(200).json({ success: true, data: historial });
     }
     catch (error) {
@@ -1005,23 +1022,23 @@ const obtenerTurnosTrabajador = async (req, res) => {
         const { id } = req.params; // ID del trabajador
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        
+
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
+
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
-            return res.status(403).json({ 
-                success: false, 
-                message: "No tiene permisos para ver turnos de este trabajador" 
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para ver turnos de este trabajador"
             });
         }
 
         // Obtener turnos del trabajador
         const turnosRaw = await TurnosModel.getTurnosByUsuarioId(id);
 
-        
+
 
         // Enriquecer cada turno con el detalle de días del tipo de turno (si está disponible)
         const turnos = await Promise.all(turnosRaw.map(async (t) => {
@@ -1035,7 +1052,7 @@ const obtenerTurnosTrabajador = async (req, res) => {
             }
         }));
 
-        
+
 
         res.status(200).json({
             success: true,
@@ -1045,10 +1062,10 @@ const obtenerTurnosTrabajador = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error obteniendo turnos del trabajador:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor al obtener turnos",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -1060,28 +1077,28 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         const { limite = 10 } = req.query; // Límite de marcaciones a obtener
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        
+
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const empresasUsuario = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
+
         const empresasUsuarioIds = empresasUsuario.map(e => e.empresa_id);
         if (!trabajadorEmpresa || !empresasUsuarioIds.includes(trabajadorEmpresa.empresa_id)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: "No tiene permisos para ver marcaciones de este trabajador" 
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para ver marcaciones de este trabajador"
             });
         }
 
         // Obtener marcaciones del trabajador usando la función correcta
         // Nota: getMarcacionesByUsuario usa usuario_empresa_id, no usuario_id
         const marcacionesCompletas = await MarcacionesModel.getMarcacionesByUsuario(trabajadorEmpresa.id);
-        
+
         // Aplicar límite manualmente ya que la función no lo tiene
         const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
 
-        
+
 
         // Formatear marcaciones para el frontend
         const marcacionesFormateadas = marcaciones.map(marcacion => ({
@@ -1103,10 +1120,10 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error obteniendo marcaciones del trabajador:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor al obtener marcaciones",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -1117,7 +1134,7 @@ const actualizarHorasLaborales = async (req, res) => {
         const { horas_laborales } = req.body; // Nuevas horas laborales
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        
+
 
         // Validar que las horas laborales sean válidas
         const horasValidas = ['44', '45', '54'];
@@ -1131,11 +1148,11 @@ const actualizarHorasLaborales = async (req, res) => {
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
-        
+
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
-            return res.status(403).json({ 
-                success: false, 
-                message: "No tiene permisos para modificar este trabajador" 
+            return res.status(403).json({
+                success: false,
+                message: "No tiene permisos para modificar este trabajador"
             });
         }
 
@@ -1160,7 +1177,7 @@ const actualizarHorasLaborales = async (req, res) => {
         //     req.get('User-Agent')
         // );
 
-        
+
 
         res.status(200).json({
             success: true,
@@ -1174,10 +1191,10 @@ const actualizarHorasLaborales = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error actualizando horas laborales:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: "Error interno del servidor al actualizar horas laborales",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -1185,9 +1202,9 @@ const actualizarHorasLaborales = async (req, res) => {
 // Nuevo: Obtener tipos de turno disponibles para la empresa del usuario
 const obtenerTiposTurnos = async (req, res) => {
     try {
-        
+
         const empresa_id = req.user.empresa_id
-    
+
         console.log("Obteniendo tipos de turnos para empresa ID:", empresa_id);
 
         // Obtener solo los tipos de turno de la empresa
@@ -1195,7 +1212,7 @@ const obtenerTiposTurnos = async (req, res) => {
         // para cada tipo de turno agregarle los dias en que aplica
 
         const tiposConDias = await TipoTurnosModel.getAllWithDiasByEmpresaId(empresa_id);
-        
+
         res.status(200).json({
             success: true,
             data: tiposConDias,
@@ -1252,7 +1269,7 @@ const eliminarTipoTurno = async (req, res) => {
                     datos_nuevos: null,
                     ip_address: req.ip || req.connection.remoteAddress
                 });
-                
+
             } catch (auditError) {
                 console.error('⚠️ Error al registrar eliminación de tipo de turno en auditoría:', auditError);
             }
@@ -1270,7 +1287,7 @@ const eliminarTipoTurno = async (req, res) => {
         });
     }
 };
-        
+
 
 // Nuevo: Crear tipo de turno
 const crearTipoTurno = async (req, res) => {
@@ -1288,7 +1305,7 @@ const crearTipoTurno = async (req, res) => {
 
         // Obtener empresa del usuario
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-        
+
         if (!empresa) {
             return res.status(404).json({
                 success: false,
@@ -1312,7 +1329,7 @@ const crearTipoTurno = async (req, res) => {
             });
         }
 
-      
+
 
         // Agregar empresa_id al tipo de turno
         tipoTurnoData.empresa_id = empresa.empresa_id;
@@ -1357,7 +1374,7 @@ const actualizarTrabajador = async (req, res) => {
         const { nombre, apellido, rut, email } = req.body;
         const USR_PETICION = req.user;
 
-        
+
 
         // Validaciones
         if (!nombre || !apellido || !rut) {
@@ -1455,13 +1472,13 @@ function esturnoNocturno(turno) {
     if (!turno || !turno.hora_inicio || !turno.hora_fin) {
         return false;
     }
-    
+
     const [inicioHoras, inicioMinutos] = turno.hora_inicio.split(':').map(Number);
     const [finHoras, finMinutos] = turno.hora_fin.split(':').map(Number);
-    
+
     const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
     const finEnMinutos = finHoras * 60 + finMinutos;
-    
+
     return finEnMinutos < inicioEnMinutos;
 }
 
@@ -1482,12 +1499,12 @@ function obtenerFechaLogicaJornada(fechaMarcacion, horaMarcacion, tipoMarcacion,
         fechaAnterior.setDate(fechaAnterior.getDate() - 1);
         return fechaAnterior.toISOString().split('T')[0];
     }
-    
+
     // Caso 2: El día de la marcación SÍ tiene un turno nocturno
     if (esturnoNocturno(turno)) {
         const [hora, minutos] = horaMarcacion.split(':').map(Number);
         const [inicioHoras] = turno.hora_inicio.split(':').map(Number);
-        
+
         // Si es una marcación después de medianoche (hora < hora_inicio del turno)
         // pertenece a la jornada anterior
         if (hora < inicioHoras) {
@@ -1496,7 +1513,7 @@ function obtenerFechaLogicaJornada(fechaMarcacion, horaMarcacion, tipoMarcacion,
             return fechaAnterior.toISOString().split('T')[0];
         }
     }
-    
+
     return fechaMarcacion;
 }
 
@@ -1507,28 +1524,28 @@ function obtenerFechaLogicaJornada(fechaMarcacion, horaMarcacion, tipoMarcacion,
 function calcularDiferenciaHorasNocturna(horaEntrada, horaSalida, esNocturno) {
     const [entradaH, entradaM, entradaS] = horaEntrada.split(':').map(Number);
     const [salidaH, salidaM, salidaS] = horaSalida.split(':').map(Number);
-    
+
     const entradaEnMinutos = entradaH * 60 + entradaM;
     const salidaEnMinutos = salidaH * 60 + salidaM;
-    
+
     let diferencia = salidaEnMinutos - entradaEnMinutos;
-    
+
     // Si es un turno nocturno y la salida es menor que la entrada
     // significa que la salida es al día siguiente (después de medianoche)
     if (esNocturno && diferencia < 0) {
         diferencia += 24 * 60; // Agregar 24 horas
     }
-    
+
     // Convertir minutos a horas decimales
     const horas = Math.floor(diferencia / 60);
     const minutos = diferencia % 60;
     const segundos = salidaS - entradaS;
-    
+
     // Formato: "HH:MM:SS"
     const horasFormato = String(horas).padStart(2, '0');
     const minutosFormato = String(minutos).padStart(2, '0');
     const segundosFormato = String(Math.abs(segundos)).padStart(2, '0');
-    
+
     return {
         formato: `${horasFormato}:${minutosFormato}:${segundosFormato}`,
         decimal: (diferencia + segundos / 60) / 60,
@@ -1563,19 +1580,19 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         console.time('📊 1. Obtener empresa');
         const empresa = await EmpresaModel.getEmpresaByRut(rutEmpresa);
         console.timeEnd('📊 1. Obtener empresa');
-        
+
         if (!empresa) {
             return res.status(404).json({
                 success: false,
                 message: 'Empresa no encontrada'
             });
         }
-        
+
         // Calcular rango ampliado para turnos nocturnos
         const fechaInicioBusqueda = new Date(fecha_inicio);
         fechaInicioBusqueda.setDate(fechaInicioBusqueda.getDate() - 1);
         const fechaInicioBusquedaStr = fechaInicioBusqueda.toISOString().split('T')[0];
-        
+
         const fechaFinBusqueda = new Date(fecha_fin);
         fechaFinBusqueda.setDate(fechaFinBusqueda.getDate() + 1);
         const fechaFinBusquedaStr = fechaFinBusqueda.toISOString().split('T')[0];
@@ -1588,7 +1605,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         ]);
         const todosTrabajadores = [...trabajadoresDirectos, ...trabajadoresEST];
         console.timeEnd('📊 2. Obtener trabajadores');
-        
+
         if (todosTrabajadores.length === 0) {
             return res.status(200).json({
                 success: true,
@@ -1612,7 +1629,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         console.time('📊 3. Obtener marcaciones y horas extras (paralelo)');
         const [todasMarcacionesResults, todasHorasExtras] = await Promise.all([
             Promise.all(
-                usuarioEmpresaIds.map(id => 
+                usuarioEmpresaIds.map(id =>
                     MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
                         id,
                         fechaInicioBusquedaStr,
@@ -1635,7 +1652,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         // OPTIMIZACIÓN 3: Crear mapa de marcaciones y horas extras por usuario
         const marcacionesPorUsuario = {};
         const horasExtrasPorUsuario = {};
-        
+
         usuarioEmpresaIds.forEach((id, index) => {
             marcacionesPorUsuario[id] = todasMarcacionesResults[index]?.data || [];
             horasExtrasPorUsuario[id] = todasHorasExtras[index] || [];
@@ -1708,7 +1725,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
 
                     // Obtener turnos desde el mapa (ya cargados)
                     const turno = turnosPorUsuarioFecha[usuarioEmpresaId]?.[fechaMarcacion] || null;
-                    
+
                     const fechaAnterior = new Date(fechaMarcacion);
                     fechaAnterior.setDate(fechaAnterior.getDate() - 1);
                     const fechaAnteriorStr = fechaAnterior.toISOString().split('T')[0];
@@ -1716,7 +1733,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
 
                     // Calcular fecha lógica de agrupación
                     let fechaAgrupacion = fechaMarcacion;
-                    
+
                     if ((turno && esturnoNocturno(turno)) || (turnoAnterior && esturnoNocturno(turnoAnterior))) {
                         fechaAgrupacion = obtenerFechaLogicaJornada(
                             fechaMarcacion,
@@ -1767,7 +1784,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                 // Determinar estado de asistencia
                 for (const fechaMarcacion in marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones) {
                     const tiposMarcacion = marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].marcaciones.map(m => m.tipo);
-                    
+
                     if (tiposMarcacion.includes('entrada') && tiposMarcacion.includes('salida')) {
                         marcacionesAgrupadasPorUsuario[usuarioEmpresaId].marcaciones[fechaMarcacion].estado_asistencia = 'PRESENTE';
                     } else if (tiposMarcacion.includes('entrada') && !tiposMarcacion.includes('salida')) {
@@ -1787,24 +1804,24 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         // Filtrar y calcular horas trabajadas
         console.time('📊 6. Filtrar y calcular');
         const marcacionesFiltradasPorUsuario = {};
-        
+
         for (const usuarioId in marcacionesAgrupadasPorUsuario) {
             marcacionesFiltradasPorUsuario[usuarioId] = {
                 trabajador_id: marcacionesAgrupadasPorUsuario[usuarioId].trabajador_id,
                 marcaciones: {}
             };
-            
+
             // Filtrar solo fechas dentro del rango Y calcular horas trabajadas
             for (const fecha in marcacionesAgrupadasPorUsuario[usuarioId].marcaciones) {
                 if (fecha >= fecha_inicio && fecha <= fecha_fin) {
                     const datosJornada = marcacionesAgrupadasPorUsuario[usuarioId].marcaciones[fecha];
                     const marcaciones = datosJornada.marcaciones;
-                    
+
                     // Calcular horas trabajadas si hay entrada y salida
                     if (marcaciones.length >= 2) {
                         const entrada = marcaciones.find(m => m.tipo === 'entrada');
                         const salida = marcaciones.find(m => m.tipo === 'salida');
-                        
+
                         if (entrada && salida) {
                             const diferenciaHoras = calcularDiferenciaHorasNocturna(
                                 entrada.hora,
@@ -1814,7 +1831,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
                             datosJornada.horas_trabajadas = diferenciaHoras;
                         }
                     }
-                    
+
                     marcacionesFiltradasPorUsuario[usuarioId].marcaciones[fecha] = datosJornada;
                 }
             }
@@ -1875,7 +1892,7 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
         const USR_PETICION = req.user;
         const { fechaInicio, fechaFin } = req.query;
 
-        
+
 
         // Obtener empresa del usuario
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
@@ -1888,7 +1905,7 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
 
         // Obtener trabajadores
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
-        
+
         // Calcular fechas si no se proporcionan
         let inicioSemana, finSemana;
         if (fechaInicio && fechaFin) {
@@ -1902,24 +1919,24 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
             finSemana = ultimoDia.toISOString().split('T')[0];
         }
 
-        
+
 
         // Procesar cada trabajador
         const trabajadoresConDatos = await Promise.all(
             trabajadores.map(async (trabajador) => {
                 try {
-                    
+
 
                     // Obtener marcaciones del período
                     const marcaciones = await MarcacionesModel.obtenerMarcacionesPorPeriodo(
-                        trabajador.id, 
-                        inicioSemana, 
+                        trabajador.id,
+                        inicioSemana,
                         finSemana
                     );
 
                     // Obtener turnos asignados
                     const turnosAsignados = await AsignacionTurnosModel.getTurnosByUsuarioEmpresa(trabajador.id);
-                    
+
                     // Calcular horas trabajadas en el período
                     const horasCalculadas = await MarcacionesServices.calcularHorasSemanales(
                         trabajador.id,
@@ -1929,7 +1946,7 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
 
                     // Calcular estadísticas de asistencia
                     const estadisticasAsistencia = calcularEstadisticasAsistencia(marcaciones, inicioSemana, finSemana);
-                    
+
                     // Obtener información de turnos
                     const infoTurnos = await obtenerInformacionTurnos(turnosAsignados);
 
@@ -1943,24 +1960,24 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
                         rut: trabajador.usuario_rut || 'Sin RUT',
                         email: trabajador.usuario_email || 'Sin email',
                         iniciales: `${(trabajador.usuario_nombre || '').charAt(0)}${(trabajador.usuario_apellido_pat || '').charAt(0)}`,
-                        
+
                         // Horas
                         horas_laborales_asignadas: horasLaborales,
                         horas_trabajadas_reales: Math.round(horasTrabajadas * 100) / 100,
                         excede_horas: excedeHoras,
                         porcentaje_cumplimiento: horasLaborales > 0 ? Math.round((horasTrabajadas / horasLaborales) * 100) : 0,
-                        
+
                         // Asistencia
                         dias_presente: estadisticasAsistencia.diasPresente,
                         dias_ausente: estadisticasAsistencia.diasAusente,
                         porcentaje_asistencia: estadisticasAsistencia.porcentajeAsistencia,
                         llegadas_tarde: estadisticasAsistencia.llegadasTarde,
                         salidas_anticipadas: estadisticasAsistencia.salidasAnticipadas,
-                        
+
                         // Turnos
                         turnos_asignados: infoTurnos,
                         tipo_jornada: infoTurnos.length > 0 ? infoTurnos[0].tipo_jornada : 'No asignado',
-                        
+
                         // Marcaciones
                         total_marcaciones: marcaciones.length,
                         marcaciones_recientes: marcaciones.slice(-5).map(m => ({
@@ -1987,7 +2004,7 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
             total_trabajadores: trabajadoresConDatos.length,
             trabajadores_dentro_limite: trabajadoresConDatos.filter(t => !t.excede_horas).length,
             trabajadores_exceden_horas: trabajadoresConDatos.filter(t => t.excede_horas).length,
-            promedio_horas_semana: trabajadoresConDatos.length > 0 
+            promedio_horas_semana: trabajadoresConDatos.length > 0
                 ? (trabajadoresConDatos.reduce((sum, t) => sum + (t.horas_trabajadas_reales || 0), 0) / trabajadoresConDatos.length).toFixed(1)
                 : '0.0',
             promedio_asistencia: trabajadoresConDatos.length > 0
@@ -2023,17 +2040,17 @@ function calcularEstadisticasAsistencia(marcaciones, fechaInicio, fechaFin) {
     const diasTotales = calcularDiasLaborables(fechaInicio, fechaFin);
     const diasConMarcaciones = new Set(marcaciones.map(m => m.fecha)).size;
     const diasAusente = Math.max(0, diasTotales - diasConMarcaciones);
-    
+
     // Calcular llegadas tarde (asumiendo horario 09:00)
-    const llegadasTarde = marcaciones.filter(m => 
+    const llegadasTarde = marcaciones.filter(m =>
         m.tipo === 'entrada' && m.hora > '09:00:00'
     ).length;
-    
+
     // Calcular salidas anticipadas (asumiendo horario 17:00)
-    const salidasAnticipadas = marcaciones.filter(m => 
+    const salidasAnticipadas = marcaciones.filter(m =>
         m.tipo === 'salida' && m.hora < '17:00:00'
     ).length;
-    
+
     return {
         diasPresente: diasConMarcaciones,
         diasAusente: diasAusente,
@@ -2048,14 +2065,14 @@ function calcularDiasLaborables(fechaInicio, fechaFin) {
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
     let diasLaborables = 0;
-    
+
     for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
         const diaSemana = d.getDay();
         if (diaSemana !== 0 && diaSemana !== 6) { // No domingo ni sábado
             diasLaborables++;
         }
     }
-    
+
     return diasLaborables;
 }
 
@@ -2070,7 +2087,7 @@ async function obtenerInformacionTurnos(turnosAsignados) {
             horas_programadas: 8
         }];
     }
-    
+
     // Obtener detalles de los turnos desde la base de datos
     return await Promise.all(
         turnosAsignados.map(async (turno) => {
@@ -2109,23 +2126,23 @@ async function obtenerInformacionTurnos(turnosAsignados) {
 // Función auxiliar para calcular horas de un turno
 function calcularHorasTurno(horaInicio, horaFin) {
     if (!horaInicio || !horaFin) return 8;
-    
+
     const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
     const [finHoras, finMinutos] = horaFin.split(':').map(Number);
-    
+
     const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
     const finEnMinutos = finHoras * 60 + finMinutos;
-    
+
     return Math.round((finEnMinutos - inicioEnMinutos) / 60 * 100) / 100;
 }
 
 
-async function obtenerSolicitudesUsuarios(req,res) {
+async function obtenerSolicitudesUsuarios(req, res) {
     try {
         const user = req.user;
         console.log("Usuario que realiza la solicitud:", user);
         console.log("empresa_id del usuario:", user.empresa_id);
-        
+
         // Validar que el usuario tenga empresa_id (es una empresa, no un trabajador)
         if (!user.empresa_id) {
             return res.status(403).json({
@@ -2145,7 +2162,7 @@ async function obtenerSolicitudesUsuarios(req,res) {
                 solicitud.documento_adjunto = partesRuta[partesRuta.length - 1];
             }
         });
-        
+
 
         res.status(200).json({
             success: true,
@@ -2166,7 +2183,7 @@ async function obtenerSolicitudesPendientes(req, res) {
     try {
         const user = req.user;
         console.log("Usuario que realiza la solicitud:", user);
-        
+
         // Validar que el usuario tenga empresa_id
         if (!user.empresa_id) {
             return res.status(403).json({
@@ -2220,7 +2237,7 @@ async function aprobarSolicitud(req, res) {
 
         // Obtener la solicitud para verificar que pertenece a la empresa
         const solicitud = await SolicitudesUsuariosModel.obtenerPorId(id);
-        
+
         if (!solicitud) {
             return res.status(404).json({
                 success: false,
@@ -2242,13 +2259,13 @@ async function aprobarSolicitud(req, res) {
         if (solicitud.subtipo === 'permiso_con_goce' || solicitud.subtipo === 'permiso_sin_goce' || solicitud.subtipo === 'uso_feriado') {
             // Llamar a la función para justificar ausencias
             let urlDocumento = null;
-            if (solicitud.documento_adjunto){
+            if (solicitud.documento_adjunto) {
                 urlDocumento = solicitud.documento_adjunto;
             }
 
             console.log(solicitud);
 
-            
+
 
             const result = await JustificacionesModel.crearJustificacion({
                 usuario_empresa_id: solicitud.id_usuario_empresa,
@@ -2264,7 +2281,7 @@ async function aprobarSolicitud(req, res) {
 
         // Actualizar estado a ACEPTADA
         const resultado = await SolicitudesUsuariosModel.actualizarEstado(
-            id, 
+            id,
             'ACEPTADA',
             {
                 observaciones: observaciones || null,
@@ -2301,7 +2318,7 @@ async function aprobarSolicitud(req, res) {
 async function rechazarSolicitud(req, res) {
     try {
         const id = parseInt(req.params.id); // Convertir a número
-        const { motivo, observaciones, plazo_apelacion, instancia_apelacion} = req.body;
+        const { motivo, observaciones, plazo_apelacion, instancia_apelacion } = req.body;
         const user = req.user;
         console.log(req.body);
         console.log("Rechazando solicitud:", id, "por usuario:", user.id);
@@ -2317,7 +2334,7 @@ async function rechazarSolicitud(req, res) {
 
         // Obtener la solicitud para verificar que pertenece a la empresa
         const solicitud = await SolicitudesUsuariosModel.obtenerPorId(id);
-        
+
         if (!solicitud) {
             return res.status(404).json({
                 success: false,
@@ -2333,7 +2350,7 @@ async function rechazarSolicitud(req, res) {
         }
         // Actualizar estado a RECHAZADA
         const resultado = await SolicitudesUsuariosModel.actualizarEstado(
-            id, 
+            id,
             'RECHAZADA',
             {
                 motivo: motivo || 'Sin especificar',
@@ -2347,8 +2364,8 @@ async function rechazarSolicitud(req, res) {
         try {
             console.log('📧 Enviando correo de rechazo de solicitud...');
             await NotificacionService.enviarNotificacionRechazosolicitud(
-                solicitud, 
-                user, 
+                solicitud,
+                user,
                 {
                     motivo: motivo || 'Sin especificar',
                     observaciones: observaciones || null,

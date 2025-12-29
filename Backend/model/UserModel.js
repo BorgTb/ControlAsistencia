@@ -1,4 +1,5 @@
 import pool from '../config/dbconfig.js';
+import UsuariosRolesAsignadosModel from './UsuariosRolesAsignadosModel.js';
 
 class UserModel {
     /**
@@ -12,6 +13,7 @@ class UserModel {
     static async findById(id) {
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
         return rows.length ? rows[0] : null;
+
     }
 
     static async findByEmail(email) {
@@ -40,10 +42,10 @@ class UserModel {
     }
 
     static async create(data) {
-        const { nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado } = data;
+        const { nombre, apellido_pat, apellido_mat, email, password, rut, estado } = data;
         const [result] = await pool.query(
-            'INSERT INTO usuarios (nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [nombre, apellido_pat || null, apellido_mat || null, email, password, rol, rut, estado]
+            'INSERT INTO usuarios (nombre, apellido_pat, apellido_mat, email, password, rut, estado) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [nombre, apellido_pat || null, apellido_mat || null, email, password, rut, estado]
         );
         return result.insertId;
     }
@@ -158,6 +160,49 @@ class UserModel {
             // Liberar conexión
             connection.release();
         }
+    }
+
+    /**
+     * Obtener usuario con todos sus roles asignados
+     * @param {number} id - ID del usuario
+     * @returns {Object|null} Usuario con array de roles o null si no existe
+     */
+    static async getUserWithRoles(id) {
+        const user = await this.findById(id);
+        if (!user) {
+            return null;
+        }
+
+        // Obtener todas las relaciones usuario-empresa activas
+        const [usuariosEmpresas] = await pool.query(
+            `SELECT id, empresa_id 
+             FROM usuarios_empresas 
+             WHERE usuario_id = ? 
+             AND (fecha_fin IS NULL OR fecha_fin > CURRENT_DATE)`,
+            [id]
+        );
+
+        // Obtener roles para cada relación usuario-empresa
+        const rolesPromises = usuariosEmpresas.map(async (ue) => {
+            const roles = await UsuariosRolesAsignadosModel.getUserRoles(ue.id);
+            return {
+                empresa_id: ue.empresa_id,
+                usuario_empresa_id: ue.id,
+                roles: roles.map(r => ({
+                    id: r.rol_sistema_id,
+                    nombre: r.rol_nombre,
+                    slug: r.rol_slug,
+                    descripcion: r.rol_descripcion
+                }))
+            };
+        });
+
+        const rolesData = await Promise.all(rolesPromises);
+
+        return {
+            ...user,
+            empresas_roles: rolesData
+        };
     }
 
     // Métodos para estadísticas

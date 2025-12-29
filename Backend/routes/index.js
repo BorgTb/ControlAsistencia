@@ -13,6 +13,7 @@ import FeriadosRoutes from "./FeriadosRoutes.js";
 import DocumentoRoutes from "./DocumentoRoutes.js";
 import MQTTRoutes from "./MQTTRoutes.js";
 import ZKDeviceRoutes from "./ZKDeviceRoutes.js";
+import RolesRoutes from "./RolesRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -21,7 +22,7 @@ const router = {
     userEmpresa: UserEmpresaRoutes,
     admin: AdminRoutes,
     empresas: EmpresasRoutes,
-   
+
     auditoria: AuditoriaRoutes,
     estadisticas: EstadisticasRoutes,
     fiscalizador: FiscalizadorRoutes,
@@ -29,7 +30,8 @@ const router = {
     feriados: FeriadosRoutes,
     documentos: DocumentoRoutes,
     mqtt: MQTTRoutes,
-    zk: ZKDeviceRoutes
+    zk: ZKDeviceRoutes,
+    roles: RolesRoutes
 }
 
 export default router;
