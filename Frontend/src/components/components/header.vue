@@ -12,6 +12,9 @@
         </div>
         
         <div class="flex items-center space-x-4">
+          <!-- Role Switcher -->
+          <RoleSwitcher />
+          
           <!-- Dropdown de usuario -->
           <div class="relative" data-dropdown>
             <!-- Botón del dropdown -->
@@ -170,6 +173,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import RoleSwitcher from '@/components/common/RoleSwitcher.vue'
 
 const router = useRouter()
 const { user, isLoading, logout } = useAuth()

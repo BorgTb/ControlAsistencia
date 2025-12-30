@@ -74,6 +74,7 @@
                   <div>
                     <p class="text-sm font-medium text-gray-900">
                       {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }}
+                      <span v-if="trabajador.id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
                     </p>
                     <p class="text-xs text-gray-500">RUT: {{ trabajador.usuario_rut }}</p>
                   </div>
@@ -266,8 +267,10 @@
 import { ref, computed, defineEmits, onMounted } from 'vue'
 import { useMarcaciones } from '@/composables/useMarcaciones.js'
 import { useEmpresa } from '@/composables/useEmpresa.js'
+import { useAuthStore } from '@/stores/authStore.js'
 
 const emit = defineEmits(['confirm', 'cancel'])
+const authStore = useAuthStore();
 
 // Composables
 const { 

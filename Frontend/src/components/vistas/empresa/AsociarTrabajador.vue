@@ -34,6 +34,7 @@
                                         :value="trabajador.id"
                                     >
                                         {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }} {{ trabajador.usuario_apellido_mat }} - {{ trabajador.usuario_rut }}
+                                        <span v-if="trabajador.id === authStore.user?.id"> (Tú)</span>
                                     </option>
                                 </select>
                             </div>
@@ -202,6 +203,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">
                                             {{ asociacion.usuario.nombre }} {{ asociacion.usuario.apellido_pat }} {{ asociacion.usuario.apellido_mat }}
+                                            <span v-if="asociacion.usuario.id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -243,8 +245,9 @@
 import { ref, onMounted } from 'vue';
 import { useEmpresa } from '@/composables/useEmpresa.js';
 import { useEst } from '@/composables/useEst.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
-
+const authStore = useAuthStore();
 const { obtenerAsociaciones, asociarTrabajador } = useEst();
 const { obtenerTrabajadores } = useEmpresa();
 

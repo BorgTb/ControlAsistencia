@@ -1,13 +1,13 @@
 import pool from '../config/dbconfig.js';
 
 class AuditoriaModel {
-    
+
     // Crear registro de inicio de sesión con zona horaria de Chile
     static async registrarInicioSesion(usuario_id, ip_address = null, rol = null) {
         try {
             // Configurar zona horaria de Chile antes de la consulta
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             const query = `
                 INSERT INTO auditoria_sesiones (usuario_id, rol, fecha_inicio, ip_address, estado)
                 VALUES (?, ?, NOW(), ?, 'activo')
@@ -32,10 +32,10 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile antes de la consulta
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             let query;
             let params;
-            
+
             if (sesion_id) {
                 // Si tenemos el ID de sesión específico
                 query = `
@@ -59,7 +59,7 @@ class AuditoriaModel {
                 `;
                 params = [usuario_id];
             }
-            
+
             const [result] = await pool.execute(query, params);
             console.log('✅ Sesión cerrada con zona horaria Chile:', {
                 usuario_id,
@@ -78,11 +78,11 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile para las consultas
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             // Asegurar que limite sea un número entero válido
             const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 50, 1000));
-            
-            // Usar el rol guardado en auditoria_sesiones
+
+            // Usar el rol guardado en auditoria_sesiones (ya no consultar u.rol)
             const query = `
                 SELECT 
                     a.id,
@@ -93,7 +93,6 @@ class AuditoriaModel {
                     u.email,
                     u.estado,
                     a.rol as rol_en_sesion,
-                    u.rol as rol_actual,
                     a.fecha_inicio,
                     a.fecha_cierre,
                     a.tiempo_activo,
@@ -109,13 +108,13 @@ class AuditoriaModel {
                 LIMIT ${limiteNumero}
             `;
             const [rows] = await pool.execute(query);
-            
-            // Usar el rol de la sesión si existe, sino el actual
+
+            // Usar el rol de la sesión guardado
             const rowsWithRol = rows.map(row => ({
                 ...row,
-                rol: row.rol_en_sesion || row.rol_actual
+                rol: row.rol_en_sesion || 'trabajador' // Fallback si no hay rol guardado
             }));
-            
+
             return rowsWithRol;
         } catch (error) {
             console.error('Error al obtener registros de auditoría:', error);
@@ -128,12 +127,12 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             // Asegurar que los parámetros sean del tipo correcto
             const usuarioIdNumero = parseInt(usuario_id);
             const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 20, 1000));
-            
-            // Usar el rol guardado en auditoria_sesiones
+
+            // Usar el rol guardado en auditoria_sesiones (ya no consultar u.rol)
             const query = `
                 SELECT 
                     a.id,
@@ -144,7 +143,6 @@ class AuditoriaModel {
                     u.email,
                     u.estado,
                     a.rol as rol_en_sesion,
-                    u.rol as rol_actual,
                     a.fecha_inicio,
                     a.fecha_cierre,
                     a.tiempo_activo,
@@ -161,13 +159,13 @@ class AuditoriaModel {
                 LIMIT ${limiteNumero}
             `;
             const [rows] = await pool.execute(query, [usuarioIdNumero]);
-            
-            // Usar el rol de la sesión si existe, sino el actual
+
+            // Usar el rol de la sesión guardado
             const rowsWithRol = rows.map(row => ({
                 ...row,
-                rol: row.rol_en_sesion || row.rol_actual
+                rol: row.rol_en_sesion || 'trabajador' // Fallback si no hay rol guardado
             }));
-            
+
             return rowsWithRol;
         } catch (error) {
             console.error('Error al obtener registros de auditoría por usuario:', error);
@@ -180,20 +178,20 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             // Asegurar que los parámetros sean del tipo correcto
             const usuarioIdNumero = parseInt(usuario_id);
             const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 20, 200));
-            
+
             let whereClause = 'WHERE ac.usuario_id = ?';
             let params = [usuarioIdNumero];
-            
+
             // Agregar filtro de tabla si se especifica
             if (tabla_afectada && tabla_afectada.trim() !== '') {
                 whereClause += ' AND ac.tabla_afectada = ?';
                 params.push(tabla_afectada.trim());
             }
-            
+
             const query = `
                 SELECT 
                     ac.id,
@@ -209,20 +207,19 @@ class AuditoriaModel {
                     u.nombre,
                     u.apellido_pat,
                     u.apellido_mat,
-                    u.email,
-                    u.rol
+                    u.email
                 FROM auditoria_cambios ac
                 INNER JOIN usuarios u ON ac.usuario_id = u.id
                 ${whereClause}
                 ORDER BY ac.fecha_cambio DESC
                 LIMIT ${limiteNumero}
             `;
-            
+
             const [rows] = await pool.execute(query, params);
-            
-            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` + 
-                       (tabla_afectada ? ` en tabla '${tabla_afectada}'` : ''));
-            
+
+            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` +
+                (tabla_afectada ? ` en tabla '${tabla_afectada}'` : ''));
+
             return rows;
         } catch (error) {
             console.error('Error al obtener cambios por usuario y tabla:', error);
@@ -235,11 +232,11 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile antes del cierre
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             const usuarioIdNumero = parseInt(usuario_id);
             console.log('🔒 Cerrando sesión para usuario ID:', usuarioIdNumero);
             console.log('🕐 Hora Chile actual:', new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' }));
-            
+
             const query = `
                 UPDATE auditoria_sesiones 
                 SET fecha_cierre = NOW(), 
@@ -265,7 +262,7 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             const query = `
                 UPDATE auditoria_sesiones 
                 SET fecha_cierre = NOW(), 
@@ -287,7 +284,7 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile para estadísticas
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             const query = `
                 SELECT 
                     COUNT(*) as total_sesiones,
@@ -330,7 +327,7 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             const {
                 usuario_id,
                 accion,
@@ -359,9 +356,9 @@ class AuditoriaModel {
             `;
 
             // Convertir datos a JSON si no son string
-            const datosAnterioresJson = datos_anteriores ? 
+            const datosAnterioresJson = datos_anteriores ?
                 (typeof datos_anteriores === 'string' ? datos_anteriores : JSON.stringify(datos_anteriores)) : null;
-            const datosNuevosJson = datos_nuevos ? 
+            const datosNuevosJson = datos_nuevos ?
                 (typeof datos_nuevos === 'string' ? datos_nuevos : JSON.stringify(datos_nuevos)) : null;
             console.log(usuario_id, accion, tabla_afectada, registro_id, descripcion, datosAnterioresJson, datosNuevosJson, ip_address);
             const [result] = await pool.execute(query, [
@@ -389,7 +386,7 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             // Validar y limitar parámetros
             const usuarioIdNumero = parseInt(usuario_id);
             const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 50, 200));
@@ -411,8 +408,7 @@ class AuditoriaModel {
                     u.nombre,
                     u.apellido_pat,
                     u.apellido_mat,
-                    u.email,
-                    u.rol
+                    u.email
                 FROM auditoria_cambios ac
                 INNER JOIN usuarios u ON ac.usuario_id = u.id
                 WHERE ac.usuario_id = ?
@@ -436,14 +432,14 @@ class AuditoriaModel {
         try {
             // Configurar zona horaria de Chile
             await pool.execute("SET time_zone = '-03:00'");
-            
+
             // Validar y limitar parámetros
             const usuarioIdNumero = parseInt(usuario_id);
             const limiteNumero = Math.max(1, Math.min(parseInt(limite) || 50, 200));
 
             let whereClause = 'WHERE ac.usuario_id = ?';
             let params = [usuarioIdNumero];
-            
+
             // Agregar filtro de acción si se especifica
             if (accion && accion.trim() !== '') {
                 whereClause += ' AND ac.accion = ?';
@@ -465,8 +461,7 @@ class AuditoriaModel {
                     u.nombre,
                     u.apellido_pat,
                     u.apellido_mat,
-                    u.email,
-                    u.rol
+                    u.email
                 FROM auditoria_cambios ac
                 INNER JOIN usuarios u ON ac.usuario_id = u.id
                 ${whereClause}
@@ -476,8 +471,8 @@ class AuditoriaModel {
 
             const [rows] = await pool.execute(query, params);
 
-            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` + 
-                       (accion ? ` con acción '${accion}'` : ''));
+            console.log(`✅ Encontrados ${rows.length} cambios para usuario ${usuarioIdNumero}` +
+                (accion ? ` con acción '${accion}'` : ''));
             return rows;
 
         } catch (error) {
@@ -532,8 +527,7 @@ class AuditoriaModel {
                     ac.descripcion,
                     ac.fecha_cambio,
                     u.nombre,
-                    u.apellido_pat,
-                    u.rol
+                    u.apellido_pat
                 FROM auditoria_cambios ac
                 INNER JOIN usuarios u ON ac.usuario_id = u.id
                 ORDER BY ac.fecha_cambio DESC

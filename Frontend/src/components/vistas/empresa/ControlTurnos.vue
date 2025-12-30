@@ -180,6 +180,7 @@
                     :value="trabajador.id"
                   >
                     {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }}
+                    <span v-if="trabajador.usuario_id === authStore.user?.id"> (Tú)</span>
                   </option>
                 </select>
               </div>
@@ -401,7 +402,10 @@
                             </div>
                           </div>
                           <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">{{ turno.trabajador.nombre }}</div>
+                            <div class="text-sm font-medium text-gray-900">
+                              {{ turno.trabajador.nombre }}
+                              <span v-if="turno.trabajador.usuario_id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
+                            </div>
                             <div class="text-sm text-gray-500">{{ turno.trabajador.rut }}</div>
                           </div>
                         </div>
@@ -501,7 +505,10 @@
                             </div>
                           </div>
                           <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">{{ turno.trabajador.nombre }}</div>
+                            <div class="text-sm font-medium text-gray-900">
+                              {{ turno.trabajador.nombre }}
+                              <span v-if="turno.trabajador.usuario_id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
+                            </div>
                             <div class="text-sm text-gray-500">{{ turno.trabajador.rut }}</div>
                           </div>
                         </div>
@@ -932,7 +939,9 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import EmpresaServices from '@/services/EmpresaService.js';
 import { useEmpresa } from '@/composables/useEmpresa.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
+const authStore = useAuthStore();
 const { obtenerTrabajadores, obtenerTurnos, eliminarTurno, obtenerTiposTurnos, crearTipoTurno , eliminarTipoTurno, modificarTurno } = useEmpresa();
 
 // Tipos de jornada disponibles
