@@ -147,7 +147,7 @@ const verifyToken = async (req, res, next) => {
  * Útil para restringir acceso a endpoints sensibles o de gestión.
  */
 const isAdmin = (req, res, next) => {
-    if (req.user && req.user.rol === 'admin') {
+    if (req.user && req.user.roles.includes('admin')) {
         return next();
     }
     return res.status(403).json({ success: false, message: 'Acceso solo para administradores.' });

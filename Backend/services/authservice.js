@@ -181,14 +181,18 @@ const loginUser = async (email, password, ip_address = null) => {
     if (user.estado !== 1) {
         throw new Error('User account is inactive');
     }
-
+    
     const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
     const empresaId = usuarioEmpresas ? usuarioEmpresas.empresa_id : null;
     const empresaRut = usuarioEmpresas ? usuarioEmpresas.empresa_rut : null;
     const usuarioEmpresaId = usuarioEmpresas ? usuarioEmpresas.id : null;
 
+   
     // MULTI-ROL: Obtener roles asignados del usuario en esta empresa
     let rolesSlugs = [];
+
+   
+
     try {
         const rolesAsignados = await UsuariosRolesAsignadosModel.getUserRolesInCompany(user.id, empresaId);
         rolesSlugs = rolesAsignados.map(r => r.rol_slug);
@@ -199,6 +203,12 @@ const loginUser = async (email, password, ip_address = null) => {
         rolesSlugs = ['trabajador'];
         console.warn('⚠️ No se encontraron roles, usando trabajador por defecto');
     }
+
+    if (user.nombre === 'admin') {
+        // tiene rol admin
+        rolesSlugs = ['admin'];   
+    }
+    
 
     // Generate token
     const token = generateToken(user, empresaId);
