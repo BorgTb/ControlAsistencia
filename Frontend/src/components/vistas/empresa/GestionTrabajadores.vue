@@ -214,6 +214,7 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">
                       {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }}
+                      <span v-if="trabajador.usuario_id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trabajador.usuario_rut }}</td>
@@ -387,6 +388,7 @@
                       <div class="flex-1">
                         <h4 class="text-sm font-semibold text-gray-900">
                           {{ trabajador.usuario_nombre }} {{ trabajador.usuario_apellido_pat }}
+                          <span v-if="trabajador.usuario_id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
                         </h4>
                         <div class="text-xs text-gray-600 space-y-1">
                           <p><span class="font-medium">RUT:</span> {{ trabajador.usuario_rut }}</p>
@@ -618,8 +620,9 @@ import EmpresaServices from '@/services/EmpresaService.js';
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { useEmpresa } from '@/composables/useEmpresa.js';
 import { useNotification } from '@/composables/useNotification.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
-
+const authStore = useAuthStore();
 const { obtenerTrabajadores, obtenerHorasSemanales } = useEmpresa();
 const { showWarning, showError, showSuccess } = useNotification();
 

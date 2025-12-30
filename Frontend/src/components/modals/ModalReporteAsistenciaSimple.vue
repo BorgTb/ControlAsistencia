@@ -95,7 +95,10 @@
                   <span class="text-sm font-semibold text-blue-600">{{ trabajador.iniciales }}</span>
                 </div>
                 <div>
-                  <h4 class="font-semibold text-gray-900">{{ trabajador.nombre_completo }}</h4>
+                  <h4 class="font-semibold text-gray-900">
+                    {{ trabajador.nombre_completo }}
+                    <span v-if="trabajador.id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
+                  </h4>
                   <p class="text-sm text-gray-500">RUT: {{ trabajador.rut }}</p>
                 </div>
               </div>

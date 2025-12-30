@@ -203,7 +203,10 @@
                           </div>
                         </div>
                         <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900">{{ registro.nombre }}</div>
+                          <div class="text-sm font-medium text-gray-900">
+                            {{ registro.nombre }}
+                            <span v-if="registro.usuario_id === authStore.user?.id" class="ml-2 text-xs font-semibold text-indigo-600">(Tú)</span>
+                          </div>
                           <div class="text-sm text-gray-500">{{ registro.cargo || 'Sin cargo' }}</div>
                         </div>
                       </div>
@@ -510,7 +513,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEmpresa } from '@/composables/useEmpresa'
 import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/authStore.js'
 
+const authStore = useAuthStore();
 const { obtenerReporteJornadaDiaria, aprobarHorasExtras, aprobarHoraExtraPendiente, rechazarHoraExtraPendiente } = useEmpresa()
 const { user } = useAuth()
 

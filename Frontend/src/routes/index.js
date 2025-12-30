@@ -100,11 +100,12 @@ const routes = [
   },
 
   // ===========================
-  // 404
+  // 404 - Página no encontrada
   // ===========================
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'NotFound',
+    component: () => import('@/components/vistas/NotFound.vue')
   }
 
 ]
@@ -121,17 +122,28 @@ const router = createRouter({
 })
 
 // ===========================
-// NAVIGATION GUARD (tu lógica exacta, organizada)
+// NAVIGATION GUARD - Multi-rol support
 // ===========================
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
 
-  // Rutas para invitados
+  // Rutas para invitados (requiresGuest)
   if (to.meta.requiresGuest && auth.isAuthenticated) {
-    const role = auth.user?.rol
-    if (role === "admin") return next("/admin/empresas")
-    if (role === "empleador") return next("/empresa/dashboard")
-    if (role === "trabajador") return next("/usuario/dashboard")
+    // Si está autenticado, redirigir según roles (prioridad: admin > empleador > trabajador)
+    const roles = auth.userRoles
+
+    if (roles.includes('admin')) {
+      return next("/admin/empresas")
+    }
+    if (roles.includes('empleador')) {
+      return next("/empresa/dashboard")
+    }
+    if (roles.includes('trabajador')) {
+      return next("/usuario/dashboard")
+    }
+    if (roles.includes('fiscalizador')) {
+      return next("/fiscalizador/dashboard")
+    }
     return next("/")
   }
 
@@ -140,9 +152,25 @@ router.beforeEach((to, from, next) => {
     return next("/")
   }
 
-  // Validar rol
-  if (to.meta.role && to.meta.role !== auth.user?.rol) {
-    // Si está logueado pero no tiene el rol
+  // Validar acceso por rol específico
+  if (to.meta.requiresAdmin && !auth.hasRole('admin')) {
+    console.warn('⚠️ Acceso denegado: requiere rol admin')
+    return next("/")
+  }
+
+  if (to.meta.requiresEmpresa && !auth.hasAnyRole(['empleador', 'admin'])) {
+    console.warn('⚠️ Acceso denegado: requiere rol empleador o admin')
+    return next("/")
+  }
+
+  if (to.meta.requiresUser && !auth.hasAnyRole(['trabajador', 'admin'])) {
+    console.warn('⚠️ Acceso denegado: requiere rol trabajador o admin')
+    return next("/")
+  }
+
+  // Validar rol específico si está definido en meta.role
+  if (to.meta.role && !auth.hasRole(to.meta.role)) {
+    console.warn(`⚠️ Acceso denegado: requiere rol ${to.meta.role}`)
     return next("/")
   }
 

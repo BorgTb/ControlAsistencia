@@ -43,16 +43,34 @@ const RefreshTokenModel = {
     async findValidToken(token) {
         try {
             const query = `
-                SELECT rt.*, u.email, u.rol, u.estado, ue.empresa_id
+                SELECT 
+                    rt.*,
+                    u.email,
+                    u.estado,
+                    ue.empresa_id,
+                    GROUP_CONCAT(DISTINCT rs.slug) as roles
                 FROM refresh_tokens rt
                 JOIN usuarios u ON rt.user_id = u.id
                 LEFT JOIN usuarios_empresas ue ON u.id = ue.usuario_id
+                LEFT JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
+                LEFT JOIN roles_sistema rs ON ura.rol_id = rs.id
                 WHERE rt.token = ? 
                 AND rt.revoked = FALSE
                 AND rt.expires_at > NOW()
                 AND u.estado = 1
+                GROUP BY rt.id, rt.user_id, rt.token, rt.expires_at, rt.revoked, 
+                         rt.created_at, rt.ip_address, rt.user_agent,
+                         u.email, u.estado, ue.empresa_id
             `;
             const [rows] = await pool.query(query, [token]);
+
+            // Convertir roles de string a array
+            if (rows[0] && rows[0].roles) {
+                rows[0].roles = rows[0].roles.split(',');
+            } else if (rows[0]) {
+                rows[0].roles = ['trabajador']; // Fallback por defecto
+            }
+
             return rows[0] || null;
         } catch (error) {
             console.error('❌ Error al buscar refresh token:', error);
@@ -71,7 +89,7 @@ const RefreshTokenModel = {
             console.log('🔒 Revocando refresh token...');
             const query = 'UPDATE refresh_tokens SET revoked = TRUE WHERE token = ?';
             const [result] = await pool.query(query, [token]);
-            
+
             if (result.affectedRows > 0) {
                 console.log('✅ Refresh token revocado exitosamente');
                 return true;

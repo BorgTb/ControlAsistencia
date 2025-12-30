@@ -76,6 +76,9 @@
 
         <!-- Botones de acción derecha -->
         <div class="flex items-center space-x-3 sm:space-x-4">
+          <!-- Role Switcher -->
+          <RoleSwitcher />
+
           <!-- Botón Menú móvil -->
           <button
             @click="toggleMobileMenu"
@@ -307,6 +310,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth.js';
+import RoleSwitcher from '@/components/common/RoleSwitcher.vue';
 
 const router = useRouter();
 const { user, logout, isLoading: authLoading, esEst, hasRole } = useAuth();
