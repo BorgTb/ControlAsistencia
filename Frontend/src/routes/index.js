@@ -30,6 +30,11 @@ const routes = [
         component: () => import('@/components/vistas/auth/Login.vue'),
       },
       {
+        path: 'select-company',
+        name: 'SelectCompany',
+        component: () => import('@/components/vistas/auth/CompanySelector.vue'),
+      },
+      {
         path: 'aprobar-modificacion',
         name: 'AprobarModificacion',
         component: () => import('@/components/vistas/Solicitudes/ModificacionMaracacion.vue'),

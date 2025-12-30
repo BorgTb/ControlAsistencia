@@ -16,8 +16,10 @@ router.post('/logout', LoginControlller.logout);
 router.post('/register', LoginControlller.register);
 router.get('/verify-token', LoginControlller.verifyToken);
 router.post('/refresh', LoginControlller.refresh); // Nueva ruta para renovar access token
+router.post('/select-company', LoginControlller.selectCompany); // Nueva ruta para seleccionar empresa
 router.post('/solicitar-acceso', FiscalizadorController.solicitarAcceso);
 router.post('/validar-codigo', FiscalizadorController.validarCodigo);
+
 
 
 // Export the router

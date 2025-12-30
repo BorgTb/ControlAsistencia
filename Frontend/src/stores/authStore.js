@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Estado - YA NO almacenamos token (está en cookie HTTP-only)
   const user = ref(null)
   const isLoading = ref(false)
+  const pendingCompanySelection = ref(null) // Para usuarios multi-empresa
 
   // Getters
   const isAuthenticated = computed(() => !!user.value) // Autenticado si hay usuario
@@ -65,11 +66,28 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     user.value = null
+    pendingCompanySelection.value = null
   }
 
   function clearAuth() {
     logout()
   }
+
+  // MULTI-EMPRESA: Métodos para manejar selección de empresa
+  function setPendingCompanySelection(data) {
+    pendingCompanySelection.value = data
+    console.log('🏢 Datos de selección de empresa guardados:', data)
+  }
+
+  function getPendingCompanySelection() {
+    return pendingCompanySelection.value
+  }
+
+  function clearCompanySelection() {
+    pendingCompanySelection.value = null
+    console.log('🧹 Datos de selección de empresa limpiados')
+  }
+
 
   return {
     // Estado
@@ -98,12 +116,17 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     setLoading,
     logout,
-    clearAuth
+    clearAuth,
+
+    // MULTI-EMPRESA: Métodos de selección de empresa
+    setPendingCompanySelection,
+    getPendingCompanySelection,
+    clearCompanySelection
   }
 }, {
   persist: {
     key: 'auth-storage',
     storage: localStorage,
-    paths: ['user'] // Solo persistir usuario, NO token (está en cookie HTTP-only)
+    paths: ['user', 'pendingCompanySelection'] // Persistir usuario y datos de selección
   }
 })

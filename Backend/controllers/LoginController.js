@@ -88,6 +88,19 @@ const login = async (req, res) => {
             ip_address: ip_address
         });
 
+        // MULTI-EMPRESA: Si requiere selección de empresa, retornar lista sin tokens
+        if (loginResult.requiresCompanySelection) {
+            console.log('👥 Usuario multi-empresa, retornando lista de empresas');
+            return res.status(200).json({
+                success: true,
+                requiresCompanySelection: true,
+                companies: loginResult.companies,
+                user: loginResult.user,
+                message: 'Selecciona una empresa para continuar'
+            });
+        }
+
+        // Usuario con empresa única - flujo normal con tokens
         // Generar access token (15 minutos) y refresh token (180 días)
         // MULTI-ROL: Pasar array de roles al access token
         const accessToken = AuthService.generateAccessToken(
@@ -133,7 +146,8 @@ const login = async (req, res) => {
         // para no revelar información específica sobre la cuenta del usuario
         if (error.message === 'User not found' ||
             error.message === 'Invalid password' ||
-            error.message === 'User account is inactive') {
+            error.message === 'User account is inactive' ||
+            error.message === 'Usuario no tiene empresas asignadas') {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -298,12 +312,91 @@ const refresh = async (req, res) => {
     }
 };
 
+/**
+ * Endpoint para seleccionar empresa (usuarios multi-empresa)
+ * Se llama después del login cuando el usuario tiene múltiples empresas
+ */
+const selectCompany = async (req, res) => {
+    try {
+        const { userId, empresaId } = req.body;
+
+        if (!userId || !empresaId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId y empresaId son requeridos'
+            });
+        }
+
+        // Obtener IP del usuario
+        const ip_address = req.ip || req.connection.remoteAddress || req.socket.remoteAddress ||
+            (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+            req.headers['x-forwarded-for'] || 'unknown';
+
+        console.log('🏢 Selección de empresa:', {
+            userId: userId,
+            empresaId: empresaId,
+            ip_address: ip_address
+        });
+
+        // Llamar al servicio de selección de empresa
+        const selectionResult = await AuthService.selectCompany(userId, empresaId, ip_address);
+
+        console.log('✅ Empresa seleccionada exitosamente');
+
+        // Generar access token y refresh token
+        const accessToken = AuthService.generateAccessToken(
+            selectionResult.user,
+            selectionResult.empresa_id,
+            selectionResult.roles
+        );
+        const refreshToken = AuthService.generateRefreshToken(selectionResult.user);
+
+        // Guardar refresh token en base de datos
+        const expiresAt = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000); // 5 años
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        await RefreshTokenModel.create(selectionResult.user.id, refreshToken, expiresAt, ip_address, userAgent);
+
+        // Establecer cookies
+        AuthService.setAuthCookies(res, accessToken, refreshToken);
+
+        // Devolver información del usuario
+        const expiresIn = 15 * 60; // 15 minutos en segundos
+
+        res.status(200).json({
+            success: true,
+            message: 'Empresa seleccionada exitosamente',
+            user: selectionResult.user,
+            expiresIn: expiresIn,
+            expiresAt: Date.now() + (expiresIn * 1000)
+        });
+
+    } catch (error) {
+        console.error('❌ Error en selección de empresa:', error);
+
+        if (error.message === 'User not found' ||
+            error.message === 'Usuario no pertenece a la empresa seleccionada' ||
+            error.message === 'Empresa no encontrada') {
+            return res.status(401).json({
+                success: false,
+                message: 'Selección de empresa inválida'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
 const LoginController = {
     register,
     login,
     logout,
     verifyToken,
-    refresh
+    refresh,
+    selectCompany
 };
 
 export default LoginController;

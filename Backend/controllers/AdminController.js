@@ -19,7 +19,14 @@ const createTrabajador = async (req, res) => {
         const USR_PETICION = req.user; // usuario que genera la consulta
 
 
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
 
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(userData.rut);
@@ -363,7 +370,14 @@ const obtenerTrabajadores = async (req, res) => {
     try {
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 
         res.status(200).json({ success: true, data: trabajadores });

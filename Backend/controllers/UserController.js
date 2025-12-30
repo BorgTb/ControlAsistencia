@@ -706,7 +706,7 @@ const createUsuarioEmpresa = async (req, res) => {
                 message: 'Usuario no encontrado'
             });
         }
-
+        /*
         // Verificar si el usuario ya tiene una empresa asignada
         const relacionExistente = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
         if (relacionExistente) {
@@ -715,7 +715,7 @@ const createUsuarioEmpresa = async (req, res) => {
                 message: 'El usuario ya tiene una empresa asignada'
             });
         }
-
+        */
         // Crear la relación usuario-empresa
         const datosRelacion = {
             usuario_id,
@@ -796,7 +796,7 @@ const createSolicitud = async (req, res) => {
         
 
         const user = req.user;
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id,req.user.empresa_id);
 
 
         // Validar que se recibieron los datos necesarios
@@ -870,7 +870,7 @@ const createSolicitud = async (req, res) => {
 const getSolicitudes = async (req, res) => {
     try {
         const user = req.user;
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
         const solicitudes = await SolicitudesUsuariosModel.obtenerPorUsuarioEmpresa(userEmpresa.id);
         console.log('📋 Solicitudes obtenidas para usuario_empresa_id', userEmpresa.id, ':', solicitudes);
         //console.log('✅ Solicitudes obtenidas:', solicitudes);
@@ -891,7 +891,7 @@ const getSolicitudes = async (req, res) => {
 const getHorasExtrasUsuario = async (req, res) => {
     try {
         const user = req.user;
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
         const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioEmpresa(usuarioEmpresa.id);
         const sumTotalHoras = horasExtras.reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
         const aprobadas = horasExtras.filter(horaExtra => horaExtra.estado === 'APROBADA').reduce((total, horaExtra) => total + horaExtra.total_horas, 0);

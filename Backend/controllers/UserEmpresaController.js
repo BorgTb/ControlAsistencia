@@ -30,8 +30,13 @@ const createTrabajador = async (req, res) => {
         const userData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
 
-
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        // Validar que el usuario tenga empresa asignada en el token
+        if (!USR_PETICION.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "Usuario no tiene empresa asignada en el contexto actual"
+            });
+        }
 
         // Verificar si ya existe un usuario con este RUT o email
         const existingUserByRut = await UserModel.findByRut(userData.rut);
@@ -68,7 +73,7 @@ const createTrabajador = async (req, res) => {
 
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: newUser.id,
-            empresa_id: empresa.empresa_id,
+            empresa_id: USR_PETICION.empresa_id,
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
 
@@ -100,7 +105,7 @@ const createTrabajador = async (req, res) => {
                     accion: 'crear_trabajador_empresa',
                     tabla_afectada: 'usuarios',
                     registro_id: newUser.id,
-                    descripcion: `Trabajador creado en empresa: ${userData.nombre} ${userData.apellido_pat || ''} (${userData.email}) - Empresa: ${empresa.emp_nombre || 'Sin nombre'}`,
+                    descripcion: `Trabajador creado en empresa: ${userData.nombre} ${userData.apellido_pat || ''} (${userData.email})`,
                     datos_anteriores: null,
                     datos_nuevos: JSON.stringify({
                         nombre: userData.nombre,
@@ -109,7 +114,7 @@ const createTrabajador = async (req, res) => {
                         email: userData.email,
                         rut: userData.rut,
                         estado: userData.estado,
-                        empresa_id: empresa.empresa_id
+                        empresa_id: USR_PETICION.empresa_id
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
                 });
@@ -555,7 +560,14 @@ const guardarConfiguracion = async (req, res) => {
         }
 
         // Obtener empresa del usuario
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         if (!empresa) {
             return res.status(404).json({
                 success: false,
@@ -606,7 +618,14 @@ const obtenerConfiguracion = async (req, res) => {
         const USR_PETICION = req.user; // usuario que genera la consulta
 
         // Obtener empresa del usuario
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         if (!empresa) {
             return res.status(404).json({
                 success: false,
@@ -664,7 +683,14 @@ const obtenerTrabajadores = async (req, res) => {
     try {
         const USR_PETICION = req.user; // usuario que genera la consulta
         console.log('Usuario que genera la consulta:', USR_PETICION);
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 
         // trabajadores que son de una est
@@ -1025,7 +1051,14 @@ const obtenerTurnosTrabajador = async (req, res) => {
 
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
 
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
@@ -1081,6 +1114,13 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
         const empresasUsuario = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresasUsuario || empresasUsuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
 
         const empresasUsuarioIds = empresasUsuario.map(e => e.empresa_id);
@@ -1146,7 +1186,14 @@ const actualizarHorasLaborales = async (req, res) => {
         }
 
         // Verificar que el trabajador pertenece a la empresa del usuario logueado
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         const trabajadorEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(id);
 
         if (!trabajadorEmpresa || trabajadorEmpresa.empresa_id !== empresa.empresa_id) {
@@ -1304,7 +1351,14 @@ const crearTipoTurno = async (req, res) => {
         }
 
         // Obtener empresa del usuario
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
 
         if (!empresa) {
             return res.status(404).json({
@@ -1895,7 +1949,14 @@ const obtenerReporteAsistenciaDetallado = async (req, res) => {
 
 
         // Obtener empresa del usuario
-        const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresa = empresas[0];
         if (!empresa) {
             return res.status(404).json({
                 success: false,
