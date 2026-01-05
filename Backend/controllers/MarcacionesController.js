@@ -531,8 +531,13 @@ const obtenerMarcacionPorUserId = async (req, res) => {
         const { fechaInicio, fechaFin } = req.query;
 
         const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(id,req.user.empresa_id);
+       
+
+
         // se podria retornar por fecha igual en caso cuando existan muchas y mejoras a futuro
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id);
+
+    
 
         if (!result.success) {
             return res.status(500).json(result);
@@ -918,7 +923,7 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
             });
         }
 
-        const ueId = await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id);
+        const [ueId]= await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id, req.user.empresa_id);
         const marcaciones = await MarcacionesService.obtenerMarcacionesPorUsuario(ueId.id);
 
         console.log('Marcaciones obtenidas para calcular días trabajados:', marcaciones);

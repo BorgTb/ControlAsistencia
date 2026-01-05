@@ -7,6 +7,7 @@ import AuditoriaModel from '../model/AuditoriaModel.js';
 import FileUploadService from '../services/FileUploadService.js';
 import SolicitudesUsuariosModel from '../model/SolicitudesUsuariosModel.js';
 import HorasExtrasModel from '../model/HorasExtrasModel.js';
+import UsuariosRolesAsignadosModel from '../model/UsuariosRolesAsignadosModel.js';
 
 /**
  * Actualiza el rol de un usuario por su id.
@@ -725,6 +726,9 @@ const createUsuarioEmpresa = async (req, res) => {
         };
 
         const nuevaRelacion = await UsuarioEmpresaModel.createUsuarioEmpresa(datosRelacion);
+
+        UsuariosRolesAsignadosModel.assignRole(nuevaRelacion.id, 2);
+        
         
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
@@ -870,7 +874,8 @@ const createSolicitud = async (req, res) => {
 const getSolicitudes = async (req, res) => {
     try {
         const user = req.user;
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        const [userEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        
         const solicitudes = await SolicitudesUsuariosModel.obtenerPorUsuarioEmpresa(userEmpresa.id);
         console.log('📋 Solicitudes obtenidas para usuario_empresa_id', userEmpresa.id, ':', solicitudes);
         //console.log('✅ Solicitudes obtenidas:', solicitudes);
@@ -891,7 +896,9 @@ const getSolicitudes = async (req, res) => {
 const getHorasExtrasUsuario = async (req, res) => {
     try {
         const user = req.user;
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        console.log(req.user);
+        const [usuarioEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        console.log('UsuarioEmpresa encontrado:', usuarioEmpresa);
         const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioEmpresa(usuarioEmpresa.id);
         const sumTotalHoras = horasExtras.reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
         const aprobadas = horasExtras.filter(horaExtra => horaExtra.estado === 'APROBADA').reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
