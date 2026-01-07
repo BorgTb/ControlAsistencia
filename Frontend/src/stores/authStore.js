@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Estado - YA NO almacenamos token (está en cookie HTTP-only)
   const user = ref(null)
   const isLoading = ref(false)
+  const pendingCompanySelection = ref(null) // Para usuarios multi-empresa
 
   // Getters
   const isAuthenticated = computed(() => !!user.value) // Autenticado si hay usuario
@@ -65,16 +66,79 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     user.value = null
+    pendingCompanySelection.value = null
   }
 
   function clearAuth() {
     logout()
   }
 
+  // MULTI-EMPRESA: Métodos para manejar selección de empresa
+  function setPendingCompanySelection(data) {
+    pendingCompanySelection.value = data
+    console.log('🏢 Datos de selección de empresa guardados:', data)
+  }
+
+  function getPendingCompanySelection() {
+    return pendingCompanySelection.value
+  }
+
+  function clearCompanySelection() {
+    pendingCompanySelection.value = null
+    console.log('🧹 Datos de selección de empresa limpiados')
+  }
+
+  // MULTI-EMPRESA: Estado de empresas disponibles para cambio post-login
+  const availableCompanies = ref([])
+
+  // MULTI-EMPRESA: Obtener empresas del usuario autenticado
+  async function loadUserCompanies() {
+    try {
+      const AuthService = (await import('@/services/Authservices.js')).default
+      const result = await AuthService.getUserCompanies()
+      
+      if (result.success && result.data.empresas) {
+        availableCompanies.value = result.data.empresas
+        console.log('🏢 Empresas cargadas en store:', availableCompanies.value.length)
+        return availableCompanies.value
+      } else {
+        console.error('❌ Error al cargar empresas:', result.error)
+        availableCompanies.value = []
+        return []
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar empresas del usuario:', error)
+      availableCompanies.value = []
+      return []
+    }
+  }
+
+  // MULTI-EMPRESA: Cambiar de empresa post-login
+  async function switchCompany(empresaId) {
+    try {
+      const AuthService = (await import('@/services/Authservices.js')).default
+      const result = await AuthService.switchCompany(empresaId)
+      
+      if (result.success && result.data.user) {
+        setUser(result.data.user)
+        console.log('✅ Empresa cambiada en store')
+        return { success: true, user: result.data.user }
+      } else {
+        console.error('❌ Error al cambiar empresa:', result.error)
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      console.error('❌ Error al cambiar de empresa:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+
   return {
     // Estado
     user,
     isLoading,
+    availableCompanies,
 
     // Getters de roles
     userRoles,
@@ -98,12 +162,21 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     setLoading,
     logout,
-    clearAuth
+    clearAuth,
+
+    // MULTI-EMPRESA: Métodos de selección de empresa
+    setPendingCompanySelection,
+    getPendingCompanySelection,
+    clearCompanySelection,
+
+    // MULTI-EMPRESA: Métodos de cambio de empresa post-login
+    loadUserCompanies,
+    switchCompany
   }
 }, {
   persist: {
     key: 'auth-storage',
     storage: localStorage,
-    paths: ['user'] // Solo persistir usuario, NO token (está en cookie HTTP-only)
+    paths: ['user', 'pendingCompanySelection'] // Persistir usuario y datos de selección
   }
 })

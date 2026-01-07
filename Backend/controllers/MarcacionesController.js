@@ -2,7 +2,7 @@ import MarcacionesService from '../services/MarcacionesServices.js';
 import NotificacionService from '../services/NotificacionService.js';
 import TurnosModel from '../model/TurnosModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
-import {DateTime} from 'luxon'
+import { DateTime } from 'luxon'
 import AuthService from '../services/authservice.js';
 import ReporteMarcionesModel from '../model/ReportesModel.js';
 import ConfigToleranciaModel from '../model/ConfigTolerancias.js';
@@ -22,35 +22,35 @@ function calcularDiferenciaHoras(hora1, hora2) {
         // Validar formato hh:mm:ss
         const regex = /^(\d{2}):(\d{2}):(\d{2})$/;
         const match = horaStr.match(regex);
-        
+
         if (!match) {
             throw new Error('El formato debe ser hh:mm:ss');
         }
-        
+
         const horas = parseInt(match[1]);
         const minutos = parseInt(match[2]);
         const segundos = parseInt(match[3]);
-        
+
         // Validar rangos
         if (horas < 0 || horas > 23 || minutos < 0 || minutos > 59 || segundos < 0 || segundos > 59) {
             throw new Error('Hora inválida');
         }
-        
+
         return horas * 3600 + minutos * 60 + segundos;
     }
-    
+
     // Función auxiliar para convertir segundos a formato hh:mm:ss
     function segundosAHora(segundosTotales) {
         const horas = Math.floor(Math.abs(segundosTotales) / 3600);
         const minutos = Math.floor((Math.abs(segundosTotales) % 3600) / 60);
         const segundos = Math.abs(segundosTotales) % 60;
-        
+
         const signo = segundosTotales < 0 ? '-' : '';
-        
+
         return {
-            formato: signo + String(horas).padStart(2, '0') + ':' + 
-                    String(minutos).padStart(2, '0') + ':' + 
-                    String(segundos).padStart(2, '0'),
+            formato: signo + String(horas).padStart(2, '0') + ':' +
+                String(minutos).padStart(2, '0') + ':' +
+                String(segundos).padStart(2, '0'),
             horas: horas,
             minutos: minutos,
             segundos: segundos,
@@ -58,12 +58,12 @@ function calcularDiferenciaHoras(hora1, hora2) {
             esNegativo: segundosTotales < 0
         };
     }
-    
+
     try {
         const segundos1 = horaASegundos(hora1);
         const segundos2 = horaASegundos(hora2);
         const diferencia = segundos2 - segundos1;
-        
+
         return segundosAHora(diferencia);
     } catch (error) {
         return { error: error.message };
@@ -94,22 +94,22 @@ function calcularHorasExtras(horaSalida, horaFinTurno, toleranciaSalida = 0) {
     try {
         const salidaEnMinutos = horaAMinutos(horaSalida);
         const finTurnoEnMinutos = horaAMinutos(horaFinTurno);
-        
+
         // Calcular el fin del turno con tolerancia
         const finTurnoConTolerancia = finTurnoEnMinutos + toleranciaSalida; //esto se debe acmbiar revisar logica proximanete
-        
+
         // Si la salida es después del fin del turno + tolerancia, hay horas extras
         if (salidaEnMinutos > finTurnoConTolerancia) {
             const horaInicioExtras = minutosAHora(finTurnoConTolerancia);
             const horaFinExtras = horaSalida;
-            
+
             return {
                 hora_inicio: horaInicioExtras,
                 hora_fin: horaFinExtras,
                 minutos_extras: salidaEnMinutos - finTurnoConTolerancia
             };
         }
-        
+
         return null;
     } catch (error) {
         console.error('Error calculando horas extras:', error);
@@ -126,7 +126,7 @@ const registrarMarcacion = async (req, res) => {
     try {
         const { geo_lat, geo_lon, location_quality, ip_cliente, domicilio_prestacion, tipo } = req.body;
         const usuario_id = req.user?.id;
-        
+
         // Validar tipo de marcación
         if (!['entrada', 'salida', 'colacion'].includes(tipo)) {
             return res.status(400).json({
@@ -150,7 +150,7 @@ const registrarMarcacion = async (req, res) => {
             });
         }
 
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        const [usuarioEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id, req.user.empresa_id);
         if (!usuarioEmpresa) {
             return res.status(404).json({
                 success: false,
@@ -167,11 +167,11 @@ const registrarMarcacion = async (req, res) => {
                 message: 'No se encontró un turno asociado al usuario.'
             });
         }
-        
+
         const horaActual = DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss');
-        
+
         // Validación de horario solo para entrada
-        if (tipo === 'entrada') {    
+        if (tipo === 'entrada') {
             // verifica si turno.hora_fin es menor que turno.hora_inicio, si es asi significa que el turno termina al dia siguiente
             if (turno.hora_fin < turno.hora_inicio) {
                 // Si es así, la hora actual debe ser mayor que turno.hora_inicio
@@ -188,11 +188,11 @@ const registrarMarcacion = async (req, res) => {
                 });
             }
         }
-        
+
         // Validación específica para colación
         if (tipo === 'colacion') {
             const tieneColacionActiva = await MarcacionesService.verificarColacionActiva(usuarioEmpresa.id);
-            
+
             // Si no tiene colación activa, está iniciando colación
             if (!tieneColacionActiva) {
                 // Validar que esté dentro del horario de colación del turno
@@ -205,8 +205,8 @@ const registrarMarcacion = async (req, res) => {
                 console.log('Terminando colación');
             }
         }
-        
-      
+
+
 
         const result = await MarcacionesService.registrarMarcacion(
             usuarioEmpresa.id, tipo, geo_lat, geo_lon, ip_cliente
@@ -228,7 +228,7 @@ const registrarMarcacion = async (req, res) => {
         if (['entrada', 'salida'].includes(tipo)) {
             const horaReferencia = tipo === 'entrada' ? turno.hora_inicio : turno.hora_fin;
             const diferencia = calcularDiferenciaHoras(horaReferencia, marcacion.data.hora);
-            
+
             if (!diferencia.esNegativo && diferencia.totalSegundos > 0) {
                 result.tarde = true;
                 result.diferencia = diferencia.formato;
@@ -254,16 +254,16 @@ const registrarMarcacion = async (req, res) => {
                 // Obtener configuración de tolerancias de la empresa
                 const configTolerancia = await ConfigToleranciaModel.findByEmpresaId(usuarioEmpresa.empresa_id);
                 const toleranciaSalida = configTolerancia ? configTolerancia.tolerancia_salida : 0;
-                
+
                 // Calcular si hay horas extras
                 const horasExtras = calcularHorasExtras(marcacion.data.hora, turno.hora_fin, toleranciaSalida);
-                
+
                 if (horasExtras) {
                     console.log('🕐 Detectadas horas extras:', horasExtras);
-                    
+
                     // Obtener la preferencia de compensación activa del trabajador
                     const preferencia = await PreferenciasCompensacionModel.obtenerPorTrabajador(usuarioEmpresa.id);
-                    
+
                     // Crear registro de horas extras
                     const horaExtraData = {
                         usuario_empresa_id: usuarioEmpresa.id,
@@ -275,7 +275,7 @@ const registrarMarcacion = async (req, res) => {
                         motivo: `Horas extras por salida tardía. Exceso de ${horasExtras.minutos_extras} minutos sobre la tolerancia de ${toleranciaSalida} minutos.`,
                         id_preferencia: preferencia ? preferencia.id_preferencia : null
                     };
-                    
+
                     // Crear la hora extra de forma asíncrona para no bloquear la respuesta
                     HorasExtrasModel.createHoraExtra(horaExtraData)
                         .then(horaExtraCreada => {
@@ -292,7 +292,7 @@ const registrarMarcacion = async (req, res) => {
                         .catch(error => {
                             console.error('❌ Error creando hora extra:', error);
                         });
-                    
+
                     // Agregar información de horas extras a la respuesta
                     result.horas_extras_detectadas = {
                         minutos: horasExtras.minutos_extras,
@@ -308,15 +308,15 @@ const registrarMarcacion = async (req, res) => {
         }
 
         // Procesar notificación de forma asíncrona (no bloquea la respuesta)
-        const notificationArgs = tipo === 'entrada' 
+        const notificationArgs = tipo === 'entrada'
             ? [usuario_id, result.data.id, usuarioEmpresa, lugar, domicilio_prestacion]
             : [usuario_id, result.data.id, usuarioEmpresa];
-            
+
         NotificacionService.procesarNotificacionMarcacion(...notificationArgs)
             .catch(error => console.error(`Error en notificación de ${tipo}:`, error));
 
         return res.status(200).json(result);
-        
+
     } catch (error) {
         console.error(`Error en registrar${tipo.charAt(0).toUpperCase() + tipo.slice(1)}:`, error);
         return res.status(500).json({
@@ -350,28 +350,29 @@ const registrarTerminoColacion = async (req, res) => {
 const obtenerMarcacionesPorUsuario = async (req, res) => {
     try {
         const usuario_id = req.user?.id;
+        console.log(req.user);
         const fechaActual = DateTime.now().setZone('America/Santiago');
         const fecha = req.query.fecha || fechaActual.toISODate();
-        
+
         if (!usuario_id) {
             return res.status(400).json({
                 success: false,
                 message: 'Usuario no identificado'
             });
         }
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        const [userEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id, req.user.empresa_id);
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fecha);
         // si tiene entrada y salida, devolver que 
 
         console.log(userEmpresa);
-    
+
         // si tiene turno nocturno buscar las marcaciones del dia anterior 
         //fecha anterior
         const fechaAnterior = fechaActual.minus({ days: 1 }).toISODate();
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(userEmpresa.id, fecha);
         console.log(fecha);
         if (turno.tipo_jornada_nombre === 'Nocturna') {
-            const resultAnterior =  await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fechaAnterior);
+            const resultAnterior = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id, fechaAnterior);
             return res.status(200).json(resultAnterior);
         }
 
@@ -381,7 +382,7 @@ const obtenerMarcacionesPorUsuario = async (req, res) => {
         } else {
             return res.status(500).json(result);
         }
-        
+
     } catch (error) {
         console.error('Error en obtenerMarcacionesPorUsuario:', error);
         return res.status(500).json({
@@ -396,21 +397,22 @@ const obtenerHorarioHoy = async (req, res) => {
         const { user } = req;
         const usuario_id = user.id;
         // obtener usuario-empresa
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
+        const [usuarioEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id, req.user.empresa_id);
+        console.log(usuarioEmpresa);    
         if (!usuarioEmpresa) {
             return res.status(404).json({
                 success: false,
                 message: 'Usuario no pertenece a ninguna empresa'
             });
         }
-        
+
         //Obtener fecha actual en zona horaria de Chile
         const fechaHoy = DateTime.now().setZone('America/Santiago').toISODate();
 
 
         // obtener turno asignado para el usuario en la fecha actual
         const turno = await TurnosModel.obtenerTurnoPorUsuarioYFecha(usuarioEmpresa.id, fechaHoy);
-        
+
         if (!turno) {
             return res.status(200).json({
                 success: true,
@@ -438,7 +440,7 @@ const obtenerHorarioHoy = async (req, res) => {
             },
             message: 'Horario obtenido correctamente'
         });
-        
+
     } catch (error) {
         console.error('Error en obtenerHorarioHoy:', error);
         return res.status(500).json({
@@ -451,13 +453,13 @@ const obtenerHorarioHoy = async (req, res) => {
 const obtenerTodasLasMarcaciones = async (req, res) => {
     try {
         const result = await MarcacionesService.obtenerTodasLasMarcaciones();
-        
+
         if (!result.success) {
             return res.status(500).json(result);
         }
-        
+
         return res.status(200).json(result);
-        
+
     } catch (error) {
         console.error('Error en obtenerTodasLasMarcaciones:', error);
         return res.status(500).json({
@@ -483,9 +485,9 @@ const obtenerMarcacionesPorFecha = async (req, res) => {
         if (!result.success) {
             return res.status(500).json(result);
         }
-        
+
         return res.status(200).json(result);
-        
+
     } catch (error) {
         console.error('Error en obtenerMarcacionesPorFecha:', error);
         return res.status(500).json({
@@ -498,22 +500,22 @@ const obtenerMarcacionesPorFecha = async (req, res) => {
 const obtenerMarcacionesPorEmpresa = async (req, res) => {
     try {
         const { rutEmpresa } = req.params;
-        
+
         if (!rutEmpresa) {
             return res.status(400).json({
                 success: false,
                 message: 'El RUT de la empresa es requerido'
             });
         }
-        
+
         const result = await MarcacionesService.obtenerMarcacionesPorEmpresa(req.user.empresa_id);
         console.log(result);
         if (!result.success) {
             return res.status(500).json(result);
         }
-        
+
         return res.status(200).json(result);
-        
+
     } catch (error) {
         console.error('Error en obtenerMarcacionesPorEmpresa:', error);
         return res.status(500).json({
@@ -528,9 +530,14 @@ const obtenerMarcacionPorUserId = async (req, res) => {
         const { id } = req.params;
         const { fechaInicio, fechaFin } = req.query;
 
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(id);
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(id,req.user.empresa_id);
+       
+
+
         // se podria retornar por fecha igual en caso cuando existan muchas y mejoras a futuro
         const result = await MarcacionesService.obtenerMarcacionesPorUsuario(userEmpresa.id);
+
+    
 
         if (!result.success) {
             return res.status(500).json(result);
@@ -552,7 +559,7 @@ const modificarMarcacionPorId = async (req, res) => {
         const { id } = req.params;
         const { fecha, hora, tipo, motivo, usuario_id } = req.body;
         const USR_PETICION = req.user; // usuario que genera la solicitud
-        
+
         console.log('🔄 Iniciando modificación de marcación:', {
             marcacionId: id,
             fecha,
@@ -594,8 +601,15 @@ const modificarMarcacionPorId = async (req, res) => {
         console.log('👤 Usuario empresa encontrado:', usuarioEmpresa);
 
         // Verificar que el usuario solicitante tiene permisos para modificar marcaciones de este trabajador
-        const [empresaSolicitante] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-        if (!empresaSolicitante || empresaSolicitante.empresa_id !== usuarioEmpresa.empresa_id) {
+        const empresasSolicitante = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
+        if (!empresasSolicitante || empresasSolicitante.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no tiene empresas asignadas"
+            });
+        }
+        const empresaSolicitante = empresasSolicitante[0];
+        if (empresaSolicitante.empresa_id !== usuarioEmpresa.empresa_id) {
             return res.status(403).json({
                 success: false,
                 message: 'No tiene permisos para modificar marcaciones de este trabajador'
@@ -650,7 +664,7 @@ const modificarMarcacionPorId = async (req, res) => {
 }
 
 
-const obtenerReporteMarcacionId = async (req,res) => {
+const obtenerReporteMarcacionId = async (req, res) => {
     try {
         const { token } = req.query;
 
@@ -667,7 +681,7 @@ const obtenerReporteMarcacionId = async (req,res) => {
         const { id } = AuthService.verifyToken(token);
         console.log("obtenerReporteMarcacionId id:", id);
         const reporte = await ReporteMarcionesModel.findById(id);
-        
+
         const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(reporte.usuario_id);
 
         if (!reporte) {
@@ -683,22 +697,22 @@ const obtenerReporteMarcacionId = async (req,res) => {
                 message: 'El reporte ya ha sido procesado'
             });
         }
-            
+
 
 
         const infoData = {
             reporte_id: reporte.id,
-            tipo_problema : reporte.tipo_problema,
-            fecha_correcta : reporte.fecha_correcta ? reporte.fecha_correcta : null,
-            hora_correcta : reporte.hora_correcta ? reporte.hora_correcta : null,
-            tipo : reporte.tipo,
-            user_nombre : userSolicitante.usuario_nombre,
+            tipo_problema: reporte.tipo_problema,
+            fecha_correcta: reporte.fecha_correcta ? reporte.fecha_correcta : null,
+            hora_correcta: reporte.hora_correcta ? reporte.hora_correcta : null,
+            tipo: reporte.tipo,
+            user_nombre: userSolicitante.usuario_nombre,
             user_apellido_pat: userSolicitante.usuario_apellido_pat,
             user_apellido_mat: userSolicitante.usuario_apellido_mat,
-            user_email : userSolicitante.usuario_nombre,
-            user_rut : userSolicitante.usuario_rut,
-            user_empresa : userSolicitante.empresa_nombre,
-            user_empresa_rut : userSolicitante.empresa_rut,
+            user_email: userSolicitante.usuario_nombre,
+            user_rut: userSolicitante.usuario_rut,
+            user_empresa: userSolicitante.empresa_nombre,
+            user_empresa_rut: userSolicitante.empresa_rut,
         }
 
         if (reporte.tipo === 'modificar') {
@@ -712,7 +726,7 @@ const obtenerReporteMarcacionId = async (req,res) => {
             data: infoData,
             message: 'Reporte obtenido correctamente'
         });
-    }catch (error) {
+    } catch (error) {
         console.error('Error en obtenerReporteMarcacionId:', error);
         throw new Error('Error interno del servidor');
     }
@@ -721,8 +735,8 @@ const obtenerReporteMarcacionId = async (req,res) => {
 const aceptarModificacionMarcacion = async (req, res) => {
     try {
         const { token } = req.body;
-        
-       const { id } = AuthService.verifyToken(token);
+
+        const { id } = AuthService.verifyToken(token);
 
         const reporte = await ReporteMarcionesModel.findById(id);
         console.log("aceptarModificacionMarcacion id:", id);
@@ -738,7 +752,7 @@ const aceptarModificacionMarcacion = async (req, res) => {
 
         if (reporte.tipo === 'agregar') {
             // Lógica para aceptar adición de marcación
-            await MarcacionesService.insertarMarcacionManual(reporte.usuario_id,reporte.tipo_marcacion_correcta,reporte.fecha_correcta,reporte.hora_correcta);
+            await MarcacionesService.insertarMarcacionManual(reporte.usuario_id, reporte.tipo_marcacion_correcta, reporte.fecha_correcta, reporte.hora_correcta);
         } else if (reporte.tipo === 'modificar') {
             // Lógica para aceptar modificación de marcación
             // si tiene solo fecha correcta, es un caso, si tiene solo hora correcta, es otro caso, si tiene ambos, es otro caso
@@ -755,7 +769,7 @@ const aceptarModificacionMarcacion = async (req, res) => {
 
         // Actualizar estado del reporte a 'aceptado'
         await ReporteMarcionesModel.aprobar(id);
-        
+
 
         res.status(501).json({
             success: true,
@@ -773,16 +787,16 @@ const aceptarModificacionMarcacion = async (req, res) => {
     }
 }
 
-const rechazarModificacionMarcacion = async (req, res) => { 
+const rechazarModificacionMarcacion = async (req, res) => {
     try {
         const { token } = req.body;
 
-         const { id } = AuthService.verifyToken(token);
+        const { id } = AuthService.verifyToken(token);
 
-         await ReporteMarcionesModel.rechazar(id);
+        await ReporteMarcionesModel.rechazar(id);
 
 
-         // opcional se podria enviar un correo notificando el rechazo al usuario
+        // opcional se podria enviar un correo notificando el rechazo al usuario
 
         return res.status(501).json({
             success: true,
@@ -840,7 +854,7 @@ const agregarMarcacionManual = async (req, res) => {
 
         const reporte = await ReporteMarcionesModel.findById(id);
         const usuario = await UsuarioEmpresaModel.obtenerUsuarioByID(reporte.usuario_id);
-        await NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, {tipo: 'agregar', fechaNueva: fecha, horaNueva: hora, tipoNueva: tipo, usuario: usuario});
+        await NotificacionService.enviarNotificacionConfirmacionNuevaMarcacion(reporte, { tipo: 'agregar', fechaNueva: fecha, horaNueva: hora, tipoNueva: tipo, usuario: usuario });
 
         return res.status(200).json({
             success: true,
@@ -864,7 +878,7 @@ const agregarMarcacionManual = async (req, res) => {
 const obtenerHorasSemanales = async (req, res) => {
     try {
         const { usuario_empresa_id } = req.params;
-        
+
         if (!usuario_empresa_id) {
             return res.status(400).json({
                 success: false,
@@ -873,9 +887,9 @@ const obtenerHorasSemanales = async (req, res) => {
         }
 
         console.log(`🕒 Calculando horas semanales para usuario_empresa_id: ${usuario_empresa_id}`);
-        
+
         const resultado = await MarcacionesService.calcularHorasSemanales(parseInt(usuario_empresa_id));
-        
+
         if (resultado.success) {
             res.json({
                 success: true,
@@ -884,7 +898,7 @@ const obtenerHorasSemanales = async (req, res) => {
         } else {
             res.status(500).json(resultado);
         }
-        
+
     } catch (error) {
         console.error('Error en obtenerHorasSemanales:', error);
         res.status(500).json({
@@ -909,17 +923,17 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
             });
         }
 
-        const ueId = await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id);
+        const [ueId]= await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id, req.user.empresa_id);
         const marcaciones = await MarcacionesService.obtenerMarcacionesPorUsuario(ueId.id);
-        
+
         console.log('Marcaciones obtenidas para calcular días trabajados:', marcaciones);
-    
+
         const turnos = await AsignacionTurnosModel.getByUsuarioEmpresaId(ueId.id);
         for (const turno of turnos) {
             // agregar detalle dias por tipo turno
             turno.detalle_dias = await TipoTurnosModel.getDetalleDiasPorTipoTurnoId(turno.tipo_turno_id);
         }
-       
+
         console.log('Turnos obtenidos:', turnos);
 
         if (!marcaciones.success) {
@@ -930,14 +944,14 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
         const primerDia = `${anio}-${mes.toString().padStart(2, '0')}-01`;
         const ultimoDia = new Date(anio, mes, 0).getDate();
         const ultimoDiaStr = `${anio}-${mes.toString().padStart(2, '0')}-${ultimoDia.toString().padStart(2, '0')}`;
-        
+
         const diasJustificados = await JustificacionesModel.obtenerDiasJustificadosEnRango(
             ueId.id,
             primerDia,
             ultimoDiaStr
         );
 
-        
+
 
         // Procesar días del mes
         const dias = procesarDiasMes(parseInt(mes), parseInt(anio), marcaciones.marcaciones, turnos, diasJustificados, ueId.id);
@@ -977,7 +991,7 @@ const obtenerDiasTrabajadosPorMes = async (req, res) => {
 const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], usuarioEmpresaId) => {
     const diasDelMes = new Date(anio, mes, 0).getDate(); // Obtener cantidad de días del mes
     const dias = [];
-    
+
     // Mapeo de días de la semana en español
     const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -995,21 +1009,21 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
         const fecha = new Date(anio, mes - 1, dia);
         const fechaStr = fecha.toISOString().split('T')[0];
         const diaSemana = diasSemana[fecha.getDay()];
-        
+
         // Obtener marcaciones del día
         const marcacionesDia = marcaciones[fechaStr] || [];
-        
+
         // Obtener turno aplicable para este día
         const turnoDelDia = obtenerTurnoParaDia(fecha, turnos, diaSemana);
-        
+
         // Verificar si el día está justificado
         const justificacion = mapaDiasJustificados[fechaStr] || null;
-        
+
         // Procesar el día
         const diaInfo = procesarDia(fechaStr, marcacionesDia, turnoDelDia, diaSemana, justificacion);
         dias.push(diaInfo);
     }
-    
+
     return dias;
 };
 
@@ -1019,21 +1033,21 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
  */
 const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
     if (!turnos || turnos.length === 0) return null;
-    
+
     const fechaEvaluar = new Date(fecha);
     fechaEvaluar.setHours(0, 0, 0, 0);
-    
+
     // Encontrar la fecha de inicio del primer turno
     let fechaPrimerTurno = null;
     for (const turno of turnos) {
         const fechaInicio = new Date(turno.fecha_inicio);
         fechaInicio.setHours(0, 0, 0, 0);
-        
+
         if (!fechaPrimerTurno || fechaInicio < fechaPrimerTurno) {
             fechaPrimerTurno = fechaInicio;
         }
     }
-    
+
     // Si la fecha es anterior al primer turno, retornar objeto especial
     if (fechaPrimerTurno && fechaEvaluar < fechaPrimerTurno) {
         return {
@@ -1041,32 +1055,32 @@ const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
             fechaPrimerTurno: fechaPrimerTurno
         };
     }
-    
+
     // Buscar turno activo que aplique para esta fecha
     for (const turno of turnos) {
         const fechaInicio = new Date(turno.fecha_inicio);
         fechaInicio.setHours(0, 0, 0, 0);
-        
+
         const fechaFin = turno.fecha_fin ? new Date(turno.fecha_fin) : null;
         if (fechaFin) {
             fechaFin.setHours(23, 59, 59, 999);
         }
-        
+
         // Verificar si la fecha está en el rango del turno
         if (fechaEvaluar >= fechaInicio && (!fechaFin || fechaEvaluar <= fechaFin)) {
             // Verificar si el día de la semana está en los días laborables según detalle_dias
             if (turno.detalle_dias && turno.detalle_dias.length > 0) {
-                const diaDetalle = turno.detalle_dias.find(d => 
+                const diaDetalle = turno.detalle_dias.find(d =>
                     d.dia_semana.toLowerCase() === diaSemana.toLowerCase() && d.trabaja === 1
                 );
-                
+
                 if (diaDetalle) {
                     return turno;
                 }
             }
         }
     }
-    
+
     return null;
 };
 
@@ -1094,7 +1108,7 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = nu
             justificacion: null
         };
     }
-    
+
     // Si no hay turno asignado, el día es libre
     if (!turno) {
         return {
@@ -1120,7 +1134,7 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = nu
     const entradas = marcacionesDia.filter(m => m.tipo === 'entrada');
     const salidas = marcacionesDia.filter(m => m.tipo === 'salida');
     const colaciones = marcacionesDia.filter(m => m.tipo === 'colacion');
-    
+
     const entrada = entradas.length > 0 ? entradas[0] : null;
     const salida = salidas.length > 0 ? salidas[salidas.length - 1] : null; // Última salida
     const inicioColacion = colaciones.length > 0 ? colaciones[0] : null;
@@ -1160,16 +1174,16 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = nu
 
     if (entrada && salida) {
         const horasTrabajadasDecimal = calcularHorasTrabajadas(
-            entrada.hora, 
-            salida.hora, 
-            inicioColacion?.hora, 
+            entrada.hora,
+            salida.hora,
+            inicioColacion?.hora,
             finColacion?.hora
         );
         horasTrabajadas = formatearHoras(horasTrabajadasDecimal);
-        
+
         // Calcular retraso
         minutosRetraso = calcularMinutosRetraso(entrada.hora, turno.hora_inicio);
-        
+
         // Calcular horas extras
         const horasTurno = calcularDiferenciaHorasDecimal(turno.hora_inicio, turno.hora_fin);
         if (horasTrabajadasDecimal > horasTurno) {
@@ -1214,17 +1228,17 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = nu
 const calcularDiferenciaHorasDecimal = (horaInicio, horaFin) => {
     const [hInicio, mInicio, sInicio = 0] = horaInicio.split(':').map(Number);
     const [hFin, mFin, sFin = 0] = horaFin.split(':').map(Number);
-    
+
     const inicioEnMinutos = hInicio * 60 + mInicio + sInicio / 60;
     const finEnMinutos = hFin * 60 + mFin + sFin / 60;
-    
+
     let diferencia = finEnMinutos - inicioEnMinutos;
-    
+
     // Si la hora de fin es menor, asumimos que cruzó medianoche
     if (diferencia < 0) {
         diferencia += 24 * 60;
     }
-    
+
     return diferencia / 60; // Retornar en horas decimales
 };
 
@@ -1233,12 +1247,12 @@ const calcularDiferenciaHorasDecimal = (horaInicio, horaFin) => {
  */
 const calcularHorasTrabajadas = (horaEntrada, horaSalida, horaInicioColacion, horaFinColacion) => {
     const totalHoras = calcularDiferenciaHorasDecimal(horaEntrada, horaSalida);
-    
+
     if (horaInicioColacion && horaFinColacion) {
         const horasColacion = calcularDiferenciaHorasDecimal(horaInicioColacion, horaFinColacion);
         return Math.max(0, totalHoras - horasColacion);
     }
-    
+
     return totalHoras;
 };
 
@@ -1248,12 +1262,12 @@ const calcularHorasTrabajadas = (horaEntrada, horaSalida, horaInicioColacion, ho
 const calcularMinutosRetraso = (horaEntrada, horaInicioTurno) => {
     const [hEntrada, mEntrada, sEntrada = 0] = horaEntrada.split(':').map(Number);
     const [hTurno, mTurno, sTurno = 0] = horaInicioTurno.split(':').map(Number);
-    
+
     const entradaEnMinutos = hEntrada * 60 + mEntrada;
     const turnoEnMinutos = hTurno * 60 + mTurno;
-    
+
     const retraso = entradaEnMinutos - turnoEnMinutos;
-    
+
     return Math.max(0, retraso);
 };
 
@@ -1263,7 +1277,7 @@ const calcularMinutosRetraso = (horaEntrada, horaInicioTurno) => {
 const formatearHoras = (horasDecimales) => {
     const horas = Math.floor(horasDecimales);
     const minutos = Math.round((horasDecimales - horas) * 60);
-    
+
     return `${horas}:${minutos.toString().padStart(2, '0')}`;
 };
 

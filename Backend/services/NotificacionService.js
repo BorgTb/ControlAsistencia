@@ -7,7 +7,7 @@ import EstAsignacionesModel from '../model/EstAsignacionesModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import PDFService from '../services/PDFService.js';
 
-import {DateTime} from 'luxon';
+import { DateTime } from 'luxon';
 
 class NotificacionService {
     async procesarNotificacionMarcacion(usuario_id, marcacion_id, usuario_empresa = null, lugar = null, domicilio_prestacion = null) {
@@ -25,10 +25,10 @@ class NotificacionService {
             }
 
             // Ver si el usuario se encuentra afecto a un sistema excepcional
-            const [resolucion] = await ResolucionModel.findByUsuarioEmpresaId(usuario_empresa.id);
-            if (resolucion) {
+            const resoluciones = await ResolucionModel.findByUsuarioEmpresaId(usuario_empresa.id);
+            if (resoluciones && resoluciones.length > 0) {
                 //agregar datos de resolucion a la marcacion
-                marcacion.data.resolucion = resolucion;
+                marcacion.data.resolucion = resoluciones[0];
             }
 
             // agregar datos de la empresa
@@ -37,7 +37,7 @@ class NotificacionService {
 
 
             // Verificar si el usuario está afecto a una EST
-            const estAsignacion = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_empresa.id);            
+            const estAsignacion = await EstAsignacionesModel.getActiveByUsuarioEmpresaId(usuario_empresa.id);
             let empresa_est = null;
             if (estAsignacion && estAsignacion.fecha_fin === null) {
                 empresa_est = await EmpresaModel.getEmpresaById(estAsignacion.usuaria_id);
@@ -45,7 +45,7 @@ class NotificacionService {
                 const empleador_est = await UsuarioEmpresaModel.getPrimerEmpleadorActivoByEmpresaId(estAsignacion.est_id);
                 console.log('Empleador EST:', empleador_est);
 
-                await MailService.enviarNotificacionMarcacionEmpresa(usuario,marcacion,empresa,lugar,domicilio_prestacion,empresa_est,empleador_est.usuario_email);
+                await MailService.enviarNotificacionMarcacionEmpresa(usuario, marcacion, empresa, lugar, domicilio_prestacion, empresa_est, empleador_est.usuario_email);
             }
 
 
@@ -53,7 +53,7 @@ class NotificacionService {
             console.log('empresa est:', empresa_est);
 
 
-            
+
 
 
             // Verificar conexión de correo
@@ -192,7 +192,7 @@ class NotificacionService {
         }
     }
 
-    async enviarCorreoNotificacionEmpleador(emailEmpleador){
+    async enviarCorreoNotificacionEmpleador(emailEmpleador) {
         try {
             // Verificar conexión de correo
             const conexionValida = await MailService.verificarConexion();
@@ -215,8 +215,8 @@ class NotificacionService {
                 error: error.message
             };
         }
-        
-            
+
+
     }
 
     async enviarNotificacionAmonestacion(trabajador, amonestacion, empresa, pdfPath) {
@@ -323,7 +323,7 @@ class NotificacionService {
                 empresa,
                 observaciones
             );
-            
+
 
             return estado;
         } catch (error) {

@@ -56,7 +56,7 @@ class UsuarioEmpresaModel {
     /*
         Falta implementar que valide o retorne la ultima empresa activa con la que esta ligado
     */
-    static async getUsuarioEmpresaById(id) {
+    static async getUsuarioEmpresaById(id, empresa_id) {
         const query = `
             SELECT 
                 ue.id,
@@ -79,13 +79,13 @@ class UsuarioEmpresaModel {
             FROM usuarios_empresas ue
             LEFT JOIN usuarios u ON ue.usuario_id = u.id
             LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
-            WHERE ue.usuario_id = ?
+            WHERE ue.usuario_id = ? AND ue.empresa_id = ?
         `;
 
-        const [rows] = await db.execute(query, [id]);
-        return rows.length > 0 ? rows[0] : null;
+        const [rows] = await db.execute(query, [id, empresa_id]);
+        return rows.length > 0 ? rows : null;
     }
-    static async getUsuarioEmpresaByUsuarioId(id) {
+    static async getUsuarioEmpresaByUsuarioId(id, empresa_id) {
         console.log('[getUsuarioEmpresaByUsuarioId] Parámetro recibido (usuario_empresa_id):', id);
         const query = `
             SELECT 

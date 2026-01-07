@@ -182,13 +182,84 @@ const loginUser = async (email, password, ip_address = null) => {
         throw new Error('User account is inactive');
     }
 
-    const usuarioEmpresas = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id); //empresa ala que esta relacionada
-    const empresaId = usuarioEmpresas ? usuarioEmpresas.empresa_id : null;
-    const empresaRut = usuarioEmpresas ? usuarioEmpresas.empresa_rut : null;
-    const usuarioEmpresaId = usuarioEmpresas ? usuarioEmpresas.id : null;
+    // MULTI-EMPRESA: Obtener todas las empresas del usuario
+    const usuarioEmpresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(user.id);
+    console.log('🏢 Empresas del usuario:', usuarioEmpresas);
+
+    // Verificar si el usuario es admin (puede no tener empresas)
+    if (user.nombre === 'admin') {
+        // Admin no requiere empresa
+        const rolesSlugs = ['admin'];
+        const token = generateToken(user, null);
+
+        return {
+            token,
+            empresa_id: null,
+            roles: rolesSlugs,
+            user: {
+                id: user.id,
+                nombre: user.nombre,
+                apellido_pat: user.apellido_pat,
+                apellido_mat: user.apellido_mat,
+                email: user.email,
+                roles: rolesSlugs,
+                rut: user.rut,
+                estado: user.estado,
+                est: false,
+                empresa_nombre: null,
+                empresa_rut: null,
+            }
+        };
+    }
+
+    // Validar que el usuario tenga al menos una empresa
+    if (!usuarioEmpresas || usuarioEmpresas.length === 0) {
+        throw new Error('Usuario no tiene empresas asignadas');
+    }
+
+    // MULTI-EMPRESA: Si tiene múltiples empresas, retornar lista para selección
+    if (usuarioEmpresas.length > 1) {
+        console.log('👥 Usuario con múltiples empresas, requiere selección');
+
+        // Registrar inicio de sesión en auditoría (sin empresa específica)
+        try {
+            await AuditoriaModel.registrarInicioSesion(user.id, ip_address, 'multi-empresa');
+        } catch (auditoriaError) {
+            console.error('❌ Error al registrar auditoría:', auditoriaError);
+        }
+
+        // Retornar lista de empresas para que el usuario seleccione
+        return {
+            requiresCompanySelection: true,
+            companies: usuarioEmpresas.map(ue => ({
+                id: ue.empresa_id,
+                nombre: ue.empresa_nombre,
+                rut: ue.empresa_rut,
+                usuario_empresa_id: ue.id
+            })),
+            user: {
+                id: user.id,
+                nombre: user.nombre,
+                apellido_pat: user.apellido_pat,
+                apellido_mat: user.apellido_mat,
+                email: user.email,
+                rut: user.rut,
+                estado: user.estado
+            }
+        };
+    }
+
+    // Usuario con una sola empresa - flujo normal
+    const empresaData = usuarioEmpresas[0];
+    const empresaId = empresaData.empresa_id;
+    const empresaRut = empresaData.empresa_rut;
+    const usuarioEmpresaId = empresaData.id;
+
+    console.log('🏢 Usuario con empresa única:', empresaData);
 
     // MULTI-ROL: Obtener roles asignados del usuario en esta empresa
     let rolesSlugs = [];
+
     try {
         const rolesAsignados = await UsuariosRolesAsignadosModel.getUserRolesInCompany(user.id, empresaId);
         rolesSlugs = rolesAsignados.map(r => r.rol_slug);
@@ -199,6 +270,7 @@ const loginUser = async (email, password, ip_address = null) => {
         rolesSlugs = ['trabajador'];
         console.warn('⚠️ No se encontraron roles, usando trabajador por defecto');
     }
+
 
     // Generate token
     const token = generateToken(user, empresaId);
@@ -281,7 +353,100 @@ const loginUser = async (email, password, ip_address = null) => {
             empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
             empresa_rut: rutLimpio,
         }
-    };
+    }
+};
+
+// Function to handle company selection for multi-company users
+const selectCompany = async (userId, empresaId, ip_address = null) => {
+    try {
+        // Obtener información del usuario
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Verificar que el usuario pertenece a la empresa seleccionada
+        const perteneceEmpresa = await UsuarioEmpresaModel.usuarioPerteneceEmpresa(userId, empresaId);
+        if (!perteneceEmpresa) {
+            throw new Error('Usuario no pertenece a la empresa seleccionada');
+        }
+
+        // Obtener información de la relación usuario-empresa
+        const usuarioEmpresaId = await UsuarioEmpresaModel.getIdByUsuarioIdAndEmpresaId(userId, empresaId);
+
+        // Obtener información de la empresa
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(userId);
+        const empresaData = empresas.find(e => e.empresa_id === empresaId);
+
+        if (!empresaData) {
+            throw new Error('Empresa no encontrada');
+        }
+
+        const empresaRut = empresaData.empresa_rut;
+
+        // Obtener roles del usuario en esta empresa
+        let rolesSlugs = [];
+        try {
+            const rolesAsignados = await UsuariosRolesAsignadosModel.getUserRolesInCompany(userId, empresaId);
+            rolesSlugs = rolesAsignados.map(r => r.rol_slug);
+            console.log(`✅ Roles en empresa seleccionada:`, rolesSlugs);
+        } catch (roleError) {
+            console.error('❌ Error al obtener roles:', roleError);
+            rolesSlugs = ['trabajador'];
+        }
+
+        // Generar token con empresa_id
+        const token = generateToken(user, empresaId);
+
+        // Verificar si es EST
+        let est = false;
+        if (rolesSlugs.includes('empleador')) {
+            est = await verificarEst(empresaId);
+        }
+
+        // Obtener información completa de la empresa
+        let empresaInfo = null;
+        try {
+            if (empresaRut) {
+                empresaInfo = await EmpresaModel.getEmpresaByRut(empresaRut);
+            }
+        } catch (empresaError) {
+            console.error('❌ Error al obtener información de empresa:', empresaError);
+        }
+
+        // Registrar selección de empresa en auditoría
+        try {
+            const rolParaAuditoria = rolesSlugs.length > 0 ? rolesSlugs[0] : 'trabajador';
+            await AuditoriaModel.registrarInicioSesion(userId, ip_address, rolParaAuditoria);
+            console.log('✅ Auditoría de selección de empresa registrada');
+        } catch (auditoriaError) {
+            console.error('❌ Error al registrar auditoría:', auditoriaError);
+        }
+
+        const rutLimpio = empresaRut ? empresaRut.trim() : null;
+
+        return {
+            token,
+            empresa_id: empresaId,
+            roles: rolesSlugs,
+            user: {
+                id: user.id,
+                nombre: user.nombre,
+                apellido_pat: user.apellido_pat,
+                apellido_mat: user.apellido_mat,
+                email: user.email,
+                roles: rolesSlugs,
+                rut: user.rut,
+                estado: user.estado,
+                est: est,
+                empresa_nombre: empresaInfo ? empresaInfo.emp_nombre : null,
+                empresa_rut: rutLimpio,
+            }
+        };
+    } catch (error) {
+        console.error('❌ Error en selectCompany:', error);
+        throw error;
+    }
 };
 
 // Function to get user by ID
@@ -425,6 +590,7 @@ const AuthService = {
     verifyRefreshToken,
     registerUser,
     loginUser,
+    selectCompany,
     getUserById,
     getUserByEmail,
     isPasswordCorrect,

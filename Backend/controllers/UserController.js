@@ -7,6 +7,7 @@ import AuditoriaModel from '../model/AuditoriaModel.js';
 import FileUploadService from '../services/FileUploadService.js';
 import SolicitudesUsuariosModel from '../model/SolicitudesUsuariosModel.js';
 import HorasExtrasModel from '../model/HorasExtrasModel.js';
+import UsuariosRolesAsignadosModel from '../model/UsuariosRolesAsignadosModel.js';
 
 /**
  * Actualiza el rol de un usuario por su id.
@@ -706,7 +707,7 @@ const createUsuarioEmpresa = async (req, res) => {
                 message: 'Usuario no encontrado'
             });
         }
-
+        /*
         // Verificar si el usuario ya tiene una empresa asignada
         const relacionExistente = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario_id);
         if (relacionExistente) {
@@ -715,7 +716,7 @@ const createUsuarioEmpresa = async (req, res) => {
                 message: 'El usuario ya tiene una empresa asignada'
             });
         }
-
+        */
         // Crear la relación usuario-empresa
         const datosRelacion = {
             usuario_id,
@@ -725,6 +726,11 @@ const createUsuarioEmpresa = async (req, res) => {
         };
 
         const nuevaRelacion = await UsuarioEmpresaModel.createUsuarioEmpresa(datosRelacion);
+
+        UsuariosRolesAsignadosModel.assignRole(nuevaRelacion.id, 2);
+        UsuariosRolesAsignadosModel.assignRole(nuevaRelacion.id, 3);
+        
+        
         
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
@@ -796,7 +802,7 @@ const createSolicitud = async (req, res) => {
         
 
         const user = req.user;
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id,req.user.empresa_id);
 
 
         // Validar que se recibieron los datos necesarios
@@ -870,7 +876,8 @@ const createSolicitud = async (req, res) => {
 const getSolicitudes = async (req, res) => {
     try {
         const user = req.user;
-        const userEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        const [userEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        
         const solicitudes = await SolicitudesUsuariosModel.obtenerPorUsuarioEmpresa(userEmpresa.id);
         console.log('📋 Solicitudes obtenidas para usuario_empresa_id', userEmpresa.id, ':', solicitudes);
         //console.log('✅ Solicitudes obtenidas:', solicitudes);
@@ -891,7 +898,9 @@ const getSolicitudes = async (req, res) => {
 const getHorasExtrasUsuario = async (req, res) => {
     try {
         const user = req.user;
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id);
+        console.log(req.user);
+        const [usuarioEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+        console.log('UsuarioEmpresa encontrado:', usuarioEmpresa);
         const horasExtras = await HorasExtrasModel.getHorasExtrasByUsuarioEmpresa(usuarioEmpresa.id);
         const sumTotalHoras = horasExtras.reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
         const aprobadas = horasExtras.filter(horaExtra => horaExtra.estado === 'APROBADA').reduce((total, horaExtra) => total + horaExtra.total_horas, 0);
@@ -912,6 +921,53 @@ const getHorasExtrasUsuario = async (req, res) => {
 };
 
 
+/**
+ * Obtener empresas del usuario autenticado
+ * Para permitir cambio de empresa post-login
+ */
+const getUserCompanies = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        console.log('📋 Obteniendo empresas para usuario:', userId);
+
+        // Obtener empresas del usuario
+        const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(userId);
+
+        if (!empresas || empresas.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontraron empresas para este usuario'
+            });
+        }
+
+        // Formatear respuesta con información de empresa actual
+        const empresasFormateadas = empresas.map(e => ({
+            id: e.empresa_id,
+            nombre: e.empresa_nombre,
+            rut: e.empresa_rut,
+            usuario_empresa_id: e.id,
+            es_actual: e.empresa_id === req.user.empresa_id
+        }));
+
+        console.log(`✅ Encontradas ${empresas.length} empresas para el usuario`);
+
+        res.status(200).json({
+            success: true,
+            empresas: empresasFormateadas,
+            empresa_actual_id: req.user.empresa_id
+        });
+
+    } catch (error) {
+        console.error('❌ Error al obtener empresas del usuario:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las empresas del usuario',
+            error: error.message
+        });
+    }
+};
+
 const UserController = {
     updateEmail,
     updatePassword,
@@ -931,7 +987,8 @@ const UserController = {
     createSolicitudMarcacion,
     createSolicitud,
     getSolicitudes,
-    getHorasExtrasUsuario
+    getHorasExtrasUsuario,
+    getUserCompanies // Nuevo: Obtener empresas del usuario autenticado
 }
 
 export default UserController;

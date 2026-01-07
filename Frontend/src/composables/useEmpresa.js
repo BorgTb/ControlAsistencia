@@ -16,7 +16,8 @@ export function useEmpresa() {
 
   const obtenerTurnos = async () => {
     try {
-      const response = await EmpresaServices.obtenerTurnos(user.value.rut);
+      console.log('user', user.value)
+      const response = await EmpresaServices.obtenerTurnos(user.value.empresa_rut);
       return response.data;
     } catch (error) {
       console.error("Error al obtener turnos:", error);

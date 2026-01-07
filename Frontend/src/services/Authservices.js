@@ -11,21 +11,32 @@ class AuthService {
    */
   async login(credentials) {
     const authStore = useAuthStore()
-    
+
     try {
       authStore.setLoading(true)
       const response = await apiClient.post('/auth/login', credentials)
-      
+
+      // MULTI-EMPRESA: Verificar si requiere selección de empresa
+      if (response.data.requiresCompanySelection) {
+        console.log('👥 Usuario multi-empresa, no establecer usuario aún')
+        return {
+          success: true,
+          data: response.data,
+          message: response.data.message || 'Selecciona una empresa para continuar'
+        }
+      }
+
+      // Usuario con empresa única - flujo normal
       const { user, expiresAt } = response.data // Ya NO recibimos token en la respuesta
-      
+
       // Establecer tiempo de expiración del token para renovación proactiva
       if (expiresAt) {
         setTokenExpiration(expiresAt)
       }
-      
+
       // Solo almacenar datos del usuario (el token está en cookie HTTP-only)
       authStore.setUser(user)
-      
+
       return {
         success: true,
         data: response.data,
@@ -33,7 +44,7 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error en login:', error)
-      
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al iniciar sesión',
@@ -54,14 +65,14 @@ class AuthService {
    */
   async logout() {
     const authStore = useAuthStore()
-    
+
     try {
       authStore.setLoading(true)
-      
+
       // Obtener datos del usuario antes de limpiar
       const userData = authStore.getUser
       console.log('🔍 Datos del usuario para logout:', userData)
-      
+
       // Cerrar sesión en auditoría antes del logout
       if (userData && userData.id) {
         try {
@@ -75,7 +86,7 @@ class AuthService {
           // No fallar el logout por esto
         }
       }
-      
+
       // Llamar al endpoint de logout para limpiar la cookie
       try {
         await apiClient.post('/auth/logout')
@@ -84,20 +95,20 @@ class AuthService {
         console.warn('⚠️ Error en logout del auth:', authError)
         // Continuar con el logout local
       }
-      
+
       // Limpiar el store local
       authStore.clearAuth()
-      
+
       return {
         success: true,
         message: 'Logout exitoso'
       }
     } catch (error) {
       console.error('Error en logout:', error)
-      
+
       // Aún así, limpiar el store local
       authStore.clearAuth()
-      
+
       return {
         success: true,
         message: 'Sesión cerrada localmente'
@@ -113,25 +124,25 @@ class AuthService {
    */
   async verifyToken() {
     const authStore = useAuthStore()
-    
+
     try {
       const response = await apiClient.get('/auth/verify')
-      
+
       // Actualizar datos del usuario si es necesario
       if (response.data.user) {
         authStore.setUser(response.data.user)
       }
-      
+
       return {
         success: true,
         data: response.data
       }
     } catch (error) {
       console.error('Error verificando token:', error)
-      
+
       // Si el token no es válido, limpiar la autenticación
       authStore.clearAuth()
-      
+
       return {
         success: false,
         error: 'Token inválido'
@@ -146,20 +157,20 @@ class AuthService {
    */
   async register(userData) {
     const authStore = useAuthStore()
-    
+
     try {
       authStore.setLoading(true)
-      
+
       const response = await apiClient.post('/auth/register', userData)
-      
+
       const { token, user } = response.data
-      
+
       // Si el backend retorna token inmediatamente después del registro
       if (token) {
         authStore.setToken(token)
         authStore.setUser(user)
       }
-      
+
       return {
         success: true,
         data: response.data,
@@ -167,7 +178,7 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error en registro:', error)
-      
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al registrar usuario',
@@ -186,7 +197,7 @@ class AuthService {
   async forgotPassword(email) {
     try {
       const response = await apiClient.post('/auth/forgot-password', { email })
-      
+
       return {
         success: true,
         data: response.data,
@@ -194,7 +205,7 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error en forgot password:', error)
-      
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al solicitar recuperación de contraseña'
@@ -212,7 +223,7 @@ class AuthService {
   async resetPassword(resetData) {
     try {
       const response = await apiClient.post('/auth/reset-password', resetData)
-      
+
       return {
         success: true,
         data: response.data,
@@ -220,7 +231,7 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error en reset password:', error)
-      
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al restablecer contraseña'
@@ -237,10 +248,10 @@ class AuthService {
    */
   async changeEmail(emailData) {
     const authStore = useAuthStore()
-    
+
     try {
       const response = await apiClient.put('/user/email', emailData)
-      
+
       // Actualizar el usuario en el store con el nuevo email
       if (response.data.user) {
         console.log('Usuario actualizado:', response.data.user)
@@ -253,10 +264,10 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error cambiando email:', error)
-      
+
       let errorMessage = 'Error al actualizar el email'
       let errorField = null
-      
+
       if (error.response?.status === 400) {
         errorMessage = error.response.data?.message || 'Datos inválidos'
         errorField = 'password' // Assuming password is wrong in most 400 cases
@@ -266,7 +277,7 @@ class AuthService {
       } else {
         errorMessage = error.response?.data?.message || errorMessage
       }
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -286,7 +297,7 @@ class AuthService {
   async changePassword(passwordData) {
     try {
       const response = await apiClient.put('/user/password', passwordData)
-      
+
       return {
         success: true,
         data: response.data,
@@ -294,17 +305,17 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error cambiando contraseña:', error)
-      
+
       let errorMessage = 'Error al actualizar la contraseña'
       let errorField = null
-      
+
       if (error.response?.status === 400) {
         errorMessage = error.response.data?.message || 'Contraseña actual incorrecta'
         errorField = 'currentPassword'
       } else {
         errorMessage = error.response?.data?.message || errorMessage
       }
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -315,9 +326,103 @@ class AuthService {
   }
 
   /**
+   * Selecciona una empresa para usuarios multi-empresa
+   * @param {Object} selectionData - Datos de selección
+   * @param {number} selectionData.userId - ID del usuario
+   * @param {number} selectionData.empresaId - ID de la empresa seleccionada
+   * @returns {Promise<Object>} Respuesta de la selección
+   */
+  async selectCompany(selectionData) {
+    const authStore = useAuthStore()
+
+    try {
+      authStore.setLoading(true)
+
+      const response = await apiClient.post('/auth/select-company', selectionData)
+
+      const { user, expiresAt } = response.data
+
+      // Establecer tiempo de expiración del token
+      if (expiresAt) {
+        setTokenExpiration(expiresAt)
+      }
+
+      // Almacenar datos del usuario
+      authStore.setUser(user)
+
+      // Limpiar datos de selección pendiente
+      authStore.clearCompanySelection()
+
+      return {
+        success: true,
+        data: response.data,
+        message: 'Empresa seleccionada exitosamente'
+      }
+    } catch (error) {
+      console.error('Error en selección de empresa:', error)
+
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al seleccionar empresa',
+        status: error.response?.status
+      }
+    } finally {
+      authStore.setLoading(false)
+    }
+  }
+
+  /**
+   * Obtener empresas del usuario autenticado
+   * Para permitir cambio de empresa post-login
+   * @returns {Promise<Object>} Respuesta con lista de empresas
+   */
+  async getUserCompanies() {
+    try {
+      const response = await apiClient.get('/user/companies')
+
+      return {
+        success: true,
+        data: response.data,
+        message: 'Empresas obtenidas exitosamente'
+      }
+    } catch (error) {
+      console.error('Error al obtener empresas del usuario:', error)
+
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener empresas',
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Cambiar de empresa (post-login)
+   * Reutiliza la lógica de selectCompany pero para cambio post-login
+   * @param {number} empresaId - ID de la empresa a cambiar
+   * @returns {Promise<Object>} Respuesta del cambio
+   */
+  async switchCompany(empresaId) {
+    const authStore = useAuthStore()
+    const userId = authStore.user?.id
+
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Usuario no autenticado'
+      }
+    }
+
+    return this.selectCompany({
+      userId,
+      empresaId
+    })
+  }
+
+  /**
    * Validaciones del lado cliente
    */
-  
+
   /**
    * Valida formato de email
    * @param {string} email - Email a validar
@@ -338,9 +443,9 @@ class AuthService {
     const hasUpperCase = /[A-Z]/.test(password)
     const hasLowerCase = /[a-z]/.test(password)
     const hasNumbers = /\d/.test(password)
-    
+
     const isValid = minLength && hasUpperCase && hasLowerCase && hasNumbers
-    
+
     return {
       isValid,
       details: {
@@ -349,8 +454,8 @@ class AuthService {
         hasLowerCase,
         hasNumbers
       },
-      message: isValid 
-        ? 'Contraseña válida' 
+      message: isValid
+        ? 'Contraseña válida'
         : 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números'
     }
   }

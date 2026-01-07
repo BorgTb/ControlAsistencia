@@ -223,6 +223,22 @@ const handleSubmit = async () => {
     console.log('Resultado del login:', result)
     
     if (result.success) {
+      // MULTI-EMPRESA: Verificar si requiere selección de empresa
+      if (result.data.requiresCompanySelection) {
+        console.log('👥 Usuario multi-empresa detectado')
+        
+        // Guardar datos de empresas en el store
+        authStore.setPendingCompanySelection({
+          companies: result.data.companies,
+          user: result.data.user
+        })
+        
+        // Redirigir a selección de empresas
+        router.push('/select-company')
+        return
+      }
+      
+      // Usuario con empresa única - flujo normal
       successMessage.value = result.message
       // Guardar usuario y token en el store antes de redirigir
       if (result.data.token) authStore.setToken(result.data.token)
