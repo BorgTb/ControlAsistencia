@@ -27,7 +27,7 @@ const PORT = process.env.SERVER_PORT;
 //MIDDLEWARE
 // Configurar CORS para permitir cookies
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [process.env.FRONTEND_URL, 'http://localhost:5173',process.env.FRONTEND_URL_WWW],
     credentials: true // IMPORTANTE: permitir envío de cookies
 }));
 app.use(express.json());
