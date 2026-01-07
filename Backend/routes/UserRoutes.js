@@ -61,4 +61,7 @@ router.get('/solicitudes', AuthService.verifyToken, UserController.getSolicitude
 //rutas para horas extras
 router.get('/horas-extras', AuthService.verifyToken, UserController.getHorasExtrasUsuario);
 
+// Ruta para obtener empresas del usuario autenticado (cambio de empresa)
+router.get('/companies', AuthService.verifyToken, UserController.getUserCompanies);
+
 export default router;

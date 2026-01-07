@@ -1342,8 +1342,10 @@ const crearTipoTurno = async (req, res) => {
         const tipoTurnoData = req.body;
         const USR_PETICION = req.user;
 
+     
+
         // Validar que sea empleador o admin
-        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+        if (!USR_PETICION || (!USR_PETICION.roles.includes('empleador') && !USR_PETICION.roles.includes('admin'))) {
             return res.status(403).json({
                 success: false,
                 message: "No tiene permisos para crear tipos de turno"

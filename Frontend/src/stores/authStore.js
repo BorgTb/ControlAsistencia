@@ -88,11 +88,57 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('🧹 Datos de selección de empresa limpiados')
   }
 
+  // MULTI-EMPRESA: Estado de empresas disponibles para cambio post-login
+  const availableCompanies = ref([])
+
+  // MULTI-EMPRESA: Obtener empresas del usuario autenticado
+  async function loadUserCompanies() {
+    try {
+      const AuthService = (await import('@/services/Authservices.js')).default
+      const result = await AuthService.getUserCompanies()
+      
+      if (result.success && result.data.empresas) {
+        availableCompanies.value = result.data.empresas
+        console.log('🏢 Empresas cargadas en store:', availableCompanies.value.length)
+        return availableCompanies.value
+      } else {
+        console.error('❌ Error al cargar empresas:', result.error)
+        availableCompanies.value = []
+        return []
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar empresas del usuario:', error)
+      availableCompanies.value = []
+      return []
+    }
+  }
+
+  // MULTI-EMPRESA: Cambiar de empresa post-login
+  async function switchCompany(empresaId) {
+    try {
+      const AuthService = (await import('@/services/Authservices.js')).default
+      const result = await AuthService.switchCompany(empresaId)
+      
+      if (result.success && result.data.user) {
+        setUser(result.data.user)
+        console.log('✅ Empresa cambiada en store')
+        return { success: true, user: result.data.user }
+      } else {
+        console.error('❌ Error al cambiar empresa:', result.error)
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      console.error('❌ Error al cambiar de empresa:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
 
   return {
     // Estado
     user,
     isLoading,
+    availableCompanies,
 
     // Getters de roles
     userRoles,
@@ -121,7 +167,11 @@ export const useAuthStore = defineStore('auth', () => {
     // MULTI-EMPRESA: Métodos de selección de empresa
     setPendingCompanySelection,
     getPendingCompanySelection,
-    clearCompanySelection
+    clearCompanySelection,
+
+    // MULTI-EMPRESA: Métodos de cambio de empresa post-login
+    loadUserCompanies,
+    switchCompany
   }
 }, {
   persist: {

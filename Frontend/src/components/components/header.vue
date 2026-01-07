@@ -123,6 +123,18 @@
                     Solicitudes
                   </button>
 
+                  <!-- Cambiar de Empresa -->
+                  <button
+                    v-if="tieneMasDeUnaEmpresa"
+                    @click="abrirCambioEmpresa"
+                    class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-150"
+                  >
+                    <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Cambiar de Empresa
+                  </button>
+
                   <!-- Ayuda -->
                   <button
                     @click="abrirAyuda"
@@ -166,6 +178,13 @@
       @click="closeDropdown"
       class="fixed inset-0 z-40"
     ></div>
+
+    <!-- Modal de cambio de empresa -->
+    <CompanySwitcherModal
+      :is-open="isCompanySwitcherOpen"
+      @close="cerrarCambioEmpresa"
+      @switched="onEmpresaCambiada"
+    />
   </header>
 </template>
 
@@ -173,9 +192,12 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/authStore.js'
 import RoleSwitcher from '@/components/common/RoleSwitcher.vue'
+import CompanySwitcherModal from '@/components/modals/CompanySwitcherModal.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const { user, isLoading, logout } = useAuth()
 
 const userData = computed(() => {
@@ -184,6 +206,19 @@ const userData = computed(() => {
 })
 
 const isUserDropdownOpen = ref(false)
+const isCompanySwitcherOpen = ref(false)
+const tieneMasDeUnaEmpresa = ref(false)
+
+// Verificar si el usuario tiene más de una empresa
+onMounted(async () => {
+  try {
+    await authStore.loadUserCompanies()
+    tieneMasDeUnaEmpresa.value = authStore.availableCompanies.length > 1
+    console.log('🏢 Empresas disponibles:', authStore.availableCompanies.length)
+  } catch (error) {
+    console.error('❌ Error al cargar empresas:', error)
+  }
+})
 
 const toggleUserDropdown = () => {
   isUserDropdownOpen.value = !isUserDropdownOpen.value
@@ -226,6 +261,21 @@ const abrirSolicitudes = () => {
 const verDiasTrabajados = () => {
   router.push('/usuario/dias-trabajados')
   closeDropdown()
+}
+
+const abrirCambioEmpresa = () => {
+  closeDropdown()
+  isCompanySwitcherOpen.value = true
+}
+
+const cerrarCambioEmpresa = () => {
+  isCompanySwitcherOpen.value = false
+}
+
+const onEmpresaCambiada = (userData) => {
+  console.log('✅ Empresa cambiada:', userData)
+  cerrarCambioEmpresa()
+  // El modal se encarga de refrescar la página
 }
 
 const handleDropdownLogout = async () => {

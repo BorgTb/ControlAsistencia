@@ -372,6 +372,54 @@ class AuthService {
   }
 
   /**
+   * Obtener empresas del usuario autenticado
+   * Para permitir cambio de empresa post-login
+   * @returns {Promise<Object>} Respuesta con lista de empresas
+   */
+  async getUserCompanies() {
+    try {
+      const response = await apiClient.get('/user/companies')
+
+      return {
+        success: true,
+        data: response.data,
+        message: 'Empresas obtenidas exitosamente'
+      }
+    } catch (error) {
+      console.error('Error al obtener empresas del usuario:', error)
+
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Error al obtener empresas',
+        status: error.response?.status
+      }
+    }
+  }
+
+  /**
+   * Cambiar de empresa (post-login)
+   * Reutiliza la lógica de selectCompany pero para cambio post-login
+   * @param {number} empresaId - ID de la empresa a cambiar
+   * @returns {Promise<Object>} Respuesta del cambio
+   */
+  async switchCompany(empresaId) {
+    const authStore = useAuthStore()
+    const userId = authStore.user?.id
+
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Usuario no autenticado'
+      }
+    }
+
+    return this.selectCompany({
+      userId,
+      empresaId
+    })
+  }
+
+  /**
    * Validaciones del lado cliente
    */
 

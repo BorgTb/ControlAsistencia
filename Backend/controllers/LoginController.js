@@ -338,6 +338,16 @@ const selectCompany = async (req, res) => {
             ip_address: ip_address
         });
 
+        // CONSIDERACIÓN 1: Revocar todos los refresh tokens anteriores del usuario
+        // Esto evita acumulación de tokens y mejora la seguridad
+        try {
+            const revoked = await RefreshTokenModel.revokeAllByUser(userId);
+            console.log('🔒 Refresh tokens anteriores revocados:', revoked);
+        } catch (revokeError) {
+            console.warn('⚠️ Error al revocar tokens anteriores:', revokeError);
+            // No detener el proceso por esto
+        }
+
         // Llamar al servicio de selección de empresa
         const selectionResult = await AuthService.selectCompany(userId, empresaId, ip_address);
 
@@ -355,6 +365,27 @@ const selectCompany = async (req, res) => {
         const expiresAt = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000); // 5 años
         const userAgent = req.headers['user-agent'] || 'unknown';
         await RefreshTokenModel.create(selectionResult.user.id, refreshToken, expiresAt, ip_address, userAgent);
+
+        // CONSIDERACIÓN 2: Registrar cambio de empresa en auditoría
+        try {
+            await AuditoriaModel.registrarCambio({
+                usuario_id: userId,
+                accion: 'cambio_empresa',
+                tabla_afectada: 'usuarios_empresas',
+                registro_id: empresaId,
+                descripcion: `Usuario cambió a empresa: ${selectionResult.user.empresa_nombre}`,
+                datos_nuevos: {
+                    empresa_id: empresaId,
+                    empresa_nombre: selectionResult.user.empresa_nombre,
+                    empresa_rut: selectionResult.user.empresa_rut
+                },
+                ip_address: ip_address
+            });
+            console.log('📝 Cambio de empresa registrado en auditoría');
+        } catch (auditoriaError) {
+            console.warn('⚠️ Error al registrar en auditoría:', auditoriaError);
+            // No detener el proceso por esto
+        }
 
         // Establecer cookies
         AuthService.setAuthCookies(res, accessToken, refreshToken);
