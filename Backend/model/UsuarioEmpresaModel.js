@@ -145,6 +145,30 @@ class UsuarioEmpresaModel {
         return rows;
     }
 
+    static async getEmpresasByUsuarioEmpresaId(id) {
+        const query = `
+            SELECT 
+                ue.id,
+                ue.usuario_id,
+                ue.empresa_id,
+                ue.rol_en_empresa,
+                ue.fecha_inicio,
+                ue.fecha_fin,
+                ue.created_at,
+                ue.updated_at,
+                e.emp_nombre as empresa_nombre,
+                e.emp_rut as empresa_rut,
+                e.estado as empresa_estado
+            FROM usuarios_empresas ue
+            LEFT JOIN empresa e ON ue.empresa_id = e.empresa_id
+            WHERE ue.id = ?
+            AND (ue.fecha_fin IS NULL OR ue.fecha_fin > CURRENT_DATE)
+            ORDER BY ue.fecha_inicio DESC
+        `;
+        const [rows] = await db.execute(query, [id]);
+        return rows;
+    }
+
     // Obtener todos los usuarios de una empresa
     static async getUsuariosByEmpresaId(empresa_id) {
         const query = `

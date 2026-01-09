@@ -31,6 +31,11 @@ class NotificacionService {
                 marcacion.data.resolucion = resoluciones[0];
             }
 
+
+            console.log('Usuario para notificación:', usuario);
+            console.log('Marcación para notificación:', marcacion);
+            console.log('Usuario Empresa para notificación:', usuario_empresa);
+            
             // agregar datos de la empresa
             const empresa = await EmpresaModel.getEmpresaById(usuario_empresa.empresa_id);
 

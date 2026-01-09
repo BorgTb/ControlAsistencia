@@ -3,6 +3,7 @@ import DispositivoZKModel from '../model/DispositivoZKModel.js';
 import UserModel from '../model/UserModel.js';
 import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
 import MarcacionesServices from './MarcacionesServices.js';
+import NotificacionService from './NotificacionService.js';
 
 /**
  * Servicio para gestionar dispositivos ZK a través de MQTT
@@ -342,7 +343,8 @@ class ZKDeviceService {
             } else if (count >= 3) {
                 tipo = 'salida';
             }
-
+            
+            
             console.log(`
                 usuarioEmpresaId: ${usuarioEmpresaId}
                 tipo: ${tipo}
@@ -356,6 +358,14 @@ class ZKDeviceService {
                 fechaStr,
                 horaStr
             );
+            console.log('Resultado de guardar marcación:', result);
+            console.log('Usuario ID:', user);
+            console.log('usuarioEmpresaId:', usuarioEmpresaId);
+
+            const [UE] = await UsuarioEmpresaModel.getEmpresasByUsuarioEmpresaId(usuarioEmpresaId);
+            console.log('UE:', UE);
+            // 7. Enviar notificación (si está habilitada)
+            NotificacionService.procesarNotificacionMarcacion(user.id, result.data.id, UE);
 
             if (result.success) {
                 console.log(`✅ Marcación registrada: ${tipo} para usuario ${userId} (${horaStr})`);
