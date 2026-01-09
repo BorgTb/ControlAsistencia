@@ -1,6 +1,8 @@
 import zkDeviceService from '../services/ZKDeviceService.js';
 import dispositivoZKService from '../services/DispositivoZKService.js';
 import ADMSService from '../services/ADMSService.js';
+import UsuarioEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import ZKUsuarioSincronizacionModel from '../model/zk_usuario_sincronizacion.js';
 
 /**
  * Obtener todos los dispositivos ZK registrados
@@ -302,64 +304,140 @@ export const sendCommand = async (req, res) => {
 export const getUsers = async (req, res) => {
     try {
         const { serial } = req.params;
+        const { forceSync } = req.query; // Parámetro opcional para forzar sincronización
+        
         // Obtener el protocolo del dispositivo
         const dbDevice = await dispositivoZKService.obtenerDispositivosConEstado();
         const device = dbDevice.find(d => d.serial === serial);
 
+        if (!device) {
+            return res.status(404).json({
+                success: false,
+                message: 'Dispositivo no encontrado'
+            });
+        }
+
+        // Función auxiliar para enriquecer usuarios con validación de sistema y datos completos
+        const enrichUsersWithSystemValidation = async (users, empresaId, dispositivoId) => {
+            // Obtener todos los usuarios de la empresa
+            const usuariosEmpresa = await UsuarioEmpresaModel.getUsuariosByEmpresaId(empresaId);
+            
+            return Promise.all(users.map(async (user) => {
+                // Buscar si el usuario existe en la BD por user_id (PIN del dispositivo)
+                const usuarioEnSistema = usuariosEmpresa.find(ue => 
+                    ue.usuario_rut === user.user_id || 
+                    ue.usuario_id?.toString() === user.user_id
+                );
+
+                const enrichedUser = {
+                    ...user,
+                    in_system: !!usuarioEnSistema
+                };
+
+                // Si existe en sistema, agregar datos adicionales y persistir en BD
+                if (usuarioEnSistema) {
+                    enrichedUser.rut = usuarioEnSistema.usuario_rut;
+                    enrichedUser.nombre_completo = `${usuarioEnSistema.usuario_nombre} ${usuarioEnSistema.usuario_apellido_pat || ''}`.trim();
+                    enrichedUser.usuario_empresa_id = usuarioEnSistema.id;
+                    
+                    // Persistir en BD para consulta futura
+                    await ZKUsuarioSincronizacionModel.saveUsuarioDispositivo(
+                        dispositivoId,
+                        user.user_id,
+                        enrichedUser
+                    );
+                }
+
+                return enrichedUser;
+            }));
+        };
+
         let users;
         if (device && device.protocolo === 'ADMS') {
-            // Para ADMS, encolamos el comando de consulta y ESPERAMOS el resultado
+            // Siempre intentar sincronizar desde el dispositivo primero
             console.log(`[ADMS] Solicitando sincronización de usuarios para ${serial}...`);
             const cmdId = ADMSService.queueCommand(serial, 'DATA QUERY USERINFO');
 
-            // Esperar a que el dispositivo ejecute el comando (timeout 20s para no bloquear tanto el front)
-            const result = await ADMSService.waitForCommand(cmdId, 20000);
+            // Esperar confirmación del comando
+            const result = await ADMSService.waitForCommand(cmdId, 10000);
 
             if (result.success) {
-                // El comando se ejecutó, pero la data puede tardar un poco en llegar vía POST /iclock/cdata
-                console.log(`[ADMS] Comando de sincronización confirmado. Esperando 2s por los datos de ${serial}...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // El comando se ejecutó, esperar un poco por los datos
+                console.log(`[ADMS] Comando confirmado. Esperando datos...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
 
-                // El comando se ejecutó, los datos ya deberían estar en el cache (vía handleCData)
-                const cachedUsers = ADMSService.userDatabase.get(serial);
-                if (cachedUsers && cachedUsers.size > 0) {
-                    const deviceUsersList = Array.from(cachedUsers.values());
-
-                    // Nota: Aquí podrías volver a agregar la relación con el sistema si lo deseas
-                    // Por ahora retornamos lo que viene del reloj de forma síncrona
-                    users = deviceUsersList;
+                // Verificar si llegaron datos
+                const updatedCache = ADMSService.userDatabase.get(serial);
+                if (updatedCache && updatedCache.size > 0) {
+                    users = Array.from(updatedCache.values());
+                    console.log(`[ADMS] ✓ ${users.length} usuarios sincronizados correctamente desde dispositivo`);
                 } else {
                     return res.status(200).json({
                         success: true,
-                        message: 'Sincronización completada pero el dispositivo no devolvió usuarios.',
-                        data: []
+                        message: 'Sincronización iniciada. Los datos pueden tardar en llegar. Intente nuevamente en unos segundos.',
+                        data: [],
+                        syncing: true
                     });
                 }
             } else {
-                // Si hubo timeout o error, intentar devolver lo que haya en cache por si acaso
-                const cachedUsers = ADMSService.userDatabase.get(serial);
-                if (cachedUsers && cachedUsers.size > 0) {
+                // Si hubo timeout, combinar BD + cache para mostrar todos los usuarios
+                console.log(`[ADMS] Dispositivo no respondió. Consultando BD y cache para ${serial}...`);
+                
+                const dbUsers = await ZKUsuarioSincronizacionModel.getUsuariosConDatos(device.id);
+                const fallbackCache = ADMSService.userDatabase.get(serial);
+                
+                // Combinar usuarios de BD y cache
+                const usersMap = new Map();
+                
+                // Agregar usuarios de BD primero (tienen más info)
+                dbUsers.forEach(user => {
+                    usersMap.set(user.user_id, user);
+                });
+                
+                // Agregar usuarios del cache que no estén en BD
+                if (fallbackCache && fallbackCache.size > 0) {
+                    const cacheArray = Array.from(fallbackCache.values());
+                    for (const user of cacheArray) {
+                        if (!usersMap.has(user.user_id)) {
+                            // Usuario del cache no está en sistema
+                            usersMap.set(user.user_id, {
+                                ...user,
+                                in_system: false,
+                                from_cache: true
+                            });
+                        }
+                    }
+                }
+                
+                const combinedUsers = Array.from(usersMap.values());
+                
+                if (combinedUsers.length > 0) {
+                    console.log(`[ADMS] Retornando ${combinedUsers.length} usuarios (${dbUsers.length} de BD, ${combinedUsers.length - dbUsers.length} solo en cache)`);
                     return res.status(200).json({
                         success: true,
-                        message: 'Sincronización lenta o fallida, se muestran datos cacheados.',
-                        data: Array.from(cachedUsers.values())
-                    });
-                } else {
-                    return res.status(504).json({
-                        success: false,
-                        message: 'El dispositivo no respondió a la solicitud de sincronización a tiempo.'
+                        message: 'Dispositivo no disponible. Mostrando última sincronización guardada.',
+                        data: combinedUsers,
+                        from_db: dbUsers.length > 0,
+                        cached: fallbackCache && fallbackCache.size > 0
                     });
                 }
+                
+                return res.status(504).json({
+                    success: false,
+                    message: 'El dispositivo no respondió y no hay datos disponibles.'
+                });
             }
         } else {
             users = await zkDeviceService.getUsers(serial);
         }
-        console.log(`Usuarios obtenidos: ${users}`);
-
+        
+        // Enriquecer usuarios con validación de sistema
+        const enrichedUsers = await enrichUsersWithSystemValidation(users, device.empresa_id, device.id);
+        console.log(`Usuarios obtenidos y validados: ${enrichedUsers.length || 0}`);
 
         res.status(200).json({
             success: true,
-            data: users
+            data: enrichedUsers
         });
     } catch (error) {
         console.error('Error obteniendo usuarios:', error);
@@ -545,6 +623,73 @@ export const openDoor = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error al abrir puerta',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Eliminar usuario del dispositivo
+ */
+export const deleteUser = async (req, res) => {
+    try {
+        const { serial } = req.params;
+        const { user_id } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'user_id es requerido'
+            });
+        }
+
+        const dbDevice = await dispositivoZKService.obtenerDispositivosConEstado();
+        const device = dbDevice.find(d => d.serial === serial);
+
+        if (!device) {
+            return res.status(404).json({
+                success: false,
+                message: 'Dispositivo no encontrado'
+            });
+        }
+
+        let result;
+        if (device && device.protocolo === 'ADMS') {
+            const cmdId = ADMSService.queueCommand(serial, ADMSService.deleteUser(user_id));
+            console.log(`[ADMS] Esperando resultado de eliminación de usuario ${user_id} en ${serial}...`);
+            const waitResult = await ADMSService.waitForCommand(cmdId, 15000);
+
+            if (waitResult.success) {
+                // Eliminar de BD también
+                await ZKUsuarioSincronizacionModel.deleteByUserId(device.id, user_id);
+                // Limpiar cache
+                const cachedUsers = ADMSService.userDatabase.get(serial);
+                if (cachedUsers) {
+                    cachedUsers.delete(user_id);
+                }
+            }
+
+            return res.status(200).json({
+                success: waitResult.success,
+                message: waitResult.success ? 'Usuario eliminado con éxito' : (waitResult.message || 'El dispositivo no confirmó la eliminación'),
+                data: waitResult
+            });
+        } else {
+            result = await zkDeviceService.deleteUser(serial, user_id);
+            // Eliminar de BD también
+            await ZKUsuarioSincronizacionModel.deleteByUserId(device.id, user_id);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Usuario eliminado',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al eliminar usuario',
             error: error.message
         });
     }

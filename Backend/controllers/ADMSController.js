@@ -75,6 +75,31 @@ export const handleCData = async (req, res) => {
                     console.log(`[ADMS] Sync Usuario (SN:${sn}): ${user.Name} (PIN:${user.PIN})`);
                 }
             });
+        } else if (tableName === 'OPERLOG') {
+
+            
+            // Si detectamos que tiene formato de usuarios (líneas que empiezan con "USER PIN=")
+            if (lines.length > 0 && (lines[0].includes('USER PIN=') || lines[0].includes('PIN='))) {
+                if (!ADMSService.userDatabase.has(sn)) {
+                    ADMSService.userDatabase.set(sn, new Map());
+                }
+                const snDB = ADMSService.userDatabase.get(sn);
+                lines.forEach(line => {
+                    // Remover el prefijo "USER " si existe
+                    let cleanLine = line.replace(/^USER\s+/, '');
+                    const user = ADMSService.parseKeyValueLine(cleanLine);
+                    if (user.PIN) {
+                        snDB.set(user.PIN, {
+                            user_id: user.PIN,
+                            name: user.Name || `User ${user.PIN}`,
+                            privilege: parseInt(user.Pri) || 0,
+                            card: user.Card || '',
+                            password: user.Passwd || ''
+                        });
+                        console.log(`[ADMS] Sync Usuario desde OPERLOG (SN:${sn}): ${user.Name} (PIN:${user.PIN})`);
+                    }
+                });
+            }
         } else if (tableName === 'FINGERTMP' || tableName === 'FP') {
             if (!ADMSService.fingerprintDatabase.has(sn)) {
                 ADMSService.fingerprintDatabase.set(sn, new Map());
@@ -90,16 +115,8 @@ export const handleCData = async (req, res) => {
                     console.log(`[ADMS] Sync Huella (SN:${sn}): PIN:${fpData.PIN} FID:${fpData.FID}`);
                 }
             });
-        } else if (tableName === 'OPERLOG') {
-            lines.forEach(line => {
-                console.log(`[ADMS] Log de Operación (SN:${sn}): ${line}`);
-            });
-        } else {
-            console.log(`[ADMS] Tabla ${tableName} no procesada específicamente o vacía. Líneas: ${lines.length}`);
-            if (lines.length > 0) {
-                console.log(`[ADMS] Contenido raw: ${payload}`);
-            }
         }
+        
         // Se pueden agregar más tablas (FP, OPERLOG, etc.) según sea necesario
 
         return res.send('OK');

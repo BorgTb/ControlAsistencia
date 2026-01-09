@@ -57,7 +57,7 @@
                                         Reloj: {{ user.name }}
                                     </div>
                                     <div v-if="!user.in_system" class="text-xs text-amber-600 font-medium">
-                                        ⚠️ No vinculado al sistema
+                                        ⚠️ No vinculado al sistema o con ID distinto
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">{{ user.rut || '-' }}</td>
@@ -170,7 +170,9 @@
                 <div v-if="feedback.message" 
                      :class="[
                          'mt-4 p-3 rounded-md text-sm',
-                         feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                         feedback.type === 'success' ? 'bg-green-100 text-green-800' : 
+                         feedback.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                         'bg-red-100 text-red-800'
                      ]">
                     {{ feedback.message }}
                 </div>
@@ -224,12 +226,28 @@ onMounted(() => {
 const fetchUsers = async () => {
     loading.value = true;
     try {
-        const data = await obtenerUsuarios(props.serial);
-        console.log('Usuarios data:', data);
+        const response = await obtenerUsuarios(props.serial);
+        console.log('Usuarios response:', response);
+        
+        // Extraer datos de la respuesta
+        const data = response.data || response;
         users.value = Array.isArray(data) ? data : (data.data || data.users || []);
+        
+        // Verificar si los datos vienen de la BD (no actualizados)
+        if (response.from_db || response.cached) {
+            const source = response.from_db ? 'base de datos' : 'caché';
+            showFeedback('warning', `⚠️ Datos obtenidos desde ${source}. El dispositivo no está disponible. Haga clic en "🔄 Sincronizar" para actualizar.`);
+        } else if (response.message && response.message.includes('no disponible')) {
+            showFeedback('warning', `⚠️ ${response.message}`);
+        }
     } catch (error) {
         console.error('Error fetching users:', error);
-        showFeedback('error', 'Error al obtener usuarios. Verifique conexión.');
+        // Verificar si el error tiene respuesta del servidor
+        if (error.response && error.response.status === 504) {
+            showFeedback('error', '❌ El dispositivo no responde y no hay datos guardados. Intente más tarde.');
+        } else {
+            showFeedback('error', '❌ Error al obtener usuarios. Verifique conexión.');
+        }
     } finally {
         loading.value = false;
     }

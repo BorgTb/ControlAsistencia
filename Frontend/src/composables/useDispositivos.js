@@ -255,8 +255,8 @@ export function useDispositivos() {
     loading.value = true;
     error.value = null;
     try {
-      const res = await enviarComando(serial, 'DELETE_USER', { user_id: userId });
-      return res;
+      const res = await dispositivosService.eliminarUsuarioDispositivo(serial, userId);
+      return res.data;
     } catch (err) {
       console.error('Error al eliminar usuario:', err);
       throw err;

@@ -31,6 +31,9 @@ router.post('/devices/:serial/command', authMiddleware.verifyToken, ZKDeviceCont
 // GET /api/zk/devices/:serial/users - Obtener usuarios del dispositivo
 router.get('/devices/:serial/users', authMiddleware.verifyToken, ZKDeviceController.getUsers);
 
+// DELETE /api/zk/devices/:serial/users - Eliminar usuario del dispositivo
+router.delete('/devices/:serial/users', authMiddleware.verifyToken, ZKDeviceController.deleteUser);
+
 // POST /api/zk/devices/:serial/sync-time - Sincronizar tiempo
 router.post('/devices/:serial/sync-time', authMiddleware.verifyToken, ZKDeviceController.syncTime);
 

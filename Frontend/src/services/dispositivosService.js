@@ -36,13 +36,20 @@ export default {
   },
 
   // Enviar comando a dispositivo
-  enviarComando(serial, action, payload = {}, timeout = 30000) {
+  enviarComando(serial, action, payload = {}, timeout = 10000) {
     return apiClient.post(`/zk/devices/${serial}/command`, { action, payload, timeout });
   },
 
   // Obtener usuarios del dispositivo
   obtenerUsuarios(serial) {
-    return apiClient.get(`/zk/devices/${serial}/users`);
+    return apiClient.get(`/zk/devices/${serial}/users`, {
+      timeout: 20000 // 20 segundos para dar tiempo a la sincronización
+    });
+  },
+
+  // Eliminar usuario del dispositivo
+  eliminarUsuarioDispositivo(serial, userId) {
+    return apiClient.delete(`/zk/devices/${serial}/users`, { data: { user_id: userId } });
   },
 
   // Sincronizar tiempo
