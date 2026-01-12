@@ -1,8 +1,47 @@
-version: '3.8'
+version: '3.9'
+
 services:
   redis:
     image: redis:latest
     container_name: redis_seguro
+    command: redis-server --requirepass test
     ports:
       - "6379:6379"
-    command: redis-server --requirepass test
+    networks:
+      - backend_net
+
+  app:
+    build:
+      context: .
+    container_name: control_asistencia_backend
+    ports:
+      - "3033:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=3001
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=test
+    depends_on:
+      - redis
+    restart: on-failure:5
+    command: npm start
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3033/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend_net
+
+networks:
+  backend_net:
+    driver: bridge

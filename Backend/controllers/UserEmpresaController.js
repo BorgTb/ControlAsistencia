@@ -646,9 +646,10 @@ const obtenerConfiguracion = async (req, res) => {
 const obtenerTrabajadores = async (req, res) => {
     try {
         const USR_PETICION = req.user; // usuario que genera la consulta
-
+	console.log(USR_PETICION);
         const [empresa] = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-        const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
+	console.log(USR_PETICION.id);       
+const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
 
         // trabajadores que son de una est
         const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
@@ -1079,12 +1080,12 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         const marcacionesCompletas = await MarcacionesModel.getMarcacionesByUsuario(trabajadorEmpresa.id);
         
         // Aplicar límite manualmente ya que la función no lo tiene
-        const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
+        //const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
 
         
 
         // Formatear marcaciones para el frontend
-        const marcacionesFormateadas = marcaciones.map(marcacion => ({
+        const marcacionesFormateadas = marcacionesCompletas.map(marcacion => ({
             id: marcacion.id,
             fecha_marcacion: marcacion.fecha,
             hora_marcacion: marcacion.hora,

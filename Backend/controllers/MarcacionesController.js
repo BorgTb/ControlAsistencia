@@ -824,8 +824,7 @@ const agregarMarcacionManual = async (req, res) => {
             tipo,
             hash: null // puedes generar un hash si lo necesitas
         };
-        const result = await MarcacionesModel.prototype.insertarMarcacionManual(nuevaMarcacion);
-
+const result = await MarcacionesService.insertarMarcacionManual(nuevaMarcacion);
         // 3. Crear el reporte y enviar notificación
         const id = await ReporteMarcionesModel.createPorConfirmar({
             marcacion_id: result.insertId,
