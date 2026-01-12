@@ -437,16 +437,47 @@ class AsistenciaController {
                         
                         marcacionesColacion.sort((a, b) => a.hora.localeCompare(b.hora));
 
+                        const horarioInicio = detalles[0]?.horario_inicio || '';
+                        const horarioFin = detalles[0]?.horario_fin || '';
+                        const horarioColacionInicio = detalles[0]?.horario_colacion_inicio || '';
+                        const horarioColacionFin = detalles[0]?.horario_colacion_fin || '';
+                        
+                        // Marcaciones reales (sin valores por defecto)
+                        const horaEntradaReal = marcacionEntrada?.hora || '';
+                        const horaSalidaReal = marcacionesSalida[marcacionesSalida.length - 1]?.hora || '';
+                        const colacionInicioReal = marcacionesColacion[0]?.hora || '';
+                        const colacionFinReal = marcacionesColacion[marcacionesColacion.length - 1]?.hora || '';
+                        
+                        // Valores con fallback para cálculo de corregidas
+                        const horaEntrada = horaEntradaReal || horarioInicio;
+                        const horaSalida = horaSalidaReal || horarioFin;
+                        const colacionInicio = colacionInicioReal || horarioColacionInicio;
+                        const colacionFin = colacionFinReal || horarioColacionFin;
+
+                        // Calcular horas corregidas
+                        const entradaCorregida = calcularHoraCorregida(horaEntrada, horarioInicio, 'entrada');
+                        const salidaCorregida = calcularHoraCorregida(horaSalida, horarioFin, 'salida');
+                        const colacionInicioCorregida = calcularHoraCorregida(colacionInicio, horarioColacionInicio, 'entrada');
+                        const colacionFinCorregida = calcularHoraCorregida(colacionFin, horarioColacionFin, 'salida');
+
+                        // Calcular horas trabajadas
+                        const horasTrabajadas = calcularHorasTrabajadas(horaEntrada, horaSalida, colacionInicio, colacionFin, horarioColacionFin);
+
                         registros.push({
                             fecha: dia,
                             rut: key,
                             nombre: dataTrabajador.trab_nombre || 'N/A',
-                            hora_entrada: marcacionEntrada?.hora || '',
-                            hora_salida: marcacionesSalida[marcacionesSalida.length - 1]?.hora || '',
-                            colacion_inicio: marcacionesColacion[0]?.hora || '',
-                            colacion_fin: marcacionesColacion[marcacionesColacion.length - 1]?.hora || '',
-                            horario_inicio: detalles[0]?.horario_inicio || '',
-                            horario_fin: detalles[0]?.horario_fin || '',
+                            hora_entrada: horaEntradaReal,
+                            hora_salida: horaSalidaReal,
+                            colacion_inicio: colacionInicioReal,
+                            colacion_fin: colacionFinReal,
+                            entrada_corregida: entradaCorregida,
+                            salida_corregida: salidaCorregida,
+                            colacion_inicio_corregida: colacionInicioCorregida,
+                            colacion_fin_corregida: colacionFinCorregida,
+                            horas_trabajadas: horasTrabajadas,
+                            horario_inicio: horarioInicio,
+                            horario_fin: horarioFin,
                             total_marcaciones: detalles.length
                         });
 
@@ -457,7 +488,7 @@ class AsistenciaController {
             }
 
             // Generar CSV
-            const headers = ['Fecha', 'RUT', 'Nombre', 'Entrada', 'Salida', 'Colación Inicio', 'Colación Fin', 'Horario Inicio', 'Horario Fin', 'Total Marcaciones'];
+            const headers = ['Fecha', 'RUT', 'Nombre', 'Entrada', 'Entrada Corregida', 'Salida', 'Salida Corregida', 'Colación Inicio', 'Colación Inicio Corregida', 'Colación Fin', 'Colación Fin Corregida', 'Horas Trabajadas', 'Horario Inicio', 'Horario Fin', 'Total Marcaciones'];
             let csv = headers.join(',') + '\n';
 
             registros.forEach(registro => {
@@ -466,9 +497,14 @@ class AsistenciaController {
                     registro.rut,
                     `"${registro.nombre}"`,
                     registro.hora_entrada,
+                    registro.entrada_corregida,
                     registro.hora_salida,
+                    registro.salida_corregida,
                     registro.colacion_inicio,
+                    registro.colacion_inicio_corregida,
                     registro.colacion_fin,
+                    registro.colacion_fin_corregida,
+                    registro.horas_trabajadas,
                     registro.horario_inicio,
                     registro.horario_fin,
                     registro.total_marcaciones
@@ -554,16 +590,47 @@ class AsistenciaController {
                         
                         marcacionesColacion.sort((a, b) => a.hora.localeCompare(b.hora));
 
+                        const horarioInicio = detalles[0]?.horario_inicio || '';
+                        const horarioFin = detalles[0]?.horario_fin || '';
+                        const horarioColacionInicio = detalles[0]?.horario_colacion_inicio || '';
+                        const horarioColacionFin = detalles[0]?.horario_colacion_fin || '';
+                        
+                        // Marcaciones reales (sin valores por defecto)
+                        const horaEntradaReal = marcacionEntrada?.hora || '';
+                        const horaSalidaReal = marcacionesSalida[marcacionesSalida.length - 1]?.hora || '';
+                        const colacionInicioReal = marcacionesColacion[0]?.hora || '';
+                        const colacionFinReal = marcacionesColacion[marcacionesColacion.length - 1]?.hora || '';
+                        
+                        // Valores con fallback para cálculo de corregidas
+                        const horaEntrada = horaEntradaReal || horarioInicio;
+                        const horaSalida = horaSalidaReal || horarioFin;
+                        const colacionInicio = colacionInicioReal || horarioColacionInicio;
+                        const colacionFin = colacionFinReal || horarioColacionFin;
+
+                        // Calcular horas corregidas
+                        const entradaCorregida = calcularHoraCorregida(horaEntrada, horarioInicio, 'entrada');
+                        const salidaCorregida = calcularHoraCorregida(horaSalida, horarioFin, 'salida');
+                        const colacionInicioCorregida = calcularHoraCorregida(colacionInicio, horarioColacionInicio, 'entrada_colacion');
+                        const colacionFinCorregida = calcularHoraCorregida(colacionFin, horarioColacionFin, 'salida');
+                        
+                        // Calcular horas trabajadas
+                        const horasTrabajadas = calcularHorasTrabajadas(horaEntrada, horaSalida, colacionInicio, colacionFin, horarioColacionFin);
+                        
                         registros.push({
                             fecha: dia,
                             rut: key,
                             nombre: dataTrabajador.trab_nombre || 'N/A',
-                            hora_entrada: marcacionEntrada?.hora || '',
-                            hora_salida: marcacionesSalida[marcacionesSalida.length - 1]?.hora || '',
-                            colacion_inicio: marcacionesColacion[0]?.hora || '',
-                            colacion_fin: marcacionesColacion[marcacionesColacion.length - 1]?.hora || '',
-                            horario_inicio: detalles[0]?.horario_inicio || '',
-                            horario_fin: detalles[0]?.horario_fin || '',
+                            hora_entrada: horaEntradaReal,
+                            hora_salida: horaSalidaReal,
+                            colacion_inicio: colacionInicioReal,
+                            colacion_fin: colacionFinReal,
+                            entrada_corregida: entradaCorregida,
+                            salida_corregida: salidaCorregida,
+                            colacion_inicio_corregida: colacionInicioCorregida,
+                            colacion_fin_corregida: colacionFinCorregida,
+                            horas_trabajadas: horasTrabajadas,
+                            horario_inicio: horarioInicio,
+                            horario_fin: horarioFin,
                             total_marcaciones: detalles.length
                         });
 
@@ -583,9 +650,14 @@ class AsistenciaController {
                 { header: 'RUT', key: 'rut', width: 12 },
                 { header: 'Nombre', key: 'nombre', width: 30 },
                 { header: 'Entrada', key: 'hora_entrada', width: 10 },
-                { header: 'Salida', key: 'hora_salida', width: 10 },
                 { header: 'Colación Inicio', key: 'colacion_inicio', width: 15 },
                 { header: 'Colación Fin', key: 'colacion_fin', width: 15 },
+                { header: 'Salida', key: 'hora_salida', width: 10 },
+                { header: 'Entrada Corregida', key: 'entrada_corregida', width: 16 },
+                { header: 'Colación Inicio Corregida', key: 'colacion_inicio_corregida', width: 22 },
+                { header: 'Colación Fin Corregida', key: 'colacion_fin_corregida', width: 22 },
+                { header: 'Salida Corregida', key: 'salida_corregida', width: 16 },
+                { header: 'Horas Trabajadas', key: 'horas_trabajadas', width: 16 },
                 { header: 'Horario Inicio', key: 'horario_inicio', width: 15 },
                 { header: 'Horario Fin', key: 'horario_fin', width: 15 },
                 { header: 'Total Marcaciones', key: 'total_marcaciones', width: 18 }
@@ -620,7 +692,93 @@ class AsistenciaController {
 
 }
 
+/**
+ * Calcula la hora corregida basándose en el horario teórico
+ * @param {string} horaMarcada - Hora real de marcación (formato HH:MM:SS)
+ * @param {string} horarioTeorico - Hora teórica del turno (formato HH:MM:SS)
+ * @param {string} tipo - 'entrada' o 'salida'
+ * @returns {string} Hora corregida
+ */
+function calcularHoraCorregida(horaMarcada, horarioTeorico, tipo) {
+    if (!horaMarcada || !horarioTeorico) {
+        return horaMarcada || '';
+    }
 
+    // Convertir horas a segundos totales para comparar con precisión
+    const convertirASegundos = (hora) => {
+        const [h, m, s] = hora.split(':').map(Number);
+        return h * 3600 + m * 60 + (s || 0);
+    };
+
+    const segundosMarcada = convertirASegundos(horaMarcada);
+    const segundosTeorico = convertirASegundos(horarioTeorico);
+
+    if (tipo === 'entrada') {
+        // Si marca antes del horario de inicio, usar el horario teórico
+        // Si marca después, usar la hora marcada
+        return segundosMarcada < segundosTeorico ?  horarioTeorico : horaMarcada;
+
+
+    } else if (tipo === 'entrada_colacion') {
+        return segundosMarcada < segundosTeorico ?   horaMarcada : horarioTeorico ;
+    } 
+    else if (tipo === 'salida') {
+        // Si marca después del horario de fin, usar el horario teórico
+        // Si marca antes, usar la hora marcada
+        return segundosMarcada > segundosTeorico ? horarioTeorico : horaMarcada;
+    }
+
+    return horaMarcada;
+}
+
+/**
+ * Calcula las horas trabajadas totales
+ * @param {string} horaEntrada - Hora de entrada
+ * @param {string} horaSalida - Hora de salida
+ * @param {string} colacionInicio - Hora de inicio de colación
+ * @param {string} colacionFin - Hora de fin de colación
+ * @param {string} horarioColacionFin - Hora teórica de fin de colación
+ * @returns {string} Horas trabajadas en formato HH:MM:SS
+ */
+function calcularHorasTrabajadas(horaEntrada, horaSalida, colacionInicio, colacionFin, horarioColacionFin) {
+    if (!horaEntrada || !horaSalida) {
+        return '';
+    }
+
+    const convertirASegundos = (hora) => {
+        if (!hora) return 0;
+        const [h, m, s] = hora.split(':').map(Number);
+        return h * 3600 + m * 60 + (s || 0);
+    };
+
+    const convertirAHora = (segundos) => {
+        const h = Math.floor(segundos / 3600);
+        const m = Math.floor((segundos % 3600) / 60);
+        const s = segundos % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+
+    let segundosEntrada = convertirASegundos(horaEntrada);
+    let segundosSalida = convertirASegundos(horaSalida);
+    
+    // Calcular diferencia total
+    let diferenciaTotal = segundosSalida - segundosEntrada;
+    
+    // Solo restar colación si se completó el tiempo de descanso
+    if (colacionInicio && colacionFin && horarioColacionFin) {
+        const segundosColacionFin = convertirASegundos(colacionFin);
+        const segundosColacionFinTeorico = convertirASegundos(horarioColacionFin);
+        
+        // Solo restar si terminó la colación en o después de la hora teórica
+        if (segundosColacionFin >= segundosColacionFinTeorico) {
+            const segundosColacionInicio = convertirASegundos(colacionInicio);
+            const tiempoColacion = segundosColacionFin - segundosColacionInicio;
+            diferenciaTotal -= tiempoColacion;
+        }
+    }
+    
+    return diferenciaTotal > 0 ? convertirAHora(diferenciaTotal) : '';
+}
 
 async function procesarTrabajadorSinTelegestor(key,value) {
     // Lógica para procesar trabajadores sin Telegestor
@@ -652,25 +810,54 @@ async function procesarTrabajadorSinTelegestor(key,value) {
             const marcacionesSalida = detalles.filter(d => d.tipo === 'salida');
             const marcacionesColacion = detalles.filter(d => d.tipo === 'colacion');
             marcacionesColacion.sort((a, b) => a.hora.localeCompare(b.hora));
-            console.log('Detalles procesados para día', dia, ':', detalles);
+
+            const horarioInicio = detalles[0]?.horario_inicio || '';
+            const horarioFin = detalles[0]?.horario_fin || '';
+            const horarioColacionInicio = detalles[0]?.horario_colacion_inicio || '';
+            const horarioColacionFin = detalles[0]?.horario_colacion_fin || '';
+            
+            // Marcaciones reales (sin valores por defecto)
+            const horaEntradaReal = marcacionEntrada?.hora || '';
+            const horaSalidaReal = marcacionesSalida[marcacionesSalida.length - 1]?.hora || '';
+            const colacionInicioReal = marcacionesColacion[0]?.hora || '';
+            const colacionFinReal = marcacionesColacion[marcacionesColacion.length - 1]?.hora || '';
+            
+            // Valores con fallback para cálculo de corregidas
+            const horaEntrada = horaEntradaReal || horarioInicio;
+            const horaSalida = horaSalidaReal || horarioFin;
+            const colacionInicio = colacionInicioReal || horarioColacionInicio;
+            const colacionFin = colacionFinReal || horarioColacionFin;
+
+            // Calcular horas corregidas
+            const entradaCorregida = calcularHoraCorregida(horaEntrada, horarioInicio, 'entrada');
+            const salidaCorregida = calcularHoraCorregida(horaSalida, horarioFin, 'salida');
+            const colacionInicioCorregida = calcularHoraCorregida(colacionInicio, horarioColacionInicio, 'entrada');
+            const colacionFinCorregida = calcularHoraCorregida(colacionFin, horarioColacionFin, 'salida');
+
+            // Calcular horas trabajadas
+            const horasTrabajadas = calcularHorasTrabajadas(horaEntrada, horaSalida, colacionInicio, colacionFin, horarioColacionFin);
+
             registros.push({
                 fecha: dia,
                 rut: key,
                 nombre: detalles[0]?.nombre + ' ' + detalles[0]?.apellido_pat + ' ' + detalles[0]?.apellido_mat || 'N/A',
-                hora_entrada: marcacionEntrada?.hora || '',
-                hora_salida: marcacionesSalida[marcacionesSalida.length - 1]?.hora || '',
-                colacion_inicio: marcacionesColacion[0]?.hora || '',
-                colacion_fin: marcacionesColacion[marcacionesColacion.length - 1]?.hora || '',
-                horario_inicio: detalles[0]?.horario_inicio || '',
-                horario_fin: detalles[0]?.horario_fin || '',
+                hora_entrada: horaEntradaReal,
+                hora_salida: horaSalidaReal,
+                colacion_inicio: colacionInicioReal,
+                colacion_fin: colacionFinReal,
+                entrada_corregida: entradaCorregida,
+                salida_corregida: salidaCorregida,
+                colacion_inicio_corregida: colacionInicioCorregida,
+                colacion_fin_corregida: colacionFinCorregida,
+                horas_trabajadas: horasTrabajadas,
+                horario_inicio: horarioInicio,
+                horario_fin: horarioFin,
                 total_marcaciones: detalles.length
             });
         } catch (error) {
             console.error(`Error procesando día ${dia} del trabajador sin Telegestor ${key}:`, error);
         }
     }
-    console.log('Registros procesados para trabajador sin Telegestor:', key);
-    console.log(registros);
     return registros;
 
 }
