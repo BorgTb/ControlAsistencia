@@ -401,7 +401,12 @@ class AsistenciaController {
             // Procesar datos igual que en getAsistencia
             for (const [key, value] of Object.entries(marcaciones.data)) {
                 const trabajadorData = trabajadoresActivos[key];
-                if (!trabajadorData || !trabajadorData[0]) continue;
+                if (!trabajadorData || !trabajadorData[0]){
+                    console.warn(`Trabajador no encontrado para RUT: ${key}`);
+                    const data = await procesarTrabajadorSinTelegestor(key, value);
+                    registros.push(...data);
+                    continue;
+                };
 
                 const dataTrabajador = trabajadorData[0];
 
@@ -506,8 +511,19 @@ class AsistenciaController {
 
             // Procesar datos
             for (const [key, value] of Object.entries(marcaciones.data)) {
+
                 const trabajadorData = trabajadoresActivos[key];
-                if (!trabajadorData || !trabajadorData[0]) continue;
+
+
+                if ((!trabajadorData || !trabajadorData[0])){
+                    console.warn(`Trabajador no encontrado para RUT: ${key}`);
+
+                    const data = await procesarTrabajadorSinTelegestor(key, value);
+                    registros.push(...data);
+                    continue;
+                }
+                    
+                    
 
                 const dataTrabajador = trabajadorData[0];
 
@@ -603,5 +619,61 @@ class AsistenciaController {
     }
 
 }
+
+
+
+async function procesarTrabajadorSinTelegestor(key,value) {
+    // Lógica para procesar trabajadores sin Telegestor
+    const turnosCache = new Map();
+    const registros = [];
+
+    for (const [dia, detalles] of Object.entries(value)) {
+        try {
+            const usuarioEmpresasUnicos = [...new Set(detalles.map(d => d.usuario_empresa_id))];
+
+            await Promise.all(usuarioEmpresasUnicos.map(async (usuarioEmpresaId) => {
+                if (!turnosCache.has(usuarioEmpresaId)) {
+                    const turno = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(usuarioEmpresaId);
+                    turnosCache.set(usuarioEmpresaId, turno);
+                }
+            }));
+
+            detalles.forEach(detalle => {
+                const turno = turnosCache.get(detalle.usuario_empresa_id);
+                if (turno && turno.trabaja) {
+                    detalle.horario_inicio = turno.hora_inicio;
+                    detalle.horario_fin = turno.hora_fin;
+                    detalle.horario_colacion_inicio = turno.colacion_inicio;
+                    detalle.horario_colacion_fin = turno.colacion_fin;
+                }
+            });
+
+            const marcacionEntrada = detalles.find(d => d.tipo === 'entrada');
+            const marcacionesSalida = detalles.filter(d => d.tipo === 'salida');
+            const marcacionesColacion = detalles.filter(d => d.tipo === 'colacion');
+            marcacionesColacion.sort((a, b) => a.hora.localeCompare(b.hora));
+            console.log('Detalles procesados para día', dia, ':', detalles);
+            registros.push({
+                fecha: dia,
+                rut: key,
+                nombre: detalles[0]?.nombre + ' ' + detalles[0]?.apellido_pat + ' ' + detalles[0]?.apellido_mat || 'N/A',
+                hora_entrada: marcacionEntrada?.hora || '',
+                hora_salida: marcacionesSalida[marcacionesSalida.length - 1]?.hora || '',
+                colacion_inicio: marcacionesColacion[0]?.hora || '',
+                colacion_fin: marcacionesColacion[marcacionesColacion.length - 1]?.hora || '',
+                horario_inicio: detalles[0]?.horario_inicio || '',
+                horario_fin: detalles[0]?.horario_fin || '',
+                total_marcaciones: detalles.length
+            });
+        } catch (error) {
+            console.error(`Error procesando día ${dia} del trabajador sin Telegestor ${key}:`, error);
+        }
+    }
+    console.log('Registros procesados para trabajador sin Telegestor:', key);
+    console.log(registros);
+    return registros;
+
+}
+
 
 export default AsistenciaController;
