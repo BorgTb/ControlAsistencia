@@ -86,6 +86,8 @@ app.listen(PORT, () => {
     }).catch(err => console.error('❌ Error importando DispositivoZKService:', err));
 
     // Suscribirse a topic wildcard para detectar nuevos dispositivos
+    
+    /*
     mqttService.subscribe('zk/+/status', async (topic, message) => {
         try {
             const serial = topic.split('/')[1];
@@ -109,6 +111,8 @@ app.listen(PORT, () => {
             console.error('Error handling new device:', error);
         }
     });
+
+    */
 });
 
 // Manejo de cierre graceful

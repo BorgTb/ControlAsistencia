@@ -82,7 +82,7 @@
                             Protocolo <span class="text-red-500">*</span>
                         </label>
                         <select v-model="form.protocolo" class="input">
-                            <option value="MQTT">MQTT (ZKTeco Cloud)</option>
+                            <!--<option value="MQTT">MQTT (ZKTeco Cloud)</option>-->
                             <option value="ADMS">ADMS (Push SDK)</option>
                         </select>
                     </div>
@@ -365,7 +365,7 @@ const form = reactive({
     serial: '',
     name: '',
     location: '',
-    protocolo: 'MQTT'
+    protocolo: 'ADMS'
 });
 
 const editando = ref(false);

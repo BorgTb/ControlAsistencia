@@ -53,7 +53,7 @@ const RefreshTokenModel = {
                 JOIN usuarios u ON rt.user_id = u.id
                 LEFT JOIN usuarios_empresas ue ON u.id = ue.usuario_id
                 LEFT JOIN usuarios_roles_asignados ura ON ue.id = ura.usuario_empresa_id
-                LEFT JOIN roles_sistema rs ON ura.rol_id = rs.id
+                LEFT JOIN roles_sistema rs ON ura.rol_sistema_id = rs.id
                 WHERE rt.token = ? 
                 AND rt.revoked = FALSE
                 AND rt.expires_at > NOW()
