@@ -1136,12 +1136,12 @@ const obtenerMarcacionesTrabajador = async (req, res) => {
         const marcacionesCompletas = await MarcacionesModel.getMarcacionesByUsuario(trabajadorEmpresa.id);
 
         // Aplicar límite manualmente ya que la función no lo tiene
-        const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
+        //const marcaciones = marcacionesCompletas.slice(0, parseInt(limite));
 
 
 
         // Formatear marcaciones para el frontend
-        const marcacionesFormateadas = marcaciones.map(marcacion => ({
+        const marcacionesFormateadas = marcacionesCompletas.map(marcacion => ({
             id: marcacion.id,
             fecha_marcacion: marcacion.fecha,
             hora_marcacion: marcacion.hora,

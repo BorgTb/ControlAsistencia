@@ -29,6 +29,7 @@ const register = async (req, res) => {
                 message: 'User already exists'
             });
         }
+	console.log(email,password);	
 
         // Registrar usuario
         const newUser = await AuthService.registerUser(email, password);

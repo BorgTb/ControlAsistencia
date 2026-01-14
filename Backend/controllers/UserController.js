@@ -315,6 +315,7 @@ const listAllUsers = async (req, res) => {
 const createUser = async (req, res) => {
     try {
         const { nombre, apellido_pat, apellido_mat, email, password, rol, rut, estado = 1 } = req.body;
+console.log('🔍 Datos recibidos para crear usuario:', { nombre, apellido_pat, apellido_mat, email, rol, rut, estado }        );
         
         // Validaciones básicas
         if (!nombre || !email || !password || !rol || !rut) {
@@ -323,7 +324,6 @@ const createUser = async (req, res) => {
                 message: 'Campos requeridos: nombre, email, password, rol, rut'
             });
         }
-
         // Verificar si ya existe un usuario con este email o RUT
         const existingUserByEmail = await UserModel.findByEmail(email);
         if (existingUserByEmail) {
