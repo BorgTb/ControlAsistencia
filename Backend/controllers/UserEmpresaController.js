@@ -691,7 +691,7 @@ const obtenerTrabajadores = async (req, res) => {
             });
         }
         const empresa = empresas[0];
-        const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(empresa.empresa_id, 'trabajador');
+        const trabajadores = await UsuarioEmpresaModel.getUsuariosByRolEnEmpresa(USR_PETICION.empresa_id, 'trabajador');
 
         // trabajadores que son de una est
         const trabajadoresDeEst = await EstAsignacionesModel.getTrabajadoresByUsuariaId(empresa.empresa_id);
