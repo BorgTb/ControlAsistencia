@@ -28,8 +28,21 @@ class UserModel {
         return rows.length ? rows[0] : null;
     }
 
-    static async findByRut(rut) {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE rut = ?', [rut]);
+    static async findByRut(rut, empresaId = null) {
+
+        
+        if (!empresaId) {
+            const [rows] = await pool.query('SELECT * FROM usuarios WHERE rut = ?', [rut]);
+            return rows.length ? rows[0] : null;
+        }
+        const [rows] = await pool.query(`SELECT
+                                            *
+                                        FROM
+                                            usuarios
+                                        INNER JOIN usuarios_empresas ON usuarios.id =usuarios_empresas.usuario_id
+                                        WHERE
+                                        rut = ? and usuarios_empresas.empresa_id = ?`, 
+                                        [rut, empresaId]);
         return rows.length ? rows[0] : null;
     }
 

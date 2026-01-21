@@ -13,6 +13,7 @@ const router = express.Router();
 
 router.post('/trabajador',AuthService.verifyToken, UserEmpresaController.createTrabajador);
 router.get('/trabajadores',AuthService.verifyToken, UserEmpresaController.obtenerTrabajadores);
+router.get('/buscar-trabajador/:rut',AuthService.verifyToken, UserEmpresaController.buscarTrabajadorPorRut);
 router.get('/trabajador/:rut',AuthService.verifyToken, UserEmpresaController.obtenerTrabajadores);
 router.put('/trabajadores/:id',AuthService.verifyToken, UserEmpresaController.actualizarTrabajador);
 router.get('/trabajador/:id/turnos',AuthService.verifyToken, UserEmpresaController.obtenerTurnosTrabajador);

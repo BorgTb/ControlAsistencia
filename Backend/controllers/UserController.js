@@ -459,6 +459,7 @@ const createTrabajador = async (req, res) => {
         }
 
         const existingUserByRut = await UserModel.findByRut(rut);
+        console.log('🔍 Verificación de usuario existente por RUT:', { rut, existingUserByRut });
         if (existingUserByRut) {
             return res.status(400).json({
                 success: false,
@@ -466,6 +467,7 @@ const createTrabajador = async (req, res) => {
             });
         }
 
+        /*
         // Crear trabajador usando AuthService para hash de password
         const newUser = await authservice.registerUser(
             email, 
@@ -477,7 +479,7 @@ const createTrabajador = async (req, res) => {
             rut, 
             estado
         );
-
+        */
         // Debug: Verificar información del usuario empleador que crea el trabajador
         console.log('🔍 Debug empleador creando trabajador:', {
             hasReqUser: !!req.user,

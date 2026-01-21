@@ -19,11 +19,85 @@ import ConfigToleranciaModel from "../model/ConfigTolerancias.js";
 import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionModel.js";
 import SolicitudesUsuariosModel from "../model/SolicitudesUsuariosModel.js";
 import JustificacionesModel from "../model/JustificacionesModel.js";
+import UsuariosRolesAsignadosModel from "../model/UsuariosRolesAsignadosModel.js";
 
 
 
 
 
+
+/**
+ * Buscar trabajador por RUT
+ * Retorna los datos del trabajador si existe en el sistema
+ */
+const buscarTrabajadorPorRut = async (req, res) => {
+    try {
+        const { rut } = req.params;
+        const USR_PETICION = req.user;
+        
+
+
+        // Validar que el RUT fue proporcionado
+        if (!rut) {
+            return res.status(400).json({
+                success: false,
+                message: "El RUT es requerido"
+            });
+        }
+
+        // Buscar el usuario por RUT
+        const usuario = await UserModel.findByRut(rut);
+        
+        
+        if (!usuario) {
+            return res.status(404).json({
+                success: false,
+                message: "No se encontró un trabajador con ese RUT",
+                encontrado: false
+            });
+        }
+
+        // Verificar si el trabajador ya está asociado a la empresa del usuario que hace la petición
+        const [usuarioEmpresa] = await UsuarioEmpresaModel.getUsuarioEmpresaById(usuario.id, USR_PETICION.empresa_id).then(rows => rows || []);
+      
+        let yaAsociado = false;
+            
+        if (usuarioEmpresa && usuarioEmpresa.empresa_id === USR_PETICION.empresa_id) {
+            yaAsociado = true;
+        }
+
+        
+        // Obtener preferencias de compensación si existen
+        let preferenciasCompensacion = null;
+        if (usuarioEmpresa) {
+            preferenciasCompensacion = await PreferenciasCompensacionModel.obtenerPorTrabajador(usuarioEmpresa.id);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Trabajador encontrado",
+            encontrado: true,
+            yaAsociado: yaAsociado,
+            data: {
+                id: usuario.id,
+                nombre: usuario.nombre,
+                apellido_pat: usuario.apellido_pat,
+                apellido_mat: usuario.apellido_mat,
+                email: usuario.email,
+                rut: usuario.rut,
+                estado: usuario.estado,
+                usuario_empresa_id: usuarioEmpresa?.id,
+                preferenciasCompensacion: preferenciasCompensacion
+            }
+        });
+    } catch (error) {
+        console.error("Error buscando trabajador por RUT:", error);
+        res.status(500).json({ 
+            success: false,
+            error: "Error interno del servidor" 
+        });
+    }
+};
 
 const createTrabajador = async (req, res) => {
     try {
@@ -38,41 +112,97 @@ const createTrabajador = async (req, res) => {
             });
         }
 
-        // Verificar si ya existe un usuario con este RUT o email
+        let usuarioId;
+        let usuarioNuevo = false;
+
+        // Verificar si ya existe un usuario con este RUT PARA LA EMPRESA SOLICITADA
+        console.log(userData);
+        console.log(USR_PETICION);
         const existingUserByRut = await UserModel.findByRut(userData.rut);
         if (existingUserByRut) {
-            return res.status(400).json({
-                success: false,
-                message: "Ya existe una cuenta para este trabajador con el RUT proporcionado"
-            });
-        }
+            // El usuario ya existe en el sistema
+            console.log('Usuario existente encontrado por RUT:', existingUserByRut.id);
+            
+            // Verificar si ya está asociado a esta empresa
+            const existingUserEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaById(existingUserByRut.id, USR_PETICION.empresa_id).then(rows => rows && rows[0]);
+            
+            if (existingUserEmpresa) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Este trabajador ya está asociado a su empresa"
+                });
+            }
+            
+            // Verificar si el email cambió
+            if (userData.emailCambio && userData.email !== existingUserByRut.email) {
+                // Email cambió - crear nuevo usuario con el mismo RUT pero diferente email
+                console.log('⚠️ Email cambió - creando nuevo usuario');
+                
+                // Verificar que el nuevo email no esté en uso
+                const existingUserByEmail = await UserModel.findByEmail(userData.email);
+                if (existingUserByEmail) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "Ya existe una cuenta con ese email"
+                    });
+                }
+                
+                // Crear nuevo usuario
+                const newUser = await AuthService.registerUser(
+                    userData.email,
+                    userData.password,
+                    userData.nombre,
+                    userData.apellido_pat,
+                    userData.apellido_mat,
+                    userData.rol,
+                    userData.rut,
+                    userData.estado
+                );
 
-        const existingUserByEmail = await UserModel.findByEmail(userData.email);
-        if (existingUserByEmail) {
-            return res.status(400).json({
-                success: false,
-                message: "Ya existe una cuenta para este trabajador con el email proporcionado"
-            });
-        }
+                if (!newUser) {
+                    return res.status(400).json({ success: false, message: "Error creando trabajador" });
+                }
 
-        const newUser = await AuthService.registerUser(
-            userData.email,
-            userData.password,
-            userData.nombre,
-            userData.apellido_pat,
-            userData.apellido_mat,
-            userData.rol,
-            userData.rut,
-            userData.estado
-        );
+                usuarioId = newUser.id;
+                usuarioNuevo = true;
+            } else {
+                // Email no cambió - solo asociar el usuario existente
+                usuarioId = existingUserByRut.id;
+                usuarioNuevo = false;
+            }
+            
+        } else {
+            // El usuario no existe, verificar email
+            const existingUserByEmail = await UserModel.findByEmail(userData.email);
+            if (existingUserByEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Ya existe una cuenta para este trabajador con el email proporcionado"
+                });
+            }
 
-        // si new user throw error
-        if (!newUser) {
-            return res.status(400).json({ success: false, message: "Error creando trabajador" });
+            // Crear nuevo usuario
+            const newUser = await AuthService.registerUser(
+                userData.email,
+                userData.password,
+                userData.nombre,
+                userData.apellido_pat,
+                userData.apellido_mat,
+                userData.rol,
+                userData.rut,
+                userData.estado
+            );
+
+            if (!newUser) {
+                return res.status(400).json({ success: false, message: "Error creando trabajador" });
+            }
+
+            usuarioId = newUser.id;
+            usuarioNuevo = true;
         }
 
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
-            usuario_id: newUser.id,
+            usuario_id: usuarioId,
             empresa_id: USR_PETICION.empresa_id,
             fecha_inicio: DateTime.now().setZone("America/Santiago").toISO(),
         });
@@ -98,22 +228,24 @@ const createTrabajador = async (req, res) => {
         // Registrar el cambio en auditoría
         if (req.user && req.user.id) {
             try {
-
+                const usuarioCreado = await UserModel.findById(usuarioId);
 
                 await AuditoriaModel.registrarCambio({
                     usuario_id: req.user.id,
-                    accion: 'crear_trabajador_empresa',
+                    accion: usuarioNuevo ? 'crear_trabajador_empresa' : 'asociar_trabajador_empresa',
                     tabla_afectada: 'usuarios',
-                    registro_id: newUser.id,
-                    descripcion: `Trabajador creado en empresa: ${userData.nombre} ${userData.apellido_pat || ''} (${userData.email})`,
+                    registro_id: usuarioId,
+                    descripcion: usuarioNuevo 
+                        ? `Trabajador creado en empresa: ${userData.nombre} ${userData.apellido_pat || ''} (${userData.email})`
+                        : `Trabajador existente asociado a empresa: ${usuarioCreado.nombre} ${usuarioCreado.apellido_pat} (${usuarioCreado.email})`,
                     datos_anteriores: null,
                     datos_nuevos: JSON.stringify({
-                        nombre: userData.nombre,
-                        apellido_pat: userData.apellido_pat,
-                        apellido_mat: userData.apellido_mat,
-                        email: userData.email,
-                        rut: userData.rut,
-                        estado: userData.estado,
+                        nombre: usuarioCreado.nombre,
+                        apellido_pat: usuarioCreado.apellido_pat,
+                        apellido_mat: usuarioCreado.apellido_mat,
+                        email: usuarioCreado.email,
+                        rut: usuarioCreado.rut,
+                        estado: usuarioCreado.estado,
                         empresa_id: USR_PETICION.empresa_id
                     }),
                     ip_address: req.ip || req.connection.remoteAddress
@@ -165,10 +297,12 @@ const createTrabajador = async (req, res) => {
             }
         }
 
-
-
-
-        res.status(201).json({ success: true, message: "Trabajador creado exitosamente" });
+        res.status(501).json({ 
+            success: true, 
+            message: usuarioNuevo 
+                ? (userData.emailCambio ? "Nuevo usuario creado con email diferente y asociado a la empresa" : "Trabajador creado y asociado exitosamente")
+                : "Trabajador asociado a la empresa exitosamente"
+        });
     } catch (error) {
         console.error("Error creating trabajador:", error);
         res.status(500).json({ error: "Internal server error" });
@@ -2458,6 +2592,7 @@ async function rechazarSolicitud(req, res) {
 }
 
 const AdminController = {
+    buscarTrabajadorPorRut,
     createTrabajador,
     obtenerTrabajadores,
     obtenerTurnosTrabajador,

@@ -11,6 +11,27 @@ import { apiClient } from '@/config/axios-config.js'
 
 class EmpresaServices{
 
+  static async buscarTrabajadorPorRut(rut) {
+    try {
+      console.log('🔍 Buscando trabajador por RUT:', rut)
+      const response = await apiClient.get(`/userEmpresa/buscar-trabajador/${rut}`)
+      return response.data
+    } catch (error) {
+      console.error('❌ Error en EmpresaService.buscarTrabajadorPorRut:', error)
+      
+      // Si es un 404, significa que no se encontró el trabajador
+      if (error.response?.status === 404) {
+        return {
+          success: false,
+          encontrado: false,
+          message: error.response?.data?.message || 'No se encontró un trabajador con ese RUT'
+        }
+      }
+      
+      throw error
+    }
+  }
+
   static async crearTrabajador(trabajadorData) {
     try {
       console.log('🚀 Creando trabajador con datos:', trabajadorData)
