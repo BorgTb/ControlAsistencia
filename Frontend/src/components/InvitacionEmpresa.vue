@@ -39,11 +39,15 @@
         </h2>
         <p class="text-gray-600 mb-6">{{ resultMessage }}</p>
         <button
+          v-if="!actionSuccess"
           @click="$router.push('/dashboard')"
           class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Ir al panel de control
         </button>
+        <div v-else class="text-sm text-gray-500 mt-4">
+          Serás redirigido automáticamente en unos segundos...
+        </div>
       </div>
 
       <!-- Invitation Details -->
@@ -230,8 +234,21 @@ const aceptarSolicitud = async () => {
     const response = await SolicitudesService.aceptarInvitacionEmpresa(token);
 
     actionSuccess.value = true;
-    resultMessage.value = response.mensaje || 'Te has unido exitosamente a la empresa.';
+    resultMessage.value = 'Invitación aceptada exitosamente. Serás redirigido al inicio de sesión para actualizar tu sesión.';
     processCompleted.value = true;
+
+    // Cerrar sesión actual y redirigir al login
+    await authStore.logout();
+    
+    // Redirigir al login después de 3 segundos con un mensaje
+    setTimeout(() => {
+      router.push({ 
+        path: '/', 
+        query: { 
+          message: 'Por favor inicia sesión nuevamente con tu empresa asignada' 
+        } 
+      });
+    }, 3000);
 
   } catch (err) {
     console.error('Error al aceptar solicitud:', err);

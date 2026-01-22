@@ -152,6 +152,7 @@ const loginUser = async (email, password, ip_address = null) => {
     console.log('User found:', user);
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
+   
 
 
     if (!isPasswordValid) {
@@ -212,9 +213,39 @@ const loginUser = async (email, password, ip_address = null) => {
         };
     }
 
-    // Validar que el usuario tenga al menos una empresa
+    // USUARIOS SIN EMPRESA: Permitir login para que puedan ver/aceptar invitaciones
     if (!usuarioEmpresas || usuarioEmpresas.length === 0) {
-        throw new Error('Usuario no tiene empresas asignadas');
+        console.log('👤 Usuario sin empresas - puede tener invitaciones pendientes');
+        
+        // Registrar inicio de sesión en auditoría
+        try {
+            await AuditoriaModel.registrarInicioSesion(user.id, ip_address, 'sin-empresa');
+        } catch (auditoriaError) {
+            console.error('❌ Error al registrar auditoría:', auditoriaError);
+        }
+
+        // Generar token sin empresa_id
+        const token = generateToken(user, null);
+
+        return {
+            token,
+            empresa_id: null,
+            roles: ['invitado'], // Rol temporal para usuarios sin empresa
+            requiresPendingInvitations: true, // Flag para que el frontend sepa que debe mostrar invitaciones
+            user: {
+                id: user.id,
+                nombre: user.nombre,
+                apellido_pat: user.apellido_pat,
+                apellido_mat: user.apellido_mat,
+                email: user.email,
+                roles: ['invitado'],
+                rut: user.rut,
+                estado: user.estado,
+                est: false,
+                empresa_nombre: null,
+                empresa_rut: null,
+            }
+        };
     }
 
     // MULTI-EMPRESA: Si tiene múltiples empresas, retornar lista para selección

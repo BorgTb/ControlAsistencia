@@ -217,8 +217,58 @@ const createTrabajador = async (req, res) => {
 
             usuarioId = newUser.id;
             usuarioNuevo = true;
+            
+            // NUEVO: Crear solicitud de invitación igual que cuando el usuario ya existe
+            try {
+                const token = TokenService.generarTokenAceptacion();
+                const fechaExpiracion = new Date();
+                fechaExpiracion.setDate(fechaExpiracion.getDate() + 7); // 7 días de validez
+                
+                // Obtener datos de la empresa
+                const empresa = await EmpresaModel.getEmpresaById(USR_PETICION.empresa_id);
+                
+                // Crear solicitud con userData embebido
+                const solicitudId = await SolicitudesUsuariosModel.crearSolicitudAgregarEmpresa({
+                    usuario_id: usuarioId,
+                    empresa_id: USR_PETICION.empresa_id,
+                    usuario_solicitante_id: USR_PETICION.id,
+                    token_aceptacion: token,
+                    fecha_expiracion: fechaExpiracion,
+                    userData: userData // Guardar datos del formulario para usarlos al aceptar
+                });
+                
+                // Enviar correo de invitación
+                const linkAceptacion = `${process.env.FRONTEND_URL}/invitacion/${token}`;
+                const nombreCompleto = `${newUser.nombre} ${newUser.apellido_pat} ${newUser.apellido_mat || ''}`.trim();
+                
+                await MailService.enviarInvitacionEmpresa({
+                    destinatario: newUser.email,
+                    nombreDestinatario: nombreCompleto,
+                    nombreEmpresa: empresa.emp_nombre,
+                    linkAceptacion: linkAceptacion,
+                    passwordTemporal: userData.password, // Enviar password temporal al usuario nuevo
+                    esUsuarioNuevo: true
+                });
+                
+                console.log(`✅ Invitación enviada a ${newUser.email} para unirse a ${empresa.emp_nombre}`);
+                
+                return res.status(201).json({
+                    success: true,
+                    invitacionEnviada: true,
+                    message: `Se ha enviado una invitación al correo ${newUser.email}. El trabajador debe aceptarla para unirse a la empresa.`
+                });
+            } catch (invitacionError) {
+                console.error('❌ Error al enviar invitación:', invitacionError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al procesar la invitación',
+                    error: invitacionError.message
+                });
+            }
         }
 
+        // NOTA: Este código de asociación directa ya no se ejecuta porque ambos caminos 
+        // (usuario existe/no existe) terminan con return en la sección de invitación
         const newUserEmpresa = await UsuarioEmpresaModel.createUsuarioEmpresa({
             usuario_id: usuarioId,
             empresa_id: USR_PETICION.empresa_id,
