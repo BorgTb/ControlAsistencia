@@ -43,6 +43,16 @@ const routes = [
   },
 
   // ===========================
+  // PUBLIC ROUTES (sin layout)
+  // ===========================
+  {
+    path: '/invitacion/:token',
+    name: 'InvitacionEmpresa',
+    component: () => import('@/components/InvitacionEmpresa.vue'),
+    meta: { public: true }
+  },
+
+  // ===========================
   // ADMIN (usa AdminLayout)
   // ===========================
   {

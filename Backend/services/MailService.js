@@ -1445,6 +1445,122 @@ class MailService {
             }
     }
 
+    async enviarInvitacionEmpresa({
+        destinatario,
+        nombreDestinatario,
+        nombreEmpresa,
+        linkAceptacion,
+        passwordTemporal = null,
+        esUsuarioNuevo = false
+    }) {
+        try {
+            const asunto = `Invitación para unirte a ${nombreEmpresa}`;
+            
+            const contenidoHTML = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación a Empresa</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td style="padding: 40px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                                📧 Invitación a Empresa
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Hola <strong>${nombreDestinatario}</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Has sido invitado a unirte a la empresa <strong>${nombreEmpresa}</strong> en el sistema TeleAsiste.
+                            </p>
+                            ${esUsuarioNuevo ? `
+                            <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0;">
+                                <p style="margin: 0 0 10px; font-size: 14px; color: #555555;">
+                                    <strong>📝 Credenciales de acceso:</strong>
+                                </p>
+                                <p style="margin: 0 0 5px; font-size: 14px; color: #555555;">
+                                    <strong>Usuario:</strong> ${destinatario}
+                                </p>
+                                <p style="margin: 0; font-size: 14px; color: #555555;">
+                                    <strong>Contraseña temporal:</strong> <code style="background-color: #e9ecef; padding: 2px 6px; border-radius: 3px;">${passwordTemporal}</code>
+                                </p>
+                                <p style="margin: 10px 0 0; font-size: 12px; color: #666666; font-style: italic;">
+                                    ⚠️ Se te pedirá cambiar la contraseña en tu primer inicio de sesión.
+                                </p>
+                            </div>
+                            ` : `
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Ya tienes una cuenta en TeleAsiste. Solo necesitas aceptar esta invitación para comenzar a trabajar con ${nombreEmpresa}.
+                            </p>
+                            `}
+                            <p style="margin: 20px 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Para aceptar o rechazar esta invitación, haz clic en el siguiente botón:
+                            </p>
+                            <table role="presentation" style="margin: 30px 0; width: 100%;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="${linkAceptacion}" 
+                                           style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                                            Ver Invitación
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 20px 0 10px; font-size: 14px; line-height: 1.6; color: #666666;">
+                                O copia y pega este enlace en tu navegador:
+                            </p>
+                            <p style="margin: 0; font-size: 12px; word-break: break-all; color: #667eea;">
+                                ${linkAceptacion}
+                            </p>
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                                <p style="margin: 0; font-size: 12px; color: #999999; line-height: 1.6;">
+                                    ⏰ Esta invitación expirará en 7 días.<br>
+                                    🔒 Si no solicitaste esta invitación, puedes ignorar este correo.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px; background-color: #f8f9fa; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
+                                <strong>TeleAsiste</strong> - Sistema de Control de Asistencia
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #999999;">
+                                Este es un correo automático, por favor no responder.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `;
+
+            return await this.enviarCorreo(destinatario, asunto, contenidoHTML);
+
+        } catch (error) {
+            console.error('Error al enviar invitación de empresa:', error);
+            return {
+                success: false,
+                message: 'Error al enviar invitación',
+                error: error.message
+            };
+        }
+    }
+
 }
         
 export default new MailService();

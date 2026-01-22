@@ -13,6 +13,7 @@ import DocumentoRoutes from "./DocumentoRoutes.js";
 import MQTTRoutes from "./MQTTRoutes.js";
 import ZKDeviceRoutes from "./ZKDeviceRoutes.js";
 import RolesRoutes from "./RolesRoutes.js";
+import SolicitudesRoutes from "./SolicitudesRoutes.js";
 
 const router = {
     login: AuthRoutes,
@@ -28,7 +29,8 @@ const router = {
     documentos: DocumentoRoutes,
     mqtt: MQTTRoutes,
     zk: ZKDeviceRoutes,
-    roles: RolesRoutes
+    roles: RolesRoutes,
+    solicitudes: SolicitudesRoutes
 }
 
 export default router;

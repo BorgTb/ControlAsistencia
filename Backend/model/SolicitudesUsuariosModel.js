@@ -515,6 +515,206 @@ class SolicitudesUsuariosModel {
             connection.release();
         }
     }
+
+    /**
+     * Crear solicitud de agregar empresa con token de invitación
+     * @param {Object} data - Datos de la solicitud
+     * @returns {Promise} ID de la solicitud creada
+     */
+    static async crearSolicitudAgregarEmpresa({
+        usuario_id,
+        empresa_id,
+        usuario_solicitante_id,
+        token_aceptacion,
+        fecha_expiracion,
+        userData = null
+    }) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const query = `
+                INSERT INTO solicitudes_usuarios (
+                    id_usuario_empresa,
+                    usuario_invitado_id,
+                    tipo,
+                    subtipo,
+                    titulo,
+                    descripcion,
+                    fecha_emision,
+                    estado,
+                    requiere_firma,
+                    empresa_solicitante_id,
+                    usuario_solicitante_id,
+                    token_aceptacion,
+                    fecha_expiracion,
+                    created_at,
+                    updated_at
+                ) VALUES (NULL, ?, 'solicitud', 'agregar_empresa', ?, ?, CURRENT_TIMESTAMP, 'pendiente', 0, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `;
+
+            // Obtener nombre del usuario
+            const [usuario] = await connection.execute(
+                'SELECT nombre, apellido_pat, apellido_mat FROM usuarios WHERE id = ?',
+                [usuario_id]
+            );
+            const nombreCompleto = usuario[0] ? 
+                `${usuario[0].nombre} ${usuario[0].apellido_pat} ${usuario[0].apellido_mat || ''}`.trim() : 
+                'Usuario';
+
+            // Obtener nombre de la empresa
+            const [empresa] = await connection.execute(
+                'SELECT emp_nombre FROM empresa WHERE empresa_id = ?',
+                [empresa_id]
+            );
+            const nombreEmpresa = empresa[0] ? empresa[0].emp_nombre : 'Empresa';
+
+            // Crear descripción con userData embebido como JSON si está disponible
+            let descripcion = `Ha sido invitado a unirse a ${nombreEmpresa}. Por favor, acepte o rechace esta invitación.`;
+            if (userData) {
+                descripcion = JSON.stringify({
+                    mensaje: descripcion,
+                    userData: userData
+                });
+            }
+
+            const values = [
+                usuario_id, // usuario_invitado_id (tabla usuarios)
+                `Invitación para ${nombreCompleto}`,
+                descripcion,
+                empresa_id,
+                usuario_solicitante_id,
+                token_aceptacion,
+                fecha_expiracion
+            ];
+
+            const [result] = await connection.execute(query, values);
+            
+            await connection.commit();
+            
+            return result.insertId;
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    /**
+     * Obtener solicitud por token de aceptación
+     * @param {string} token - Token de aceptación
+     * @returns {Promise} Datos de la solicitud con información del usuario y empresa
+     */
+    static async obtenerPorToken(token) {
+        const query = `
+            SELECT 
+                s.*,
+                e.emp_nombre as nombre_empresa,
+                e.emp_rut as rut_empresa,
+                u_invitado.id as usuario_id,
+                u_invitado.nombre as nombre_usuario,
+                u_invitado.apellido_pat as apellidos_usuario,
+                u_invitado.rut as rut_usuario
+            FROM solicitudes_usuarios s
+            LEFT JOIN empresa e ON s.empresa_solicitante_id = e.empresa_id
+            LEFT JOIN usuarios u_invitado ON s.usuario_invitado_id = u_invitado.id
+            WHERE s.token_aceptacion = ?
+            LIMIT 1
+        `;
+
+        const [rows] = await db.execute(query, [token]);
+        
+        return rows.length > 0 ? rows[0] : null;
+    }
+
+    /**
+     * Validar token y su expiración
+     * @param {string} token - Token a validar
+     * @returns {Promise<Object>} {valido: boolean, mensaje: string}
+     */
+    static async validarToken(token) {
+        const solicitud = await this.obtenerPorToken(token);
+        
+        if (!solicitud) {
+            return { valido: false, mensaje: 'Solicitud no encontrada' };
+        }
+        
+        if (solicitud.estado !== 'pendiente') {
+            return { valido: false, mensaje: `Esta solicitud ya fue ${solicitud.estado}` };
+        }
+        
+        const ahora = new Date();
+        const expiracion = new Date(solicitud.fecha_expiracion);
+        
+        if (ahora > expiracion) {
+            return { valido: false, mensaje: 'El token ha expirado' };
+        }
+        
+        return { valido: true, mensaje: 'Token válido' };
+    }
+
+    /**
+     * Obtener solicitudes pendientes de un usuario
+     * @param {number} usuario_id - ID del usuario
+     * @returns {Promise<Array>} Lista de solicitudes pendientes
+     */
+    static async obtenerSolicitudesPendientesUsuario(usuario_id) {
+        const query = `
+            SELECT 
+                s.*,
+                e.emp_nombre as nombre_empresa
+            FROM solicitudes_usuarios s
+            LEFT JOIN empresa e ON s.empresa_solicitante_id = e.empresa_id
+            WHERE s.estado = 'pendiente'
+            AND s.subtipo = 'agregar_empresa'
+            AND s.fecha_expiracion > NOW()
+            ORDER BY s.fecha_emision DESC
+        `;
+        
+        const [rows] = await db.execute(query, [usuario_id]);
+        return rows;
+    }
+
+    /**
+     * Invalidar solicitudes anteriores del mismo usuario para la misma empresa
+     * @param {number} usuario_id - ID del usuario
+     * @param {number} empresa_id - ID de la empresa
+     * @returns {Promise} Resultado de la actualización
+     */
+    static async invalidarSolicitudesAnteriores(usuario_id, empresa_id) {
+        const query = `
+            UPDATE solicitudes_usuarios
+            SET estado = 'cancelada',
+                observaciones = CONCAT(IFNULL(observaciones, ''), ' - Cancelada por nueva solicitud'),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE empresa_solicitante_id = ?
+            AND estado = 'pendiente'
+            AND subtipo = 'agregar_empresa'
+        `;
+        
+        const [result] = await db.execute(query, [empresa_id]);
+        return result;
+    }
+
+    /**
+     * Actualizar id_usuario_empresa después de que el usuario acepta la invitación
+     * @param {number} id_solicitud - ID de la solicitud
+     * @param {number} id_usuario_empresa - ID del registro en usuarios_empresas
+     * @returns {Promise} Resultado de la actualización
+     */
+    static async actualizarIdUsuarioEmpresa(id_solicitud, id_usuario_empresa) {
+        const query = `
+            UPDATE solicitudes_usuarios 
+            SET id_usuario_empresa = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id_solicitud = ?
+        `;
+        
+        const [result] = await db.execute(query, [id_usuario_empresa, id_solicitud]);
+        return result;
+    }
 }
 
 

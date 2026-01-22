@@ -1,30 +1,21 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-// Crear una instancia separada de axios SIN interceptores para peticiones públicas
-const publicApiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-  withCredentials: true // Aún en rutas públicas, podemos enviar cookies
-});
+import { apiClient } from '@/config/axios-config.js';
 
 /**
- * Servicio para manejar solicitudes de modificación de marcaciones
- * IMPORTANTE: Este servicio usa peticiones públicas (sin autenticación JWT)
+ * Servicio para manejar solicitudes (modificación de marcaciones e invitaciones de empresa)
  */
 class SolicitudesService {
+  // ===========================
+  // SOLICITUDES DE MODIFICACIÓN DE MARCACIONES (existentes)
+  // ===========================
+  
   /**
-   * Obtener detalles de una solicitud mediante token
+   * Obtener detalles de una solicitud de modificación mediante token
    * @param {string} token - Token de la solicitud
    * @returns {Promise} Datos de la solicitud
    */
   async obtenerSolicitudPorToken(token) {
     try {
-      const response = await publicApiClient.get('/marcaciones/solicitud-modificar', {
+      const response = await apiClient.get('/marcaciones/solicitud-modificar', {
         params: { token }
       });
       return response.data.data || response.data;
@@ -41,7 +32,7 @@ class SolicitudesService {
    */
   async aceptarSolicitud(token) {
     try {
-      const response = await publicApiClient.post('/marcaciones/modificar/aceptar', {
+      const response = await apiClient.post('/marcaciones/modificar/aceptar', {
         token
       });
       return response.data;
@@ -59,13 +50,79 @@ class SolicitudesService {
    */
   async rechazarSolicitud(token) {
     try {
-      const response = await publicApiClient.post('/marcaciones/modificar/rechazar', {
+      const response = await apiClient.post('/marcaciones/modificar/rechazar', {
         token
       });
       return response.data;
     } catch (error) {
       console.error('Error al rechazar solicitud:', error);
       throw new Error(error.response?.data?.message || 'Error al rechazar la solicitud');
+    }
+  }
+
+  // ===========================
+  // SOLICITUDES DE INVITACIÓN A EMPRESA (nuevas)
+  // ===========================
+  
+  /**
+   * Obtener información de invitación por token (público pero envía cookies)
+   * @param {string} token - Token de la invitación
+   * @returns {Promise} Datos de la invitación
+   */
+  async obtenerInvitacionPorToken(token) {
+    try {
+      const response = await apiClient.get(`/solicitudes/invitacion/${token}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener invitación:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Aceptar invitación de empresa (requiere autenticación)
+   * @param {string} token - Token de la invitación
+   * @returns {Promise} Respuesta de la aceptación
+   */
+  async aceptarInvitacionEmpresa(token) {
+    try {
+      const response = await apiClient.post(`/solicitudes/invitacion/${token}/aceptar`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al aceptar invitación:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rechazar invitación de empresa (requiere autenticación)
+   * @param {string} token - Token de la invitación
+   * @param {string} motivo - Motivo del rechazo (opcional)
+   * @returns {Promise} Respuesta del rechazo
+   */
+  async rechazarInvitacionEmpresa(token, motivo = '') {
+    try {
+      const response = await apiClient.post(`/solicitudes/invitacion/${token}/rechazar`, {
+        motivo
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al rechazar invitación:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener solicitudes pendientes del usuario autenticado
+   * @returns {Promise} Lista de solicitudes pendientes
+   */
+  async obtenerSolicitudesPendientes() {
+    try {
+      const response = await apiClient.get('/solicitudes/pendientes');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener solicitudes pendientes:', error);
+      throw error;
     }
   }
 }

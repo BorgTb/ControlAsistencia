@@ -58,6 +58,7 @@ app.use('/api/feriados', router.feriados);
 app.use('/api/mqtt', router.mqtt);
 app.use('/api/zk', router.zk);
 app.use('/api', router.roles); // Rutas de roles multi-rol
+app.use('/api/solicitudes', router.solicitudes); // Rutas de solicitudes de invitación
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
 app.use('/iclock', ADMSLink);
 

@@ -157,12 +157,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore.js'
 import AuthService from '@/services/Authservices.js'
 
 // Router
 const router = useRouter()
+const route = useRoute()
 
 // Store
 const authStore = useAuthStore()
@@ -244,8 +245,16 @@ const handleSubmit = async () => {
       if (result.data.token) authStore.setToken(result.data.token)
       if (result.data.user) authStore.setUser(result.data.user)
       
-      // MULTI-ROL: Verificar roles y redirigir según prioridad
+      // MULTI-ROL: Verificar roles y redirigir según prioridad o redirect
       setTimeout(() => {
+        // Si hay un redirect en la query, usar ese
+        const redirectPath = route.query.redirect
+        if (redirectPath) {
+          console.log('→ Redirigiendo a ruta guardada:', redirectPath)
+          router.push(redirectPath)
+          return
+        }
+        
         if (result.data.user && result.data.user.roles) {
           const userRoles = result.data.user.roles
           

@@ -492,6 +492,7 @@
 import { ref, reactive, watch } from 'vue'
 import EmpresaServices from '../../services/EmpresaService.js'
 import { useAuthStore } from '../../stores/authStore.js'
+import Swal from 'sweetalert2'
 
 // Props
 const props = defineProps({
@@ -996,6 +997,21 @@ const submitForm = async () => {
     console.log('Usuario registrado exitosamente:', response)
 
     if (response.success) {
+      // Verificar si se envió invitación en lugar de crear asociación directa
+      if (response.invitacionEnviada) {
+        // Mostrar mensaje de invitación enviada
+        Swal.fire({
+          icon: 'success',
+          title: 'Invitación enviada',
+          html: `
+            <p>El trabajador <strong>${trabajador.nombre} ${trabajador.apellidos}</strong> ya está registrado en el sistema.</p>
+            <p>Se ha enviado una invitación a su correo electrónico <strong>${trabajador.email}</strong> para que pueda aceptar unirse a la empresa.</p>
+            <p class="text-sm text-gray-600 mt-2">El trabajador recibirá un correo con un enlace para aceptar o rechazar la invitación.</p>
+          `,
+          confirmButtonText: 'Entendido'
+        })
+      }
+      
       emit('success', { ...trabajador })
       closeModal()
     } else {

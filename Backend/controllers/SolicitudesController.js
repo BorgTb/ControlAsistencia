@@ -1,0 +1,331 @@
+import SolicitudesUsuariosModel from '../model/SolicitudesUsuariosModel.js';
+import UserEmpresaModel from '../model/UsuarioEmpresaModel.js';
+import UsuariosRolesAsignadosModel from '../model/UsuariosRolesAsignadosModel.js';
+import RolesSistemaModel from '../model/RolesSistemaModel.js';
+import PreferenciasCompensacionModel from '../model/PreferenciasCompensacionModel.js';
+import { DateTime } from 'luxon';
+
+/**
+ * Obtener información de solicitud por token (endpoint público)
+ */
+const obtenerSolicitudPorToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        error: 'Token es requerido'
+      });
+    }
+
+    console.log('Token recibido:', token);
+
+
+    // Obtener solicitud por token
+    const solicitud = await SolicitudesUsuariosModel.obtenerPorToken(token);
+
+    if (!solicitud) {
+      return res.status(404).json({
+        error: 'Solicitud no encontrada o token inválido'
+      });
+    }
+
+    // Validar que el token no haya expirado
+    const validacion = await SolicitudesUsuariosModel.validarToken(token);
+    
+    if (!validacion.valido) {
+      return res.status(400).json({
+        error: validacion.mensaje
+      });
+    }
+
+    // Retornar información de la solicitud (sin datos sensibles)
+    return res.json({
+      id_solicitud: solicitud.id_solicitud,
+      tipo: solicitud.tipo,
+      subtipo: solicitud.subtipo,
+      titulo: solicitud.titulo,
+      descripcion: solicitud.descripcion,
+      estado: solicitud.estado,
+      fecha_emision: solicitud.fecha_emision,
+      fecha_expiracion: solicitud.fecha_expiracion,
+      empresa_solicitante: {
+        empresa_id: solicitud.empresa_solicitante_id,
+        nombre_empresa: solicitud.nombre_empresa
+      },
+      usuario: {
+        usuario_id: solicitud.usuario_id,
+        nombre: solicitud.nombre_usuario,
+        apellidos: solicitud.apellidos_usuario,
+        rut: solicitud.rut_usuario
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Error al obtener información de la solicitud',
+      detalle: error.message
+    });
+  }
+};
+
+/**
+ * Aceptar solicitud de agregar empresa (requiere login)
+ */
+const aceptarSolicitudEmpresa = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = req.user; // Del middleware de autenticación
+
+ 
+    if (!token) {
+      return res.status(400).json({
+        error: 'Token es requerido'
+      });
+    }
+
+   
+
+    // Obtener y validar solicitud
+    const solicitud = await SolicitudesUsuariosModel.obtenerPorToken(token);
+
+
+    if (!solicitud) {
+      return res.status(404).json({
+        error: 'Solicitud no encontrada'
+      });
+    }
+
+    // Validar que el usuario autenticado sea el destinatario
+    if (solicitud.usuario_id !== user.id) {
+      return res.status(403).json({
+        error: 'No tienes permiso para aceptar esta solicitud'
+      });
+    }
+
+   
+
+
+    // Validar token y expiración
+    const validacion = await SolicitudesUsuariosModel.validarToken(token);
+
+   
+    
+    if (!validacion.valido) {
+      return res.status(400).json({
+        error: validacion.mensaje
+      });
+    }
+
+    // Validar estado
+    if (solicitud.estado !== 'pendiente') {
+      return res.status(400).json({
+        error: `Esta solicitud ya fue ${solicitud.estado}`
+      });
+    }
+
+
+
+    console.log('Usuario que acepta la solicitud:', user);
+    console.log('Solicitud a aceptar:', solicitud);
+    // Verificar que no exista ya una relación activa
+    const relacionExistente = await UserEmpresaModel.getUsuarioEmpresaById(
+      user.id,
+      solicitud.empresa_solicitante_id
+    );
+
+
+
+    if (relacionExistente && relacionExistente.fecha_fin) {
+      return res.status(400).json({
+        error: 'Ya tienes una relación activa con esta empresa'
+      });
+    }
+
+    // Extraer userData de la descripción si existe (formato JSON)
+    let userData = null;
+    try {
+      const descripcionData = JSON.parse(solicitud.descripcion);
+      if (descripcionData.userData) {
+        userData = descripcionData.userData;
+        console.log('✅ UserData extraído de la solicitud:', userData);
+      }
+    } catch (e) {
+      // Si no es JSON o no tiene userData, continuar normalmente
+      console.log('ℹ️ Solicitud sin userData en descripción');
+    }
+
+    // Crear asociación usuario-empresa
+    const nuevaAsociacion = await UserEmpresaModel.createUsuarioEmpresa({
+      usuario_id: user.id,
+      empresa_id: solicitud.empresa_solicitante_id,
+      fecha_inicio: DateTime.now().toISODate(),
+    });
+
+    console.log('🔍 Nueva asociación creada:', nuevaAsociacion);
+    console.log('🔍 ID de nueva asociación:', nuevaAsociacion.id);
+
+    // Asignar rol si userData está disponible
+    if (userData && userData.rol) {
+      
+    
+      try {
+        console.log('🎭 Intentando asignar rol:', userData.rol, 'a usuario_empresa_id:', nuevaAsociacion.id);
+        // Obtener el ID del rol desde roles_sistema
+        const rolSistema = await RolesSistemaModel.findBySlug(userData.rol);
+        if (rolSistema) {
+          await UsuariosRolesAsignadosModel.assignRole(nuevaAsociacion.id, rolSistema.id);
+          console.log(`✅ Rol '${userData.rol}' asignado al usuario en usuarios_roles_asignados`);
+        } else {
+          console.warn(`⚠️ No se encontró el rol '${userData.rol}' en roles_sistema`);
+        }
+      } catch (roleError) {
+        console.error('❌ Error al asignar rol:', roleError);
+        // No bloqueamos la aceptación por este error
+      }
+    }
+
+    // Crear preferencia de compensación si está en userData
+    if (userData && userData.preferenciasCompensacion) {
+      try {
+        console.log('💰 Intentando crear preferencias de compensación para usuario_empresa_id:', nuevaAsociacion.id);
+        console.log('💰 Datos de preferencias:', userData.preferenciasCompensacion);
+        
+        await PreferenciasCompensacionModel.crear({
+          id_trabajador: nuevaAsociacion.id,
+          tipo_compensacion: userData.preferenciasCompensacion.tipo_compensacion || 'PAGO',
+          porcentaje_pago: userData.preferenciasCompensacion.porcentaje_pago || 0,
+          fecha_inicio: userData.preferenciasCompensacion.fecha_inicio || DateTime.now().toISODate()
+        });
+        
+        console.log('✅ Preferencias de compensación creadas');
+      } catch (prefError) {
+        console.error('❌ Error al crear preferencias de compensación:', prefError);
+        // No bloqueamos la aceptación por este error
+      }
+    }
+
+    // Actualizar la solicitud con el id_usuario_empresa creado
+    await SolicitudesUsuariosModel.actualizarIdUsuarioEmpresa(
+      solicitud.id_solicitud,
+      nuevaAsociacion.id
+    );
+
+    // Actualizar estado de la solicitud
+    await SolicitudesUsuariosModel.actualizarEstado(
+      solicitud.id_solicitud,
+      'aceptada',
+      `Aceptada por usuario el ${new Date().toISOString()}`
+    );
+
+
+    return res.json({
+      mensaje: 'Solicitud aceptada exitosamente',
+      asociacion: {
+        id: nuevaAsociacion.id,
+        usuario_id: user.id,
+        empresa_id: solicitud.empresa_solicitante_id,
+        nombre_empresa: solicitud.nombre_empresa
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Error al aceptar la solicitud',
+      detalle: error.message
+    });
+  }
+};
+
+/**
+ * Rechazar solicitud de agregar empresa (requiere login)
+ */
+const rechazarSolicitudEmpresa = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { usuario_id } = req.user;
+    const { motivo } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        error: 'Token es requerido'
+      });
+    }
+
+    // Obtener y validar solicitud
+    const solicitud = await SolicitudesUsuariosModel.obtenerPorToken(token);
+
+    if (!solicitud) {
+      return res.status(404).json({
+        error: 'Solicitud no encontrada'
+      });
+    }
+
+    // Validar que el usuario autenticado sea el destinatario
+    if (solicitud.usuario_id !== usuario_id) {
+      return res.status(403).json({
+        error: 'No tienes permiso para rechazar esta solicitud'
+      });
+    }
+
+    // Validar estado
+    if (solicitud.estado !== 'pendiente') {
+      return res.status(400).json({
+        error: `Esta solicitud ya fue ${solicitud.estado}`
+      });
+    }
+
+    // Actualizar estado de la solicitud
+    const observaciones = motivo 
+      ? `Rechazada por usuario: ${motivo}` 
+      : `Rechazada por usuario el ${new Date().toISOString()}`;
+
+    await SolicitudesUsuariosModel.actualizarEstado(
+      solicitud.id_solicitud,
+      'rechazada',
+      observaciones
+    );
+
+   
+    return res.json({
+      mensaje: 'Solicitud rechazada exitosamente'
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Error al rechazar la solicitud',
+      detalle: error.message
+    });
+  }
+};
+
+/**
+ * Obtener solicitudes pendientes del usuario autenticado
+ */
+const obtenerSolicitudesPendientes = async (req, res) => {
+  try {
+    const { usuario_id } = req.user;
+
+    const solicitudes = await SolicitudesUsuariosModel.obtenerSolicitudesPendientesUsuario(usuario_id);
+
+    return res.json({
+      solicitudes,
+      total: solicitudes.length
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Error al obtener solicitudes pendientes',
+      detalle: error.message
+    });
+  }
+};
+
+
+
+export default {
+  obtenerSolicitudPorToken,
+  aceptarSolicitudEmpresa,
+  rechazarSolicitudEmpresa,
+  obtenerSolicitudesPendientes
+};

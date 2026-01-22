@@ -20,6 +20,8 @@ import PreferenciasCompensacionModel from "../model/PreferenciasCompensacionMode
 import SolicitudesUsuariosModel from "../model/SolicitudesUsuariosModel.js";
 import JustificacionesModel from "../model/JustificacionesModel.js";
 import UsuariosRolesAsignadosModel from "../model/UsuariosRolesAsignadosModel.js";
+import MailService from "../services/MailService.js";
+import TokenService from "../services/TokenService.js";
 
 
 
@@ -116,7 +118,7 @@ const createTrabajador = async (req, res) => {
         let usuarioNuevo = false;
 
         // Verificar si ya existe un usuario con este RUT PARA LA EMPRESA SOLICITADA
-        console.log(userData);
+        console.log('USERDATA : ', userData);
         console.log(USR_PETICION);
         const existingUserByRut = await UserModel.findByRut(userData.rut);
         if (existingUserByRut) {
@@ -133,42 +135,58 @@ const createTrabajador = async (req, res) => {
                 });
             }
             
-            // Verificar si el email cambió
-            if (userData.emailCambio && userData.email !== existingUserByRut.email) {
-                // Email cambió - crear nuevo usuario con el mismo RUT pero diferente email
-                console.log('⚠️ Email cambió - creando nuevo usuario');
+            // NUEVO: Crear solicitud de invitación en lugar de asociar directamente
+            try {
+                const token = TokenService.generarTokenAceptacion();
+                const fechaExpiracion = new Date();
+                fechaExpiracion.setDate(fechaExpiracion.getDate() + 7); // 7 días de validez
                 
-                // Verificar que el nuevo email no esté en uso
-                const existingUserByEmail = await UserModel.findByEmail(userData.email);
-                if (existingUserByEmail) {
-                    return res.status(500).json({
-                        success: false,
-                        message: "Ya existe una cuenta con ese email"
-                    });
-                }
+                // Obtener datos de la empresa
+                const empresa = await EmpresaModel.getEmpresaById(USR_PETICION.empresa_id);
                 
-                // Crear nuevo usuario
-                const newUser = await AuthService.registerUser(
-                    userData.email,
-                    userData.password,
-                    userData.nombre,
-                    userData.apellido_pat,
-                    userData.apellido_mat,
-                    userData.rol,
-                    userData.rut,
-                    userData.estado
+                // Invalidar solicitudes anteriores para este usuario y empresa
+                await SolicitudesUsuariosModel.invalidarSolicitudesAnteriores(
+                    existingUserByRut.id,
+                    USR_PETICION.empresa_id
                 );
-
-                if (!newUser) {
-                    return res.status(400).json({ success: false, message: "Error creando trabajador" });
-                }
-
-                usuarioId = newUser.id;
-                usuarioNuevo = true;
-            } else {
-                // Email no cambió - solo asociar el usuario existente
-                usuarioId = existingUserByRut.id;
-                usuarioNuevo = false;
+                
+                // Crear solicitud con userData embebido
+                const solicitudId = await SolicitudesUsuariosModel.crearSolicitudAgregarEmpresa({
+                    usuario_id: existingUserByRut.id,
+                    empresa_id: USR_PETICION.empresa_id,
+                    usuario_solicitante_id: USR_PETICION.id,
+                    token_aceptacion: token,
+                    fecha_expiracion: fechaExpiracion,
+                    userData: userData // Guardar datos del formulario para usarlos al aceptar
+                });
+                
+                // Enviar correo de invitación
+                const linkAceptacion = `${process.env.FRONTEND_URL}/invitacion/${token}`;
+                const nombreCompleto = `${existingUserByRut.nombre} ${existingUserByRut.apellido_pat} ${existingUserByRut.apellido_mat || ''}`.trim();
+                
+                await MailService.enviarInvitacionEmpresa({
+                    destinatario: existingUserByRut.email,
+                    nombreDestinatario: nombreCompleto,
+                    nombreEmpresa: empresa.emp_nombre,
+                    linkAceptacion: linkAceptacion,
+                    passwordTemporal: null,
+                    esUsuarioNuevo: false
+                });
+                
+                console.log(`✅ Invitación enviada a ${existingUserByRut.email} para unirse a ${empresa.emp_nombre}`);
+                
+                return res.status(200).json({
+                    success: true,
+                    invitacionEnviada: true,
+                    message: `Se ha enviado una invitación al correo ${existingUserByRut.email}. El trabajador debe aceptarla para unirse a la empresa.`
+                });
+            } catch (invitacionError) {
+                console.error('❌ Error al enviar invitación:', invitacionError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al procesar la invitación',
+                    error: invitacionError.message
+                });
             }
             
         } else {
