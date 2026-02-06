@@ -1824,6 +1824,7 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         const { rutEmpresa } = req.params;
         const { fecha_inicio, fecha_fin } = req.query;
 
+        console.log('EMPRESA',rutEmpresa);
         console.time('⏱️ Tiempo total de reporte');
 
         // Validar fechas

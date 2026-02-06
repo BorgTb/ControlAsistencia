@@ -64,6 +64,44 @@ class MarcacionesService {
 
     async registrarMarcacion(usuario_id, tipo, geo_lat, geo_lon, ip_origen) {
         try {
+            // Obtener fecha actual para verificación de duplicados
+            const fechaHoy = new Date().toISOString().split('T')[0];
+
+            // Verificar duplicados según el tipo de marcación
+            if (tipo === 'entrada' || tipo === 'salida') {
+                // Para entrada y salida: no permitir duplicados del mismo tipo en el día
+                const marcacionExistente = await MarcacionesModel.verificarMarcacionDuplicada(
+                    usuario_id,
+                    fechaHoy,
+                    tipo
+                );
+
+                if (marcacionExistente) {
+                    console.log(`⚠️ Marcación duplicada detectada: ${tipo} ya registrada para usuario ${usuario_id} el ${fechaHoy}`);
+                    return {
+                        success: false,
+                        isDuplicate: true,
+                        message: `Ya existe una marcación de ${tipo} registrada para el día de hoy a las ${marcacionExistente.hora}`,
+                        data: {
+                            marcacion_existente: {
+                                id: marcacionExistente.id,
+                                tipo: marcacionExistente.tipo,
+                                fecha: marcacionExistente.fecha,
+                                hora: marcacionExistente.hora
+                            }
+                        }
+                    };
+                }
+            } else if (tipo === 'colacion') {
+                // Para colación: permitir pares (inicio/fin) usando la lógica existente
+                const tieneColacionActiva = await this.verificarColacionActiva(usuario_id);
+                
+                // Si tiene colación activa impar, está registrando el fin
+                // Si no tiene colación activa (par o cero), está registrando el inicio
+                // No hay problema con duplicados en este caso, la lógica de pares lo maneja
+                console.log(`📋 Colación: tieneColacionActiva = ${tieneColacionActiva}`);
+            }
+
             // Generar hash único para la marcación
             const hashData = `${usuario_id}-${tipo}-${Math.random()}-${Date.now()}`;
             const hash = crypto.createHash('sha256').update(hashData).digest('hex');

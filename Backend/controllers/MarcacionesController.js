@@ -213,6 +213,11 @@ const registrarMarcacion = async (req, res) => {
         );
 
         if (!result.success) {
+            // Si es un duplicado, retornar código 409 (Conflict)
+            if (result.isDuplicate) {
+                return res.status(409).json(result);
+            }
+            // Otros errores retornan 500
             return res.status(500).json(result);
         }
 

@@ -222,8 +222,8 @@ export function useEmpresa() {
   };
 
   const obtenerReporteJornadaDiaria = async (fechaInicio, fechaFin) => {
-    try {
-      const response = await EmpresaServices.obtenerReporteJornadaDiaria(user.value.rut, fechaInicio, fechaFin);
+    try {0
+      const response = await EmpresaServices.obtenerReporteJornadaDiaria(user.value.empresa_rut, fechaInicio, fechaFin);
       return response.data;
     } catch (error) {
       console.error("Error al obtener reporte de jornada diaria:", error);

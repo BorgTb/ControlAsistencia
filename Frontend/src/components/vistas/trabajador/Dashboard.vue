@@ -1142,6 +1142,11 @@ watch(isSyncing, (newValue) => {
 // Lifecycle hooks
 onMounted(async () => {
   // Inicializar fecha/hora
+
+  // Cargar datos iniciales
+  await cargarMarcacionesHoy()
+  await cargarHorarioHoy()
+
   updateDateTime()
   dateTimeInterval = setInterval(updateDateTime, 1000)
   
@@ -1151,10 +1156,6 @@ onMounted(async () => {
   } catch (error) {
     console.warn('No se pudo obtener ubicación inicial:', error)
   }
-  
-  // Cargar datos iniciales
-  await cargarMarcacionesHoy()
-  await cargarHorarioHoy()
   
   // Listener para cuando termina la sincronización offline
   const handleSyncCompleted = async (event) => {

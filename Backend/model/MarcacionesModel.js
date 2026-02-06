@@ -354,6 +354,30 @@ WHERE empresa.empresa_id = ? or marcaciones.mandante_id = ?`;
             throw error;
         }
     }
+
+    /**
+     * Verifica si ya existe una marcación del mismo tipo para un usuario en una fecha específica
+     * @param {number} usuario_empresa_id - ID del usuario-empresa
+     * @param {string} fecha - Fecha en formato YYYY-MM-DD
+     * @param {string} tipo - Tipo de marcación ('entrada', 'salida', 'colacion')
+     * @returns {Object|null} - Marcación existente o null si no existe
+     */
+    async verificarMarcacionDuplicada(usuario_empresa_id, fecha, tipo) {
+        try {
+            const query = `
+                SELECT * FROM marcaciones
+                WHERE usuario_empresa_id = ? 
+                AND DATE(fecha) = ? 
+                AND tipo = ?
+                LIMIT 1
+            `;
+            const [rows] = await pool.execute(query, [usuario_empresa_id, fecha, tipo]);
+            return rows.length > 0 ? rows[0] : null;
+        } catch (error) {
+            console.error('Error al verificar marcación duplicada:', error);
+            throw error;
+        }
+    }
     
 }
 
