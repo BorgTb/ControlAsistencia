@@ -711,7 +711,7 @@ async function cargarMarcacionesTrabajador(usuarioEmpresaId) {
     // Puedes ajustar el límite según la vista (mensual/anual)
     const limite = vista.value === 'mensual' ? 31 : 365;
     // request/response logs removed
-  const EmpresaService = await import('../../../services/EmpresaService.js').then(m => m.default);
+  const EmpresaService = await import('../../../services/empresa-service.js').then(m => m.default);
   const response = await EmpresaService.obtenerMarcacionesTrabajador(usuarioEmpresaId, limite);
   
     // El backend devuelve { success, data: [...] }
