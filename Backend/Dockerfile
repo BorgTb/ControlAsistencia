@@ -1,4 +1,4 @@
-FROM node:22.14.0
+FROM node:22.14.0-slim
 
 # Establecer zona horaria del sistema
 ENV TZ=America/Santiago
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y tzdata && \
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
 COPY . .
 
