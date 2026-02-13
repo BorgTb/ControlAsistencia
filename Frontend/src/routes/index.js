@@ -49,7 +49,7 @@ const routes = [
   {
     path: '/aprobar-modificacion',
     name: 'AprobarModificacion',
-    component: () => import('@/components/vistas/solicitudes/modificacion-maracacion.vue'),
+    component: () => import('@/components/vistas/solicitudes-usuario/modificacion-maracacion.vue'),
     meta: { requiresAuth: true }
   },
 
