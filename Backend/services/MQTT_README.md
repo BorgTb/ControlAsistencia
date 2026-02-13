@@ -1,6 +1,6 @@
-# Documentación del Servicio MQTT
+# DocumentaciÃ³n del Servicio MQTT
 
-## Configuración
+## ConfiguraciÃ³n
 
 Agregar las siguientes variables al archivo `.env`:
 
@@ -18,7 +18,7 @@ MQTT_CLIENT_ID=telemedios_backend
 ### 1. Importar el servicio
 
 ```javascript
-import mqttService from './services/MQTTService.js';
+import mqttService from './services/mqtt.service.js';
 ```
 
 ### 2. Conectar al broker
@@ -48,15 +48,15 @@ mqttService.publish('telemedios/alertas', {
 
 ## Eventos Disponibles
 
-El servicio maneja automáticamente los siguientes eventos:
+El servicio maneja automÃ¡ticamente los siguientes eventos:
 
 - **connect**: Cuando se conecta exitosamente al broker
 - **message**: Cuando se recibe un mensaje en un topic suscrito
 - **error**: Cuando ocurre un error
-- **close**: Cuando se cierra la conexión
+- **close**: Cuando se cierra la conexiÃ³n
 - **reconnect**: Cuando intenta reconectar
-- **offline**: Cuando el cliente está offline
-- **end**: Cuando finaliza la conexión
+- **offline**: Cuando el cliente estÃ¡ offline
+- **end**: Cuando finaliza la conexiÃ³n
 
 ## API REST para MQTT
 
@@ -75,7 +75,7 @@ Content-Type: application/json
 }
 ```
 
-### Verificar estado de conexión
+### Verificar estado de conexiÃ³n
 ```http
 GET /api/mqtt/status
 ```
@@ -103,7 +103,7 @@ Content-Type: application/json
 
 ## Ejemplos de Uso
 
-### Enviar notificación de marcación
+### Enviar notificaciÃ³n de marcaciÃ³n
 
 ```javascript
 mqttService.publish('telemedios/marcaciones', {
@@ -145,8 +145,8 @@ mqttService.subscribe('telemedios/sync/#', (topic, message) => {
 
 ## QoS (Quality of Service)
 
-- **QoS 0**: At most once (máximo una vez) - El mensaje se entrega una vez, sin confirmación
-- **QoS 1**: At least once (al menos una vez) - El mensaje se entrega al menos una vez, con confirmación
+- **QoS 0**: At most once (mÃ¡ximo una vez) - El mensaje se entrega una vez, sin confirmaciÃ³n
+- **QoS 1**: At least once (al menos una vez) - El mensaje se entrega al menos una vez, con confirmaciÃ³n
 - **QoS 2**: Exactly once (exactamente una vez) - El mensaje se entrega exactamente una vez
 
 ## Wildcards en Topics
@@ -154,15 +154,15 @@ mqttService.subscribe('telemedios/sync/#', (topic, message) => {
 - **+**: Coincide con un nivel
   - `telemedios/+/status` coincide con `telemedios/empresa1/status` y `telemedios/empresa2/status`
   
-- **#**: Coincide con múltiples niveles
+- **#**: Coincide con mÃºltiples niveles
   - `telemedios/#` coincide con todos los topics que empiezan con `telemedios/`
 
-## Mejores Prácticas
+## Mejores PrÃ¡cticas
 
-1. Usar topics descriptivos y jerárquicos
-2. Implementar QoS según la criticidad del mensaje
+1. Usar topics descriptivos y jerÃ¡rquicos
+2. Implementar QoS segÃºn la criticidad del mensaje
 3. Manejar errores en los callbacks
-4. No suscribirse a `#` (todos los topics) en producción
+4. No suscribirse a `#` (todos los topics) en producciÃ³n
 5. Usar retain solo cuando sea necesario
-6. Implementar autenticación y autorización
-7. Usar TLS/SSL en producción
+6. Implementar autenticaciÃ³n y autorizaciÃ³n
+7. Usar TLS/SSL en producciÃ³n

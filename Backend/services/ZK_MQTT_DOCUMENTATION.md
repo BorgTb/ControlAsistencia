@@ -1,11 +1,11 @@
-# Documentación del Sistema MQTT para Dispositivos ZK
+# DocumentaciÃ³n del Sistema MQTT para Dispositivos ZK
 
 ## Arquitectura de Topics
 
-El sistema utiliza el siguiente patrón de topics para dispositivos ZKTeco:
+El sistema utiliza el siguiente patrÃ³n de topics para dispositivos ZKTeco:
 
-### 📥 Entrada (Comandos): `zk/{serial}/in`
-El backend se suscribe a este topic para **recibir comandos** que enviará a los dispositivos.
+### ðŸ“¥ Entrada (Comandos): `zk/{serial}/in`
+El backend se suscribe a este topic para **recibir comandos** que enviarÃ¡ a los dispositivos.
 
 **Formato JSON:**
 ```json
@@ -17,7 +17,7 @@ El backend se suscribe a este topic para **recibir comandos** que enviará a los
 }
 ```
 
-### 📤 Salida (Respuestas): `zk/{serial}/out`
+### ðŸ“¤ Salida (Respuestas): `zk/{serial}/out`
 Los dispositivos publican en este topic las **respuestas a comandos**.
 
 **Formato JSON:**
@@ -28,16 +28,16 @@ Los dispositivos publican en este topic las **respuestas a comandos**.
   "device_name": "Equipo 1",
   "action": "CREATE_USER",
   "payload": {
-    // Datos adicionales si el comando los requería
+    // Datos adicionales si el comando los requerÃ­a
   }
 }
 ```
 
 **Ejemplos:**
-- **Éxito:** `{"status": "ok", "message": "Usuario creado exitosamente", "action": "CREATE_USER"}`
+- **Ã‰xito:** `{"status": "ok", "message": "Usuario creado exitosamente", "action": "CREATE_USER"}`
 - **Error:** `{"status": "error", "message": "El ID de usuario ya existe en el dispositivo", "action": "CREATE_USER"}`
 
-### 📋 Eventos (Logs): `zk/{serial}/logs`
+### ðŸ“‹ Eventos (Logs): `zk/{serial}/logs`
 Los dispositivos publican **marcajes de asistencia** detectados en tiempo real.
 
 **Formato JSON:**
@@ -77,8 +77,8 @@ Los dispositivos publican **marcajes de asistencia** detectados en tiempo real.
 - `status`: Tipo de marcaje (0=entrada, 1=salida, etc.)
 - `punch`: Entrada/salida/tiempo extra (opcional, depende del dispositivo)
 
-### 🔌 Estado (Disponibilidad): `zk/{serial}/status`
-Los dispositivos publican su estado de conexión.
+### ðŸ”Œ Estado (Disponibilidad): `zk/{serial}/status`
+Los dispositivos publican su estado de conexiÃ³n.
 
 **Mensajes:**
 - `"online"` - Al conectarse
@@ -86,7 +86,7 @@ Los dispositivos publican su estado de conexión.
 
 ---
 
-## Configuración
+## ConfiguraciÃ³n
 
 ### Variables de Entorno (.env)
 
@@ -107,7 +107,7 @@ ZK_DEVICES=ABC123,XYZ789,DEF456
 
 ## API REST para Dispositivos ZK
 
-### 📌 Gestión de Dispositivos
+### ðŸ“Œ GestiÃ³n de Dispositivos
 
 #### Obtener todos los dispositivos
 ```http
@@ -149,7 +149,7 @@ Content-Type: application/json
 {
   "serial": "ABC123",
   "name": "Reloj Principal",
-  "location": "Recepción"
+  "location": "RecepciÃ³n"
 }
 ```
 
@@ -160,9 +160,9 @@ DELETE /api/zk/devices/{serial}
 
 ---
 
-### 🎮 Comandos a Dispositivos
+### ðŸŽ® Comandos a Dispositivos
 
-#### Enviar comando genérico
+#### Enviar comando genÃ©rico
 ```http
 POST /api/zk/devices/{serial}/command
 Content-Type: application/json
@@ -189,7 +189,7 @@ POST /api/zk/devices/{serial}/sync-time
 GET /api/zk/devices/{serial}/attendance?startDate=2025-12-01&endDate=2025-12-23
 ```
 
-#### Obtener información del dispositivo
+#### Obtener informaciÃ³n del dispositivo
 ```http
 GET /api/zk/devices/{serial}/info
 ```
@@ -216,17 +216,17 @@ Content-Type: application/json
 
 ---
 
-## Uso Programático
+## Uso ProgramÃ¡tico
 
 ### Registrar un dispositivo
 
 ```javascript
-import zkDeviceService from './services/ZKDeviceService.js';
+import zkDeviceService from './services/zk-device.service.js';
 
 // Registrar dispositivo
 zkDeviceService.registerDevice('ABC123', {
   name: 'Reloj Principal',
-  location: 'Recepción'
+  location: 'RecepciÃ³n'
 });
 ```
 
@@ -243,7 +243,7 @@ try {
 
 ### Manejar eventos de marcajes
 
-Los marcajes se reciben automáticamente en el método `processAttendanceLog` del [ZKDeviceService.js](services/ZKDeviceService.js). Puedes modificar este método para integrar con tu base de datos:
+Los marcajes se reciben automÃ¡ticamente en el mÃ©todo `processAttendanceLog` del [zk-device.service.js](services/zk-device.service.js). Puedes modificar este mÃ©todo para integrar con tu base de datos:
 
 ```javascript
 async processAttendanceLog(serial, attendance, deviceName) {
@@ -271,7 +271,7 @@ async processAttendanceLog(serial, attendance, deviceName) {
 
 ## Last Will Testament
 
-Cuando un dispositivo ZK se conecta, debe configurar un Last Will para notificar su desconexión:
+Cuando un dispositivo ZK se conecta, debe configurar un Last Will para notificar su desconexiÃ³n:
 
 ```javascript
 // Desde el agente del dispositivo
@@ -306,15 +306,15 @@ mqttClient.on('connect', () => {
 QoS: 1, Retain: true
 ```
 
-### 2️⃣ Backend Detecta Dispositivo
+### 2ï¸âƒ£ Backend Detecta Dispositivo
 
 ```
 Backend detecta mensaje en zk/+/status
-Si status es "online" y no está registrado → Auto-registro con device_name e ip_local
-### 1️⃣ Conexión del Dispositivo
+Si status es "online" y no estÃ¡ registrado â†’ Auto-registro con device_name e ip_local
+### 1ï¸âƒ£ ConexiÃ³n del Dispositivo
 
 ```
-Dispositivo ZK → Broker MQTT
+Dispositivo ZK â†’ Broker MQTT
 Topic: zk/ABC123/status
 Payload: "online"
 QoS: 1, Retain: true
@@ -324,10 +324,10 @@ action": "GET_USERS",
 }
 ```
 
-### 4️⃣ Dispositivo Responde
+### 4ï¸âƒ£ Dispositivo Responde
 
 ```
-Dispositivo → Broker MQTT
+Dispositivo â†’ Broker MQTT
 Topic: zk/ABC123/out
 Payload: {
   "status": "ok",
@@ -338,10 +338,10 @@ Payload: {
 }
 ```
 
-### 5️⃣ Marcaje Detectado
+### 5ï¸âƒ£ Marcaje Detectado
 
 ```
-Dispositivo → Broker MQTT
+Dispositivo â†’ Broker MQTT
 Topic: zk/ABC123/logs
 Payload: {
   "device_name": "Equipo 1",
@@ -362,10 +362,10 @@ Payload: {
 }
 ```
 
-### 5️⃣ Marcaje Detectado
+### 5ï¸âƒ£ Marcaje Detectado
 
 ```
-Dispositivo → Broker MQTT
+Dispositivo â†’ Broker MQTT
 Topic: zk/ABC123/logs
 PayGET_USERS` | Obtener lista de usuarios | `{}` |
 | `CREATE_USER` | Crear nuevo usuario | `{ "user_id": "123", "name": "...", ... }` |
@@ -376,12 +376,12 @@ PayGET_USERS` | Obtener lista de usuarios | `{}` |
 | `RESTART_DEVICE` | Reiniciar dispositivo | `{}` |
 | `GET_DEVICE_INFO` | Info del dispositivo | `{}` |
 | `OPEN_DOOR` | Abrir puerta | `{ "duration": 5 }` |
-| `GET_FIRMWARE_VERSION` | Versión del firmware | `{
+| `GET_FIRMWARE_VERSION` | VersiÃ³n del firmware | `{
 
-### 6️⃣ Desconexión del Dispositivo
+### 6ï¸âƒ£ DesconexiÃ³n del Dispositivo
 
 ```
-Dispositivo se desconecta → Broker MQTT publica Last Will
+Dispositivo se desconecta â†’ Broker MQTT publica Last Will
 Topic: zk/ABC123/status
 Payload: "offline"
 ```
@@ -390,7 +390,7 @@ Payload: "offline"
 
 ## Acciones Disponibles
 
-| Acción | Descripción | Payload |
+| AcciÃ³n | DescripciÃ³n | Payload |
 |--------|-------------|---------|
 | `get_users` | Obtener lista de usuarios | `{}` |
 | `sync_time` | Sincronizar reloj | `{ "timestamp": "ISO-8601" }` |
@@ -423,24 +423,24 @@ mosquitto_sub -h localhost -t "zk/+/logs" -v
 
 ```
 Backend/
-├── services/
-│   ├── MQTTService.js          # Servicio MQTT base
-│   └── ZKDeviceService.js      # Servicio específico para ZK
-├── controllers/
-│   ├── MQTTController.js       # API MQTT genérica
-│   └── ZKDeviceController.js   # API para dispositivos ZK
-└── routes/
-    ├── MQTTRoutes.js
-    └── ZKDeviceRoutes.js
+â”œâ”€â”€ services/
+â”‚   â”œâ”€â”€ mqtt.service.js          # Servicio MQTT base
+â”‚   â””â”€â”€ zk-device.service.js      # Servicio especÃ­fico para ZK
+â”œâ”€â”€ controllers/
+â”‚   â”œâ”€â”€ mqtt.controller.js       # API MQTT genÃ©rica
+â”‚   â””â”€â”€ zk-device.controller.js   # API para dispositivos ZK
+â””â”€â”€ routes/
+    â”œâ”€â”€ mqtt.routes.js
+    â””â”€â”€ zk-device.routes.js
 ```
 
 ---
 
-## Próximos Pasos
+## PrÃ³ximos Pasos
 
-1. ✅ Implementar agente MQTT en los dispositivos ZK
-2. ✅ Configurar broker MQTT (Mosquitto, EMQX, etc.)
-3. ✅ Integrar `processAttendanceLog` con base de datos
-4. ✅ Agregar autenticación/autorización MQTT
-5. ✅ Implementar TLS/SSL en producción
-6. ✅ Agregar persistencia de dispositivos en BD
+1. âœ… Implementar agente MQTT en los dispositivos ZK
+2. âœ… Configurar broker MQTT (Mosquitto, EMQX, etc.)
+3. âœ… Integrar `processAttendanceLog` con base de datos
+4. âœ… Agregar autenticaciÃ³n/autorizaciÃ³n MQTT
+5. âœ… Implementar TLS/SSL en producciÃ³n
+6. âœ… Agregar persistencia de dispositivos en BD

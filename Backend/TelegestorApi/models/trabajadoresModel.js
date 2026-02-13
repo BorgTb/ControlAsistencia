@@ -1,11 +1,11 @@
-import dbServices from '../services/dbService.js';
+import dbServices from '../services/db.service.js';
 
 
 class TrabajadoresModel {
     constructor() {
         this.db = dbServices;
     }
-    // Métodos para interactuar con la base de datos relacionados con trabajadores
+    // MÃ©todos para interactuar con la base de datos relacionados con trabajadores
     async fetchTrabajadoresActivos(emp_rut = null) {
         const query = `SELECT 
             trabajador.*,
@@ -37,7 +37,7 @@ class TrabajadoresModel {
         INNER JOIN ciudad ON proveedor_de_la_empresa.ciud_idn = ciudad.ciud_idn
         INNER JOIN afp ON trabajador.afp_idn = afp.afp_idn 
         INNER JOIN isapre ON trabajador.isa_idn = isapre.isa_idn
-        -- Subconsulta para obtener el último contrato de cada trabajador
+        -- Subconsulta para obtener el Ãºltimo contrato de cada trabajador
         LEFT JOIN (
             SELECT 
                 ct1.*
@@ -80,12 +80,12 @@ class TrabajadoresModel {
             3: 'miercoles',
             4: 'jueves',
             5: 'viernes',
-            6: 'sábado',
+            6: 'sÃ¡bado',
             7: 'domingo'
         };
 
         const data = results[0].reduce((acc, curr) => {
-            const diaNombre = diasSemana[curr.det_hor_emp_nro_dia] || `día_${curr.det_hor_emp_nro_dia}`;
+            const diaNombre = diasSemana[curr.det_hor_emp_nro_dia] || `dÃ­a_${curr.det_hor_emp_nro_dia}`;
             if (!acc[diaNombre]) {
             acc[diaNombre] = [];
             }

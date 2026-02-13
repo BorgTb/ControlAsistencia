@@ -2,19 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Configuración global de zona horaria para Chile
+// ConfiguraciÃ³n global de zona horaria para Chile
 process.env.TZ = 'America/Santiago';
 
 import cookieParser from 'cookie-parser';
-import router from './routes/index.js';
-import ApiTelegestorRouter from './TelegestorApi/routes/index.js';
+import router from './routes/index.routes.js';
+import ApiTelegestorRouter from './TelegestorApi/routes/index.routes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { startCleanupJob } from './jobs/CleanupRefreshTokens.js';
-import mqttService from './services/MQTTService.js';
-import zkDeviceService from './services/ZKDeviceService.js';
+import { startCleanupJob } from './jobs/cleanup-refresh-tokens.js';
+import mqttService from './services/mqtt.service.js';
+import zkDeviceService from './services/zk-device.service.js';
 
-import ADMSLink from './routes/ADMSLink.js';
+import ADMSLink from './routes/adms.routes.js';
 
 dotenv.config();
 
@@ -28,7 +28,7 @@ const PORT = process.env.SERVER_PORT;
 // Configurar CORS para permitir cookies
 app.use(cors({
     origin: [process.env.FRONTEND_URL, 'http://localhost:5173',process.env.FRONTEND_URL_WWW],
-    credentials: true // IMPORTANTE: permitir envío de cookies
+    credentials: true // IMPORTANTE: permitir envÃ­o de cookies
 }));
 app.use(express.json());
 app.use(cookieParser()); // Parsear cookies
@@ -58,7 +58,7 @@ app.use('/api/feriados', router.feriados);
 app.use('/api/mqtt', router.mqtt);
 app.use('/api/zk', router.zk);
 app.use('/api', router.roles); // Rutas de roles multi-rol
-app.use('/api/solicitudes', router.solicitudes); // Rutas de solicitudes de invitación
+app.use('/api/solicitudes', router.solicitudes); // Rutas de solicitudes de invitaciÃ³n
 app.use('/api/documentos', express.static(path.join(__dirname, 'uploads')), router.documentos);
 app.use('/iclock', ADMSLink);
 
@@ -72,20 +72,20 @@ app.listen(PORT, () => {
     // Iniciar job de limpieza de refresh tokens (cada 24 horas)
     // Esto elimina tokens expirados y mantiene la BD optimizada
     startCleanupJob(24);
-    console.log('✅ Job de limpieza de refresh tokens iniciado');
+    console.log('âœ… Job de limpieza de refresh tokens iniciado');
 
     // Iniciar servicio MQTT
     //mqttService.connect();
-    //console.log('✅ Servicio MQTT iniciado');
+    //console.log('âœ… Servicio MQTT iniciado');
 
     // Inicializar servicio de dispositivos ZK (Carga desde BD y sincroniza con MQTT)
     /*
-    import('./services/DispositivoZKService.js').then(module => {
+    import('./services/dispositivo-zk.service.js').then(module => {
         const dispositivoZKService = module.default;
         dispositivoZKService.initialize()
-            // .then(() => console.log('✅ Servicio de persistencia ZK inicializado'))
-            .catch(err => console.error('❌ Error inicializando persistencia ZK:', err));
-    }).catch(err => console.error('❌ Error importando DispositivoZKService:', err));
+            // .then(() => console.log('âœ… Servicio de persistencia ZK inicializado'))
+            .catch(err => console.error('âŒ Error inicializando persistencia ZK:', err));
+    }).catch(err => console.error('âŒ Error importando DispositivoZKService:', err));
 */
     // Suscribirse a topic wildcard para detectar nuevos dispositivos
     
@@ -95,13 +95,13 @@ app.listen(PORT, () => {
             const serial = topic.split('/')[1];
             const status = message.toString().trim();
 
-            // Importar servicio dinámicamente para evitar problemas de dependencias circulares si las hubiera
-            // O usar la misma referencia si ya está cargada
-            const zkDeviceService = (await import('./services/ZKDeviceService.js')).default;
-            const dispositivoZKService = (await import('./services/DispositivoZKService.js')).default;
+            // Importar servicio dinÃ¡micamente para evitar problemas de dependencias circulares si las hubiera
+            // O usar la misma referencia si ya estÃ¡ cargada
+            const zkDeviceService = (await import('./services/zk-device.service.js')).default;
+            const dispositivoZKService = (await import('./services/dispositivo-zk.service.js')).default;
 
             if (status === 'online' && !zkDeviceService.getDeviceStatus(serial)) {
-                console.log(`📱 Nuevo dispositivo ZK detectado: ${serial}`);
+                console.log(`ðŸ“± Nuevo dispositivo ZK detectado: ${serial}`);
 
                 // Registrar como auto-detectado (solo en MQTT por ahora o segun logica de negocio)
                 await dispositivoZKService.registrarAutoDetectado(serial, {
@@ -119,13 +119,13 @@ app.listen(PORT, () => {
 
 // Manejo de cierre graceful
 process.on('SIGTERM', async () => {
-    console.log('🛑 Cerrando servidor...');
+    console.log('ðŸ›‘ Cerrando servidor...');
     mqttService.disconnect();
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-    console.log('🛑 Cerrando servidor...');
+    console.log('ðŸ›‘ Cerrando servidor...');
     mqttService.disconnect();
     process.exit(0);
 });

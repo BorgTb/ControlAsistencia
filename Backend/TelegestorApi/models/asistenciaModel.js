@@ -1,14 +1,14 @@
-import dbServices from '../services/dbService.js';
+import dbServices from '../services/db.service.js';
 
 
 class AsistenciaModel {
     constructor() {
         this.db = dbServices;
     }
-    // Métodos para interactuar con la base de datos relacionados con asistencia
+    // MÃ©todos para interactuar con la base de datos relacionados con asistencia
 
     async insertarAsistencia(datosAsistencia) {
-        // Lógica para insertar datos de asistencia en la base de datos
+        // LÃ³gica para insertar datos de asistencia en la base de datos
         const query = `INSERT INTO control_horario_trabajador (con_hor_trab_idn, prov_emp_idn, con_hor_trab_hora_desde_a_cumplir, con_hor_trab_hora_hasta_a_cumplir, con_hor_trab_desde, con_hor_trab_hasta, con_hor_trab_desde_fuera_rango, con_hor_trab_hasta_fuera_rango, con_hor_trab_aut_desde, con_hor_trab_aut_hasta, con_hor_trab_desde_ip, con_hor_trab_hasta_ip, con_hor_trab_motivo_desde, con_hor_trab_motivo_hasta) VALUES (?, ?, ?, ?, ?, ?, '', '', '', '', '', '', '', '')`
 
         const results = await this.db.query(query, [
@@ -20,7 +20,7 @@ class AsistenciaModel {
             datosAsistencia.con_hor_trab_hasta
         ]);
 
-        console.log('Resultado de la inserción de asistencia:', results);
+        console.log('Resultado de la inserciÃ³n de asistencia:', results);
         return results;
     }
 
