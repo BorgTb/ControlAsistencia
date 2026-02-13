@@ -62,10 +62,10 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       { path: 'empresas', name: 'AdminEmpresas', component: () => import('@/components/vistas/admin/admin-empresas.vue') },
-      { path: 'roles', name: 'RolAdministracion', component: () => import('@/components/vistas/admin/administracion.vue') },
+      { path: 'roles', name: 'RolAdministracion', component: () => import('@/components/vistas/admin/administracion-view.vue') },
       { path: 'usuarios', name: 'UsuariosPermisos', component: () => import('@/components/vistas/admin/usuarios-permisos.vue') },
-      { path: 'estadisticas', name: 'Estadisticas', component: () => import('@/components/vistas/admin/estadisticas.vue') },
-      { path: 'fiscalizacion', name: 'Fiscalizacion', component: () => import('@/components/vistas/admin/fiscalizacion.vue') },
+      { path: 'estadisticas', name: 'Estadisticas', component: () => import('@/components/vistas/admin/estadisticas-view.vue') },
+      { path: 'fiscalizacion', name: 'Fiscalizacion', component: () => import('@/components/vistas/admin/fiscalizacion-view.vue') },
       { path: 'reportes-domingos', name: 'EmpresaReporteDomingosFestivos', component: () => import('@/components/vistas/empresa/reportes-domingos-festivos.vue') },
     ]
   },
@@ -78,14 +78,14 @@ const routes = [
     component: () => import('@/components/layouts/empresa-layout.vue'),
     meta: { requiresAuth: true, requiresEmpresa: true },
     children: [
-      { path: 'dashboard', name: 'EmpresaDashboard', component: () => import('@/components/vistas/admin/administrador.vue') },
+      { path: 'dashboard', name: 'EmpresaDashboard', component: () => import('@/components/vistas/admin/administrador-view.vue') },
       { path: 'trabajadores', name: 'EmpresaTrabajadores', component: () => import('@/components/vistas/empresa/gestion-trabajadores.vue') },
       { path: 'trabajadores/asociar', name: 'EmpresaAsociarTrabajador', component: () => import('@/components/vistas/empresa/asociar-trabajador.vue') },
       { path: 'turnos', name: 'EmpresaTurnos', component: () => import('@/components/vistas/empresa/control-turnos.vue') },
       { path: 'marcaciones', name: 'EmpresaMarcaciones', component: () => import('@/components/vistas/empresa/gestion-marcaciones.vue') },
 
       // Reportes
-      { path: 'reportes', name: 'EmpresaReportes', component: () => import('@/components/vistas/empresa/reportes.vue') },
+      { path: 'reportes', name: 'EmpresaReportes', component: () => import('@/components/vistas/empresa/reportes-view.vue') },
       { path: 'reportes/asistencia', name: 'EmpresaReporteAsistencia', component: () => import('@/components/vistas/empresa/reporte-asistencia.vue') },
       { path: 'reportes/jornada-diaria', name: 'EmpresaReporteJornadaDiaria', component: () => import('@/components/vistas/empresa/reporte-jornada-diaria.vue') },
 
@@ -93,7 +93,7 @@ const routes = [
       { path: 'historial-solicitudes', name: 'HistorialSolicitudes', component: () => import('@/components/vistas/empresa/historial-solicitudes.vue') },
       { path: 'lugares', name: 'EmpresaLugares', component: () => import('@/components/vistas/empresa/gestion-lugares.vue') },
       { path: 'solicitudes-trabajadores', name: 'EmpresaSolicitudesTrabajadores', component: () => import('@/components/vistas/empresa/solicitudes-trabajadores.vue') },
-      { path: 'configuracion', name: 'EmpresaConfiguracion', component: () => import('@/components/vistas/empresa/configuracion.vue') },
+      { path: 'configuracion', name: 'EmpresaConfiguracion', component: () => import('@/components/vistas/empresa/configuracion-view.vue') },
       { path: 'exportacion-datos', name: 'EmpresaExportacionDatos', component: () => import('@/components/vistas/empresa/exportacion-datos.vue') },
       { path: 'dispositivos', name: 'EmpresaDispositivos', component: () => import('@/components/vistas/empresa/gestion-dispositivos.vue') },
     ]
@@ -107,10 +107,10 @@ const routes = [
     component: () => import('@/components/layouts/trabajador-layout.vue'),
     meta: { requiresAuth: true, requiresUser: true },
     children: [
-      { path: 'dashboard', name: 'Dashboard', component: () => import('@/components/vistas/trabajador/dashboard.vue') },
+      { path: 'dashboard', name: 'Dashboard', component: () => import('@/components/vistas/trabajador/dashboard-view.vue') },
       { path: 'configuracion', name: 'ConfigUser', component: () => import('@/components/vistas/trabajador/config-user.vue') },
       { path: 'historial', name: 'HistorialUsuario', component: () => import('@/components/vistas/trabajador/historial-usuario.vue') },
-      { path: 'solicitudes', name: 'Solicitudes', component: () => import('@/components/vistas/trabajador/solicitudes.vue') },
+      { path: 'solicitudes', name: 'Solicitudes', component: () => import('@/components/vistas/trabajador/solicitudes-view.vue') },
       { path: 'dias-trabajados', name: 'DiasTrabajados', component: () => import('@/components/vistas/trabajador/dias-trabajados.vue') },
     ]
   },
