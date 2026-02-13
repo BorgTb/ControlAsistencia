@@ -1093,7 +1093,7 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
     const dias = [];
 
     // Mapeo de dÃƒÂ­as de la semana en espaÃƒÂ±ol
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miÃƒÂ©rcoles', 'jueves', 'viernes', 'sÃƒÂ¡bado'];
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sábado'];
 
     // Crear un mapa de dÃƒÂ­as justificados para bÃƒÂºsqueda rÃƒÂ¡pida
 
