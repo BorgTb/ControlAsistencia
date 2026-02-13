@@ -28,8 +28,13 @@ const getBodyAsText = (body) => {
 export const handleCData = async (req, res) => {
     const sn = getSerialFromRequest(req);
     const table = req.query.table || req.query.TABLE;
+    const contentType = req.headers['content-type'] || 'unknown';
+    const payloadPreview = getBodyAsText(req.body);
+
+    console.log(`[ADMS] [cdata] ${req.method} ${req.originalUrl} SN:${sn || 'N/A'} Table:${table || 'N/A'} CT:${contentType} BodyLen:${payloadPreview.length}`);
 
     if (!sn) {
+        console.log('[ADMS] [cdata] Request sin SN, respondiendo OK');
         return res.send('OK');
     }
 
@@ -56,7 +61,7 @@ export const handleCData = async (req, res) => {
 
     // Si es un POST, es envÃ­o de datos
     if (req.method === 'POST') {
-        const payload = getBodyAsText(req.body);
+        const payload = payloadPreview;
         if (!payload) return res.send('OK');
 
         console.log(`[ADMS] Recibida tabla ${table} de SN: ${sn}`);
@@ -143,6 +148,8 @@ export const handleCData = async (req, res) => {
 
 export const handleGetRequest = (req, res) => {
     const sn = getSerialFromRequest(req);
+    console.log(`[ADMS] [getrequest] ${req.method} ${req.originalUrl} SN:${sn || 'N/A'} Query:${JSON.stringify(req.query || {})}`);
+
     if (!sn) return res.status(200).send('OK');
 
     const command = ADMSService.getNextCommand(sn);
@@ -157,6 +164,8 @@ export const handleGetRequest = (req, res) => {
 export const handleDeviceCmd = (req, res) => {
     const sn = getSerialFromRequest(req);
     let body = getBodyAsText(req.body).trim();
+
+    console.log(`[ADMS] [devicecmd] ${req.method} ${req.originalUrl} SN:${sn || 'N/A'} CT:${req.headers['content-type'] || 'unknown'} BodyLen:${body.length}`);
 
     if (!body && req.query) {
         const pairs = Object.entries(req.query)
