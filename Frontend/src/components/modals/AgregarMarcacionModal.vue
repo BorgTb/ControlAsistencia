@@ -240,10 +240,18 @@
 </template>
 
 <script setup>
-import { ref, computed, defineEmits, onMounted } from 'vue'
+import { ref, computed, defineEmits, defineProps, onMounted } from 'vue'
 import { useMarcaciones } from '@/composables/useMarcaciones.js'
 
 const emit = defineEmits(['confirm', 'cancel'])
+
+// Props
+const props = defineProps({
+  fechaInicial: {
+    type: String,
+    default: null
+  }
+})
 
 // Composable de marcaciones
 const { 
@@ -365,8 +373,8 @@ const enviarSolicitud = async () => {
 
 // Lifecycle
 onMounted(() => {
-  // Inicializar con fecha de ayer y hora actual por defecto
-  formData.value.fecha = getFechaAyer()
+  // Inicializar con fecha proporcionada o fecha de ayer por defecto
+  formData.value.fecha = props.fechaInicial || getFechaAyer()
   formData.value.hora = getHoraActual()
 })
 </script>

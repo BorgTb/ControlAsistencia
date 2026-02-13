@@ -75,17 +75,18 @@ app.listen(PORT, () => {
     console.log('✅ Job de limpieza de refresh tokens iniciado');
 
     // Iniciar servicio MQTT
-    mqttService.connect();
+    //mqttService.connect();
     //console.log('✅ Servicio MQTT iniciado');
 
     // Inicializar servicio de dispositivos ZK (Carga desde BD y sincroniza con MQTT)
+    /*
     import('./services/DispositivoZKService.js').then(module => {
         const dispositivoZKService = module.default;
         dispositivoZKService.initialize()
             // .then(() => console.log('✅ Servicio de persistencia ZK inicializado'))
             .catch(err => console.error('❌ Error inicializando persistencia ZK:', err));
     }).catch(err => console.error('❌ Error importando DispositivoZKService:', err));
-
+*/
     // Suscribirse a topic wildcard para detectar nuevos dispositivos
     
     /*

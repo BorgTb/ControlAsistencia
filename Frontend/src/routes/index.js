@@ -33,11 +33,6 @@ const routes = [
         path: 'select-company',
         name: 'SelectCompany',
         component: () => import('@/components/vistas/auth/CompanySelector.vue'),
-      },
-      {
-        path: 'aprobar-modificacion',
-        name: 'AprobarModificacion',
-        component: () => import('@/components/vistas/Solicitudes/ModificacionMaracacion.vue'),
       }
     ]
   },
@@ -50,6 +45,12 @@ const routes = [
     name: 'InvitacionEmpresa',
     component: () => import('@/components/InvitacionEmpresa.vue'),
     meta: { public: true }
+  },
+  {
+    path: '/aprobar-modificacion',
+    name: 'AprobarModificacion',
+    component: () => import('@/components/vistas/Solicitudes/ModificacionMaracacion.vue'),
+    meta: { requiresAuth: true }
   },
 
   // ===========================
@@ -164,7 +165,8 @@ router.beforeEach((to, from, next) => {
 
   // Rutas que requieren login
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return next("/")
+    // Guardar la ruta destino para redirigir después del login
+    return next({ path: "/", query: { redirect: to.fullPath } })
   }
 
   // Validar acceso por rol específico

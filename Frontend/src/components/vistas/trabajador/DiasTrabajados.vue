@@ -1,5 +1,50 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Notificación Toast -->
+    <transition name="slide-down">
+      <div v-if="notificacion.mostrar" 
+           :class="[
+             'fixed top-4 right-4 z-50 max-w-md w-full rounded-lg shadow-lg p-4 border-l-4',
+             notificacion.tipo === 'error' ? 'bg-red-50 border-red-500' : 
+             notificacion.tipo === 'warning' ? 'bg-yellow-50 border-yellow-500' : 
+             notificacion.tipo === 'success' ? 'bg-green-50 border-green-500' :
+             'bg-blue-50 border-blue-500'
+           ]">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <svg v-if="notificacion.tipo === 'error'" class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else-if="notificacion.tipo === 'warning'" class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <svg v-else-if="notificacion.tipo === 'success'" class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <p :class="[
+              'text-sm font-medium',
+              notificacion.tipo === 'error' ? 'text-red-800' : 
+              notificacion.tipo === 'warning' ? 'text-yellow-800' : 
+              notificacion.tipo === 'success' ? 'text-green-800' :
+              'text-blue-800'
+            ]">
+              {{ notificacion.mensaje }}
+            </p>
+          </div>
+          <button @click="cerrarNotificacion" class="ml-4 flex-shrink-0">
+            <svg class="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="mb-8">
@@ -419,17 +464,19 @@
       </div>
     </div>
 
-    <!-- Modal de detalle del día -->
+    <!-- Modal Unificado con Vistas Deslizantes -->
     <div 
       v-if="diaSeleccionado" 
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      class="fixed inset-0 bg-transparent backdrop-blur-sm bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50"
       @click="cerrarDetalleDia"
     >
       <div 
-        class="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white"
+        class="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white overflow-hidden"
         @click.stop
       >
-        <div class="mt-3">
+        <Transition :name="`slide-${direccionAnimacion}`" mode="out-in">
+          <!-- VISTA 1: Detalle del Día -->
+          <div v-if="vistaModal === 'detalle'" key="detalle" class="mt-3">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-2xl font-bold text-gray-900 flex items-center">
               <span 
@@ -606,8 +653,18 @@
 
           <div class="mt-6 flex gap-3">
             <button
+              v-if="puedeSolicitarMarcacion(diaSeleccionado)"
+              @click="abrirModalAgregarMarcacion"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center justify-center"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Solicitar Marcación
+            </button>
+            <button
               v-if="puedeJustificar(diaSeleccionado)"
-              @click="abrirModalJustificacion(diaSeleccionado)"
+              @click="abrirModalJustificacion"
               class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors duration-200 font-medium flex items-center justify-center"
             >
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,11 +679,462 @@
               Cerrar
             </button>
           </div>
-        </div>
+          </div>
+
+          <!-- VISTA 2: Justificación (Placeholder - se implementará después) -->
+          <div v-else-if="vistaModal === 'justificacion'" key="justificacion" class="mt-3">
+            <div class="flex items-center justify-between mb-6">
+              <button
+                @click="cerrarModalJustificacion"
+                class="text-gray-600 hover:text-gray-800 transition-colors flex items-center"
+              >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Volver
+              </button>
+              <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Justificar Ausencia
+              </h3>
+              <button 
+                @click="cerrarDetalleDia"
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Alerta si ya existe justificación -->
+            <div v-if="justificacionExistente" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div class="text-sm text-blue-800">
+                  <p class="font-medium mb-1">Ya existe una justificación para este día</p>
+                  <p><strong>Estado:</strong> {{ justificacionExistente.estado }}</p>
+                  <p><strong>Tipo:</strong> {{ getTipoJustificacionTexto(justificacionExistente.tipo_justificacion) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mensaje de éxito -->
+            <div v-if="successMessage" class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-sm text-green-800 font-medium">{{ successMessage }}</p>
+              </div>
+            </div>
+
+            <!-- Mensaje de error -->
+            <div v-if="errorJustificacion" class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-sm text-red-800 font-medium">{{ errorJustificacion }}</p>
+              </div>
+            </div>
+
+            <!-- Formulario -->
+            <form @submit.prevent="enviarJustificacion" v-if="!successMessage && !justificacionExistente">
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Rango de Fechas a Justificar *
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="fecha_inicio" class="block text-xs text-gray-600 mb-1">Desde</label>
+                    <input 
+                      id="fecha_inicio"
+                      type="date"
+                      v-model="justificacionForm.fecha_inicio"
+                      :max="hoyISO"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      required
+                    >
+                  </div>
+                  <div>
+                    <label for="fecha_fin" class="block text-xs text-gray-600 mb-1">Hasta</label>
+                    <input 
+                      id="fecha_fin"
+                      type="date"
+                      v-model="justificacionForm.fecha_fin"
+                      :min="justificacionForm.fecha_inicio"
+                      :max="hoyISO"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      required
+                    >
+                  </div>
+                </div>
+                <p v-if="diasSeleccionados > 0" class="text-sm text-gray-600 mt-2">
+                  📅 Total de días: <strong>{{ diasSeleccionados }}</strong>
+                </p>
+              </div>
+
+              <div class="mb-4">
+                <label for="tipo_justificacion" class="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Justificación *
+                </label>
+                <select 
+                  id="tipo_justificacion"
+                  v-model="justificacionForm.tipo_justificacion"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  required
+                >
+                  <option value="licencia_medica">Licencia Médica</option>
+                  <option value="permiso_personal">Permiso Personal</option>
+                  <option value="permiso_administrativo">Permiso Administrativo</option>
+                  <option value="vacaciones">Vacaciones</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+
+              <div class="mb-4">
+                <label for="motivo" class="block text-sm font-medium text-gray-700 mb-2">
+                  Motivo *
+                </label>
+                <textarea 
+                  id="motivo"
+                  v-model="justificacionForm.motivo"
+                  rows="4"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  placeholder="Describa brevemente el motivo de su ausencia..."
+                  required
+                ></textarea>
+              </div>
+
+              <div class="mb-6">
+                <label for="archivo" class="block text-sm font-medium text-gray-700 mb-2">
+                  Documento de Respaldo
+                  <span class="text-gray-500 text-xs ml-1">(Opcional - Max 5MB)</span>
+                </label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-yellow-400 transition-colors">
+                  <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-600">
+                      <label for="archivo" class="relative cursor-pointer bg-white rounded-md font-medium text-yellow-600 hover:text-yellow-500">
+                        <span>Subir archivo</span>
+                        <input 
+                          id="archivo" 
+                          type="file" 
+                          class="sr-only" 
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          @change="handleFileChange"
+                        >
+                      </label>
+                      <p class="pl-1">o arrastra y suelta</p>
+                    </div>
+                    <p class="text-xs text-gray-500">JPG, PNG o PDF hasta 5MB</p>
+                    <p v-if="archivoNombre" class="text-sm text-green-600 font-medium mt-2">
+                      📎 {{ archivoNombre }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-3">
+                <button
+                  type="button"
+                  @click="cerrarModalJustificacion"
+                  class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors duration-200 font-medium"
+                  :disabled="isLoadingJustificacion"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  :disabled="isLoadingJustificacion"
+                >
+                  <svg v-if="isLoadingJustificacion" class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ isLoadingJustificacion ? 'Enviando...' : 'Enviar Justificación' }}
+                </button>
+              </div>
+            </form>
+
+            <!-- Botón de cerrar si hay justificación existente -->
+            <div v-if="justificacionExistente" class="mt-4">
+              <button
+                @click="cerrarModalJustificacion"
+                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200 font-medium"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <!-- VISTA 3: Solicitud de Marcación -->
+          <div v-else-if="vistaModal === 'solicitud'" key="solicitud" class="mt-3">
+            <div class="flex items-center justify-between mb-6">
+              <button
+                @click="cerrarModalSolicitud"
+                class="text-gray-600 hover:text-gray-800 transition-colors flex items-center"
+              >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Volver
+              </button>
+              <h3 class="text-xl font-bold text-gray-900">Solicitar Marcación</h3>
+              <button 
+                @click="cerrarDetalleDia"
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Información de ayuda -->
+            <div class="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div class="flex items-start">
+                <div class="p-1 bg-blue-100 rounded-full mr-2 mt-0.5">
+                  <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-xs font-medium text-blue-800 mb-1">Solicitud de Marcación</h4>
+                  <p class="text-xs text-blue-700">
+                    Complete los campos para solicitar el registro de una marcación. 
+                    Esta solicitud será revisada por el equipo de supervisión.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario de solicitud -->
+            <div class="space-y-3">
+              <!-- Tipo de marcación -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Marcación *
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label 
+                    v-for="tipo in tiposMarcacion" 
+                    :key="tipo.value"
+                    class="relative flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                    :class="{
+                      'border-indigo-500 bg-indigo-50': solicitudForm.tipo_marcacion_correcta === tipo.value,
+                      'border-gray-300': solicitudForm.tipo_marcacion_correcta !== tipo.value
+                    }"
+                  >
+                    <input 
+                      type="radio" 
+                      v-model="solicitudForm.tipo_marcacion_correcta" 
+                      :value="tipo.value"
+                      class="sr-only"
+                    />
+                    <div class="flex items-center">
+                      <span class="text-base mr-2">{{ tipo.icon }}</span>
+                      <span class="text-sm font-medium text-gray-900">{{ tipo.label }}</span>
+                    </div>
+                    <div 
+                      v-if="solicitudForm.tipo_marcacion_correcta === tipo.value" 
+                      class="absolute top-1 right-1 text-indigo-600"
+                    >
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                      </svg>
+                    </div>
+                  </label>
+                </div>
+                <p v-if="solicitudErrors.tipo" class="text-xs text-red-600 mt-1">{{ solicitudErrors.tipo }}</p>
+              </div>
+
+              <!-- Fecha y Hora -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                  <input 
+                    type="date" 
+                    v-model="solicitudForm.fecha"
+                    :min="fechaMinima"
+                    :max="fechaMaxima"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    required
+                  />
+                  <p v-if="solicitudErrors.fecha" class="text-xs text-red-600 mt-1">{{ solicitudErrors.fecha }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+                  <input 
+                    type="time" 
+                    v-model="solicitudForm.hora"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    required
+                  />
+                  <p v-if="solicitudErrors.hora" class="text-xs text-red-600 mt-1">{{ solicitudErrors.hora }}</p>
+                </div>
+              </div>
+
+              <!-- Botones para fecha y hora -->
+              <div class="flex flex-wrap gap-1">
+                <button 
+                  @click="usarFechaActual"
+                  type="button"
+                  class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors duration-200"
+                >
+                  Hoy
+                </button>
+                <button 
+                  @click="usarFechaAyer"
+                  type="button"
+                  class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors duration-200"
+                >
+                  Ayer
+                </button>
+                <button 
+                  @click="usarHoraActual"
+                  type="button"
+                  class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors duration-200"
+                >
+                  Hora actual
+                </button>
+              </div>
+
+              <!-- Motivo de la solicitud -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de la Solicitud *</label>
+                <select 
+                  v-model="solicitudForm.motivo" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  required
+                >
+                  <option value="">Selecciona el motivo</option>
+                  <option 
+                    v-for="motivo in motivosSolicitud" 
+                    :key="motivo.value"
+                    :value="motivo.value"
+                  >
+                    {{ motivo.label }} - {{ motivo.descripcion }}
+                  </option>
+                </select>
+                <p v-if="solicitudErrors.motivo" class="text-xs text-red-600 mt-1">{{ solicitudErrors.motivo }}</p>
+              </div>
+
+              <!-- Descripción detallada -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción Detallada *</label>
+                <textarea 
+                  v-model="solicitudForm.descripcion" 
+                  rows="2" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  placeholder="Explica el motivo de tu solicitud..."
+                  maxlength="500"
+                  required
+                ></textarea>
+                <div class="flex justify-between mt-1">
+                  <p v-if="solicitudErrors.descripcion" class="text-xs text-red-600">{{ solicitudErrors.descripcion }}</p>
+                  <p class="text-xs text-gray-500 ml-auto">{{ solicitudForm.descripcion?.length || 0 }}/500</p>
+                </div>
+              </div>
+
+              <!-- Ubicación GPS -->
+              <div class="border border-gray-200 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-sm font-medium text-gray-700">Ubicación GPS (Opcional)</label>
+                  <button 
+                    @click="obtenerUbicacion"
+                    :disabled="obteniendoUbicacion"
+                    type="button"
+                    class="text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {{ obteniendoUbicacion ? 'Obteniendo...' : 'Obtener GPS' }}
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Latitud</label>
+                    <input 
+                      type="number" 
+                      v-model="solicitudForm.latitud"
+                      step="any"
+                      placeholder="-33.4489"
+                      class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Longitud</label>
+                    <input 
+                      type="number" 
+                      v-model="solicitudForm.longitud"
+                      step="any"
+                      placeholder="-70.6693"
+                      class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                    />
+                  </div>
+                </div>
+                
+                <!-- Información de ubicación -->
+                <div v-if="solicitudForm.latitud && solicitudForm.longitud" class="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <p class="text-xs text-green-700">
+                    📍 GPS: {{ parseFloat(solicitudForm.latitud).toFixed(4) }}, {{ parseFloat(solicitudForm.longitud).toFixed(4) }}
+                  </p>
+                </div>
+                
+                <!-- Error de ubicación -->
+                <div v-if="errorUbicacion" class="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                  <p class="text-xs text-red-700">{{ errorUbicacion }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado de envío -->
+            <div v-if="enviandoSolicitud" class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center">
+                <svg class="animate-spin h-4 w-4 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm text-blue-700">Enviando solicitud...</span>
+              </div>
+            </div>
+
+            <!-- Mensaje de error general -->
+            <div v-if="solicitudErrors.general" class="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-sm text-red-700">{{ solicitudErrors.general }}</p>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+              <button 
+                @click="cerrarModalSolicitud" 
+                :disabled="enviandoSolicitud"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button 
+                @click="enviarSolicitudMarcacion" 
+                :disabled="enviandoSolicitud || !isFormSolicitudValid"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ enviandoSolicitud ? 'Enviando...' : 'Enviar Solicitud' }}
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
     </div>
 
-    <!-- Modal de Justificación -->
+    <!-- Modal antiguo de Justificación - TEMPORAL (se eliminará) -->
     <div 
       v-if="mostrarModalJustificacion" 
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
@@ -822,6 +1330,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Solicitud de Marcación -->
+    <AgregarMarcacionModal 
+      v-if="showAgregarModal" 
+      :fechaInicial="diaSeleccionado?.fecha"
+      @confirm="manejarSolicitudMarcacion" 
+      @cancel="cerrarModalAgregarMarcacion" 
+    />
   </div>
 </template>
 
@@ -829,6 +1345,8 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useDiasTrabajados } from '@/composables/useDiasTrabajados';
 import { useJustificaciones } from '@/composables/useJustificaciones';
+import { useMarcaciones } from '@/composables/useMarcaciones';
+import AgregarMarcacionModal from '@/components/modals/AgregarMarcacionModal.vue';
 
 // Composable
 const {
@@ -861,9 +1379,28 @@ const {
   limpiarError
 } = useJustificaciones();
 
+// Composable de marcaciones
+const {
+  getTiposMarcacion,
+  getMotivosSolicitud,
+  validarMarcacion,
+  obtenerUbicacionGPS,
+  getFechaMinima,
+  getFechaMaxima,
+  getHoraActual,
+  solicitarMarcacion
+} = useMarcaciones();
+
 // Estado local
 const diaSeleccionado = ref(null);
-const mostrarModalJustificacion = ref(false);
+const vistaModal = ref('detalle'); // 'detalle', 'justificacion', 'solicitud'
+const direccionAnimacion = ref('left'); // 'left' o 'right'
+const showAgregarModal = ref(false); // Controla la visibilidad del modal de agregar marcación
+const notificacion = ref({
+  mostrar: false,
+  mensaje: '',
+  tipo: 'info' // 'info', 'error', 'warning', 'success'
+});
 const justificacionForm = ref({
   fecha_inicio: '',
   fecha_fin: '',
@@ -874,6 +1411,27 @@ const justificacionForm = ref({
 const archivoNombre = ref('');
 const successMessage = ref('');
 const justificacionExistente = ref(null);
+
+// Estados para formulario de solicitud de marcación
+const solicitudForm = ref({
+  tipo_marcacion_correcta: '',
+  fecha: '',
+  hora: '',
+  motivo: '',
+  descripcion: '',
+  latitud: '',
+  longitud: ''
+});
+const solicitudErrors = ref({});
+const enviandoSolicitud = ref(false);
+const obteniendoUbicacion = ref(false);
+const errorUbicacion = ref('');
+
+// Datos auxiliares para solicitud
+const tiposMarcacion = getTiposMarcacion();
+const motivosSolicitud = getMotivosSolicitud();
+const fechaMinima = getFechaMinima();
+const fechaMaxima = getFechaMaxima();
 
 // Fecha de hoy en formato ISO para validación
 const hoyISO = computed(() => {
@@ -896,6 +1454,19 @@ const diasSeleccionados = computed(() => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays + 1; // +1 para incluir ambos días
 });
+
+// Funciones para notificaciones
+const mostrarNotificacion = (mensaje, tipo = 'info') => {
+  notificacion.value = { mostrar: true, mensaje, tipo };
+  // Auto-cerrar después de 5 segundos
+  setTimeout(() => {
+    cerrarNotificacion();
+  }, 5000);
+};
+
+const cerrarNotificacion = () => {
+  notificacion.value.mostrar = false;
+};
 
 // Cargar calendario al montar
 onMounted(() => {
@@ -925,6 +1496,8 @@ const mostrarDetalleDia = (dia) => {
 
 const cerrarDetalleDia = () => {
   diaSeleccionado.value = null;
+  vistaModal.value = 'detalle';
+  direccionAnimacion.value = 'left';
 };
 
 const formatearEstado = (estado) => {
@@ -961,11 +1534,11 @@ const formatearFecha = (fecha) => {
 };
 
 // Funciones de justificación
-const abrirModalJustificacion = async (dia) => {
+const abrirModalJustificacion = async () => {
   // Inicializar formulario con la fecha del día seleccionado
   justificacionForm.value = {
-    fecha_inicio: dia.fecha,
-    fecha_fin: dia.fecha,
+    fecha_inicio: diaSeleccionado.value.fecha,
+    fecha_fin: diaSeleccionado.value.fecha,
     motivo: '',
     tipo_justificacion: 'licencia_medica',
     archivo: null
@@ -975,13 +1548,18 @@ const abrirModalJustificacion = async (dia) => {
   limpiarError();
   
   // Verificar si ya existe una justificación para esta fecha
-  justificacionExistente.value = await obtenerJustificacionPorFecha(dia.fecha);
+  justificacionExistente.value = await obtenerJustificacionPorFecha(diaSeleccionado.value.fecha);
   
-  mostrarModalJustificacion.value = true;
+  // Cambiar a vista de justificación con animación hacia la izquierda
+  direccionAnimacion.value = 'left';
+  vistaModal.value = 'justificacion';
 };
 
 const cerrarModalJustificacion = () => {
-  mostrarModalJustificacion.value = false;
+  // Volver a vista de detalle con animación hacia la derecha
+  direccionAnimacion.value = 'right';
+  vistaModal.value = 'detalle';
+  
   justificacionForm.value = {
     fecha_inicio: '',
     fecha_fin: '',
@@ -1000,7 +1578,7 @@ const handleFileChange = (event) => {
   if (file) {
     // Validar tamaño (5MB máximo)
     if (file.size > 5 * 1024 * 1024) {
-      alert('El archivo no debe superar los 5MB');
+      mostrarNotificacion('El archivo no debe superar los 5MB', 'warning');
       event.target.value = '';
       return;
     }
@@ -1008,7 +1586,7 @@ const handleFileChange = (event) => {
     // Validar tipo
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Solo se permiten archivos JPG, PNG o PDF');
+      mostrarNotificacion('Solo se permiten archivos JPG, PNG o PDF', 'warning');
       event.target.value = '';
       return;
     }
@@ -1020,12 +1598,12 @@ const handleFileChange = (event) => {
 
 const enviarJustificacion = async () => {
   if (!justificacionForm.value.motivo || !justificacionForm.value.motivo.trim()) {
-    alert('Debe ingresar un motivo para la justificación');
+    mostrarNotificacion('Debe ingresar un motivo para la justificación', 'warning');
     return;
   }
 
   if (!justificacionForm.value.fecha_inicio || !justificacionForm.value.fecha_fin) {
-    alert('Debe seleccionar las fechas de la justificación');
+    mostrarNotificacion('Debe seleccionar las fechas de la justificación', 'warning');
     return;
   }
 
@@ -1042,12 +1620,67 @@ const enviarJustificacion = async () => {
     const dias = diasSeleccionados.value;
     successMessage.value = `Justificación de ${dias} día${dias > 1 ? 's' : ''} enviada correctamente. Será revisada por un administrador.`;
     
-    // Esperar 2 segundos y cerrar
+    // Esperar 2 segundos y volver a vista de detalle
     setTimeout(() => {
+      successMessage.value = '';
       cerrarModalJustificacion();
       // Recargar el calendario
       cargarCalendario();
     }, 2500);
+  }
+};
+
+const puedeSolicitarMarcacion = (dia) => {
+  return dia && (dia.estado === 'ausente' || dia.estado === 'incidente' || dia.estado === 'sin_turno');
+};
+
+const abrirModalSolicitudMarcacion = () => {
+  // Inicializar formulario con datos del día
+  inicializarFormularioSolicitud();
+  
+  // Cambiar a vista de solicitud con animación hacia la izquierda
+  direccionAnimacion.value = 'left';
+  vistaModal.value = 'solicitud';
+};
+
+const abrirModalAgregarMarcacion = () => {
+  showAgregarModal.value = true;
+};
+
+const cerrarModalAgregarMarcacion = () => {
+  showAgregarModal.value = false;
+};
+
+const cerrarModalSolicitud = () => {
+  // Volver a vista de detalle con animación hacia la derecha
+  direccionAnimacion.value = 'right';
+  vistaModal.value = 'detalle';
+};
+
+const manejarSolicitudMarcacion = async (solicitudData) => {
+  const result = await solicitarMarcacion(solicitudData);
+  
+  if (result.success) {
+    // Cerrar el modal inmediatamente
+    cerrarModalAgregarMarcacion();
+    
+    // Mostrar mensaje de éxito
+    console.log('Solicitud de marcación enviada exitosamente:', result.message);
+    
+    // Volver a vista de detalle
+    cerrarModalSolicitud();
+    
+    // Mostrar notificación de éxito
+    setTimeout(() => {
+      mostrarNotificacion('Solicitud de marcación enviada correctamente. Será revisada por tu supervisor.', 'success');
+    }, 300);
+    
+    // Recargar el calendario para reflejar cambios
+    await cargarCalendario();
+  } else {
+    // Mostrar mensaje de error
+    console.error('Error enviando solicitud:', result.error);
+    mostrarNotificacion('Error al enviar la solicitud: ' + result.error, 'error');
   }
 };
 
@@ -1065,11 +1698,161 @@ const getTipoJustificacionTexto = (tipo) => {
   };
   return tipos[tipo] || tipo;
 };
+
+// === Funciones del Formulario de Solicitud de Marcación ===
+
+const inicializarFormularioSolicitud = () => {
+  solicitudForm.value = {
+    tipo_marcacion_correcta: '',
+    fecha: diaSeleccionado.value?.fecha || '',
+    hora: getHoraActual(),
+    motivo: '',
+    descripcion: '',
+    latitud: '',
+    longitud: ''
+  };
+  solicitudErrors.value = {};
+  errorUbicacion.value = '';
+};
+
+const isFormSolicitudValid = computed(() => {
+  return solicitudForm.value.tipo_marcacion_correcta.trim() !== '' && 
+         solicitudForm.value.fecha.trim() !== '' &&
+         solicitudForm.value.hora.trim() !== '' &&
+         solicitudForm.value.motivo.trim() !== '' &&
+         solicitudForm.value.descripcion.trim() !== '' &&
+         solicitudForm.value.descripcion.trim().length >= 10;
+});
+
+const usarFechaActual = () => {
+  const hoy = new Date();
+  solicitudForm.value.fecha = hoy.toISOString().split('T')[0];
+};
+
+const usarFechaAyer = () => {
+  const ayer = new Date();
+  ayer.setDate(ayer.getDate() - 1);
+  solicitudForm.value.fecha = ayer.toISOString().split('T')[0];
+};
+
+const usarHoraActual = () => {
+  solicitudForm.value.hora = getHoraActual();
+};
+
+const obtenerUbicacion = async () => {
+  obteniendoUbicacion.value = true;
+  errorUbicacion.value = '';
+  
+  try {
+    const coords = await obtenerUbicacionGPS();
+    if (coords) {
+      solicitudForm.value.latitud = coords.latitud.toString();
+      solicitudForm.value.longitud = coords.longitud.toString();
+    } else {
+      errorUbicacion.value = 'No se pudo obtener la ubicación';
+    }
+  } catch (error) {
+    errorUbicacion.value = error.message || 'Error al obtener ubicación';
+  } finally {
+    obteniendoUbicacion.value = false;
+  }
+};
+
+const validarFormularioSolicitud = () => {
+  const validacion = validarMarcacion({
+    ...solicitudForm.value,
+    motivo: solicitudForm.value.descripcion
+  });
+  
+  if (!validacion.esValido) {
+    solicitudErrors.value = validacion.errores;
+    return false;
+  }
+  
+  solicitudErrors.value = {};
+  return true;
+};
+
+const enviarSolicitudMarcacion = async () => {
+  if (!validarFormularioSolicitud()) return;
+  
+  enviandoSolicitud.value = true;
+  
+  try {
+    const solicitudData = {
+      tipo_marcacion_correcta: solicitudForm.value.tipo_marcacion_correcta,
+      fecha: solicitudForm.value.fecha,
+      hora: solicitudForm.value.hora,
+      motivo: solicitudForm.value.motivo,
+      descripcion: solicitudForm.value.descripcion,
+      geo_lat: solicitudForm.value.latitud ? parseFloat(solicitudForm.value.latitud) : null,
+      geo_lon: solicitudForm.value.longitud ? parseFloat(solicitudForm.value.longitud) : null,
+      estado: 'pendiente',
+      fecha_solicitud: new Date().toISOString()
+    };
+    
+    await manejarSolicitudMarcacion(solicitudData);
+  } catch (error) {
+    console.error('Error enviando solicitud:', error);
+    mostrarNotificacion('Error al procesar la solicitud', 'error');
+  } finally {
+    enviandoSolicitud.value = false;
+  }
+};
+
 </script>
 
 <style scoped>
 /* Estilos adicionales si son necesarios */
 .min-h-32 {
   min-height: 8rem;
+}
+
+/* Animaciones de deslizamiento hacia la izquierda */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+/* Animaciones de deslizamiento hacia la derecha */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Animación para notificación toast */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
 }
 </style>

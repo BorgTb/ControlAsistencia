@@ -13,12 +13,12 @@ const router = express.Router();
 
 router.get('/calendario/', AuthService.verifyToken, MarcacionesController.obtenerDiasTrabajadosPorMes);
 
-// Ruta pública para obtener solicitud de modificación por token
-router.get('/solicitud-modificar', MarcacionesController.obtenerReporteMarcacionId);
+// Ruta protegida para obtener solicitud de modificación por token (requiere autenticación)
+router.get('/solicitud-modificar', AuthService.verifyToken, MarcacionesController.obtenerReporteMarcacionId);
 
-// Rutas públicas para aceptar/rechazar modificaciones (usan token en body)
-router.post('/modificar/aceptar', MarcacionesController.aceptarModificacionMarcacion);
-router.post('/modificar/rechazar', MarcacionesController.rechazarModificacionMarcacion);
+// Rutas protegidas para aceptar/rechazar modificaciones (requieren autenticación)
+router.post('/modificar/aceptar', AuthService.verifyToken, MarcacionesController.aceptarModificacionMarcacion);
+router.post('/modificar/rechazar', AuthService.verifyToken, MarcacionesController.rechazarModificacionMarcacion);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)

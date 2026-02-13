@@ -680,6 +680,15 @@ const obtenerReporteMarcacionId = async (req, res) => {
             });
         }
 
+        // Validar que el usuario esté autenticado (desde AuthMiddleware)
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no autenticado'
+            });
+        }
+
+        const usuarioAutenticado = req.user;
         console.log("obtenerReporteMarcacionId token:", token);
 
 
@@ -700,6 +709,24 @@ const obtenerReporteMarcacionId = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'El reporte ya ha sido procesado'
+            });
+        }
+
+        // Validar que el usuario autenticado sea el trabajador dueño de la solicitud
+        if (reporte.usuario_id !== userSolicitante.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Esta solicitud no te pertenece'
+            });
+        }
+
+        // Validar que el usuario autenticado coincida con el dueño de la solicitud
+        // req.user.id es el ID del usuario en la tabla usuarios
+        // Necesitamos verificar que corresponda al mismo usuario_empresa
+        if (userSolicitante.usuario_id !== usuarioAutenticado.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tienes permiso para ver esta solicitud. Debes estar logueado como el trabajador que hizo la solicitud.'
             });
         }
 
@@ -741,6 +768,16 @@ const aceptarModificacionMarcacion = async (req, res) => {
     try {
         const { token } = req.body;
 
+        // Validar que el usuario esté autenticado (desde AuthMiddleware)
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no autenticado'
+            });
+        }
+
+        const usuarioAutenticado = req.user;
+
         const { id } = AuthService.verifyToken(token);
 
         const reporte = await ReporteMarcionesModel.findById(id);
@@ -750,6 +787,25 @@ const aceptarModificacionMarcacion = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Reporte no encontrado'
+            });
+        }
+
+        // Validar que el reporte esté en estado 'POR CONFIRMAR'
+        if (reporte.estado !== 'POR CONFIRMAR') {
+            return res.status(400).json({
+                success: false,
+                message: 'Este reporte ya ha sido procesado'
+            });
+        }
+
+        // Obtener información del trabajador
+        const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(reporte.usuario_id);
+
+        // Validar que el usuario autenticado sea el trabajador dueño de la solicitud
+        if (userSolicitante.usuario_id !== usuarioAutenticado.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tienes permiso para aprobar esta solicitud. Debes estar logueado como el trabajador que hizo la solicitud.'
             });
         }
 
@@ -776,9 +832,9 @@ const aceptarModificacionMarcacion = async (req, res) => {
         await ReporteMarcionesModel.aprobar(id);
 
 
-        res.status(501).json({
+        res.status(200).json({
             success: true,
-            message: 'En desarrollo',
+            message: 'Solicitud aprobada exitosamente',
         });
 
 
@@ -796,16 +852,55 @@ const rechazarModificacionMarcacion = async (req, res) => {
     try {
         const { token } = req.body;
 
+        // Validar que el usuario esté autenticado (desde AuthMiddleware)
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no autenticado'
+            });
+        }
+
+        const usuarioAutenticado = req.user;
+
         const { id } = AuthService.verifyToken(token);
 
+        const reporte = await ReporteMarcionesModel.findById(id);
+
+        if (!reporte) {
+            return res.status(404).json({
+                success: false,
+                message: 'Reporte no encontrado'
+            });
+        }
+
+        // Validar que el reporte esté en estado 'POR CONFIRMAR'
+        if (reporte.estado !== 'POR CONFIRMAR') {
+            return res.status(400).json({
+                success: false,
+                message: 'Este reporte ya ha sido procesado'
+            });
+        }
+
+        // Obtener información del trabajador
+        const userSolicitante = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(reporte.usuario_id);
+
+        // Validar que el usuario autenticado sea el trabajador dueño de la solicitud
+        if (userSolicitante.usuario_id !== usuarioAutenticado.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tienes permiso para rechazar esta solicitud. Debes estar logueado como el trabajador que hizo la solicitud.'
+            });
+        }
+
+        // Rechazar el reporte
         await ReporteMarcionesModel.rechazar(id);
 
 
         // opcional se podria enviar un correo notificando el rechazo al usuario
 
-        return res.status(501).json({
+        return res.status(200).json({
             success: true,
-            message: 'En desarrollo',
+            message: 'Solicitud rechazada exitosamente',
         });
         // Obtener la marcación original antes de modificarla
     } catch (error) {

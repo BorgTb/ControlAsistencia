@@ -98,7 +98,9 @@ class JustificacionesController {
      */
     async obtenerJustificaciones(req, res) {
         try {
-            const usuario_empresa_id = await UsuarioEmpresaModel.getUsuarioEmpresaById(req.user.id);
+            console.log('Obteniendo justificaciones para usuario:', req.user);
+
+            const usuario_empresa_id = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(req.user.id);
             const { estado, tipo_justificacion, mes, anio, fecha_inicio, fecha_fin, fecha} = req.query;
             const params = {};
 
