@@ -15,7 +15,7 @@
           </svg>
         </div>
         <h2 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-          Control de Asistencia
+          Control de Asistencia mediante ci/cd
         </h2>
         <p class="mt-3 text-gray-500 font-medium">
           Ingresa tus credenciales para continuar

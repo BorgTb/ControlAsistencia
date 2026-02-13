@@ -67,7 +67,7 @@ app.use('/iclock', ADMSLink);
 
 // START SERVER
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running test nuevo on port ${PORT}`);
 
     // Iniciar job de limpieza de refresh tokens (cada 24 horas)
     // Esto elimina tokens expirados y mantiene la BD optimizada
