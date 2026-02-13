@@ -1093,7 +1093,7 @@ const procesarDiasMes = (mes, anio, marcaciones, turnos, diasJustificados = [], 
     const dias = [];
 
     // Mapeo de dÃƒÂ­as de la semana en espaÃƒÂ±ol
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sábado'];
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
     // Crear un mapa de dÃƒÂ­as justificados para bÃƒÂºsqueda rÃƒÂ¡pida
 
@@ -1188,6 +1188,7 @@ const obtenerTurnoParaDia = (fecha, turnos, diaSemana) => {
  * Procesa la informaciÃƒÂ³n de un dÃƒÂ­a especÃƒÂ­fico
  */
 const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = null) => {
+    console.log(`Procesando dÃƒÂ­a ${fecha} (${diaSemana}) con turno:`, turno, 'y marcaciones:', marcacionesDia, 'y justificacion:', justificacion);
     // Si el dÃƒÂ­a es anterior a la asignaciÃƒÂ³n del turno (sin turno asignado aÃƒÂºn)
     if (turno && turno.sinTurnoAsignado) {
         return {
