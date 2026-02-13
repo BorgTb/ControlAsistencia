@@ -341,10 +341,10 @@
 </template>
 
 <script setup>
-import HeaderAdmin from '../../components/headerEmpresa.vue';
+import HeaderAdmin from '../../components/header-empresa.vue';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuth } from '@/composables/useAuth.js';
+import { useAuth } from '@/composables/use-auth.js';
 
 const router = useRouter();
 

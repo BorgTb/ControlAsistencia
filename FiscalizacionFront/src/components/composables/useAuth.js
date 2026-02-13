@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useAuthStore } from '../../store/authStore.js'
+import { useAuthStore } from '../../store/auth-store.js'
 import AuthService from '../../services/authService.js'
 
 export function useAuth() {

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useAuthStore } from '../store/authStore.js'
+import { useAuthStore } from '../store/auth-store.js'
 import { useDataStore } from '../store/dataStorage.js'
 import { useRouter } from 'vue-router'
 

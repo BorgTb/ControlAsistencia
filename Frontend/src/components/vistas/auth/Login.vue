@@ -158,8 +158,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore.js'
-import AuthService from '@/services/Authservices.js'
+import { useAuthStore } from '@/stores/auth-store.js'
+import AuthService from '@/services/auth-services.js'
 
 // Router
 const router = useRouter()

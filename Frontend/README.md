@@ -30,7 +30,7 @@ src/
 │       ├── Login.vue          # Formulario de autenticación
 │       └── Dashboard.vue      # Panel principal de marcaciones
 ├── stores/
-│   └── authStore.js          # Store de autenticación con Pinia
+│   └── auth-store.js          # Store de autenticación con Pinia
 ├── services/
 │   ├── Authservices.js       # Servicio de autenticación
 │   └── AsistenciaService.js  # Servicio de marcaciones

@@ -12,7 +12,7 @@
  */
 
 import axios from 'axios'
-import { useAuthStore } from '@/stores/authStore.js'
+import { useAuthStore } from '@/stores/auth-store.js'
 
 // URL base de la API
 const API_BASE_URL = (() => {

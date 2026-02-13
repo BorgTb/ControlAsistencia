@@ -13,7 +13,7 @@
         
         <div class="flex items-center space-x-4">
           <!-- Role Switcher -->
-          <RoleSwitcher />
+          <role-switcher />
           
           <!-- Dropdown de usuario -->
           <div class="relative" data-dropdown>
@@ -191,10 +191,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-import { useAuthStore } from '@/stores/authStore.js'
-import RoleSwitcher from '@/components/common/RoleSwitcher.vue'
-import CompanySwitcherModal from '@/components/modals/CompanySwitcherModal.vue'
+import { useAuth } from '@/composables/use-auth'
+import { useAuthStore } from '@/stores/auth-store.js'
+import RoleSwitcher from '@/components/common/role-switcher.vue'
+import CompanySwitcherModal from '@/components/modals/company-switcher-modal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -120,9 +120,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useAuditoria } from '@/composables/useAuditoria.js'
-import { useAuth } from '@/composables/useAuth.js'
-import AdminNavbar from '@/components/shared/AdminNavbar.vue'
+import { useAuditoria } from '@/composables/use-auditoria.js'
+import { useAuth } from '@/composables/use-auth.js'
+import AdminNavbar from '@/components/shared/admin-navbar.vue'
 
 const { registros, loading, error, cargarRegistros, obtenerCambiosUsuario } = useAuditoria()
 

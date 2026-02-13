@@ -144,9 +144,9 @@
 <script setup>
 
 import { ref, onMounted, computed } from "vue";
-import { useNotification } from "@/composables/useNotification.js";
-import { useAuth } from '@/composables/useAuth.js';
-import AdminNavbar from '@/components/shared/AdminNavbar.vue';
+import { useNotification } from "@/composables/use-notification.js";
+import { useAuth } from '@/composables/use-auth.js';
+import AdminNavbar from '@/components/shared/admin-navbar.vue';
 import { apiClient } from '@/config/axios-config';
 
 // ========== VARIABLES REACTIVAS ==========

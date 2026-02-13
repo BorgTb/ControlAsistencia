@@ -346,9 +346,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import ConfirmUbicacionModal from '@/components/modals/ConfirmUbicacionModal.vue'
-import AsistenciaService from '@/services/AsistenciaService.js'
-import { useOffline } from '@/composables/useOffline.js'
+import ConfirmUbicacionModal from '@/components/modals/confirm-ubicacion-modal.vue'
+import AsistenciaService from '@/services/asistencia-service.js'
+import { useOffline } from '@/composables/use-offline.js'
 
 // Agregar composable offline
 const { isOnline, isOffline, pendingActions, processPendingActions, isSyncing } = useOffline()

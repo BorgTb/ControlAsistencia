@@ -7,7 +7,7 @@
 import Footer from '@/components/components/footer.vue'
 import { useRoute } from 'vue-router'
 import { computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/auth-store'
 
 const route = useRoute()
 const authStore = useAuthStore()

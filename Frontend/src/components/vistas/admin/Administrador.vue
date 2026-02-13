@@ -292,7 +292,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuth } from '@/composables/useAuth.js';
+import { useAuth } from '@/composables/use-auth.js';
 const { esEst, esEmpleador } = useAuth();
 
 const router = useRouter();

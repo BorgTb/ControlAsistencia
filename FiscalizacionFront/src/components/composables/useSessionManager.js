@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useAuthStore } from '../../store/authStore.js'
+import { useAuthStore } from '../../store/auth-store.js'
 import { useDataStore } from '../../store/dataStorage.js'
 
 export function useSessionManager() {

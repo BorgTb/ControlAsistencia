@@ -185,8 +185,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useAuth } from '@/composables/useAuth.js';
-import AdminNavbar from '@/components/shared/AdminNavbar.vue';
+import { useAuth } from '@/composables/use-auth.js';
+import AdminNavbar from '@/components/shared/admin-navbar.vue';
 import { apiClient } from '@/config/axios-config';
 
 // Estados reactivos

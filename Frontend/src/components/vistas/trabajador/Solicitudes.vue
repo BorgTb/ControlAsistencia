@@ -252,10 +252,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useSolicitudesGenerales } from '@/composables/useSolicitudesGenerales';
-import ModalNuevaSolicitud from '@/components/modals/ModalNuevaSolicitud.vue';
-import ModalDetalleSolicitud from '@/components/modals/ModalDetalleSolicitud.vue';
-import ModalConfirmacion from '@/components/modals/ModalConfirmacion.vue';
+import { useSolicitudesGenerales } from '@/composables/use-solicitudes-generales';
+import ModalNuevaSolicitud from '@/components/modals/modal-nueva-solicitud.vue';
+import ModalDetalleSolicitud from '@/components/modals/modal-detalle-solicitud.vue';
+import ModalConfirmacion from '@/components/modals/modal-confirmacion.vue';
 
 // Composables
 const {
