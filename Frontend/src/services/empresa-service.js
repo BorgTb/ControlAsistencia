@@ -261,6 +261,15 @@ class EmpresaServices{
     }
   }
 
+  static async eliminarMarcacionDuplicada(marcacionId) {
+    try {
+      const response = await apiClient.delete(`/marcaciones/userEmpresa/eliminar-duplicada/${marcacionId}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
   static async guardarConfiguracion(data) {
     try {
       const response = await apiClient.post('/userEmpresa/configuracion/marcaciones', data)

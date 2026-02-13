@@ -37,6 +37,7 @@ router.get('/userEmpresa/empresa/:rutEmpresa/fecha/:fecha', AuthService.verifyTo
 router.get('/userEmpresa/empresa/:rutEmpresa', AuthService.verifyToken, MarcacionesController.obtenerMarcacionesPorEmpresa);
 router.put('/userEmpresa/modificar/:id', AuthService.verifyToken, MarcacionesController.modificarMarcacionPorId);
 router.post('/userEmpresa/agregar', AuthService.verifyToken, MarcacionesController.agregarMarcacionManual);
+router.delete('/userEmpresa/eliminar-duplicada/:id', AuthService.verifyToken, MarcacionesController.eliminarMarcacionDuplicada);
 
 // Ruta para obtener horas semanales de un trabajador
 router.get('/horas-semanales/:usuario_empresa_id', AuthService.verifyToken, MarcacionesController.obtenerHorasSemanales);

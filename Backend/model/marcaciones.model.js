@@ -106,6 +106,30 @@ class Marcaciones {
         const [result] = await pool.execute(query, [id]);
         return result;
     }
+
+    async obtenerMarcacionBaseParaDuplicados(id) {
+        const query = `
+            SELECT id, usuario_empresa_id, DATE(fecha) as fecha, TIME(hora) as hora, tipo
+            FROM marcaciones
+            WHERE id = ?
+            LIMIT 1
+        `;
+        const [rows] = await pool.execute(query, [id]);
+        return rows[0] || null;
+    }
+
+    async contarMarcacionesDuplicadas(usuario_empresa_id, fecha, hora, tipo) {
+        const query = `
+            SELECT COUNT(*) as total
+            FROM marcaciones
+            WHERE usuario_empresa_id = ?
+            AND DATE(fecha) = ?
+            AND TIME(hora) = ?
+            AND tipo = ?
+        `;
+        const [rows] = await pool.execute(query, [usuario_empresa_id, fecha, hora, tipo]);
+        return rows[0]?.total || 0;
+    }
     async obtenerEntradaPorUsuario(usuario_empresa_id, fecha) {
 
         const query = `
@@ -183,7 +207,7 @@ class Marcaciones {
         return rows;
     }
     async obtenerMarcacionesPorEmpresaId(empresa_id) {
-        const query = `SELECT marcaciones.id as marcacion_id ,marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
+        const query = `SELECT marcaciones.id as marcacion_id, marcaciones.usuario_empresa_id, marcaciones.lugar_id, marcaciones.mandante_id, marcaciones.fecha,marcaciones.hora,marcaciones.tipo,marcaciones.hash,marcaciones.ip_origen,marcaciones.geo_lat,marcaciones.geo_lon,marcaciones.created_at,
 usuarios.nombre,usuarios.apellido_pat,usuarios.apellido_mat,usuarios.rut,usuarios.id as usuario_id,
 usuarios_empresas.rol_en_empresa,
 empresa.empresa_id

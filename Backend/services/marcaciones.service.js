@@ -283,6 +283,59 @@ class MarcacionesService {
             };
         }
     }
+
+    async eliminarMarcacionSoloSiDuplicada(id) {
+        try {
+            const marcacionBase = await MarcacionesModel.obtenerMarcacionBaseParaDuplicados(id);
+
+            if (!marcacionBase) {
+                return {
+                    success: false,
+                    message: 'Marcación no encontrada'
+                };
+            }
+
+            const totalDuplicadas = await MarcacionesModel.contarMarcacionesDuplicadas(
+                marcacionBase.usuario_empresa_id,
+                marcacionBase.fecha,
+                marcacionBase.hora,
+                marcacionBase.tipo
+            );
+
+            if (totalDuplicadas < 2) {
+                return {
+                    success: true,
+                    deleted: false,
+                    totalDuplicadas,
+                    message: 'La marcación no está duplicada. No se realizaron cambios.'
+                };
+            }
+
+            const result = await MarcacionesModel.deleteMarcacion(id);
+
+            if (result.affectedRows === 0) {
+                return {
+                    success: false,
+                    message: 'No se pudo eliminar la marcación'
+                };
+            }
+
+            return {
+                success: true,
+                deleted: true,
+                totalDuplicadas,
+                message: 'Marcación duplicada eliminada correctamente'
+            };
+        } catch (error) {
+            console.error('Error al eliminar marcación duplicada:', error);
+            return {
+                success: false,
+                message: 'Error al eliminar marcación duplicada',
+                error: error.message
+            };
+        }
+    }
+
     async obtenerMarcacionPorId(id) {
         try {
             const marcacion = await MarcacionesModel.getMarcacionById(id);

@@ -344,6 +344,12 @@
                           :class="marcacion.tipoClase">
                       {{ marcacion.tipo }}
                     </span>
+                    <span
+                      v-if="marcacion.esDuplicada"
+                      class="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800"
+                    >
+                      Duplicada
+                    </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div v-if="marcacion.geo_lat && marcacion.geo_lon" class="flex items-center">
@@ -364,6 +370,13 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" v-if="!esEst">
                     <div class="flex justify-end space-x-2">
+                      <button
+                        v-if="marcacion.esDuplicada"
+                        class="text-red-600 hover:text-red-900"
+                        @click="eliminarMarcacionSiDuplicada(marcacion)"
+                      >
+                        Eliminar duplicada
+                      </button>
                       <button v-if="marcacion.modificada" 
                               class="text-purple-600 hover:text-purple-900">Historial</button>
                       <button v-else 
@@ -806,7 +819,8 @@ const {
   aprobarReporte, 
   rechazarReporte, 
   modificarMarcacion,
-  agregarMarcacionManual 
+  agregarMarcacionManual,
+  eliminarMarcacionDuplicada
 } = useEmpresa();
 
 // Estados reactivos
@@ -1024,7 +1038,9 @@ const cargarMarcaciones = async () => {
               hash: marcacion.hash,
               usuario_id: marcacion.usuario_id,
               rol_en_empresa: marcacion.rol_en_empresa,
-              created_at: marcacion.created_at
+              created_at: marcacion.created_at,
+              usuario_empresa_id: marcacion.usuario_empresa_id,
+              esDuplicada: false
             };
             
             marcacionesTransformadas.push(marcacionTransformada);
@@ -1038,6 +1054,17 @@ const cargarMarcaciones = async () => {
       const fechaHoraA = new Date(`${a.fechaOriginal}T${a.hora}`);
       const fechaHoraB = new Date(`${b.fechaOriginal}T${b.hora}`);
       return fechaHoraB.getTime() - fechaHoraA.getTime();
+    });
+
+    const conteoDuplicados = new Map();
+    marcacionesTransformadas.forEach((marcacion) => {
+      const clave = `${marcacion.usuario_empresa_id}|${new Date(marcacion.fechaOriginal).toISOString().split('T')[0]}|${marcacion.hora}|${marcacion.tipoOriginal}`;
+      conteoDuplicados.set(clave, (conteoDuplicados.get(clave) || 0) + 1);
+    });
+
+    marcacionesTransformadas.forEach((marcacion) => {
+      const clave = `${marcacion.usuario_empresa_id}|${new Date(marcacion.fechaOriginal).toISOString().split('T')[0]}|${marcacion.hora}|${marcacion.tipoOriginal}`;
+      marcacion.esDuplicada = (conteoDuplicados.get(clave) || 0) > 1;
     });
     
     marcacionesOriginales.value = marcacionesTransformadas;
@@ -1202,6 +1229,37 @@ const handleAgregarMarcacion = async (marcacionData) => {
   } catch (error) {
     console.error('Error al agregar marcación:', error);
     alert('Error al agregar la marcación');
+  }
+};
+
+const eliminarMarcacionSiDuplicada = async (marcacion) => {
+  try {
+    if (!marcacion?.id) {
+      return;
+    }
+
+    const confirmar = window.confirm('¿Eliminar esta marcación solo si está duplicada?');
+    if (!confirmar) {
+      return;
+    }
+
+    const response = await eliminarMarcacionDuplicada(marcacion.id);
+
+    if (response?.success && response?.deleted) {
+      alert(response.message || 'Marcación duplicada eliminada correctamente');
+      await cargarMarcaciones();
+      return;
+    }
+
+    if (response?.success && response?.deleted === false) {
+      alert(response.message || 'La marcación no está duplicada. No se realizaron cambios.');
+      return;
+    }
+
+    alert(response?.message || 'No se pudo eliminar la marcación');
+  } catch (error) {
+    console.error('Error al eliminar marcación duplicada:', error);
+    alert('Error al eliminar marcación duplicada');
   }
 };
 

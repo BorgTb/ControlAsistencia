@@ -973,6 +973,34 @@ const agregarMarcacionManual = async (req, res) => {
     }
 }
 
+const eliminarMarcacionDuplicada = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || Number.isNaN(Number(id))) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de marcación inválido'
+            });
+        }
+
+        const result = await MarcacionesService.eliminarMarcacionSoloSiDuplicada(Number(id));
+
+        if (!result.success) {
+            const statusCode = result.message === 'Marcación no encontrada' ? 404 : 400;
+            return res.status(statusCode).json(result);
+        }
+
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('Error en eliminarMarcacionDuplicada:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+}
+
 /**
  * Obtiene las horas trabajadas en la semana actual para un usuario
  */
@@ -1410,6 +1438,7 @@ const MarcacionesController = {
     rechazarModificacionMarcacion,
     obtenerReporteMarcacionId,
     agregarMarcacionManual,
+    eliminarMarcacionDuplicada,
     obtenerHorasSemanales,
     obtenerDiasTrabajadosPorMes
 }

@@ -108,6 +108,16 @@ export function useEmpresa() {
     }
   };
 
+  const eliminarMarcacionDuplicada = async (marcacionId) => {
+    try {
+      const response = await EmpresaServices.eliminarMarcacionDuplicada(marcacionId);
+      return response;
+    } catch (error) {
+      console.error("Error al eliminar marcación duplicada:", error);
+      throw error;
+    }
+  };
+
   const eliminarTurno = async (turnoId) => {
     try {
       const response = await EmpresaServices.eliminarTurno(turnoId);
@@ -341,6 +351,7 @@ export function useEmpresa() {
     rechazarReporte,
     modificarMarcacion,
     agregarMarcacionManual,
+    eliminarMarcacionDuplicada,
     eliminarTurno,
     modificarTurno,
     obtenerHorasSemanales,
