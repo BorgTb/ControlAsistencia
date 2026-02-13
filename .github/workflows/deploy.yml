@@ -47,4 +47,4 @@ jobs:
         with:
           context: ./Backend # IMPORTANTE: apunta a la subcarpeta
           push: true
-          tags: ghcr.io/${{ github.repository }}-backend:latest
+          tags: ghcr.io/borgtb/controlasistencia-backend:latest

@@ -179,7 +179,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import MarcacionesCalendario from './MarcacionesCalendario.vue';
 import { calcularAusencias } from '@/utils/ausencias.js';
 import ListaJustificaciones from './ListaJustificaciones.vue';
-import justificacionesService from '@/services/JustificacionesService.js';
+import justificacionesService from '@/services/justificacionesService.js';
 // import DetalleDiarioTable from './DetalleDiarioTable.vue';
 
 const router = useRouter();
