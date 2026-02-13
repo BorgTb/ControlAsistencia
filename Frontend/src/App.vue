@@ -17,11 +17,7 @@ const hideFooter = computed(() => route.path === '/')
 
 // Asegurar que el store esté inicializado (Pinia con persistencia puede tardar)
 onMounted(() => {
-  if (authStore.user) {
-    console.log('✅ Usuario autenticado:', authStore.user.nombre)
-  } else {
-    console.log('❌ No hay usuario autenticado')
-  }
+
 })
 </script>
 
