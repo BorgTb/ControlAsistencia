@@ -8,9 +8,26 @@ import ADMSService from '../services/adms.service.js';
 import zkDeviceService from '../services/zk-device.service.js';
 import DispositivoZKService from '../services/dispositivo-zk.service.js';
 
+const getSerialFromRequest = (req) => {
+    const candidate = req.query?.sn || req.query?.SN || req.body?.sn || req.body?.SN || '';
+    return String(candidate).trim();
+};
+
+const getBodyAsText = (body) => {
+    if (!body) return '';
+    if (typeof body === 'string') return body;
+    if (Buffer.isBuffer(body)) return body.toString('utf8');
+    if (typeof body === 'object') {
+        return Object.entries(body)
+            .map(([key, value]) => `${key}=${value}`)
+            .join('&');
+    }
+    return String(body);
+};
+
 export const handleCData = async (req, res) => {
-    const sn = req.query.sn || req.query.SN;
-    const { table } = req.query;
+    const sn = getSerialFromRequest(req);
+    const table = req.query.table || req.query.TABLE;
 
     if (!sn) {
         return res.send('OK');
@@ -39,17 +56,18 @@ export const handleCData = async (req, res) => {
 
     // Si es un POST, es envÃ­o de datos
     if (req.method === 'POST') {
-        const payload = req.body;
+        const payload = getBodyAsText(req.body);
         if (!payload) return res.send('OK');
 
         console.log(`[ADMS] Recibida tabla ${table} de SN: ${sn}`);
 
-        const lines = payload.split('\n').filter(l => l.trim());
+        const lines = payload.split(/\r?\n/).filter(l => l.trim());
         const tableName = (table || '').toUpperCase();
 
         if (tableName === 'ATTLOG') {
             for (const line of lines) {
-                const [pin, time, status, verify, workcode] = line.split('\t');
+            const [pin, time] = line.split('\t').map(value => String(value || '').trim());
+            if (!pin || !time) continue;
                 console.log(`[ADMS] MarcaciÃ³n: SN:${sn} PIN:${pin} Time:${time}`);
 
                 // Reutilizar la lÃ³gica de procesamiento de ZKDeviceService
@@ -100,7 +118,7 @@ export const handleCData = async (req, res) => {
                     }
                 });
             }
-        } else if (tableName === 'FINGERTMP' || tableName === 'FP') {
+        } else if (tableName === 'FINGERTMP' || tableName === 'FINGERTEMP' || tableName === 'FP') {
             if (!ADMSService.fingerprintDatabase.has(sn)) {
                 ADMSService.fingerprintDatabase.set(sn, new Map());
             }
@@ -124,7 +142,7 @@ export const handleCData = async (req, res) => {
 };
 
 export const handleGetRequest = (req, res) => {
-    const sn = req.query.sn || req.query.SN;
+    const sn = getSerialFromRequest(req);
     if (!sn) return res.status(200).send('OK');
 
     const command = ADMSService.getNextCommand(sn);
@@ -137,8 +155,15 @@ export const handleGetRequest = (req, res) => {
 };
 
 export const handleDeviceCmd = (req, res) => {
-    const sn = req.query.sn || req.query.SN;
-    const body = (req.body || '').trim();
+    const sn = getSerialFromRequest(req);
+    let body = getBodyAsText(req.body).trim();
+
+    if (!body && req.query) {
+        const pairs = Object.entries(req.query)
+            .filter(([key]) => key !== 'sn' && key !== 'SN')
+            .map(([key, value]) => `${key}=${value}`);
+        body = pairs.join('&').trim();
+    }
 
     if (!sn || !body) return res.send('OK');
 
@@ -146,8 +171,10 @@ export const handleDeviceCmd = (req, res) => {
     // Formato esperado: ID=100&Return=0
     const result = ADMSService.parseKeyValueLine(body.replace(/&/g, '\t'));
 
-    if (result.ID) {
-        ADMSService.recordCommandResult(sn, result.ID, result.Return);
+    const commandId = result.ID || result.id;
+    const returnValue = result.Return || result.return;
+    if (commandId) {
+        ADMSService.recordCommandResult(sn, commandId, returnValue);
     }
 
     res.send('OK');

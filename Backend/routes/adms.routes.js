@@ -11,16 +11,16 @@ import ADMSService from '../services/adms.service.js';
 const router = express.Router();
 
 // El protocolo ADMS usa cuerpos de texto plano (tab-separated o similar)
-const textParser = express.text({ type: '*/*' });
+const textParser = express.text({ type: '*/*', limit: '5mb' });
 
 // 1. Endpoint de datos (cdata)
 router.all('/cdata', textParser, ADMSController.handleCData);
 
 // 2. Endpoint de consulta de comandos (getrequest)
-router.get('/getrequest', ADMSController.handleGetRequest);
+router.all('/getrequest', textParser, ADMSController.handleGetRequest);
 
 // 3. Endpoint de respuesta de comandos (devicecmd)
-router.post('/devicecmd', textParser, ADMSController.handleDeviceCmd);
+router.all('/devicecmd', textParser, ADMSController.handleDeviceCmd);
 
 // 4. API PARA CONTROL EXTERNO (Uso interno/test)
 router.get('/api/devices', (req, res) => {
@@ -85,7 +85,7 @@ router.post('/api/command/:sn', express.json(), (req, res) => {
                 cmdId = ADMSService.queueCommand(sn, ADMSService.commands.queryData('ATTLOG'));
                 break;
             case 'syncFingers':
-                cmdId = ADMSService.queueCommand(sn, ADMSService.commands.queryData('FINGERTEMP'));
+                cmdId = ADMSService.queueCommand(sn, ADMSService.commands.queryData('FINGERTMP'));
                 break;
             default:
                 return res.status(400).send('Unknown action');
