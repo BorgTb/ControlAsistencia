@@ -654,7 +654,7 @@
           <div class="mt-6 flex gap-3">
             <button
               v-if="puedeSolicitarMarcacion(diaSeleccionado)"
-              @click="abrirModalAgregarMarcacion"
+              @click="abrirModalSolicitudMarcacion"
               class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center justify-center"
             >
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1331,13 +1331,6 @@
       </div>
     </div>
 
-    <!-- Modal de Solicitud de Marcación -->
-    <AgregarMarcacionModal 
-      v-if="showAgregarModal" 
-      :fechaInicial="diaSeleccionado?.fecha"
-      @confirm="manejarSolicitudMarcacion" 
-      @cancel="cerrarModalAgregarMarcacion" 
-    />
   </div>
 </template>
 
@@ -1346,7 +1339,6 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useDiasTrabajados } from '@/composables/use-dias-trabajados';
 import { useJustificaciones } from '@/composables/use-justificaciones';
 import { useMarcaciones } from '@/composables/use-marcaciones';
-import AgregarMarcacionModal from '@/components/modals/agregar-marcacion-modal.vue';
 
 // Composable
 const {
@@ -1395,7 +1387,6 @@ const {
 const diaSeleccionado = ref(null);
 const vistaModal = ref('detalle'); // 'detalle', 'justificacion', 'solicitud'
 const direccionAnimacion = ref('left'); // 'left' o 'right'
-const showAgregarModal = ref(false); // Controla la visibilidad del modal de agregar marcación
 const notificacion = ref({
   mostrar: false,
   mensaje: '',
@@ -1643,14 +1634,6 @@ const abrirModalSolicitudMarcacion = () => {
   vistaModal.value = 'solicitud';
 };
 
-const abrirModalAgregarMarcacion = () => {
-  showAgregarModal.value = true;
-};
-
-const cerrarModalAgregarMarcacion = () => {
-  showAgregarModal.value = false;
-};
-
 const cerrarModalSolicitud = () => {
   // Volver a vista de detalle con animación hacia la derecha
   direccionAnimacion.value = 'right';
@@ -1661,9 +1644,6 @@ const manejarSolicitudMarcacion = async (solicitudData) => {
   const result = await solicitarMarcacion(solicitudData);
   
   if (result.success) {
-    // Cerrar el modal inmediatamente
-    cerrarModalAgregarMarcacion();
-    
     // Mostrar mensaje de éxito
     console.log('Solicitud de marcación enviada exitosamente:', result.message);
     
