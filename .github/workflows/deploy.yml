@@ -48,3 +48,19 @@ jobs:
           context: ./Backend # IMPORTANTE: apunta a la subcarpeta
           push: true
           tags: ghcr.io/borgtb/controlasistencia-backend:latest
+  # --- TRABAJO 3: ACTUALIZAR SERVIDOR ---
+  update-server:
+    needs: build-backend # Solo corre si el backend se buildeó bien
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/teleasiste/git-action 
+            docker compose pull app
+            docker compose up -d app
+            docker image prune -f # Limpia imágenes viejas para no llenar el disco
