@@ -41,7 +41,7 @@ const router = createRouter({
         {
             path: '/',
             name: 'Login',
-            component: () => import('../components/vistas/Login.vue'),
+            component: () => import('../components/vistas/login-view.vue'),
             meta: { requiresGuest: false } // Deshabilitado para desarrollo
         },
         {

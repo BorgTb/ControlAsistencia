@@ -27,7 +27,7 @@ const routes = [
       {
         path: '',
         name: 'Login',
-        component: () => import('@/components/vistas/auth/login.vue'),
+        component: () => import('@/components/vistas/auth/login-view.vue'),
       },
       {
         path: 'select-company',
