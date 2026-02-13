@@ -128,7 +128,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import feriadosService from '@/services/feriados-service.js';
 import { calcularAusencias, fechaTieneTurno } from '@/utils/ausencias.js';
-const emit = defineEmits(['hover-dia', 'mes-change']);
+const emit = defineEmits(['hover-dia', 'mes-change', 'dia-click']);
 
 
 
@@ -579,6 +579,8 @@ function ocultarTooltip() {
   tooltipDia.value = null;
 }
 function onClickDia(dia) {
+  emit('dia-click', dia);
+
   // si tiene justificacionDetalle con items (feriados BD), mostrar modal con detalle
   const det = dia && dia.justificacionDetalle ? dia.justificacionDetalle : null;
   if (det && det.items && det.items.length) {

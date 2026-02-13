@@ -148,6 +148,7 @@
                 :ausencias="ausenciasParaCalendario"
                 @hover-dia="mostrarTooltipDia"
                 @mes-change="onMesChange"
+                @dia-click="abrirAgregarMarcacionDesdeCalendario"
               />
             </div>
           </div>
@@ -166,6 +167,15 @@
         <ListaJustificaciones @cerrar="cerrarJustificaciones" />
       </div>
     </div>
+
+    <AgregarMarcacionEmpleadorModal
+      v-if="mostrarModalAgregarMarcacion"
+      :trabajador-preseleccionado="trabajadorSeleccionado"
+      :fecha-preseleccionada="fechaSeleccionadaCalendario"
+      :bloquear-trabajador="true"
+      @confirm="handleAgregarMarcacionDesdeCalendario"
+      @cancel="cerrarModalAgregarMarcacion"
+    />
   </div>
 </template>
 
@@ -177,15 +187,33 @@ import { useNotification } from '@/composables/use-notification.js';
 import { useEmpresa } from '@/composables/use-empresa.js';
 import { useAuthStore } from '@/stores/auth-store.js';
 import MarcacionesCalendario from './marcaciones-calendario.vue';
+import AgregarMarcacionEmpleadorModal from '@/components/modals/agregar-marcacion-empleador-modal.vue';
 import { calcularAusencias } from '@/utils/ausencias.js';
 import ListaJustificaciones from './lista-justificaciones.vue';
 import justificacionesService from '@/services/justificaciones-service.js';
 // import DetalleDiarioTable from './detalle-diario-table.vue';
 
 const router = useRouter();
-const { mostrarNotificacion } = useNotification();
-const { obtenerTrabajadores } = useEmpresa();
+const { showSuccess, showError, showInfo, showWarning } = useNotification();
+const { obtenerTrabajadores, agregarMarcacionManual } = useEmpresa();
 const authStore = useAuthStore();
+
+const mostrarNotificacion = (mensaje, tipo = 'info') => {
+  switch (tipo) {
+    case 'success':
+      showSuccess(mensaje);
+      break;
+    case 'error':
+      showError(mensaje);
+      break;
+    case 'warning':
+      showWarning(mensaje);
+      break;
+    default:
+      showInfo(mensaje);
+      break;
+  }
+};
 
 // Estados reactivos
 const cargando = ref(false);
@@ -200,6 +228,8 @@ const trabajadorSeleccionado = ref(null);
 const marcaciones = ref([]);
 const diasJustificados = ref([]);
 const mostrarModalJustificaciones = ref(false);
+const mostrarModalAgregarMarcacion = ref(false);
+const fechaSeleccionadaCalendario = ref('');
 
 // Control para mostrar/ocultar la lista completa de ausencias y utilidades de formato
 const mostrarTodasAusencias = ref(false);
@@ -547,6 +577,46 @@ const filtros = ref({
 
 function mostrarTooltipDia(dia) {
   // Aquí podrías mostrar un tooltip con la info del día
+}
+
+function abrirAgregarMarcacionDesdeCalendario(dia) {
+  if (!trabajadorSeleccionado.value) {
+    mostrarNotificacion('Selecciona primero un trabajador', 'warning');
+    return;
+  }
+
+  fechaSeleccionadaCalendario.value = (dia?.fecha || '').split('T')[0] || new Date().toISOString().split('T')[0];
+  mostrarModalAgregarMarcacion.value = true;
+}
+
+function cerrarModalAgregarMarcacion() {
+  mostrarModalAgregarMarcacion.value = false;
+}
+
+async function handleAgregarMarcacionDesdeCalendario(marcacionData) {
+  try {
+    const payload = {
+      ...marcacionData,
+      usuario_id: trabajadorSeleccionado.value?.id,
+      fecha: fechaSeleccionadaCalendario.value || marcacionData.fecha,
+      agregada_manualmente: true
+    };
+
+    const response = await agregarMarcacionManual(payload);
+    if (response && response.success === false) {
+      throw new Error(response.message || 'No se pudo agregar la marcación');
+    }
+
+    mostrarNotificacion('Marcación agregada correctamente', 'success');
+    cerrarModalAgregarMarcacion();
+
+    await cargarMarcacionesTrabajador(trabajadorSeleccionado.value.id);
+    await cargarDiasJustificados(trabajadorSeleccionado.value.id);
+    actualizarAusenciasParaTrabajador(trabajadorSeleccionado.value.id);
+  } catch (error) {
+    console.error('Error agregando marcación desde calendario:', error);
+    mostrarNotificacion(error.message || 'Error al agregar la marcación', 'error');
+  }
 }
 
 function exportarReporte() {

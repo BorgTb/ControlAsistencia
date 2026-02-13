@@ -916,6 +916,7 @@ import MarcacionesModel from '../model/marcaciones.model.js';
 const agregarMarcacionManual = async (req, res) => {
     try {
         const { usuario_id, tipo, fecha, hora, motivo } = req.body;
+        const USER_SOLICITANTE = req.user; // usuario que genera la solicitud
         if (!usuario_id || !tipo || !fecha || !hora || !motivo) {
             return res.status(400).json({
                 success: false,
@@ -924,11 +925,11 @@ const agregarMarcacionManual = async (req, res) => {
         }
 
         // 1. Obtener usuario_empresa_id
-        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(usuario_id);
+        const usuarioEmpresa = await UsuarioEmpresaModel.getUsuarioEmpresaByUsuarioId(usuario_id,USER_SOLICITANTE.empresa_id);
         if (!usuarioEmpresa) {
             return res.status(404).json({ success: false, message: 'Usuario empresa no encontrado' });
         }
-
+        /*
         // 2. Insertar la marcaciÃƒÂ³n manual
         const nuevaMarcacion = {
             usuario_empresa_id: usuarioEmpresa.id,
@@ -939,16 +940,16 @@ const agregarMarcacionManual = async (req, res) => {
             hash: null // puedes generar un hash si lo necesitas
         };
         const result = await MarcacionesService.insertarMarcacionManual(nuevaMarcacion);
-
+        */
         // 3. Crear el reporte y enviar notificaciÃƒÂ³n
         const id = await ReporteMarcionesModel.createPorConfirmar({
-            marcacion_id: result.insertId,
+            marcacion_id: null,
             usuario_id: usuario_id,
             tipo: 'agregar',
             fecha_correcta: fecha,
             hora_correcta: hora,
             descripcion: motivo,
-            tipo_problema: "AdiciÃƒÂ³n de MarcaciÃƒÂ³n",
+            tipo_problema: "Adición de Marcación",
             tipo_marcacion_correcta: tipo
         });
 
@@ -958,8 +959,8 @@ const agregarMarcacionManual = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'MarcaciÃƒÂ³n agregada correctamente y reporte generado',
-            marcacion_id: result.insertId,
+            message: 'Marcación agregada correctamente y reporte generado',
+            marcacion_id: null,
             reporte_id: id
         });
 

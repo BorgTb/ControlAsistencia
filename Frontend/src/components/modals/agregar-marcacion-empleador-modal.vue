@@ -28,11 +28,11 @@
         <!-- Selección de Trabajador -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            Seleccionar Trabajador *
+            Trabajador *
           </label>
           
           <!-- Búsqueda de trabajador -->
-          <div class="relative mb-2">
+          <div v-if="!props.bloquearTrabajador" class="relative mb-2">
             <input 
               type="text" 
               v-model="busquedaTrabajador"
@@ -46,13 +46,13 @@
           </div>
 
           <!-- Loading de trabajadores -->
-          <div v-if="cargandoTrabajadores" class="p-4 text-center">
+          <div v-if="!props.bloquearTrabajador && cargandoTrabajadores" class="p-4 text-center">
             <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
             <p class="text-sm text-gray-600 mt-2">Cargando trabajadores...</p>
           </div>
 
           <!-- Lista de trabajadores -->
-          <div v-else-if="trabajadoresFiltrados.length > 0 && !formData.trabajadorSeleccionado" class="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
+          <div v-else-if="!props.bloquearTrabajador && trabajadoresFiltrados.length > 0 && !formData.trabajadorSeleccionado" class="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
             <div 
               v-for="trabajador in trabajadoresFiltrados" 
               :key="trabajador.id"
@@ -89,7 +89,7 @@
           </div>
 
           <!-- Sin resultados -->
-          <div v-else-if="busquedaTrabajador && trabajadoresFiltrados.length === 0 && !formData.trabajadorSeleccionado" class="p-4 text-center text-sm text-gray-500 border border-gray-200 rounded-md">
+          <div v-else-if="!props.bloquearTrabajador && busquedaTrabajador && trabajadoresFiltrados.length === 0 && !formData.trabajadorSeleccionado" class="p-4 text-center text-sm text-gray-500 border border-gray-200 rounded-md">
             No se encontraron trabajadores
           </div>
 
@@ -101,10 +101,11 @@
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                 </svg>
                 <span class="text-sm font-medium text-green-800">
-                  {{ formData.trabajadorSeleccionado.usuario_nombre }} {{ formData.trabajadorSeleccionado.usuario_apellido_pat }} - {{ formData.trabajadorSeleccionado.usuario_rut }}
+                  {{ getTrabajadorNombre(formData.trabajadorSeleccionado) }} - {{ getTrabajadorRut(formData.trabajadorSeleccionado) }}
                 </span>
               </div>
               <button 
+                v-if="!props.bloquearTrabajador"
                 @click="limpiarSeleccion"
                 type="button"
                 class="text-green-600 hover:text-green-800"
@@ -264,12 +265,26 @@
 </template>
 
 <script setup>
-import { ref, computed, defineEmits, onMounted } from 'vue'
+import { ref, computed, defineEmits, defineProps, onMounted, watch } from 'vue'
 import { useMarcaciones } from '@/composables/use-marcaciones.js'
 import { useEmpresa } from '@/composables/use-empresa.js'
 import { useAuthStore } from '@/stores/auth-store.js'
 
 const emit = defineEmits(['confirm', 'cancel'])
+const props = defineProps({
+  trabajadorPreseleccionado: {
+    type: Object,
+    default: null
+  },
+  fechaPreseleccionada: {
+    type: String,
+    default: ''
+  },
+  bloquearTrabajador: {
+    type: Boolean,
+    default: false
+  }
+})
 const authStore = useAuthStore();
 
 // Composables
@@ -343,8 +358,8 @@ const filtrarTrabajadores = () => {
   }
   
   trabajadoresFiltrados.value = trabajadores.value.filter(trabajador => {
-    const nombreCompleto = `${trabajador.nombre} ${trabajador.apellido}`.toLowerCase()
-    const rut = trabajador.rut.toLowerCase()
+    const nombreCompleto = `${trabajador.usuario_nombre || trabajador.nombre || ''} ${trabajador.usuario_apellido_pat || trabajador.apellido || ''}`.toLowerCase()
+    const rut = String(trabajador.usuario_rut || trabajador.rut || '').toLowerCase()
     return nombreCompleto.includes(busqueda) || rut.includes(busqueda)
   })
 }
@@ -355,9 +370,20 @@ const seleccionarTrabajador = (trabajador) => {
 }
 
 const limpiarSeleccion = () => {
+  if (props.bloquearTrabajador) return
   formData.value.trabajadorSeleccionado = null
   busquedaTrabajador.value = ''
   trabajadoresFiltrados.value = trabajadores.value
+}
+
+const getTrabajadorNombre = (trabajador) => {
+  if (!trabajador) return ''
+  return `${trabajador.usuario_nombre || trabajador.nombre || ''} ${trabajador.usuario_apellido_pat || trabajador.apellido || ''}`.trim()
+}
+
+const getTrabajadorRut = (trabajador) => {
+  if (!trabajador) return ''
+  return trabajador.usuario_rut || trabajador.rut || 'Sin RUT'
 }
 
 const obtenerIniciales = (nombre, apellido) => {
@@ -446,15 +472,41 @@ const agregarMarcacion = async () => {
   }
 }
 
+const aplicarPreseleccion = () => {
+  if (props.trabajadorPreseleccionado) {
+    formData.value.trabajadorSeleccionado = props.trabajadorPreseleccionado
+    errors.value.trabajador = ''
+  }
+
+  if (props.fechaPreseleccionada) {
+    formData.value.fecha = props.fechaPreseleccionada
+    errors.value.fecha = ''
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   // Inicializar con fecha actual y hora actual por defecto
-  formData.value.fecha = getFechaActual()
+  formData.value.fecha = props.fechaPreseleccionada || getFechaActual()
   formData.value.hora = getHoraActual()
   
-  // Cargar trabajadores
-  cargarTrabajadores()
+  if (props.trabajadorPreseleccionado) {
+    formData.value.trabajadorSeleccionado = props.trabajadorPreseleccionado
+  }
+
+  // Cargar trabajadores solo cuando el selector está habilitado
+  if (!props.bloquearTrabajador) {
+    cargarTrabajadores()
+  }
 })
+
+watch(
+  () => [props.trabajadorPreseleccionado, props.fechaPreseleccionada, props.bloquearTrabajador],
+  () => {
+    aplicarPreseleccion()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
