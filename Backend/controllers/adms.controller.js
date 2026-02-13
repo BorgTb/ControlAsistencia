@@ -119,13 +119,13 @@ export const handleCData = async (req, res) => {
         
         // Se pueden agregar mÃ¡s tablas (FP, OPERLOG, etc.) segÃºn sea necesario
 
-        return res.send('OK');
+        return res.status(200).send('OK');
     }
 };
 
 export const handleGetRequest = (req, res) => {
     const sn = req.query.sn || req.query.SN;
-    if (!sn) return res.send('OK');
+    if (!sn) return res.status(200).send('OK');
 
     const command = ADMSService.getNextCommand(sn);
     if (command) {
