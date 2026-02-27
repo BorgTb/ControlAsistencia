@@ -447,7 +447,9 @@ async function procesarExportacion() {
 
   // Si es Telegestor, primero validar días incompletos
   if (formatoSeleccionado.value === 'telegestor') {
-    await validarDiasIncompletos();
+    // Temporal: omitir validación de días incompletos
+    // await validarDiasIncompletos();
+    await confirmarEnvioTelegestor();
   } else {
     await exportarDatos();
   }

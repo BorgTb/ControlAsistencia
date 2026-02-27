@@ -110,6 +110,46 @@ class DiasTrabajadosService {
       throw error
     }
   }
+
+  /**
+   * Exporta asistencia del trabajador autenticado en formato CSV
+   * @param {string} fechaInicio - Fecha inicio en formato YYYY-MM-DD
+   * @param {string} fechaFin - Fecha fin en formato YYYY-MM-DD
+   * @returns {Promise<Blob>} - Archivo CSV
+   */
+  async exportarAsistenciaTrabajadorCSV(fechaInicio, fechaFin) {
+    try {
+      const response = await apiClient.post(
+        '/telegestorapi/asistencia/export/trabajador/csv',
+        { fechaInicio, fechaFin },
+        { responseType: 'blob' }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al exportar asistencia CSV del trabajador:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Exporta asistencia del trabajador autenticado en formato Excel
+   * @param {string} fechaInicio - Fecha inicio en formato YYYY-MM-DD
+   * @param {string} fechaFin - Fecha fin en formato YYYY-MM-DD
+   * @returns {Promise<Blob>} - Archivo Excel
+   */
+  async exportarAsistenciaTrabajadorExcel(fechaInicio, fechaFin) {
+    try {
+      const response = await apiClient.post(
+        '/telegestorapi/asistencia/export/trabajador/excel',
+        { fechaInicio, fechaFin },
+        { responseType: 'blob' }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al exportar asistencia Excel del trabajador:', error)
+      throw error
+    }
+  }
 }
 
 // Exportar instancia única del servicio

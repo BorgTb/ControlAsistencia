@@ -3,6 +3,7 @@ import MarcacionesServices from "../../services/marcaciones.service.js";
 import AsistenciaService from "../services/asistencia.service.js";
 import AsignacionTurnosModel from "../../model/asignacion-turnos.model.js";
 import EmpresaModel from '../../model/empresa.model.js';
+import UsuarioEmpresaModel from '../../model/usuario-empresa.model.js';
 import { DateTime } from 'luxon';
 import ExcelJS from 'exceljs';
 
@@ -228,6 +229,8 @@ class AsistenciaController {
             
             // Acumular registros para inserciÃƒÂ³n
             const registrosParaInsertar = [];
+            // Para uso futuro: guardar dÃƒÂ­as omitidos por incompletos
+            // const diasIncompletosOmitidos = [];
 
             for (const [key, value] of Object.entries(marcaciones.data)) {
                 // Validar que existe el trabajador antes de desestructurar
@@ -301,6 +304,19 @@ class AsistenciaController {
                         colacion_fin_real: horaFinColacion || colacionFinTeorica,
                         total_marcaciones: detalles.length
                     };
+
+                    // Omitir dÃƒÂ­as incompletos (sin entrada o sin salida real marcada)
+                    const diaIncompleto = !resumenDia.hora_entrada || !resumenDia.hora_salida;
+                    if (diaIncompleto) {
+                        // diasIncompletosOmitidos.push({
+                        //     fecha: dia,
+                        //     rut: key,
+                        //     motivo: !resumenDia.hora_entrada && !resumenDia.hora_salida
+                        //         ? 'Sin entrada y sin salida'
+                        //         : (!resumenDia.hora_entrada ? 'Sin entrada' : 'Sin salida')
+                        // });
+                        continue;
+                    }
                     
                     // Acumular registros para inserciÃƒÂ³n posterior
                     const horaEntradaFinal = resumenDia.hora_entrada || resumenDia.horario_inicio;
@@ -690,6 +706,291 @@ class AsistenciaController {
         }
     }
 
+    async exportarCSVTrabajador(req, res) {
+        try {
+            const { fechaInicio, fechaFin } = req.body;
+            const user = req.user;
+
+            if (!fechaInicio || !fechaFin) {
+                return res.status(400).json({ message: 'fechaInicio y fechaFin son obligatorias' });
+            }
+
+            if (fechaInicio > fechaFin) {
+                return res.status(400).json({ message: 'fechaInicio no puede ser mayor a fechaFin' });
+            }
+
+            const empresa = await EmpresaModel.getEmpresaById(user.empresa_id);
+
+            if (!empresa) {
+                return res.status(404).json({ message: 'Empresa no encontrada' });
+            }
+
+            const usuarioEmpresaId = await UsuarioEmpresaModel.getIdByUsuarioIdAndEmpresaId(user.id, user.empresa_id);
+
+            if (!usuarioEmpresaId) {
+                return res.status(404).json({ message: 'No se encontró relación activa del trabajador con la empresa' });
+            }
+
+            const usuarioEmpresaRows = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+            const usuarioEmpresaInfo = usuarioEmpresaRows && usuarioEmpresaRows[0] ? usuarioEmpresaRows[0] : null;
+
+            const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
+                usuarioEmpresaId,
+                fechaInicio,
+                fechaFin
+            );
+
+            if (!marcaciones || !marcaciones.data || marcaciones.data.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron marcaciones para el período seleccionado' });
+            }
+
+            const marcacionesPorFecha = agruparMarcacionesPorFecha(marcaciones.data);
+            const registros = await construirRegistrosTrabajador(marcacionesPorFecha, {
+                rut: usuarioEmpresaInfo?.usuario_rut || '',
+                nombre: construirNombreCompleto(usuarioEmpresaInfo),
+                tipoColacionInicioCorregida: 'entrada'
+            });
+
+            if (registros.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron marcaciones para el período seleccionado' });
+            }
+
+            const headers = ['Fecha', 'RUT', 'Nombre', 'Entrada', 'Entrada Corregida', 'Salida', 'Salida Corregida', 'Colación Inicio', 'Colación Inicio Corregida', 'Colación Fin', 'Colación Fin Corregida', 'Horas Trabajadas', 'Horario Inicio', 'Horario Fin', 'Total Marcaciones'];
+            let csv = headers.join(',') + '\n';
+
+            registros.forEach(registro => {
+                csv += [
+                    registro.fecha,
+                    registro.rut,
+                    `"${registro.nombre}"`,
+                    registro.hora_entrada,
+                    registro.entrada_corregida,
+                    registro.hora_salida,
+                    registro.salida_corregida,
+                    registro.colacion_inicio,
+                    registro.colacion_inicio_corregida,
+                    registro.colacion_fin,
+                    registro.colacion_fin_corregida,
+                    registro.horas_trabajadas,
+                    registro.horario_inicio,
+                    registro.horario_fin,
+                    registro.total_marcaciones
+                ].join(',') + '\n';
+            });
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="asistencia_${fechaInicio}_${fechaFin}.csv"`);
+            res.send('\uFEFF' + csv);
+
+        } catch (error) {
+            console.error('Error al exportar CSV del trabajador:', error);
+            res.status(500).json({ message: 'Error al exportar CSV del trabajador', error: error.message });
+        }
+    }
+
+    async exportarExcelTrabajador(req, res) {
+        try {
+            const { fechaInicio, fechaFin } = req.body;
+            const user = req.user;
+
+            if (!fechaInicio || !fechaFin) {
+                return res.status(400).json({ message: 'fechaInicio y fechaFin son obligatorias' });
+            }
+
+            if (fechaInicio > fechaFin) {
+                return res.status(400).json({ message: 'fechaInicio no puede ser mayor a fechaFin' });
+            }
+
+            const empresa = await EmpresaModel.getEmpresaById(user.empresa_id);
+
+            if (!empresa) {
+                return res.status(404).json({ message: 'Empresa no encontrada' });
+            }
+
+            const usuarioEmpresaId = await UsuarioEmpresaModel.getIdByUsuarioIdAndEmpresaId(user.id, user.empresa_id);
+
+            if (!usuarioEmpresaId) {
+                return res.status(404).json({ message: 'No se encontró relación activa del trabajador con la empresa' });
+            }
+
+            const usuarioEmpresaRows = await UsuarioEmpresaModel.getUsuarioEmpresaById(user.id, user.empresa_id);
+            const usuarioEmpresaInfo = usuarioEmpresaRows && usuarioEmpresaRows[0] ? usuarioEmpresaRows[0] : null;
+
+            const marcaciones = await MarcacionesServices.obtenerMarcacionesPorUsuarioYRango(
+                usuarioEmpresaId,
+                fechaInicio,
+                fechaFin
+            );
+
+            if (!marcaciones || !marcaciones.data || marcaciones.data.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron marcaciones para el período seleccionado' });
+            }
+
+            const marcacionesPorFecha = agruparMarcacionesPorFecha(marcaciones.data);
+            const registros = await construirRegistrosTrabajador(marcacionesPorFecha, {
+                rut: usuarioEmpresaInfo?.usuario_rut || '',
+                nombre: construirNombreCompleto(usuarioEmpresaInfo),
+                tipoColacionInicioCorregida: 'entrada_colacion'
+            });
+
+            if (registros.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron marcaciones para el período seleccionado' });
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Asistencia');
+
+            worksheet.columns = [
+                { header: 'Fecha', key: 'fecha', width: 12 },
+                { header: 'RUT', key: 'rut', width: 12 },
+                { header: 'Nombre', key: 'nombre', width: 30 },
+                { header: 'Entrada', key: 'hora_entrada', width: 10 },
+                { header: 'Colación Inicio', key: 'colacion_inicio', width: 15 },
+                { header: 'Colación Fin', key: 'colacion_fin', width: 15 },
+                { header: 'Salida', key: 'hora_salida', width: 10 },
+                { header: 'Entrada Corregida', key: 'entrada_corregida', width: 16 },
+                { header: 'Colación Inicio Corregida', key: 'colacion_inicio_corregida', width: 22 },
+                { header: 'Colación Fin Corregida', key: 'colacion_fin_corregida', width: 22 },
+                { header: 'Salida Corregida', key: 'salida_corregida', width: 16 },
+                { header: 'Horas Trabajadas', key: 'horas_trabajadas', width: 16 },
+                { header: 'Horario Inicio', key: 'horario_inicio', width: 15 },
+                { header: 'Horario Fin', key: 'horario_fin', width: 15 },
+                { header: 'Total Marcaciones', key: 'total_marcaciones', width: 18 }
+            ];
+
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF4472C4' }
+            };
+            worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+
+            registros.forEach(registro => {
+                worksheet.addRow(registro);
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="asistencia_${fechaInicio}_${fechaFin}.xlsx"`);
+            res.send(buffer);
+
+        } catch (error) {
+            console.error('Error al exportar Excel del trabajador:', error);
+            res.status(500).json({ message: 'Error al exportar Excel del trabajador', error: error.message });
+        }
+    }
+
+}
+
+function construirNombreCompleto(usuarioEmpresaInfo) {
+    if (!usuarioEmpresaInfo) {
+        return 'N/A';
+    }
+
+    const partes = [
+        usuarioEmpresaInfo.usuario_nombre,
+        usuarioEmpresaInfo.usuario_apellido_pat,
+        usuarioEmpresaInfo.usuario_apellido_mat
+    ].filter(Boolean);
+
+    return partes.length > 0 ? partes.join(' ') : 'N/A';
+}
+
+function agruparMarcacionesPorFecha(marcaciones) {
+    return marcaciones.reduce((acc, marcacion) => {
+        const fechaValor = marcacion.fecha instanceof Date
+            ? marcacion.fecha.toISOString().split('T')[0]
+            : String(marcacion.fecha).split('T')[0];
+
+        if (!acc[fechaValor]) {
+            acc[fechaValor] = [];
+        }
+
+        acc[fechaValor].push(marcacion);
+        return acc;
+    }, {});
+}
+
+async function construirRegistrosTrabajador(marcacionesPorFecha, trabajadorConfig = {}) {
+    const turnosCache = new Map();
+    const registros = [];
+    const tipoColacionInicioCorregida = trabajadorConfig.tipoColacionInicioCorregida || 'entrada';
+
+    for (const [dia, detalles] of Object.entries(marcacionesPorFecha)) {
+        try {
+            const usuariosEmpresasUnicos = [...new Set(detalles.map(d => d.usuario_empresa_id))];
+
+            await Promise.all(usuariosEmpresasUnicos.map(async (usuarioEmpresaId) => {
+                if (!turnosCache.has(usuarioEmpresaId)) {
+                    const turno = await AsignacionTurnosModel.getActivoByUsuarioEmpresaId(usuarioEmpresaId);
+                    turnosCache.set(usuarioEmpresaId, turno);
+                }
+            }));
+
+            detalles.forEach(detalle => {
+                const turno = turnosCache.get(detalle.usuario_empresa_id);
+                if (turno && turno.trabaja) {
+                    detalle.horario_inicio = turno.hora_inicio;
+                    detalle.horario_fin = turno.hora_fin;
+                    detalle.horario_colacion_inicio = turno.colacion_inicio;
+                    detalle.horario_colacion_fin = turno.colacion_fin;
+                }
+            });
+
+            const marcacionEntrada = detalles.find(d => d.tipo === 'entrada');
+            const marcacionesSalida = detalles.filter(d => d.tipo === 'salida');
+            const marcacionesColacion = detalles.filter(d => d.tipo === 'colacion');
+
+            marcacionesColacion.sort((a, b) => a.hora.localeCompare(b.hora));
+
+            const horarioInicio = detalles[0]?.horario_inicio || '';
+            const horarioFin = detalles[0]?.horario_fin || '';
+            const horarioColacionInicio = detalles[0]?.horario_colacion_inicio || '';
+            const horarioColacionFin = detalles[0]?.horario_colacion_fin || '';
+
+            const horaEntradaReal = marcacionEntrada?.hora || '';
+            const horaSalidaReal = marcacionesSalida[marcacionesSalida.length - 1]?.hora || '';
+            const colacionInicioReal = marcacionesColacion[0]?.hora || '';
+            const colacionFinReal = marcacionesColacion[marcacionesColacion.length - 1]?.hora || '';
+
+            const horaEntrada = horaEntradaReal || horarioInicio;
+            const horaSalida = horaSalidaReal || horarioFin;
+            const colacionInicio = colacionInicioReal || horarioColacionInicio;
+            const colacionFin = colacionFinReal || horarioColacionFin;
+
+            const entradaCorregida = calcularHoraCorregida(horaEntrada, horarioInicio, 'entrada');
+            const salidaCorregida = calcularHoraCorregida(horaSalida, horarioFin, 'salida');
+            const colacionInicioCorregida = calcularHoraCorregida(colacionInicio, horarioColacionInicio, tipoColacionInicioCorregida);
+            const colacionFinCorregida = calcularHoraCorregida(colacionFin, horarioColacionFin, 'salida');
+
+            const horasTrabajadas = calcularHorasTrabajadas(horaEntrada, horaSalida, colacionInicio, colacionFin, horarioColacionFin);
+
+            registros.push({
+                fecha: dia,
+                rut: trabajadorConfig.rut || '',
+                nombre: trabajadorConfig.nombre || 'N/A',
+                hora_entrada: horaEntradaReal,
+                hora_salida: horaSalidaReal,
+                colacion_inicio: colacionInicioReal,
+                colacion_fin: colacionFinReal,
+                entrada_corregida: entradaCorregida,
+                salida_corregida: salidaCorregida,
+                colacion_inicio_corregida: colacionInicioCorregida,
+                colacion_fin_corregida: colacionFinCorregida,
+                horas_trabajadas: horasTrabajadas,
+                horario_inicio: horarioInicio,
+                horario_fin: horarioFin,
+                total_marcaciones: detalles.length
+            });
+
+        } catch (error) {
+            console.error(`Error procesando día ${dia} para exportación trabajador:`, error);
+        }
+    }
+
+    return registros;
 }
 
 /**

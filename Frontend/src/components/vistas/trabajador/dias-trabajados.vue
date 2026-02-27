@@ -258,15 +258,79 @@
               </button>
             </div>
 
-            <button 
-              @click="cambiarMes('siguiente')"
-              class="text-white hover:bg-indigo-500 rounded-full p-2 transition-colors duration-200"
-              :disabled="isLoading"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
+            <div class="flex items-center space-x-2" ref="exportMenuRef">
+              <div class="relative">
+                <button
+                  @click.stop="toggleExportDropdown"
+                  class="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-700 bg-white rounded-md hover:bg-indigo-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="isLoading || isExporting"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-8m0 8l-3-3m3 3l3-3M4 20h16"/>
+                  </svg>
+                  {{ isExporting ? 'Exportando...' : 'Exportar asistencia' }}
+                  <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+
+                <div
+                  v-if="mostrarExportDropdown"
+                  class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-40 p-4"
+                  @click.stop
+                >
+                  <p class="text-sm font-semibold text-gray-900 mb-3">Exportar asistencia</p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Desde</label>
+                      <input
+                        v-model="exportRangeForm.fechaInicio"
+                        type="date"
+                        class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        :disabled="isExporting"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Hasta</label>
+                      <input
+                        v-model="exportRangeForm.fechaFin"
+                        type="date"
+                        class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        :disabled="isExporting"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      @click="exportarAsistenciaTrabajador('csv')"
+                      class="px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="isExporting"
+                    >
+                      {{ isExporting && exportTipoEnProceso === 'csv' ? 'Exportando...' : 'CSV' }}
+                    </button>
+                    <button
+                      @click="exportarAsistenciaTrabajador('excel')"
+                      class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="isExporting"
+                    >
+                      {{ isExporting && exportTipoEnProceso === 'excel' ? 'Exportando...' : 'Excel' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                @click="cambiarMes('siguiente')"
+                class="text-white hover:bg-indigo-500 rounded-full p-2 transition-colors duration-200"
+                :disabled="isLoading"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1335,10 +1399,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useDiasTrabajados } from '@/composables/use-dias-trabajados';
 import { useJustificaciones } from '@/composables/use-justificaciones';
 import { useMarcaciones } from '@/composables/use-marcaciones';
+import diasTrabajadosService from '@/services/dias-trabajados-service';
 
 // Composable
 const {
@@ -1391,6 +1456,14 @@ const notificacion = ref({
   mostrar: false,
   mensaje: '',
   tipo: 'info' // 'info', 'error', 'warning', 'success'
+});
+const exportMenuRef = ref(null);
+const mostrarExportDropdown = ref(false);
+const isExporting = ref(false);
+const exportTipoEnProceso = ref('');
+const exportRangeForm = ref({
+  fechaInicio: '',
+  fechaFin: ''
 });
 const justificacionForm = ref({
   fecha_inicio: '',
@@ -1459,14 +1532,112 @@ const cerrarNotificacion = () => {
   notificacion.value.mostrar = false;
 };
 
+const formatearFechaYYYYMMDD = (fecha) => {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const obtenerRangoMesVisible = () => {
+  const inicio = new Date(anioActual.value, mesActual.value, 1);
+  const fin = new Date(anioActual.value, mesActual.value + 1, 0);
+  return {
+    fechaInicio: formatearFechaYYYYMMDD(inicio),
+    fechaFin: formatearFechaYYYYMMDD(fin)
+  };
+};
+
+const inicializarRangoExportacion = () => {
+  const rango = obtenerRangoMesVisible();
+  exportRangeForm.value.fechaInicio = rango.fechaInicio;
+  exportRangeForm.value.fechaFin = rango.fechaFin;
+};
+
+const toggleExportDropdown = () => {
+  if (isLoading.value || isExporting.value) return;
+  mostrarExportDropdown.value = !mostrarExportDropdown.value;
+};
+
+const cerrarExportDropdown = () => {
+  mostrarExportDropdown.value = false;
+};
+
+const handleClickOutsideExport = (event) => {
+  if (exportMenuRef.value && !exportMenuRef.value.contains(event.target)) {
+    cerrarExportDropdown();
+  }
+};
+
+const validarRangoExportacion = () => {
+  if (!exportRangeForm.value.fechaInicio || !exportRangeForm.value.fechaFin) {
+    mostrarNotificacion('Debes seleccionar fecha de inicio y fecha de fin', 'warning');
+    return false;
+  }
+
+  if (exportRangeForm.value.fechaInicio > exportRangeForm.value.fechaFin) {
+    mostrarNotificacion('La fecha de inicio no puede ser mayor a la fecha de fin', 'warning');
+    return false;
+  }
+
+  return true;
+};
+
+const descargarArchivo = (blob, nombreArchivo) => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nombreArchivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+const exportarAsistenciaTrabajador = async (formato) => {
+  if (!validarRangoExportacion()) return;
+
+  isExporting.value = true;
+  exportTipoEnProceso.value = formato;
+
+  try {
+    const { fechaInicio, fechaFin } = exportRangeForm.value;
+    const nombreBase = `asistencia_${fechaInicio}_${fechaFin}`;
+
+    if (formato === 'csv') {
+      const blob = await diasTrabajadosService.exportarAsistenciaTrabajadorCSV(fechaInicio, fechaFin);
+      descargarArchivo(blob, `${nombreBase}.csv`);
+    } else {
+      const blob = await diasTrabajadosService.exportarAsistenciaTrabajadorExcel(fechaInicio, fechaFin);
+      descargarArchivo(blob, `${nombreBase}.xlsx`);
+    }
+
+    mostrarNotificacion(`Asistencia exportada correctamente en formato ${formato.toUpperCase()}`, 'success');
+    cerrarExportDropdown();
+  } catch (error) {
+    console.error(`Error al exportar asistencia en ${formato}:`, error);
+    mostrarNotificacion('No se pudo exportar la asistencia. Intenta nuevamente.', 'error');
+  } finally {
+    isExporting.value = false;
+    exportTipoEnProceso.value = '';
+  }
+};
+
 // Cargar calendario al montar
 onMounted(() => {
   cargarCalendario();
+  inicializarRangoExportacion();
+  document.addEventListener('click', handleClickOutsideExport);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutsideExport);
 });
 
 // Recargar cuando cambie el mes o año
 watch([mesActual, anioActual], () => {
   cargarCalendario();
+  inicializarRangoExportacion();
 });
 
 // Funciones
