@@ -24,11 +24,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.SERVER_PORT;
 
-//MIDDLEWARE
-// Configurar CORS para permitir cookies
+const whitelist = [
+    process.env.FRONTEND_URL, 
+    'http://localhost:5173', 
+    process.env.FRONTEND_URL_WWW
+];
+
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, 'http://localhost:5173',process.env.FRONTEND_URL_WWW],
-    credentials: true // IMPORTANTE: permitir envÃ­o de cookies
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origen (como Postman o apps móviles)
+        if (!origin) return callback(null, true);
+
+        const isWhitelisted = whitelist.indexOf(origin) !== -1;
+        const isSubdomain = origin.endsWith('.teleasiste.cl');
+
+        if (isWhitelisted || isSubdomain) {
+            callback(null, true);
+        } else {
+            console.log("Bloqueado por CORS:", origin);
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser()); // Parsear cookies
