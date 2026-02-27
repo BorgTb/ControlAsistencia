@@ -1912,6 +1912,8 @@ const obtenerReporteJornadaDiariaEmpresa = async (req, res) => {
         const marcacionesPorUsuario = {};
         const horasExtrasPorUsuario = {};
 
+      
+
         usuarioEmpresaIds.forEach((id, index) => {
             marcacionesPorUsuario[id] = todasMarcacionesResults[index]?.data || [];
             horasExtrasPorUsuario[id] = todasHorasExtras[index] || [];

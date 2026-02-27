@@ -256,7 +256,7 @@
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                       <!-- Botón de aprobar horas extras - solo visible si hay tiempo extra positivo y NO están aprobadas -->
                       <button
-                        v-if="registro.tiempoExtra && !registro.horasExtrasAprobadas && !registro.horasExtrasPendientes && !registro.horasExtrasRechazadas"
+                        v-if="registro.tiempoExtra && !registro.horasExtrasPendientes && !registro.horasExtrasRechazadas"
                         @click="abrirModalAprobarHorasExtras(registro)"
                         class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                         title="Aprobar horas extras"
@@ -266,6 +266,7 @@
                         </svg>
                         Aprobar H. Extras
                       </button>
+
                       
                       <!-- Horas extras aprobadas -->
                       <div v-else-if="registro.horasExtrasAprobadas" class="flex flex-col space-y-1">
@@ -690,24 +691,17 @@ const getDiferenciaClass = (diferencia) => {
 const cargarReporteConFiltros = async () => {
   try {
     cargandoDatos.value = true
-    console.log('🔍 Cargando jornada diaria para empresa con rango de fechas:', {
-      desde: filters.value.fechaDesde,
-      hasta: filters.value.fechaHasta,
-      empresaId: user.value?.empresa_id,
-      rutEmpresa: user.value?.rut
-    })
+  
     
     // Llamar al backend usando useEmpresa
     const response = await obtenerReporteJornadaDiaria(
       filters.value.fechaDesde,
       filters.value.fechaHasta
     )
-    console.log('📊 Datos recibidos de la API:', response)
     
     if (response) {
       if (response.trabajadores || response.marcacionesAgrupadasPorUsuario) {
         await loadData(response)
-        console.log('✅ Datos cargados exitosamente:', registros.value.length, 'registros de jornada')
       } else {
         console.warn('⚠️ Estructura de datos no reconocida')
         loadData()
@@ -739,6 +733,7 @@ const loadData = async (apiData = null) => {
           
           const marcacionesArray = datosAsistencia.marcaciones || []
           const turno = datosAsistencia.turno
+          console.log(turno)
           const estadoAsistencia = datosAsistencia.estado_asistencia
           const atraso = datosAsistencia.atraso
           const salida = datosAsistencia.salida
@@ -781,7 +776,10 @@ const loadData = async (apiData = null) => {
           if (marcacionEntrada && marcacionSalida) {
             const minutosEntrada = convertirHoraAMinutos(marcacionEntrada.hora)
             const minutosSalida = convertirHoraAMinutos(marcacionSalida.hora)
-            minutosReales = minutosSalida - minutosEntrada
+            const minustosColacionEntrada = colaciones[0] ? convertirHoraAMinutos(colaciones[0].hora) : 0
+            const minutosColacionFin = colaciones[1] ? convertirHoraAMinutos(colaciones[1].hora) : 0
+            const diferenciaColacion = Math.abs(minutosColacionFin - minustosColacionEntrada)
+            minutosReales = minutosSalida - minutosEntrada - diferenciaColacion
             if (minutosReales < 0) minutosReales += 24 * 60
           }
           
@@ -860,7 +858,16 @@ const loadData = async (apiData = null) => {
           // Información de colación
           let colacionInicio = null
           let colacionFin = null
-          let colacionPactada = turno?.duracion_colacion || '01:00:00'
+
+            let colacionPactada = 'N/A'
+            if (turno && turno.colacion_inicio && turno.colacion_fin) {
+            const minutosColacionInicio = convertirHoraAMinutos(turno.colacion_inicio)
+            const minutosColacionFin = convertirHoraAMinutos(turno.colacion_fin)
+            const minutosColacion = minutosColacionFin - minutosColacionInicio
+            if (minutosColacion > 0) {
+              colacionPactada = convertirMinutosAHoras(minutosColacion)
+            }
+            }
           
           if (colaciones.length >= 2) {
             colacionInicio = colaciones[0].hora
@@ -902,7 +909,6 @@ const loadData = async (apiData = null) => {
     }
     
     registros.value = registrosProcessed
-    console.log('✅ Registros procesados:', registros.value)
   } else {
     // Sin datos
     registros.value = []
@@ -1027,17 +1033,14 @@ const exportarExcel = () => {
 
 // Funciones para aprobar horas extras
 const abrirModalAprobarHorasExtras = (registro) => {
-  console.log('🔵 Abriendo modal para aprobar horas extras:', registro)
   registroSeleccionado.value = registro
   motivoHorasExtras.value = `Horas extras del ${formatearFecha(registro.fecha)} - ${registro.tiempoExtra}`
   accionModal.value = 'aprobar'
   modalAprobarHorasExtras.value = true
-  console.log('🔵 Modal abierto:', modalAprobarHorasExtras.value)
 }
 
 // Función para abrir modal de horas extras pendientes (aprobar o rechazar)
 const abrirModalAprobarHorasExtrasPendientes = (registro, accion) => {
-  console.log(`🔵 Abriendo modal para ${accion} horas extras pendientes:`, registro)
   registroSeleccionado.value = registro
   accionModal.value = accion
   
@@ -1048,11 +1051,9 @@ const abrirModalAprobarHorasExtrasPendientes = (registro, accion) => {
   }
   
   modalAprobarHorasExtras.value = true
-  console.log('🔵 Modal abierto con acción:', accionModal.value)
 }
 
 const cerrarModalAprobarHorasExtras = () => {
-  console.log('🔴 Cerrando modal de horas extras')
   modalAprobarHorasExtras.value = false
   registroSeleccionado.value = null
   motivoHorasExtras.value = ''
@@ -1080,7 +1081,6 @@ const confirmarAprobarHorasExtras = async () => {
         )
         
         if (response && response.success) {
-          console.log('✅ Hora extra pendiente aprobada exitosamente')
           
           // Actualizar el estado en la interfaz
           const index = registros.value.findIndex(r => 
@@ -1123,12 +1123,10 @@ const confirmarAprobarHorasExtras = async () => {
           marcacion_id: registroSeleccionado.value.marcacion_id || null
         }
         
-        console.log('📤 Enviando datos de aprobación:', horasExtrasData)
         
         const response = await aprobarHorasExtras(horasExtrasData)
         
         if (response && response.success) {
-          console.log('✅ Horas extras procesadas exitosamente:', response)
           
           // Actualizar el registro según la acción realizada
           const index = registros.value.findIndex(r => 
@@ -1171,7 +1169,6 @@ const confirmarAprobarHorasExtras = async () => {
       const response = await rechazarHoraExtraPendiente(registroSeleccionado.value.horaExtraInfo.id, motivoHorasExtras.value)
       
       if (response && response.success) {
-        console.log('✅ Hora extra pendiente rechazada exitosamente')
         
         // Actualizar el estado en la interfaz
         const index = registros.value.findIndex(r => 
@@ -1204,8 +1201,6 @@ const confirmarAprobarHorasExtras = async () => {
 
 onMounted(async () => {
   try {
-    console.log('🚀 Iniciando componente ReporteJornadaDiaria para empresa')
-    console.log('👤 Usuario actual:', user.value)
     await cargarReporteConFiltros()
   } catch (error) {
     console.error('❌ Error al inicializar componente:', error)

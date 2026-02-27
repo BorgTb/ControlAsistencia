@@ -112,7 +112,6 @@ class UsuarioEmpresaModel {
             LIMIT 1
         `;
         const [rows] = await db.execute(query, [id]);
-        console.log('[getUsuarioEmpresaByUsuarioId] Resultado consulta:', rows);
         if (rows.length > 0 && rows[0].empresa_id) {
             rows[0].empresa_id = Number(rows[0].empresa_id);
         }

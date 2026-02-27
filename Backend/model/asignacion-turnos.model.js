@@ -60,9 +60,11 @@ class AsignacionTurnosModel {
                 tt.colacion_inicio,
                 tt.colacion_fin,
                 tt.dias_trabajo,
-                tt.dias_descanso
+                tt.dias_descanso,
+                tj.nombre as tipo_jornada_nombre
             FROM asignacion_turnos at
             INNER JOIN tipo_turnos tt ON at.tipo_turno_id = tt.id
+            INNER JOIN tipo_jornada tj ON tt.tipo_jornada_id = tj.id
             WHERE at.usuario_empresa_id = ?
             ORDER BY at.fecha_inicio DESC
         `;

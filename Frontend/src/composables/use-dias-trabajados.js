@@ -112,7 +112,7 @@ export function useDiasTrabajados() {
     for (let dia = 1; dia <= diasEnMes; dia++) {
       const fecha = `${anioActual.value}-${String(mesActual.value + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
       const diaData = diasTrabajados.value.find(d => d.fecha === fecha);
-      
+      console.log(`Procesando día ${fecha}:`, diaData);
       dias.push({
         dia,
         fecha,
@@ -126,7 +126,10 @@ export function useDiasTrabajados() {
         horasTrabajadas: diaData?.horasTrabajadas || null,
         horasExtras: diaData?.horasExtras || null,
         minutosExtra: diaData?.minutosExtra || null,
-        minutosRetraso: diaData?.minutosRetraso || null
+        minutosRetraso: diaData?.minutosRetraso || null,
+        horaInicioColacion: diaData?.horaInicioColacion|| null,
+        horaFinColacion: diaData?.horaFinColacion || null,
+        tipoJornada: diaData?.tipoJornada || null
       });
     }
 

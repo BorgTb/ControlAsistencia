@@ -442,16 +442,14 @@ class HorasExtrasController {
                     message: "Trabajador no encontrado"
                 });
             }
+        
+            console.log('ðŸ”´ Trabajador encontrado para rechazar hora extra:', trabajador);
 
-            const empresasAprobador = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
-            if (!empresasAprobador || empresasAprobador.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Usuario no tiene empresas asignadas"
-                });
-            }
-            const empresaAprobador = empresasAprobador[0];
-            if (!empresaAprobador || empresaAprobador.empresa_id !== trabajador.empresa_id) {
+            const empresaAprobador = USR_PETICION.empresa_id;
+            console.log('ðŸ”´ Empresa del usuario que rechaza:', empresaAprobador);
+            
+            
+            if (!empresaAprobador || empresaAprobador !== trabajador.empresa_id) {
                 return res.status(403).json({
                     success: false,
                     message: "No tiene permisos para rechazar horas extras de este trabajador"
