@@ -15,7 +15,7 @@
           </svg>
         </div>
         <h2 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-          Control de Asistencia test
+          Control de Asistencia {{ nombreEmpresa }}
         </h2>
         <p class="mt-3 text-gray-500 font-medium">
           Ingresa tus credenciales para continuar
@@ -185,6 +185,33 @@ const appFiscalizador = import.meta.env.VITE_APP_FISCALIZADOR_URL || 'https://lo
 
 // Computed
 const isLoading = computed(() => authStore.isLoading)
+
+// Extraer nombre de empresa del dominio
+const nombreEmpresa = computed(() => {
+  try {
+    const hostname = window.location.hostname
+    
+    // Si es localhost, retornar vacío o un valor por defecto
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return ''
+    }
+    
+    // Extraer subdomain (primera parte antes del primer punto)
+    const parts = hostname.split('.')
+    
+    // Si hay subdomain (más de 2 partes en el dominio)
+    if (parts.length >= 3) {
+      const subdomain = parts[0]
+      // Capitalizar primera letra
+      return subdomain.charAt(0).toUpperCase() + subdomain.slice(1)
+    }
+    
+    return ''
+  } catch (error) {
+    console.error('Error extrayendo nombre de empresa:', error)
+    return ''
+  }
+})
 
 // Mouse tracking
 const handleMouseMove = (e) => {

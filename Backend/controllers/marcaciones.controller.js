@@ -1274,12 +1274,25 @@ const procesarDia = (fecha, marcacionesDia, turno, diaSemana, justificacion = nu
         }
     } else if (!entrada) {
         estado = 'incidente';
-        incidente = 'No marcÃƒÂ³ entrada';
+        incidente = 'No marcó entrada';
         tipoIncidente = 'ENTRADA_FALTANTE';
     } else if (!salida) {
         estado = 'incidente';
-        incidente = 'No marcÃƒÂ³ salida';
+        incidente = 'No marcó salida';
         tipoIncidente = 'SALIDA_FALTANTE';
+    } else if (turno.colacion_inicio && turno.colacion_fin && (!inicioColacion || !finColacion)) {
+        // Si el turno tiene colación definida pero faltan marcaciones de colación
+        estado = 'incidente';
+        if (!inicioColacion && !finColacion) {
+            incidente = 'No marcó colación';
+            tipoIncidente = 'COLACION_FALTANTE';
+        } else if (!inicioColacion) {
+            incidente = 'No marcó inicio de colación';
+            tipoIncidente = 'INICIO_COLACION_FALTANTE';
+        } else if (!finColacion) {
+            incidente = 'No marcó fin de colación';
+            tipoIncidente = 'FIN_COLACION_FALTANTE';
+        }
     }
 
     // Calcular horas trabajadas
