@@ -18,7 +18,7 @@
           Control de Asistencia {{ nombreEmpresa }}
         </h2>
         <p class="mt-3 text-gray-500 font-medium">
-          Ingresa tus credenciales para continuar
+          Ingresa tus credenciales de acceso para continuar
         </p>
       </div>
 
