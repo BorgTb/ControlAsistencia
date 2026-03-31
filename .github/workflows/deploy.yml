@@ -47,7 +47,7 @@ jobs:
         with:
           context: ./Backend # IMPORTANTE: apunta a la subcarpeta
           push: true
-          tags: ghcr.io/borgtb/controlasistencia-backend:latest
+          tags: ghcr.io/telemediostalca/controlasistencia-backend:latest
   # --- TRABAJO 3: ACTUALIZAR SERVIDOR ---
   update-server:
     needs: build-backend # Solo corre si el backend se buildeó bien
