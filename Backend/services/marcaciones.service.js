@@ -3,7 +3,7 @@ import MarcacionesModel from '../model/marcaciones.model.js';
 import crypto from 'crypto';
 import UserModel from '../model/user.model.js';
 import EstAsignacionesModel from '../model/est-asignaciones.model.js';
-
+import { DateTime } from 'luxon';
 class MarcacionesService {
     // Función auxiliar para normalizar valores undefined/null
     normalizeValue(value, parseAsFloat = false) {
@@ -112,7 +112,7 @@ class MarcacionesService {
             const marcacionData = {
                 usuario_id,
                 fecha: null, // La BD asignará CURRENT_DATE
-                hora: null,  // La BD asignará CURRENT_TIME
+                hora: DateTime.now().setZone('America/Santiago').toFormat('HH:mm:ss'),  // La BD asignará CURRENT_TIME
                 tipo,
                 hash,
                 ip_origen: this.normalizeValue(ip_origen),

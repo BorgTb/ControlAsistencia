@@ -15,11 +15,13 @@ class Marcaciones {
             geo_lat,
             geo_lon
             ) 
-                VALUES (?, ?, CURRENT_DATE(), CURRENT_TIME(), ?, ?, ?, ?, ?)
+                VALUES (?, ?, CURRENT_DATE(), ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             data.usuario_id,
             data.mandante_id || null,
+            data.fecha || null,
+            data.hora || null,
             data.tipo,
             data.hash,
             data.ip_origen,
