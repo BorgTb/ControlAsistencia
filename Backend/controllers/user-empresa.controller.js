@@ -1554,7 +1554,15 @@ const crearTipoTurno = async (req, res) => {
             });
         }
 
-        // Obtener empresa del usuario
+        // Usar siempre la empresa activa del usuario logueado
+        if (!USR_PETICION.empresa_id) {
+            return res.status(403).json({
+                success: false,
+                message: "Usuario no tiene empresa activa en el contexto actual"
+            });
+        }
+
+        // Validar que la empresa activa pertenezca al usuario
         const empresas = await UsuarioEmpresaModel.getEmpresasByUsuarioId(USR_PETICION.id);
         if (!empresas || empresas.length === 0) {
             return res.status(404).json({
@@ -1562,12 +1570,12 @@ const crearTipoTurno = async (req, res) => {
                 message: "Usuario no tiene empresas asignadas"
             });
         }
-        const empresa = empresas[0];
 
+        const empresa = empresas.find(e => Number(e.empresa_id) === Number(USR_PETICION.empresa_id));
         if (!empresa) {
-            return res.status(404).json({
+            return res.status(403).json({
                 success: false,
-                message: "Empresa no encontrada para el usuario"
+                message: "La empresa activa no pertenece al usuario"
             });
         }
 
@@ -1589,8 +1597,8 @@ const crearTipoTurno = async (req, res) => {
 
 
 
-        // Agregar empresa_id al tipo de turno
-        tipoTurnoData.empresa_id = empresa.empresa_id;
+        // Agregar empresa_id de la empresa activa del usuario logueado
+        tipoTurnoData.empresa_id = USR_PETICION.empresa_id;
 
         const nuevoTipoId = await TipoTurnosModel.create(tipoTurnoData);
 
