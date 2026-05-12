@@ -393,9 +393,11 @@
 import { ref, computed } from 'vue';
 import { useNotification } from '@/composables/use-notification';
 import { apiClient } from '@/config/axios-config';
+import { useAuthStore } from '@/stores/auth-store.js';
 import { DateTime } from 'luxon';
 
 const { showSuccess, showError, showWarning } = useNotification();
+const authStore = useAuthStore();
 
 // Estado del componente
 const tipoPeriodo = ref('mes');
@@ -544,7 +546,7 @@ async function confirmarEnvioTelegestor() {
 
   try {
     const periodo = obtenerPeriodo();
-    const empresaId = sessionStorage.getItem('empresa_id');
+    const empresaId = authStore.activeEmpresaId || authStore.user?.empresa_id || authStore.activeCompany?.id || null;
 
     const response = await apiClient.post('/telegestorapi/asistencia', {
       fechaInicio: periodo.fechaInicio,

@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const isLoading = ref(false)
   const pendingCompanySelection = ref(null) // Para usuarios multi-empresa
+  const availableCompanies = ref([])
 
   // Getters
   const isAuthenticated = computed(() => !!user.value) // Autenticado si hay usuario
@@ -48,6 +49,16 @@ export const useAuthStore = defineStore('auth', () => {
   // Detecta si la empresa es EST
   const esEst = computed(() => user.value?.est === true)
 
+  // Empresa activa dentro de la lista de empresas disponibles
+  const activeCompany = computed(() => {
+    if (!availableCompanies.value.length) return null
+
+    return availableCompanies.value.find(company => company.es_actual) || null
+  })
+
+  const activeEmpresaId = computed(() => activeCompany.value?.id || null)
+  const activeUsuarioEmpresaId = computed(() => activeCompany.value?.usuario_empresa_id || null)
+
   // MULTI-ROL: Detecta si el usuario tiene múltiples roles
   const hasMultipleRoles = computed(() => userRoles.value.length > 1)
 
@@ -67,6 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     user.value = null
     pendingCompanySelection.value = null
+    availableCompanies.value = []
   }
 
   function clearAuth() {
@@ -88,9 +100,6 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('🧹 Datos de selección de empresa limpiados')
   }
 
-  // MULTI-EMPRESA: Estado de empresas disponibles para cambio post-login
-  const availableCompanies = ref([])
-
   // MULTI-EMPRESA: Obtener empresas del usuario autenticado
   async function loadUserCompanies() {
     try {
@@ -99,6 +108,16 @@ export const useAuthStore = defineStore('auth', () => {
       
       if (result.success && result.data.empresas) {
         availableCompanies.value = result.data.empresas
+
+        const currentCompany = availableCompanies.value.find(company => company.es_actual)
+        if (currentCompany && user.value) {
+          user.value = {
+            ...user.value,
+            empresa_id: currentCompany.id,
+            usuario_empresa_id: currentCompany.usuario_empresa_id
+          }
+        }
+
         console.log('🏢 Empresas cargadas en store:', availableCompanies.value.length)
         return availableCompanies.value
       } else {
@@ -121,6 +140,23 @@ export const useAuthStore = defineStore('auth', () => {
       
       if (result.success && result.data.user) {
         setUser(result.data.user)
+
+        if (availableCompanies.value.length) {
+          availableCompanies.value = availableCompanies.value.map(company => ({
+            ...company,
+            es_actual: Number(company.id) === Number(empresaId)
+          }))
+
+          const selectedCompany = availableCompanies.value.find(company => Number(company.id) === Number(empresaId))
+          if (selectedCompany && user.value) {
+            user.value = {
+              ...user.value,
+              empresa_id: selectedCompany.id,
+              usuario_empresa_id: selectedCompany.usuario_empresa_id
+            }
+          }
+        }
+
         console.log('✅ Empresa cambiada en store')
         return { success: true, user: result.data.user }
       } else {
@@ -139,6 +175,9 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isLoading,
     availableCompanies,
+    activeCompany,
+    activeEmpresaId,
+    activeUsuarioEmpresaId,
 
     // Getters de roles
     userRoles,
@@ -177,6 +216,6 @@ export const useAuthStore = defineStore('auth', () => {
   persist: {
     key: 'auth-storage',
     storage: localStorage,
-    paths: ['user', 'pendingCompanySelection'] // Persistir usuario y datos de selección
+    paths: ['user', 'pendingCompanySelection', 'availableCompanies'] // Persistir estado de empresa activa
   }
 })

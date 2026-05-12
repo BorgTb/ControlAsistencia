@@ -37,6 +37,9 @@ class AuthService {
       // Solo almacenar datos del usuario (el token está en cookie HTTP-only)
       authStore.setUser(user)
 
+      // Cargar empresas disponibles para resolver la empresa activa de inmediato
+      await authStore.loadUserCompanies()
+
       return {
         success: true,
         data: response.data,
@@ -349,6 +352,9 @@ class AuthService {
 
       // Almacenar datos del usuario
       authStore.setUser(user)
+
+      // Refrescar empresas para que el store tenga la empresa activa y su relación
+      await authStore.loadUserCompanies()
 
       // Limpiar datos de selección pendiente
       authStore.clearCompanySelection()
