@@ -23,6 +23,14 @@ import UsuariosRolesAsignadosModel from "../model/usuarios-roles-asignados.model
 import MailService from "../services/mail.service.js";
 import TokenService from "../services/token.service.js";
 
+const obtenerRolesUsuario = (usuario) => {
+    if (Array.isArray(usuario?.roles)) {
+        return usuario.roles;
+    }
+
+    return usuario?.rol ? [usuario.rol] : [];
+};
+
 
 
 
@@ -752,9 +760,10 @@ const guardarConfiguracion = async (req, res) => {
     try {
         const configuracionData = req.body;
         const USR_PETICION = req.user; // usuario que genera la consulta
+        const rolesUsuario = obtenerRolesUsuario(USR_PETICION);
 
         // Validar que el usuario tenga permisos para modificar configuraciÃƒÂ³n
-        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+        if (!USR_PETICION || (!rolesUsuario.includes('empleador') && !rolesUsuario.includes('admin'))) {
             return res.status(403).json({
                 success: false,
                 message: "No tiene permisos para modificar la configuraciÃƒÂ³n del sistema"
@@ -1482,8 +1491,10 @@ const eliminarTipoTurno = async (req, res) => {
         const { id } = req.params;
         const USR_PETICION = req.user;
         const empresa_id = req.user.empresa_id;
+        const rolesUsuario = obtenerRolesUsuario(USR_PETICION);
+
         // Validar que sea empleador o admin
-        if (!USR_PETICION || (USR_PETICION.rol !== 'empleador' && USR_PETICION.rol !== 'admin')) {
+        if (!USR_PETICION || (!rolesUsuario.includes('empleador') && !rolesUsuario.includes('admin'))) {
             return res.status(403).json({
                 success: false,
                 message: "No tiene permisos para eliminar tipos de turno"
@@ -1543,11 +1554,12 @@ const crearTipoTurno = async (req, res) => {
     try {
         const tipoTurnoData = req.body;
         const USR_PETICION = req.user;
+        const rolesUsuario = obtenerRolesUsuario(USR_PETICION);
 
      
 
         // Validar que sea empleador o admin
-        if (!USR_PETICION || (!USR_PETICION.roles.includes('empleador') && !USR_PETICION.roles.includes('admin'))) {
+        if (!USR_PETICION || (!rolesUsuario.includes('empleador') && !rolesUsuario.includes('admin'))) {
             return res.status(403).json({
                 success: false,
                 message: "No tiene permisos para crear tipos de turno"
